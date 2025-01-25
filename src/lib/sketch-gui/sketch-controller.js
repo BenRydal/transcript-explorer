@@ -6,7 +6,7 @@ export class SketchController {
 		this.sk = sketch;
 		this.scalingVars = this.createScalingVars(); // holds values that influence how contribution cloud is drawn
 		// PROGRAM MODE BOOLEANS
-		this.mode = 1;
+		this.mode = 0;
 		this.isAnimate = true;
 		this.isSort = false;
 		this.isParagraphMode = true;

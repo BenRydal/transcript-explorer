@@ -1,10 +1,13 @@
 import { drawUtils } from './draw-utils.js';
+import { get } from 'svelte/store';
+import TranscriptStore from '../../stores/transcriptStore';
+import UserStore from '../../stores/userStore';
 export class DistributionDiagram {
-	constructor(sk, numOfSpeakers, pos) {
+	constructor(sk, pos) {
 		this.sk = sk;
 		this.utils = new drawUtils(sk);
 		this.pixelWidth = pos.width;
-		this.maxCircleRadius = this.pixelWidth / (numOfSpeakers + 1);
+		this.maxCircleRadius = this.getMaxCircleRadius(this.pixelWidth);
 		this.maxCircleArea = Math.PI * this.maxCircleRadius * this.maxCircleRadius;
 		this.xPosCurCircle = this.maxCircleRadius; // dynamically updated as circles drawn
 		this.xLeft = pos.x;
@@ -13,11 +16,17 @@ export class DistributionDiagram {
 		this.yPosHalfHeight = pos.y + (pos.height - pos.y) / 2;
 	}
 
+	getMaxCircleRadius(pixelWidth) {
+		const currentUsers = get(UserStore);
+		return pixelWidth / (currentUsers.length + 1);
+	}
+
 	draw(sortedAnimationWordArray) {
 		for (const key in sortedAnimationWordArray) {
 			if (sortedAnimationWordArray[key].length) {
-				const speakerName = this.getSpeakerFromList(sortedAnimationWordArray[key][0].speaker);
-				if (speakerName.isShowing) {
+				const currentUsers = get(UserStore);
+				const user = currentUsers.find((user) => user.name === sortedAnimationWordArray[key][0].speaker);
+				if (user.enabled) {
 					this.drawViz(sortedAnimationWordArray[key], this.sk.sketchController.isDrawFlowerMode);
 				}
 			}
@@ -28,7 +37,10 @@ export class DistributionDiagram {
 	drawViz(tempTurnArray, isDrawFlower) {
 		const firstElement = tempTurnArray[0];
 		const metrics = this.calculateMetrics(tempTurnArray);
-		const color = this.sk.color(this.sk.core.getSpeakerColor(firstElement.speaker));
+
+		const currentUsers = get(UserStore);
+		const user = currentUsers.find((user) => user.name === firstElement.speaker);
+		const color = this.sk.color(user.color);
 
 		if (isDrawFlower) {
 			this.drawFlowerVisualization(color, metrics, tempTurnArray);
@@ -69,7 +81,9 @@ export class DistributionDiagram {
 
 		const bottom = this.yPosBottom - this.sk.SPACING;
 		const top = this.yPosTop + this.maxCircleRadius;
-		const scaledNumOfTurns = this.sk.map(numOfTurns, 0, this.sk.core.largestNumOfTurnsByASpeaker, bottom, top);
+
+		const transcript = get(TranscriptStore);
+		const scaledNumOfTurns = this.sk.map(numOfTurns, 0, transcript.largestNumOfTurnsByASpeaker, bottom, top);
 
 		this.drawStalkVisualization(scaledWordArea, this.xPosCurCircle, scaledNumOfTurns, color);
 
@@ -103,7 +117,8 @@ export class DistributionDiagram {
 		this.sk.fill(0);
 		this.sk.noStroke();
 		this.sk.textSize(16);
-		this.sk.text(`${this.sk.core.largestNumOfTurnsByASpeaker} Turns`, this.xLeft - this.sk.SPACING / 2, top - this.sk.SPACING / 2);
+		const transcript = get(TranscriptStore);
+		this.sk.text(`${transcript.largestNumOfTurnsByASpeaker} Turns`, this.xLeft - this.sk.SPACING / 2, top - this.sk.SPACING / 2);
 	}
 
 	drawStalk(scaleFactor, xPos, yPos) {
@@ -171,7 +186,8 @@ export class DistributionDiagram {
 	}
 
 	getScaledArea(value) {
-		const maxValue = this.sk.core.largestNumOfWordsByASpeaker;
+		const transcript = get(TranscriptStore);
+		const maxValue = transcript.largestNumOfWordsByASpeaker;
 		// Normalize the value to a scale of 0 to 1, relative to the maximum value
 		const normalizedValue = value / maxValue;
 		// Map the normalized value to an area

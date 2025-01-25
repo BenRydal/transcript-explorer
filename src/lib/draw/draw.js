@@ -28,7 +28,7 @@ export class Draw {
 	}
 
 	updateDistributionDiagram(pos) {
-		const distributionDiagram = new DistributionDiagram(this.sk, this.sk.core.speakerList.length, pos);
+		const distributionDiagram = new DistributionDiagram(this.sk, pos);
 		distributionDiagram.draw(this.sk.dynamicData.getDynamicArrayForDistributionDiagram());
 	}
 
