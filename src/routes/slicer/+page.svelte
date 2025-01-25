@@ -33,13 +33,13 @@
 
 	let selectedDropDownOption = '';
 	const dropdownOptions = [
-		{ label: 'Sports', items: [{ value: 'example-1', label: "Michael Jordan's Last Shot" }] },
 		{ label: 'Museums', items: [{ value: 'example-2', label: 'Family Gallery Visit' }] },
 		{
 			label: 'Classrooms',
 			items: [
-				{ value: 'example-3', label: 'Classroom Science Lesson' },
-				{ value: 'example-4', label: 'Classroom Discussion' }
+				{ value: 'example-1', label: 'Kindergarten Activity' },
+				{ value: 'example-3', label: 'Classroom Discussion' },
+				{ value: 'example-4', label: 'Classroom Science Lesson' }
 			]
 		},
 		{

@@ -1,8 +1,4 @@
-/*
-This class holds a copy of core data word array that is constantly updated as program runs
-based on the user. How this data is ordered and sorted can be used to create different
-kinds of visualizations.
-*/
+import { DataPoint } from '../../models/dataPoint.ts';
 
 export class DynamicData {
 	constructor(sketch) {
@@ -12,7 +8,8 @@ export class DynamicData {
 	}
 
 	update(index) {
-		const animationWord = this.sk.core.createWord(index.speaker, index.turnNumber, index.word, index.order, index.startTime, index.endTime);
+		const animationWord = new DataPoint(index.speaker, index.turnNumber, index.word, index.order, index.startTime, index.endTime);
+
 		// add this line to show repeated words in CC for selected time: && this.isInTimeRange(animationWord.startTime, animationWord.endTime)
 		if (!this.isStopWord(animationWord.word)) {
 			this.updateWordCounts(animationWord);
@@ -60,7 +57,8 @@ export class DynamicData {
 	}
 
 	isInTimeRange(startTime, endTime) {
-		return startTime >= this.sk.slider.getCurMin() && endTime <= this.sk.slider.getCurMax();
+		return true; // TODO
+		//return startTime >= this.sk.slider.getCurMin() && endTime <= this.sk.slider.getCurMax();
 	}
 
 	getDynamicArrayForDistributionDiagram() {

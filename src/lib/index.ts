@@ -1,6 +1,5 @@
 export * from './core';
-// export { SetPathData } from './draw';
-// export * from './floorplan';
-// export { Handle3D } from './sketch-gui';
-// export { SketchGUI } from './sketch-gui';
+export { Draw } from './draw';
 export { VideoController } from './video';
+export { DynamicData } from './core/dynamic-data';
+export { SketchController } from './sketch-gui';

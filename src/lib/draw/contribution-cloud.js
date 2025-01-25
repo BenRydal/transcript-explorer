@@ -1,0 +1,107 @@
+export class ContributionCloud {
+	constructor(sk, pos) {
+		this.sk = sk;
+		this.xPosBase = pos.x;
+		this.xPosDynamic = pos.x;
+		this.yPosDynamic = pos.y + this.sk.sketchController.scalingVars.spacing;
+		this.pixelWidth = pos.width;
+		this.prevSpeaker = undefined;
+		this.selectedWordFromContributionCloud = undefined;
+	}
+
+	draw(index) {
+		this.updateCurPos(index);
+		this.setScaledTextSize(index.count);
+		this.overText(index); // //if (this.sk.sketchController.shouldDraw(index, "turnNumber", "firstWordOfTurnSelectedInTurnChart")) this.drawText(index);
+
+		const shouldDraw = this.sk.sketchController.shouldDraw(index, 'turnNumber', 'firstWordOfTurnSelectedInTurnChart');
+
+		if (this.sk.sketchController.isShowOnlyRepeatedWords) {
+			if (index.count >= this.sk.sketchController.getWordCountSliderValue() && shouldDraw) {
+				this.drawText(index);
+			}
+		} else {
+			if (shouldDraw) {
+				this.drawText(index);
+			}
+		}
+
+		this.updateForNextWord(index);
+	}
+
+	drawText(index) {
+		this.sk.noStroke();
+		const curSpeakerName = this.getSpeakerFromList(index.speaker);
+		const curSpeakerColor = this.sk.core.getSpeakerColor(index.speaker);
+
+		if (!curSpeakerName.isShowing) {
+			this.sk.fill(255);
+		} else {
+			let color = 225; // Default color
+			if (this.sk.sketchController.selectedWordFromContributionCloud) {
+				if (index.word === this.sk.sketchController.selectedWordFromContributionCloud.word) {
+					color = curSpeakerColor;
+				} else if (index.turnNumber === this.sk.sketchController.selectedWordFromContributionCloud.turnNumber) {
+					color = 150;
+				}
+			} else {
+				color = curSpeakerColor;
+			}
+			this.sk.fill(color);
+		}
+
+		this.sk.text(index.word, this.xPosDynamic, this.yPosDynamic);
+	}
+
+	getSpeakerFromList(speaker) {
+		const hasSameName = (element) => element.name === speaker;
+		return this.sk.core.speakerList[this.sk.core.speakerList.findIndex(hasSameName)];
+	}
+
+	overText(index) {
+		const boxHeight = this.sk.sketchController.scalingVars.spacing;
+		const boxWidth = this.sk.textWidth(index.word);
+		if (this.sk.overRect(this.xPosDynamic, this.yPosDynamic - boxHeight, boxWidth, boxHeight) && this.getSpeakerFromList(index.speaker).isShowing) {
+			this.selectedWordFromContributionCloud = index;
+			this.sk.videoController.jumpTime = index.startTime;
+		}
+	}
+
+	// new speaker, new line,
+	updateCurPos(index) {
+		if (!this.sk.sketchController.isParagraphMode && this.isNewSpeaker(index.speaker)) {
+			this.xPosDynamic = this.xPosBase;
+			this.yPosDynamic += this.sk.sketchController.scalingVars.newSpeakerSpacing;
+		} else if (this.getAdjustedXPos(index) > this.pixelWidth) {
+			this.xPosDynamic = this.xPosBase;
+			this.yPosDynamic += this.sk.sketchController.scalingVars.spacing;
+		}
+	}
+
+	updateForNextWord(index) {
+		this.xPosDynamic += this.sk.textWidth(index.word + ' '); // Shift x position to draw next word
+		this.prevSpeaker = index.speaker;
+	}
+
+	setScaledTextSize(count) {
+		this.sk.textSize(
+			this.sk.map(
+				count,
+				1,
+				this.sk.sketchController.getWordCountSliderValue(),
+				this.sk.sketchController.scalingVars.minTextSize,
+				this.sk.sketchController.scalingVars.maxTextSize,
+				true
+			)
+		);
+	}
+
+	getAdjustedXPos(index) {
+		this.setScaledTextSize(index.count);
+		return this.xPosDynamic + this.sk.textWidth(index.word);
+	}
+
+	isNewSpeaker(curSpeaker) {
+		return curSpeaker !== this.prevSpeaker;
+	}
+}
