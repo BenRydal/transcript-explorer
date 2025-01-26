@@ -59,7 +59,7 @@ export const igsSketch = (p5: any) => {
 			p5.background(255);
 			p5.updateAnimation(transcript.wordArray);
 			const render = new Draw(p5);
-			render.drawViz(p5.sketchController.mode);
+			render.drawViz();
 		}
 	};
 

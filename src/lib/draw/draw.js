@@ -1,7 +1,7 @@
 import { TurnChart } from './turn-chart.js';
 import { ContributionCloud } from './contribution-cloud.js';
 import { DistributionDiagram } from './distribution-diagram.js';
-
+import ConfigStore from '../../stores/configStore';
 import TimelineStore from '../../stores/timelineStore';
 import { get } from 'svelte/store';
 
@@ -10,23 +10,19 @@ export class Draw {
 		this.sk = sketch;
 	}
 
-	drawViz(drawMode) {
-		switch (drawMode) {
-			case 0:
-				this.resetAll();
-				this.updateDistributionDiagram(this.getFullScreenPos());
-				break;
-			case 1:
-				this.resetAll();
-				this.updateTurnChart(this.getFullScreenPos());
-				break;
-			case 2:
-				this.resetForCC();
-				this.updateContributionCloud(this.getFullScreenPos());
-				break;
-			case 3:
-				this.drawDashboard();
-				break;
+	drawViz() {
+		const drawMode = get(ConfigStore);
+		if (drawMode.diagramToggle) {
+			this.resetAll();
+			this.updateDistributionDiagram(this.getFullScreenPos());
+		} else if (drawMode.chartToggle) {
+			this.resetAll();
+			this.updateTurnChart(this.getFullScreenPos());
+		} else if (drawMode.cloudToggle) {
+			this.resetForCC();
+			this.updateContributionCloud(this.getFullScreenPos());
+		} else {
+			this.drawDashboard();
 		}
 	}
 
@@ -49,7 +45,6 @@ export class Draw {
 		}
 		this.sk.sketchController.selectedWordFromContributionCloud = contributionCloud.selectedWordFromContributionCloud;
 		if (contributionCloud.yPosDynamic > pos.height) this.sk.sketchController.updateScalingVars();
-		console.log('contributionCloud.yPosDynamic', contributionCloud.yPosDynamic);
 	}
 
 	drawDashboard() {

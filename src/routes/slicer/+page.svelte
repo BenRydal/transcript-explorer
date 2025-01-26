@@ -28,7 +28,7 @@
 	import TimelineStore from '../../stores/timelineStore';
 	import { initialConfig } from '../../stores/configStore';
 
-	const techniqueToggleOptions = ['Distribution Diagram', 'Turn Chart', 'Contribution Cloud', 'Dasboard'] as const;
+	const techniqueToggleOptions = ['diagramToggle', 'chartToggle', 'cloudToggle', 'dashboardToggle'] as const;
 	const interactionsToggleOptions = ['flowersToggle', 'separateToggle', 'sortToggle', 'lastWordToggle', 'echoesToggle', 'stopWordsToggle', 'repeatedWordsToggle'] as const;
 
 	let selectedDropDownOption = '';
