@@ -1,4 +1,6 @@
 import { DataPoint } from '../../models/dataPoint.ts';
+import TimelineStore from '../../stores/timelineStore';
+import { get } from 'svelte/store';
 
 export class DynamicData {
 	constructor(sketch) {
@@ -57,8 +59,8 @@ export class DynamicData {
 	}
 
 	isInTimeRange(startTime, endTime) {
-		return true; // TODO
-		//return startTime >= this.sk.slider.getCurMin() && endTime <= this.sk.slider.getCurMax();
+		const timeline = get(TimelineStore);
+		return startTime >= timeline.getLeftMarker() && endTime <= timeline.getRightMarker();
 	}
 
 	getDynamicArrayForDistributionDiagram() {

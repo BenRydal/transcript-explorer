@@ -6,7 +6,7 @@ export class SketchController {
 		this.sk = sketch;
 		this.scalingVars = this.createScalingVars(); // holds values that influence how contribution cloud is drawn
 		// PROGRAM MODE BOOLEANS
-		this.mode = 0;
+		this.mode = 2;
 		this.isAnimate = true;
 		this.isSort = false;
 		this.isParagraphMode = true;
@@ -40,10 +40,11 @@ export class SketchController {
 		this.fillSelectedData();
 	}
 
-	//
 	getWordCountSliderValue() {
-		const wordCountSlider = document.getElementById('word-count-slider');
-		return wordCountSlider.value;
+		// const wordCountSlider = document.getElementById('word-count-slider');
+		// return wordCountSlider.value;
+		// TODO update with new slider
+		return 5;
 	}
 
 	setWordCountSliderValue(value) {

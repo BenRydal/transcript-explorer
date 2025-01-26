@@ -2,6 +2,9 @@ import { TurnChart } from './turn-chart.js';
 import { ContributionCloud } from './contribution-cloud.js';
 import { DistributionDiagram } from './distribution-diagram.js';
 
+import TimelineStore from '../../stores/timelineStore';
+import { get } from 'svelte/store';
+
 export class Draw {
 	constructor(sketch) {
 		this.sk = sketch;
@@ -38,15 +41,15 @@ export class Draw {
 	}
 
 	updateContributionCloud(pos) {
-		const min = this.sk.slider.getCurMin();
-		const max = this.sk.slider.getCurMax();
 		const contributionCloud = new ContributionCloud(this.sk, pos);
 		const curAnimationArray = this.sk.dynamicData.getDynamicArraySortedForContributionCloud();
+		const timeline = get(TimelineStore);
 		for (const index of curAnimationArray) {
-			if (this.between(index.startTime, min, max)) contributionCloud.draw(index);
+			if (this.between(index.startTime, timeline.getLeftMarker(), timeline.getRightMarker())) contributionCloud.draw(index);
 		}
 		this.sk.sketchController.selectedWordFromContributionCloud = contributionCloud.selectedWordFromContributionCloud;
 		if (contributionCloud.yPosDynamic > pos.height) this.sk.sketchController.updateScalingVars();
+		console.log('contributionCloud.yPosDynamic', contributionCloud.yPosDynamic);
 	}
 
 	drawDashboard() {

@@ -43,13 +43,12 @@ export const igsSketch = (p5: any) => {
 		p5.videoController = new VideoController(p5);
 
 		// Constants
-		p5.GUI_TEXT_SIZE = p5.width / 70;
 		p5.SPACING = 25;
 
 		// STYLES
-		p5.textSize(p5.GUI_TEXT_SIZE);
+		// p5.textSize(p5.GUI_TEXT_SIZE);
 		p5.textFont(p5.font);
-		p5.textAlign(p5.LEFT, p5.TOP);
+		// p5.textAlign(p5.LEFT, p5.TOP);
 
 		p5.animationCounter = 0; // controls animation of data
 	};

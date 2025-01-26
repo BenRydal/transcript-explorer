@@ -1,3 +1,6 @@
+import { get } from 'svelte/store';
+import UserStore from '../../stores/userStore';
+
 export class ContributionCloud {
 	constructor(sk, pos) {
 		this.sk = sk;
@@ -31,10 +34,12 @@ export class ContributionCloud {
 
 	drawText(index) {
 		this.sk.noStroke();
-		const curSpeakerName = this.getSpeakerFromList(index.speaker);
-		const curSpeakerColor = this.sk.core.getSpeakerColor(index.speaker);
 
-		if (!curSpeakerName.isShowing) {
+		const currentUsers = get(UserStore);
+		const user = currentUsers.find((user) => user.name === index.speaker);
+		const curSpeakerColor = user.color;
+
+		if (!user.enabled) {
 			this.sk.fill(255);
 		} else {
 			let color = 225; // Default color
@@ -53,15 +58,14 @@ export class ContributionCloud {
 		this.sk.text(index.word, this.xPosDynamic, this.yPosDynamic);
 	}
 
-	getSpeakerFromList(speaker) {
-		const hasSameName = (element) => element.name === speaker;
-		return this.sk.core.speakerList[this.sk.core.speakerList.findIndex(hasSameName)];
-	}
-
 	overText(index) {
 		const boxHeight = this.sk.sketchController.scalingVars.spacing;
 		const boxWidth = this.sk.textWidth(index.word);
-		if (this.sk.overRect(this.xPosDynamic, this.yPosDynamic - boxHeight, boxWidth, boxHeight) && this.getSpeakerFromList(index.speaker).isShowing) {
+
+		const currentUsers = get(UserStore);
+		const user = currentUsers.find((user) => user.name === index.speaker);
+
+		if (this.sk.overRect(this.xPosDynamic, this.yPosDynamic - boxHeight, boxWidth, boxHeight) && user.enabled) {
 			this.selectedWordFromContributionCloud = index;
 			this.sk.videoController.jumpTime = index.startTime;
 		}
