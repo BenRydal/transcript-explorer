@@ -1,4 +1,5 @@
 import TimelineStore from '../../stores/timelineStore';
+import TranscriptStore from '../../stores/transcriptStore';
 import { get } from 'svelte/store';
 
 export class SketchController {
@@ -87,7 +88,8 @@ export class SketchController {
 	 * Refills dynamicWordArray with all data
 	 */
 	fillAllData() {
-		this.sk.animationCounter = this.sk.core.wordArray.length;
+		const transcript = get(TranscriptStore);
+		this.sk.animationCounter = transcript.wordArray.length;
 		this.fillSelectedData();
 	}
 
@@ -96,10 +98,11 @@ export class SketchController {
 	 * Refills dynamicWordArray based on what data is selected
 	 */
 	fillSelectedData() {
+		const transcript = get(TranscriptStore);
 		this.scalingVars = this.createScalingVars();
 		this.sk.dynamicData.clear();
 		for (let i = 0; i < this.sk.animationCounter; i++) {
-			this.sk.dynamicData.update(this.sk.core.wordArray[i]);
+			this.sk.dynamicData.update(transcript.wordArray[i]);
 		}
 	}
 

@@ -114,9 +114,9 @@ export class Core {
 	zzzUpdateValues() {
 		const transcript = get(TranscriptStore);
 		this.updateTimelineValues(transcript.totalTimeInSeconds);
+		this.sketch.sketchController.fillAllData();
 
 		// this.sk.slider.update(this.sk.core.totalNumOfWords);
-		// this.sketch.slider.update(this.sk.core.totalTimeInSeconds);
 		// this.sketch.sketchController.setWordCountSliderValue(this.sk.core.maxCountOfMostRepeatedWord);
 		// this.sketch.sketchController.fillAllData(); // TODO: temp to show all data on load
 	}
