@@ -653,19 +653,7 @@
 								bind:checked={user.enabled}
 								on:change={() => p5Instance?.loop()}
 							/>
-							Movement
-						</div>
-					</li>
-					<li>
-						<div class="flex items-center">
-							<input
-								id="userCheckbox-{user.name}"
-								type="checkbox"
-								class="checkbox"
-								bind:checked={user.conversation_enabled}
-								on:change={() => p5Instance?.loop()}
-							/>
-							Talk
+							Conversation
 						</div>
 					</li>
 					<li>
