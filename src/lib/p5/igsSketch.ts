@@ -17,11 +17,6 @@ TimelineStore.subscribe((data) => {
 	timeline = data;
 });
 
-ConfigStore.subscribe((data) => {
-	// highlightToggle = data.highlightToggle;
-	// animationRate = data.animationRate; // Subscribe to animationRate
-});
-
 UserStore.subscribe((data) => {
 	users = data;
 });
@@ -41,21 +36,14 @@ export const igsSketch = (p5: any) => {
 		p5.sketchController = new SketchController(p5);
 		p5.dynamicData = new DynamicData(p5);
 		p5.videoController = new VideoController(p5);
-
-		// Constants
 		p5.SPACING = 25;
-
-		// STYLES
-		// p5.textSize(p5.GUI_TEXT_SIZE);
 		p5.textFont(p5.font);
-		// p5.textAlign(p5.LEFT, p5.TOP);
-
 		p5.animationCounter = 0; // controls animation of data
 	};
 
 	p5.draw = () => {
 		const transcript = get(TranscriptStore);
-		if (p5.arrayIsLoaded(transcript.wordArray)) {
+		if (p5.arrayIsLoaded(transcript.wordArray) && p5.arrayIsLoaded(users)) {
 			p5.background(255);
 			p5.updateAnimation(transcript.wordArray);
 			const render = new Draw(p5);

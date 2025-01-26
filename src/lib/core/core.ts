@@ -10,20 +10,11 @@ import { USER_COLORS } from '../constants/index.js';
 import UserStore from '../../stores/userStore';
 import TimelineStore from '../../stores/timelineStore';
 import TranscriptStore from '../../stores/transcriptStore.js';
-import ConfigStore from '../../stores/configStore.js';
 
 let timeline;
 
-//maxStopLength, stopSliderValue, samplingInterval, smallDataThreshold;
-
 TimelineStore.subscribe((data) => {
 	timeline = data;
-});
-
-ConfigStore.subscribe((data) => {
-	// maxStopLength = data.maxStopLength;
-	// samplingInterval = data.samplingInterval;
-	// smallDataThreshold = data.smallDataThreshold;
 });
 
 const examples = {
@@ -145,10 +136,6 @@ export class Core {
 	}
 
 	handleExampleDropdown = async (event: any) => {
-		ConfigStore.update((store) => ({
-			...store
-			// maxStopLength: 0
-		}));
 		const selectedValue = event.target.value;
 		const selectedExample = examples[selectedValue];
 		if (selectedExample) {

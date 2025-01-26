@@ -22,7 +22,6 @@ export class TurnChart {
 			if (sortedAnimationWordArray[key].length) {
 				const currentUsers = get(UserStore);
 				const user = currentUsers.find((user) => user.name === sortedAnimationWordArray[key][0].speaker);
-
 				if (
 					user.enabled &&
 					this.sk.sketchController.shouldDraw(sortedAnimationWordArray[key][0], 'turnNumber', 'selectedWordFromContributionCloud')

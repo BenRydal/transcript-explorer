@@ -23,10 +23,13 @@
 	import TimelinePanel from '$lib/components/TimelinePanel.svelte';
 	import DataPointTable from '$lib/components/DataPointTable.svelte';
 
+	import TimelineStore from '../../stores/timelineStore';	
 	import ConfigStore from '../../stores/configStore';
 	import type { ConfigStoreType } from '../../stores/configStore';
-	import TimelineStore from '../../stores/timelineStore';
 	import { initialConfig } from '../../stores/configStore';
+
+	import { Transcript } from '../../models/transcript';
+	import TranscriptStore from '../../stores/transcriptStore';
 
 	const techniqueToggleOptions = ['diagramToggle', 'chartToggle', 'cloudToggle', 'dashboardToggle'] as const;
 	const interactionsToggleOptions = ['flowersToggle', 'separateToggle', 'sortToggle', 'lastWordToggle', 'echoesToggle', 'stopWordsToggle', 'repeatedWordsToggle'] as const;
@@ -207,23 +210,15 @@
 		p5Instance.loop();
 	}
 
+	// TODO: maybe move this to p5 sketch?
 	function clearAllData() {
 		console.log('Clearing all data');
 		p5Instance.videoController.clear();
-		currentConfig.isPathColorMode = false;
-		UserStore.update(() => {
-			return [];
-		});
-
-
-		core.codeData = [];
-		core.movementData = [];
-		core.conversationData = [];
-
-		ConfigStore.update((currentConfig) => ({
-			...currentConfig,
-			dataHasCodes: false
-		}));
+		p5Instance.dynamicData.clear();
+		p5Instance.sketchController.scalingVars = p5Instance.sketchController.createScalingVars();
+		p5Instance.animationCounter = 0;
+		UserStore.set([]);
+		TranscriptStore.set(new Transcript());
 		p5Instance.loop();
 	}
 
