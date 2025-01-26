@@ -2,6 +2,7 @@ import { drawUtils } from './draw-utils.js';
 import { get } from 'svelte/store';
 import TranscriptStore from '../../stores/transcriptStore';
 import UserStore from '../../stores/userStore';
+import ConfigStore from '../../stores/configStore';
 
 export class TurnChart {
 	constructor(sk, pos) {
@@ -77,13 +78,14 @@ export class TurnChart {
 
 	getCoordinates(turnLength, order) {
 		const transcript = get(TranscriptStore);
+		const config = get(ConfigStore);
 		let height, yCenter;
-		if (this.sk.sketchController.isParagraphMode) {
-			height = this.sk.map(turnLength, 0, transcript.largestTurnLength, 0, this.yPosHalfHeight);
-			yCenter = this.yPosHalfHeight;
-		} else {
+		if (config.separateToggle) {
 			height = this.sk.map(turnLength, 0, transcript.largestTurnLength, 0, this.verticalLayoutSpacing);
 			yCenter = this.yPosTop + this.verticalLayoutSpacing * order;
+		} else {
+			height = this.sk.map(turnLength, 0, transcript.largestTurnLength, 0, this.yPosHalfHeight);
+			yCenter = this.yPosHalfHeight;
 		}
 		return [height, yCenter];
 	}

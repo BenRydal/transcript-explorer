@@ -2,6 +2,7 @@ import { drawUtils } from './draw-utils.js';
 import { get } from 'svelte/store';
 import TranscriptStore from '../../stores/transcriptStore';
 import UserStore from '../../stores/userStore';
+import ConfigStore from '../../stores/configStore';
 export class DistributionDiagram {
 	constructor(sk, pos) {
 		this.sk = sk;
@@ -27,7 +28,8 @@ export class DistributionDiagram {
 				const currentUsers = get(UserStore);
 				const user = currentUsers.find((user) => user.name === sortedAnimationWordArray[key][0].speaker);
 				if (user.enabled) {
-					this.drawViz(sortedAnimationWordArray[key], this.sk.sketchController.isDrawFlowerMode);
+					const config = get(ConfigStore);
+					this.drawViz(sortedAnimationWordArray[key], config.flowersToggle);
 				}
 			}
 			this.xPosCurCircle += this.maxCircleRadius;

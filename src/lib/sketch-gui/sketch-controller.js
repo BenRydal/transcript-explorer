@@ -6,39 +6,11 @@ export class SketchController {
 	constructor(sketch) {
 		this.sk = sketch;
 		this.scalingVars = this.createScalingVars(); // holds values that influence how contribution cloud is drawn
-		// PROGRAM MODE BOOLEANS
-		this.mode = 2;
-		this.isAnimate = true;
-		this.isSort = false;
-		this.isParagraphMode = true;
-		this.isDrawFlowerMode = false;
-		this.isEchoMode = false;
-		this.isRemoveStopWords = false;
-		this.isShowOnlyRepeatedWords = false;
-		this.isShowLastWord = false;
+
 		// ADDITIONAL PROGRAM CONTROL DATA
 		this.selectedWordFromContributionCloud = undefined;
 		this.firstWordOfTurnSelectedInTurnChart = undefined;
 		this.arrayOfFirstWords = []; // holds first words of turns for distribution diagram
-	}
-
-	updateIsShowOnlyRepeatedWords() {
-		this.isShowOnlyRepeatedWords = !this.isShowOnlyRepeatedWords;
-	}
-
-	updateIsLastWord() {
-		this.isShowLastWord = !this.isShowLastWord;
-		this.fillSelectedData();
-	}
-
-	updateEchoMode() {
-		this.isEchoMode = !this.isEchoMode;
-		this.fillSelectedData();
-	}
-
-	updateRemoveStopWords() {
-		this.isRemoveStopWords = !this.isRemoveStopWords;
-		this.fillSelectedData();
 	}
 
 	getWordCountSliderValue() {
@@ -53,25 +25,6 @@ export class SketchController {
 		const output = document.getElementById('sliderValue');
 		wordCountSlider.value = value;
 		output.innerHTML = wordCountSlider.value + ' highest repeat count'; // Add " highest repeat count" for the initial value
-	}
-
-	updateFlowerMode() {
-		this.isDrawFlowerMode = !this.isDrawFlowerMode;
-	}
-
-	updateSortMode() {
-		this.isSort = !this.isSort;
-		this.fillSelectedData();
-	}
-
-	updateParagraphMode() {
-		this.isParagraphMode = !this.isParagraphMode;
-		this.fillSelectedData();
-	}
-
-	updateVizMode(mode) {
-		if (mode === 2) this.fillSelectedData();
-		this.mode = mode;
 	}
 
 	/**
@@ -111,21 +64,11 @@ export class SketchController {
 		this.resetAnimation();
 	}
 
-	setIsAnimate(value) {
-		this.isAnimate = value;
-	}
-
 	// ***** TODO: Below are methods to consider refactoring ***** //
 
 	getPixelValueFromTime(timeValue) {
 		const timeline = get(TimelineStore);
 		return this.sk.map(timeValue, timeline.getLeftMarker(), timeline.getRightMarker(), this.sk.SPACING, this.sk.width - this.sk.SPACING);
-	}
-
-	getTimeValueFromPixel(pixelValue) {
-		return Math.floor(
-			this.sk.map(pixelValue, this.sk.SPACING, this.sk.width - this.sk.SPACING, this.sk.slider.getCurMin(), this.sk.slider.getCurMax())
-		);
 	}
 
 	createScalingVars() {

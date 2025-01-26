@@ -163,6 +163,23 @@
 		p5Instance?.loop();
 	}
 
+	function toggleSelectionOnly(selection: ToggleKey, toggleOptions: ToggleKey[]) {
+		ConfigStore.update((store: ConfigStoreType) => {
+			const updatedStore = { ...store };
+
+			// Toggle only the selected key
+			toggleOptions.forEach((key) => {
+				if (key === selection && key.endsWith('Toggle')) {
+					updatedStore[key] = !updatedStore[key];
+				}
+			});
+			p5Instance.sketchController.fillSelectedData();
+			p5Instance?.loop(); // Ensure p5 updates after the store change
+			return updatedStore;
+		});
+	}
+
+
 	function clickOutside(node) {
 		const handleClick = (event) => {
 			if (!node.contains(event.target)) {
@@ -259,7 +276,7 @@
 			<ul class="menu dropdown-content rounded-box z-[1] w-52 p-2 shadow bg-base-100">
 				{#each interactionsToggleOptions as toggle}
 					<li>
-						<button on:click={() => toggleSelection(toggle, interactionsToggleOptions)} class="w-full text-left flex items-center">
+						<button on:click={() => toggleSelectionOnly(toggle, interactionsToggleOptions)} class="w-full text-left flex items-center">
 							<div class="w-4 h-4 mr-2">
 								{#if $ConfigStore[toggle]}
 									<MdCheck />

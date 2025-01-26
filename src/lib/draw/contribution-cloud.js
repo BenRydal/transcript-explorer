@@ -1,5 +1,6 @@
 import { get } from 'svelte/store';
 import UserStore from '../../stores/userStore';
+import ConfigStore from '../../stores/configStore';
 
 export class ContributionCloud {
 	constructor(sk, pos) {
@@ -19,7 +20,8 @@ export class ContributionCloud {
 
 		const shouldDraw = this.sk.sketchController.shouldDraw(index, 'turnNumber', 'firstWordOfTurnSelectedInTurnChart');
 
-		if (this.sk.sketchController.isShowOnlyRepeatedWords) {
+		const config = get(ConfigStore);
+		if (config.repeatedWordsToggle) {
 			if (index.count >= this.sk.sketchController.getWordCountSliderValue() && shouldDraw) {
 				this.drawText(index);
 			}
@@ -73,7 +75,8 @@ export class ContributionCloud {
 
 	// new speaker, new line,
 	updateCurPos(index) {
-		if (!this.sk.sketchController.isParagraphMode && this.isNewSpeaker(index.speaker)) {
+		const config = get(ConfigStore);
+		if (config.separateToggle && this.isNewSpeaker(index.speaker)) {
 			this.xPosDynamic = this.xPosBase;
 			this.yPosDynamic += this.sk.sketchController.scalingVars.newSpeakerSpacing;
 		} else if (this.getAdjustedXPos(index) > this.pixelWidth) {

@@ -1,5 +1,6 @@
 import { DataPoint } from '../../models/dataPoint.ts';
 import TimelineStore from '../../stores/timelineStore';
+import ConfigStore from '../../stores/configStore';
 import { get } from 'svelte/store';
 
 export class DynamicData {
@@ -24,10 +25,11 @@ export class DynamicData {
 		// const foundWords = this.dynamicWordArray.filter(function (currentElement) {
 		//     return currentElement.word === index.word && currentElement.speaker === index.speaker;
 		// });
+		const config = get(ConfigStore);
 		if (foundWords.length) {
-			if (this.sk.sketchController.isShowLastWord) {
+			if (config.lastWordToggle) {
 				index.count += foundWords[foundWords.length - 1].count; // Increments last word by previous last word in CC
-				if (!this.sk.sketchController.isEchoMode) {
+				if (config.echoesToggle) {
 					foundWords[foundWords.length - 1].count = 1; // also add this line if you want to reset and highlight ONLY last word, not incremental echo
 				}
 			} else {
@@ -38,7 +40,8 @@ export class DynamicData {
 	}
 
 	isStopWord(stringWord) {
-		if (this.sk.sketchController.isRemoveStopWords) return this.stopWords.includes(stringWord.toLowerCase());
+		const config = get(ConfigStore);
+		if (!config.stopWordsToggle) return this.stopWords.includes(stringWord.toLowerCase());
 		else return false;
 	}
 
@@ -74,8 +77,9 @@ export class DynamicData {
 
 	getDynamicArraySortedForContributionCloud() {
 		let curAnimationArray = this.getAnimationArrayDeepCopy();
-		if (this.sk.sketchController.isSort) curAnimationArray.sort((a, b) => b.count - a.count); // sort descending by word count
-		if (!this.sk.sketchController.isParagraphMode) curAnimationArray.sort((a, b) => a.order - b.order); // only sort by order if not in paragraph mode
+		const config = get(ConfigStore);
+		if (config.sortToggle) curAnimationArray.sort((a, b) => b.count - a.count); // sort descending by word count
+		if (config.separateToggle) curAnimationArray.sort((a, b) => a.order - b.order); // only sort by order if not in paragraph mode
 		return curAnimationArray;
 	}
 
