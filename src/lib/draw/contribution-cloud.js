@@ -22,7 +22,7 @@ export class ContributionCloud {
 
 		const config = get(ConfigStore);
 		if (config.repeatedWordsToggle) {
-			if (index.count >= this.sk.sketchController.getWordCountSliderValue() && shouldDraw) {
+			if (index.count >= config.repeatWordSliderValue && shouldDraw) {
 				this.drawText(index);
 			}
 		} else {
@@ -91,11 +91,12 @@ export class ContributionCloud {
 	}
 
 	setScaledTextSize(count) {
+		const config = get(ConfigStore);
 		this.sk.textSize(
 			this.sk.map(
 				count,
 				1,
-				this.sk.sketchController.getWordCountSliderValue(),
+				config.repeatWordSliderValue,
 				this.sk.sketchController.scalingVars.minTextSize,
 				this.sk.sketchController.scalingVars.maxTextSize,
 				true

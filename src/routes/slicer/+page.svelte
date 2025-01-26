@@ -282,7 +282,7 @@
 					</li>
 				{/each}
 				<li class="cursor-none">
-					<p>Highest repeat count: {$ConfigStore.conversationRectWidth}</p>
+					<p>Highest repeat count: {$ConfigStore.repeatWordSliderValue}</p>
 				</li>
 				<li>
 					<label for="rectWidthRange" class="sr-only">Adjust rect width</label>
@@ -291,9 +291,9 @@
 						type="range"
 						min="1"
 						max="30"
-						value={$ConfigStore.conversationRectWidth}
+						value={$ConfigStore.repeatWordSliderValue}
 						class="range"
-						on:input={(e) => handleConfigChangeFromInput(e, 'conversationRectWidth')}
+						on:input={(e) => handleConfigChangeFromInput(e, 'repeatWordSliderValue')}
 					/>
 				</li>
 				<input type="text" placeholder="Search conversations..." on:input={(e) => handleWordSearch(e)} class="input input-bordered w-full" />

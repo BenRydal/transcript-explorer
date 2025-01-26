@@ -13,6 +13,7 @@ export interface ConfigStoreType {
 	stopWordsToggle: boolean;
 	repeatedWordsToggle: boolean;
 	animationRate: number;
+	repeatWordSliderValue: number;
 }
 
 export const initialConfig: ConfigStoreType = {
@@ -27,7 +28,8 @@ export const initialConfig: ConfigStoreType = {
 	echoesToggle: false,
 	stopWordsToggle: false,
 	repeatedWordsToggle: false,
-	animationRate: 0.05
+	animationRate: 0.05,
+	repeatWordSliderValue: 5
 };
 
 const ConfigStore = writable<ConfigStoreType>(initialConfig);

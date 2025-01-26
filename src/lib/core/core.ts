@@ -10,6 +10,7 @@ import { USER_COLORS } from '../constants/index.js';
 import UserStore from '../../stores/userStore';
 import TimelineStore from '../../stores/timelineStore';
 import TranscriptStore from '../../stores/transcriptStore.js';
+import ConfigStore from '../../stores/configStore.js';
 
 let timeline;
 
@@ -105,11 +106,10 @@ export class Core {
 	zzzUpdateValues() {
 		const transcript = get(TranscriptStore);
 		this.updateTimelineValues(transcript.totalTimeInSeconds);
+		ConfigStore.update((currentConfig) => {
+			return { ...currentConfig, repeatWordSliderValue: transcript.maxCountOfMostRepeatedWord };
+		});
 		this.sketch.sketchController.fillAllData();
-
-		// this.sk.slider.update(this.sk.core.totalNumOfWords);
-		// this.sketch.sketchController.setWordCountSliderValue(this.sk.core.maxCountOfMostRepeatedWord);
-		// this.sketch.sketchController.fillAllData(); // TODO: temp to show all data on load
 	}
 
 	async loadLocalExampleDataFile(folder: string, fileName: string) {

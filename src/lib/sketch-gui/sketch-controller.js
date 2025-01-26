@@ -13,20 +13,6 @@ export class SketchController {
 		this.arrayOfFirstWords = []; // holds first words of turns for distribution diagram
 	}
 
-	getWordCountSliderValue() {
-		// const wordCountSlider = document.getElementById('word-count-slider');
-		// return wordCountSlider.value;
-		// TODO update with new slider
-		return 5;
-	}
-
-	setWordCountSliderValue(value) {
-		const wordCountSlider = document.getElementById('word-count-slider');
-		const output = document.getElementById('sliderValue');
-		wordCountSlider.value = value;
-		output.innerHTML = wordCountSlider.value + ' highest repeat count'; // Add " highest repeat count" for the initial value
-	}
-
 	/**
 	 * Reset all vars controlling animation
 	 */
