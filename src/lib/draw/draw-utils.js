@@ -21,7 +21,7 @@ export class drawUtils {
 		// Draw Text
 		this.sk.fill(speakerColor);
 		this.sk.noStroke();
-		this.sk.text(stringTurn, textBox.xPos, textBox.adjustYPos, textBox.width, textBox.height);
+		this.sk.text(stringTurn, textBox.xPos, textBox.adjustYPos + this.sk.toolTipTextSize, textBox.width, textBox.height);
 		// Cartoon bubble lines
 		this.sk.stroke(255);
 		this.sk.strokeWeight(2);

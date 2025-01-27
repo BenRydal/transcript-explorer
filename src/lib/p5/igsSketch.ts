@@ -37,6 +37,7 @@ export const igsSketch = (p5: any) => {
 		p5.dynamicData = new DynamicData(p5);
 		p5.videoController = new VideoController(p5);
 		p5.SPACING = 25;
+		p5.toolTipTextSize = 30;
 		p5.textFont(p5.font);
 		p5.animationCounter = 0; // controls animation of data
 	};
@@ -81,8 +82,8 @@ export const igsSketch = (p5: any) => {
 
 		p5.resizeCanvas(window.innerWidth, availableHeight);
 		//p5.gui = new SketchGUI(p5); // update GUI vars
-		p5.GUITEXTSIZE = p5.width / 70;
-		p5.textSize(p5.GUITEXTSIZE);
+		// p5.GUITEXTSIZE = p5.width / 70;
+		// p5.textSize(p5.GUITEXTSIZE);
 		//p5.handle3D = new Handle3D(p5, p5.handle3D.getIs3DMode()); // update 3D display vars, pass current 3D mode
 		p5.loop();
 	};

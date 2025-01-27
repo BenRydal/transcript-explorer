@@ -17,7 +17,7 @@ export class TurnChart {
 
 	draw(sortedAnimationWordArray) {
 		this.drawTimeline();
-		this.sk.textSize(30);
+		this.sk.textSize(this.sk.toolTipTextSize);
 		for (const key in sortedAnimationWordArray) {
 			if (sortedAnimationWordArray[key].length) {
 				const currentUsers = get(UserStore);

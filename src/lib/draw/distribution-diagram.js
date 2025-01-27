@@ -172,7 +172,7 @@ export class DistributionDiagram {
 	}
 
 	drawWordDetails(turnArray, speakerColor) {
-		this.sk.textSize(30);
+		this.sk.textSize(this.sk.toolTipTextSize);
 		let prevTurnNumber = -1;
 		let combined;
 		turnArray.forEach((element, index) => {
