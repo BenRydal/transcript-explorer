@@ -33,6 +33,11 @@ const examples = {
 		// TIMSS
 		files: ['conversation.csv'],
 		videoId: 'Iu0rxb-xkMk'
+	},
+	'example-5': {
+		// Biden/Trump Debate 2020
+		files: ['conversation.csv'],
+		videoId: 'yW8nIA33-zY'
 	}
 };
 

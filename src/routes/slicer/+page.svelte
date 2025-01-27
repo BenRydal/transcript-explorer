@@ -33,24 +33,17 @@
 
 	let selectedDropDownOption = '';
 	const dropdownOptions = [
-		{ label: 'Museums', items: [{ value: 'example-2', label: 'Family Gallery Visit' }] },
-		{
-			label: 'Classrooms',
+		{label: 'Classrooms',
 			items: [
 				{ value: 'example-1', label: 'Kindergarten Activity' },
 				{ value: 'example-3', label: 'Classroom Discussion' },
 				{ value: 'example-4', label: 'Classroom Science Lesson' }
 			]
 		},
-		{
-			label: 'TIMSS 1999 Video Study',
+		{ label: 'Museums', items: [{ value: 'example-2', label: 'Family Gallery Visit' }] },
+		{ label: 'Presidential Debates',
 			items: [
-				{ value: 'example-3', label: 'U.S. Science Lesson (weather)' },
-				{ value: 'example-5', label: 'Czech Republic Science Lesson (density)' },
-				{ value: 'example-6', label: 'Japan Math Lesson (angles)' },
-				{ value: 'example-7', label: 'U.S. Math Lesson (linear equations)' },
-				{ value: 'example-8', label: 'U.S. Science Lesson (rocks)' },
-				{ value: 'example-9', label: 'Netherlands Math Lesson (pythagorean theorem)' }
+				{ value: 'example-5', label: 'Biden-Trump 2020 Debate 1' }
 			]
 		}
 	];
