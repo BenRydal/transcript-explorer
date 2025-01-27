@@ -49,11 +49,16 @@ export class SketchController {
 		this.resetAnimation();
 	}
 
-	// ***** TODO: Below are methods to consider refactoring ***** //
+	// ***** TODO: Refactor below methods ***** //
 
 	getPixelValueFromTime(timeValue) {
 		const timeline = get(TimelineStore);
 		return this.sk.map(timeValue, timeline.getLeftMarker(), timeline.getRightMarker(), this.sk.SPACING, this.sk.width - this.sk.SPACING);
+	}
+
+	getTimeValueFromPixel(pixelValue) {
+		const timeline = get(TimelineStore);
+		return Math.floor(this.sk.map(pixelValue, this.sk.SPACING, this.sk.width - this.sk.SPACING, timeline.getLeftMarker(), timeline.getRightMarker()));
 	}
 
 	createScalingVars() {

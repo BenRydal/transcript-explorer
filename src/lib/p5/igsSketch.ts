@@ -10,9 +10,7 @@ import TranscriptStore from '../../stores/transcriptStore.js';
 import { get } from 'svelte/store';
 
 let users: User[] = [];
-let timeline, transcript;
-let animationRate = 0.05;
-
+let timeline, transcript, currConfig;
 TimelineStore.subscribe((data) => {
 	timeline = data;
 });
@@ -22,7 +20,7 @@ UserStore.subscribe((data) => {
 });
 
 ConfigStore.subscribe((data) => {
-	animationRate = data.animationRate; // Subscribe to animationRate
+	currConfig = data;
 });
 
 TranscriptStore.subscribe((data) => {
@@ -57,26 +55,6 @@ export const igsSketch = (p5: any) => {
 		}
 		if (timeline.getIsAnimating()) p5.updateAnimation();
 	};
-
-	// p5.updateAnimation = () => {
-	// 	const mappedTime = Math.ceil(p5.map(timeline.getCurrTime(), 0, timeline.getEndTime(), 0, transcript.totalNumOfWords));
-	// 	if (p5.animationCounter < mappedTime) {
-	// 		for (let i = p5.animationCounter; i < mappedTime; i++) {
-	// 			p5.dynamicData.update(transcript.wordArray[p5.animationCounter]);
-	// 			p5.animationCounter++;
-	// 		}
-	// 	} else if (p5.animationCounter > mappedTime) {
-	// 		for (let i = p5.animationCounter; i > mappedTime; i--) {
-	// 			p5.dynamicData.dynamicWordArray.pop(); // Remove the last element
-	// 			p5.animationCounter--;
-	// 		}
-	// 	}
-	// 	if (timeline.getCurrTime() < timeline.getEndTime()) {
-	// 		p5.continueAnimation();
-	// 	} else {
-	// 		p5.endAnimation();
-	// 	}
-	// };
 
 	p5.updateAnimation = () => {
 		const mappedTime = Math.ceil(p5.map(timeline.getCurrTime(), 0, timeline.getEndTime(), 0, transcript.totalNumOfWords));
@@ -121,7 +99,7 @@ export const igsSketch = (p5: any) => {
 		if (p5.videoController.isLoadedAndIsPlaying()) {
 			timeToSet = p5.videoController.getVideoPlayerCurTime();
 		} else {
-			timeToSet = timeline.getCurrTime() + animationRate;
+			timeToSet = timeline.getCurrTime() + currConfig.animationRate;
 		}
 		TimelineStore.update((timeline) => {
 			timeline.setCurrTime(timeToSet);
@@ -138,6 +116,28 @@ export const igsSketch = (p5: any) => {
 
 	p5.mouseMoved = () => {
 		p5.loop();
+	};
+
+	p5.mousePressed = () => {
+		if (p5.videoController.isLoaded && p5.videoController.isShowing) {
+			if (p5.videoController.isPlaying) {
+				p5.videoController.pause();
+			} else if (currConfig.diagramToggle && p5.sketchController.arrayOfFirstWords.length) {
+				p5.videoController.playForDistributionDiagram(p5.sketchController.arrayOfFirstWords);
+			} else if (currConfig.chartToggle) {
+				p5.videoController.playForTurnChart(p5.sketchController.getTimeValueFromPixel(p5.mouseX));
+			} else if (currConfig.cloudToggle && p5.sketchController.selectedWordFromContributionCloud !== undefined) {
+				p5.videoController.playForContributionCloud(p5.videoController.jumpTime);
+			} else {
+				if (p5.sketchController.arrayOfFirstWords.length) {
+					p5.videoController.playForDistributionDiagram(p5.sketchController.arrayOfFirstWords);
+				} else if (p5.sketchController.selectedWordFromContributionCloud !== undefined) {
+					p5.videoController.playForContributionCloud(p5.videoController.jumpTime);
+				} else {
+					p5.videoController.playForTurnChart(p5.sketchController.getTimeValueFromPixel(p5.mouseX));
+				}
+			}
+		}
 	};
 
 	p5.dataIsLoaded = (data: any) => {
