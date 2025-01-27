@@ -1,6 +1,6 @@
 # Transcript Explorer
 
-![repo](./static/images/igs-background.png)
+![repo](./static/images/te-background.png)
 
 Welcome to **Transcript Explorer!** Transcript Explorer is an open-source tool to dynamically visualize transcripts of conversation and interaction linked to video. It provides a set of visualization techniques to visually explore transcripts and interact with video over time.
 
