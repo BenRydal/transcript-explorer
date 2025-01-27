@@ -269,9 +269,9 @@
 					<p>Highest repeat count: {$ConfigStore.repeatWordSliderValue}</p>
 				</li>
 				<li>
-					<label for="rectWidthRange" class="sr-only">Adjust rect width</label>
+					<label for="repeatWordRange" class="sr-only">Adjust rect width</label>
 					<input
-						id="rectWidthRange"
+						id="repeatWordRange"
 						type="range"
 						min="1"
 						max="30"
@@ -310,7 +310,7 @@
 				class="hidden"
 				id="file-input"
 				multiple
-				accept=".png, .jpg, .jpeg, .csv, .mp4"
+				accept=".png, .txt, .jpg, .jpeg, .csv, .mp4"
 				type="file"
 				bind:files
 				on:change={updateUserLoadedFiles}

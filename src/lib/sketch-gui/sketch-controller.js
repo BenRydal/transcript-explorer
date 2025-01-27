@@ -17,7 +17,6 @@ export class SketchController {
 	 * Reset all vars controlling animation
 	 */
 	resetAnimation() {
-		this.sk.frameRate(15);
 		this.scalingVars = this.createScalingVars();
 		this.sk.dynamicData.clear();
 		this.sk.animationCounter = 0;

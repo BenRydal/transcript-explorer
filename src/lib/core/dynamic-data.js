@@ -18,11 +18,14 @@ export class DynamicData {
 
 	update(index) {
 		const animationWord = new DataPoint(index.speaker, index.turnNumber, index.word, index.order, index.startTime, index.endTime);
-
 		// add this line to show repeated words in CC for selected time: && this.isInTimeRange(animationWord.startTime, animationWord.endTime)
 		if (!this.isStopWord(animationWord.word)) {
 			this.updateWordCounts(animationWord);
 		}
+	}
+
+	removeLastElement() {
+		this.dynamicWordArray.pop();
 	}
 
 	updateWordCounts(index) {

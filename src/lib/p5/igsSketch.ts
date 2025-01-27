@@ -10,7 +10,7 @@ import TranscriptStore from '../../stores/transcriptStore.js';
 import { get } from 'svelte/store';
 
 let users: User[] = [];
-let timeline;
+let timeline, transcript;
 let animationRate = 0.05;
 
 TimelineStore.subscribe((data) => {
@@ -19,6 +19,14 @@ TimelineStore.subscribe((data) => {
 
 UserStore.subscribe((data) => {
 	users = data;
+});
+
+ConfigStore.subscribe((data) => {
+	animationRate = data.animationRate; // Subscribe to animationRate
+});
+
+TranscriptStore.subscribe((data) => {
+	transcript = data;
 });
 
 export const igsSketch = (p5: any) => {
@@ -44,19 +52,88 @@ export const igsSketch = (p5: any) => {
 		const transcript = get(TranscriptStore);
 		if (p5.arrayIsLoaded(transcript.wordArray) && p5.arrayIsLoaded(users)) {
 			p5.background(255);
-			p5.updateAnimation(transcript.wordArray);
 			const render = new Draw(p5);
 			render.drawViz();
 		}
+		if (timeline.getIsAnimating()) p5.updateAnimation();
 	};
 
-	p5.updateAnimation = function (wordArray) {
-		if (p5.animationCounter < wordArray.length) {
-			p5.dynamicData.update(wordArray[p5.animationCounter]);
-			p5.animationCounter++; // controls pace of animation/updating of words
-		} else {
-			p5.frameRate(60);
+	// p5.updateAnimation = () => {
+	// 	const mappedTime = Math.ceil(p5.map(timeline.getCurrTime(), 0, timeline.getEndTime(), 0, transcript.totalNumOfWords));
+	// 	if (p5.animationCounter < mappedTime) {
+	// 		for (let i = p5.animationCounter; i < mappedTime; i++) {
+	// 			p5.dynamicData.update(transcript.wordArray[p5.animationCounter]);
+	// 			p5.animationCounter++;
+	// 		}
+	// 	} else if (p5.animationCounter > mappedTime) {
+	// 		for (let i = p5.animationCounter; i > mappedTime; i--) {
+	// 			p5.dynamicData.dynamicWordArray.pop(); // Remove the last element
+	// 			p5.animationCounter--;
+	// 		}
+	// 	}
+	// 	if (timeline.getCurrTime() < timeline.getEndTime()) {
+	// 		p5.continueAnimation();
+	// 	} else {
+	// 		p5.endAnimation();
+	// 	}
+	// };
+
+	p5.updateAnimation = () => {
+		const mappedTime = Math.ceil(p5.map(timeline.getCurrTime(), 0, timeline.getEndTime(), 0, transcript.totalNumOfWords));
+		p5.syncAnimationCounter(mappedTime);
+		p5.handleTimelineAnimationState();
+	};
+
+	// Synchronize animationCounter with mappedTime
+	p5.syncAnimationCounter = (mappedTime) => {
+		if (p5.animationCounter < mappedTime) {
+			p5.scrubForward(mappedTime);
+		} else if (p5.animationCounter > mappedTime) {
+			p5.scrubBackward(mappedTime);
 		}
+	};
+
+	p5.scrubForward = (mappedTime) => {
+		for (let i = p5.animationCounter; i < mappedTime; i++) {
+			p5.dynamicData.update(transcript.wordArray[p5.animationCounter]);
+			p5.animationCounter++;
+		}
+	};
+
+	p5.scrubBackward = (mappedTime) => {
+		for (let i = p5.animationCounter; i > mappedTime; i--) {
+			p5.dynamicData.removeLastElement();
+			p5.animationCounter--;
+		}
+	};
+
+	// Handle continuation or end of animation
+	p5.handleTimelineAnimationState = () => {
+		if (timeline.getCurrTime() < timeline.getEndTime()) {
+			p5.continueTimelineAnimation();
+		} else {
+			p5.endTimelineAnimation();
+		}
+	};
+
+	p5.continueTimelineAnimation = () => {
+		let timeToSet = 0;
+		if (p5.videoController.isLoadedAndIsPlaying()) {
+			timeToSet = p5.videoController.getVideoPlayerCurTime();
+		} else {
+			timeToSet = timeline.getCurrTime() + animationRate;
+		}
+		TimelineStore.update((timeline) => {
+			timeline.setCurrTime(timeToSet);
+			return timeline;
+		});
+	};
+
+	p5.endTimelineAnimation = () => {
+		TimelineStore.update((timeline) => {
+			timeline.setIsAnimating(false);
+			return timeline;
+		});
 	};
 
 	p5.mouseMoved = () => {
@@ -67,22 +144,15 @@ export const igsSketch = (p5: any) => {
 		return data != null; // in javascript this tests for both undefined and null values
 	};
 
-	// TODO: This needs to be moved eventually
-	// Used by `timeline-panel.js` to determine whether to draw the timeline
 	p5.overRect = (x: number, y: number, boxWidth: number, boxHeight: number) => {
 		return p5.mouseX >= x && p5.mouseX <= x + boxWidth && p5.mouseY >= y && p5.mouseY <= y + boxHeight;
 	};
 
 	p5.windowResized = () => {
-		const navbarHeight = (document.querySelector('.navbar') as HTMLElement).offsetHeight;
 		const bottomNavHeight = (document.querySelector('.btm-nav') as HTMLElement).offsetHeight;
-		const availableHeight = window.innerHeight - navbarHeight - bottomNavHeight;
-
-		p5.resizeCanvas(window.innerWidth, availableHeight);
-		//p5.gui = new SketchGUI(p5); // update GUI vars
+		p5.resizeCanvas(window.innerWidth, window.innerHeight - bottomNavHeight);
 		// p5.GUITEXTSIZE = p5.width / 70;
 		// p5.textSize(p5.GUITEXTSIZE);
-		//p5.handle3D = new Handle3D(p5, p5.handle3D.getIs3DMode()); // update 3D display vars, pass current 3D mode
 		p5.loop();
 	};
 
@@ -93,30 +163,4 @@ export const igsSketch = (p5: any) => {
 	p5.arrayIsLoaded = (data: any) => {
 		return Array.isArray(data) && data.length;
 	};
-
-	// p5.updateAnimation = () => {
-	// 	if (timeline.getCurrTime() < timeline.getEndTime()) p5.continueAnimation();
-	// 	else p5.endAnimation();
-	// };
-
-	// p5.continueAnimation = () => {
-	// 	let timeToSet = 0;
-	// 	// Use animationRate from ConfigStore
-	// 	if (p5.videoController.isLoadedAndIsPlaying()) {
-	// 		timeToSet = p5.videoController.getVideoPlayerCurTime();
-	// 	} else {
-	// 		timeToSet = timeline.getCurrTime() + animationRate;
-	// 	}
-	// 	TimelineStore.update((timeline) => {
-	// 		timeline.setCurrTime(timeToSet);
-	// 		return timeline;
-	// 	});
-	// };
-
-	// p5.endAnimation = () => {
-	// 	TimelineStore.update((timeline) => {
-	// 		timeline.setIsAnimating(false);
-	// 		return timeline;
-	// 	});
-	// };
 };
