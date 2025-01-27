@@ -29,10 +29,8 @@ export const igsSketch = (p5: any) => {
 	};
 
 	p5.setup = () => {
-		const navbarHeight = (document.querySelector('.navbar') as HTMLElement).offsetHeight;
 		const bottomNavHeight = (document.querySelector('.btm-nav') as HTMLElement).offsetHeight;
-		const availableHeight = window.innerHeight - navbarHeight - bottomNavHeight;
-		p5.createCanvas(window.innerWidth, availableHeight);
+		p5.createCanvas(window.innerWidth, window.innerHeight - bottomNavHeight);
 		p5.sketchController = new SketchController(p5);
 		p5.dynamicData = new DynamicData(p5);
 		p5.videoController = new VideoController(p5);

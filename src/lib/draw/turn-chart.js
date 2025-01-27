@@ -106,6 +106,6 @@ export class TurnChart {
 
 	getVerticalLayoutSpacing(pos) {
 		const currentUsers = get(UserStore);
-		return (pos.height - pos.y) / (currentUsers.length + 1);
+		return pos.height / currentUsers.length;
 	}
 }
