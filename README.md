@@ -1,21 +1,21 @@
-# Interaction Geography Slicer (IGS)
+# Transcript Explorer
 
 ![repo](./static/images/igs-background.png)
 
-Welcome to **Interaction Geography Slicer (IGS)!** The IGS is an open-source tool to visualize movement, conversation, and video data over space and time. It provides fluid ways to create interactive visualizations and animations to explore how spatial and multimodal interactions evolve over time.
+Welcome to **Transcript Explorer!** Transcript Explorer is an open-source tool to dynamically visualize transcripts of conversation and interaction linked to video. It provides a set of visualization techniques to visually explore transcripts and interact with video over time.
 
 ## Get Started
 
-- **Visit**: https://www.interactiongeography.org
+- **Visit**: https://www.transcriptexplorer.org
 
-## IGS Features
+## Transcript Explorer Features
 
 - **Browser-based**: Everything in your browser.
-- **Visualizations**: Create dynamic 2D/3D space-time visualizations at different scales.
-- **Mix multi-modal data sources**: Explore movement, conversation, and video data independently or simultaneously in the same visualization.
+- **Visualizations**: Create different dynamic visualizations of transcripts.
+- **Mix multi-modal data sources**: Explore transcripts and video simultaneously.
 - **Interactions and animations**: Create dynamic animations to communicate your data
-- **Use in qualitative and quantitative projects**: Supports projects spanning micro-ethnographic analysis of gesture; mid-scale analyses of movement and conversation in settings like classrooms and museums; and larger scale analysis of urban mobility.
-- **Future features**: We are rapidly developing and expanding IGS features, and collaborators in this effort are welcome.
+- **Use in qualitative and quantitative projects**: Supports projects spanning micro-ethnographic scales or larger analyses of conversation in settings like classrooms, museums, and virtual environments.
+- **Future features**: We are rapidly developing and expanding features of this tool, and collaborators in this effort are welcome.
 
 ## Frameworks and Libraries
 
@@ -29,13 +29,13 @@ Welcome to **Interaction Geography Slicer (IGS)!** The IGS is an open-source too
 1. Clone the repository:
 
    ```bash
-   git clone https://github.com/yourusername/interaction-geography-slicer.git
+   git clone https://github.com/yourusername/transcript-explorer.git
    ```
 
 2. Navigate to the project directory:
 
    ```bash
-   cd interaction-geography-slicer
+   cd transcript-explorer
    ```
 
 3. Install dependencies:

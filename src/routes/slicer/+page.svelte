@@ -236,12 +236,12 @@
 </script>
 
 <svelte:head>
-	<title>IGS</title>
+	<title>TRANSCRIPT EXPLORER</title>
 </svelte:head>
 
 <div class="navbar min-h-16 bg-[#ffffff]">
 	<div class="flex-1 px-2 lg:flex-none">
-		<a class="text-2xl font-bold text-black italic" href="/">IGS</a>
+		<a class="text-2xl text-black italic" href="/">TRANSCRIPT EXPLORER</a>
 	</div>
 
 	<div class="flex justify-end flex-1 px-2">

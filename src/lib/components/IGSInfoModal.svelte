@@ -14,10 +14,11 @@
 			<div class="hero p-10">
 				<div class="hero-content text-left">
 					<div class="">
-						<h1 class="text-5xl font-bold pb-8 text-center">INTERACTION GEOGRAPHY SLICER</h1>
+						<h1 class="text-5xl font-bold pb-8 text-center">TRANSCRIPT EXPLORER</h1>
 						<p class="py-3 text-lg">
-							Welcome to the Interaction Geography Slicer! The IGS is an open-source tool to visualize movement, conversation, and video data over space and time. Data are displayed over a floor plan and
-							a timeline in 2D and 3D views. Use the top menu to explore sample datasets or upload your own data. Interact with data by visualizing movement and conversation in different ways, animating
+							Welcome to the Transcript Explorer! Transcript Explorer is an open-source tool to dynamically visualize transcripts linked to video. Transcript data can be displayed
+							and interacted with using a variety of techniques that each provide different ways to interact with video.
+							Use the top menu to explore sample datasets or upload your own data. Interact with data by selecting different visualization techniques, animating
 							and filtering data, watching video, and rescaling data with the interactive timeline.
 						</p>
 						<div class="flex flex-row justify-center flex-wrap gap-4 my-2">
@@ -29,7 +30,7 @@
 							<a href="https://journals.sagepub.com/doi/abs/10.3102/0013189X241238698" target="_blank" class="btn bg-gray-300 text-black">Reference</a>
 						</div>
 						<p class="pt-3 pb-6 italic text-center">
-							IGS software is an open-source project built with Svelte, JavaScript and p5.js licensed under the GNU General Public License Version 2.0. It is
+							Transcript Explorer software is an open-source project built with Svelte, JavaScript and p5.js licensed under the GNU General Public License Version 2.0. It is
 							developed by Ben Rydal Shapiro, Edwin Zhao and contributors with support from the National Science Foundation #1623690 and #2100784.
 						</p>
 						<div class="modal-action flex justify-center">
