@@ -28,9 +28,6 @@
 	import type { ConfigStoreType } from '../../stores/configStore';
 	import { initialConfig } from '../../stores/configStore';
 
-	import { Transcript } from '../../models/transcript';
-	import TranscriptStore from '../../stores/transcriptStore';
-
 	const techniqueToggleOptions = ['diagramToggle', 'chartToggle', 'cloudToggle', 'dashboardToggle'] as const;
 	const interactionsToggleOptions = ['flowersToggle', 'separateToggle', 'sortToggle', 'lastWordToggle', 'echoesToggle', 'stopWordsToggle', 'repeatedWordsToggle'] as const;
 
@@ -205,20 +202,7 @@
 	}
 
 	function updateExampleDataDropDown(event) {
-		clearAllData();
 		core.handleExampleDropdown(event);
-		p5Instance.loop();
-	}
-
-	// TODO: maybe move this to p5 sketch?
-	function clearAllData() {
-		console.log('Clearing all data');
-		p5Instance.videoController.clear();
-		p5Instance.dynamicData.clear();
-		p5Instance.sketchController.scalingVars = p5Instance.sketchController.createScalingVars();
-		p5Instance.animationCounter = 0;
-		UserStore.set([]);
-		TranscriptStore.set(new Transcript());
 		p5Instance.loop();
 	}
 

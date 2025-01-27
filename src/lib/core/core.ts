@@ -10,13 +10,8 @@ import { USER_COLORS } from '../constants/index.js';
 import UserStore from '../../stores/userStore';
 import TimelineStore from '../../stores/timelineStore';
 import TranscriptStore from '../../stores/transcriptStore.js';
+import { Transcript } from '../../models/transcript';
 import ConfigStore from '../../stores/configStore.js';
-
-let timeline;
-
-TimelineStore.subscribe((data) => {
-	timeline = data;
-});
 
 const examples = {
 	'example-1': {
@@ -50,6 +45,21 @@ export class Core {
 		this.coreUtils = new CoreUtils();
 	}
 
+	handleExampleDropdown = async (event: any) => {
+		this.clearAllData();
+		const selectedValue = event.target.value;
+		const selectedExample = examples[selectedValue];
+		if (selectedExample) {
+			const { files, videoId } = selectedExample;
+			for (const file of files) {
+				await this.loadLocalExampleDataFile(`/data/${selectedValue}/`, file);
+			}
+			if (videoId) {
+				this.sketch.videoController.createVideoPlayer('Youtube', { videoId });
+			}
+		}
+	};
+
 	handleUserLoadedFiles = async (event: Event) => {
 		const input = event.target as HTMLInputElement;
 		for (let i = 0; i < input.files.length; i++) {
@@ -62,10 +72,16 @@ export class Core {
 	testFileTypeForProcessing(file: File) {
 		const fileName = file ? file.name.toLowerCase() : '';
 		// this.resetOnDropDownSelection(); // TODO: not sure if this is needed still?
-		if (fileName.endsWith('.csv') || file.type === 'text/csv') this.loadCSVData(file);
-		else if (fileName.endsWith('.txt')) this.loadP5Strings(URL.createObjectURL(file));
-		else if (fileName.endsWith('.mp4') || file.type === 'video/mp4') this.prepVideoFromFile(URL.createObjectURL(file));
-		else alert('Error loading file. Please make sure your file is an accepted format'); // this should not be possible due to HTML5 accept for file inputs, but in case
+		if (fileName.endsWith('.csv') || file.type === 'text/csv') {
+			this.clearTranscriptData();
+			this.loadCSVData(file);
+		} else if (fileName.endsWith('.txt')) {
+			this.clearTranscriptData();
+			this.loadP5Strings(URL.createObjectURL(file));
+		} else if (fileName.endsWith('.mp4') || file.type === 'video/mp4') {
+			this.sketch.videoController.clear();
+			this.prepVideoFromFile(URL.createObjectURL(file));
+		} else alert('Error loading file. Please make sure your file is an accepted format'); // this should not be possible due to HTML5 accept for file inputs, but in case
 	}
 
 	loadP5Strings(filePath) {
@@ -134,20 +150,6 @@ export class Core {
 			fileName: fileLocation
 		});
 	}
-
-	handleExampleDropdown = async (event: any) => {
-		const selectedValue = event.target.value;
-		const selectedExample = examples[selectedValue];
-		if (selectedExample) {
-			const { files, videoId } = selectedExample;
-			for (const file of files) {
-				await this.loadLocalExampleDataFile(`/data/${selectedValue}/`, file);
-			}
-			if (videoId) {
-				this.sketch.videoController.createVideoPlayer('Youtube', { videoId });
-			}
-		}
-	};
 
 	processData(dataArray: any, fileType: string) {
 		let turnNumber = 0;
@@ -272,4 +274,23 @@ export class Core {
 			return timeline;
 		});
 	};
+
+	clearAllData() {
+		console.log('Clearing all data');
+		this.sketch.videoController.clear();
+		this.sketch.dynamicData.clear();
+		this.sketch.sketchController.scalingVars = this.sketch.sketchController.createScalingVars();
+		UserStore.set([]);
+		TranscriptStore.set(new Transcript());
+		this.sketch.loop();
+	}
+
+	clearTranscriptData() {
+		console.log('Clearing Transcript Data');
+		this.sketch.dynamicData.clear();
+		this.sketch.sketchController.scalingVars = this.sketch.sketchController.createScalingVars();
+		UserStore.set([]);
+		TranscriptStore.set(new Transcript());
+		this.sketch.loop();
+	}
 }
