@@ -3,6 +3,12 @@ import TimelineStore from '../../stores/timelineStore';
 import ConfigStore from '../../stores/configStore';
 import { get } from 'svelte/store';
 
+let config;
+
+ConfigStore.subscribe((value) => {
+	config = value;
+});
+
 export class DynamicData {
 	constructor(sketch) {
 		this.sk = sketch;
@@ -25,7 +31,6 @@ export class DynamicData {
 		// const foundWords = this.dynamicWordArray.filter(function (currentElement) {
 		//     return currentElement.word === index.word && currentElement.speaker === index.speaker;
 		// });
-		const config = get(ConfigStore);
 		if (foundWords.length) {
 			if (config.lastWordToggle) {
 				index.count += foundWords[foundWords.length - 1].count; // Increments last word by previous last word in CC
@@ -40,8 +45,7 @@ export class DynamicData {
 	}
 
 	isStopWord(stringWord) {
-		const config = get(ConfigStore);
-		if (!config.stopWordsToggle) return this.stopWords.includes(stringWord.toLowerCase());
+		if (config.stopWordsToggle) return this.stopWords.includes(stringWord.toLowerCase());
 		else return false;
 	}
 
@@ -77,7 +81,6 @@ export class DynamicData {
 
 	getDynamicArraySortedForContributionCloud() {
 		let curAnimationArray = this.getAnimationArrayDeepCopy();
-		const config = get(ConfigStore);
 		if (config.sortToggle) curAnimationArray.sort((a, b) => b.count - a.count); // sort descending by word count
 		if (config.separateToggle) curAnimationArray.sort((a, b) => a.order - b.order); // only sort by order if not in paragraph mode
 		return curAnimationArray;
