@@ -76,7 +76,6 @@ export class Core {
 
 	testFileTypeForProcessing(file: File) {
 		const fileName = file ? file.name.toLowerCase() : '';
-		// this.resetOnDropDownSelection(); // TODO: not sure if this is needed still?
 		if (fileName.endsWith('.csv') || file.type === 'text/csv') {
 			this.clearTranscriptData();
 			this.loadCSVData(file);
@@ -95,7 +94,7 @@ export class Core {
 			(stringArray) => {
 				console.log('Text File Loaded');
 				this.processData(stringArray, 'txt');
-				this.zzzUpdateValues();
+				this.updateAllDataValues();
 			},
 			(e) => {
 				alert('Error loading text file. Please make sure it is correctly formatted.');
@@ -114,8 +113,14 @@ export class Core {
 			},
 			complete: (results: any, file: any) => {
 				console.log('Parsing complete:', results, file);
-				this.processData(results.data, 'csv');
-				this.zzzUpdateValues();
+				if (this.coreUtils.testTranscript(results)) {
+					this.processData(results.data, 'csv');
+					this.updateAllDataValues();
+				} else {
+					alert(
+						'Error loading CSV file. Please make sure your file is a CSV file formatted with correct column headers: speaker, content, start, end'
+					);
+				}
 			},
 			error: (error, file) => {
 				alert('Parsing error with one of your CSV file. Please make sure your file is formatted correctly as a .CSV');
@@ -124,7 +129,7 @@ export class Core {
 		});
 	};
 
-	zzzUpdateValues() {
+	updateAllDataValues() {
 		const transcript = get(TranscriptStore);
 		this.updateTimelineValues(transcript.totalTimeInSeconds);
 		ConfigStore.update((currentConfig) => {
@@ -160,20 +165,17 @@ export class Core {
 		let turnNumber = 0;
 		TranscriptStore.update((currentTranscript) => {
 			const updatedTranscript = { ...currentTranscript }; // Avoid mutating directly
-
 			for (const line of dataArray) {
-				if (line) {
-					const [speakerName, content, startTime, endTime, speakerOrder] = this.createTurnData(line, fileType);
+				if (!this.coreUtils.transcriptRowForType(line)) return;
+				const [speakerName, content, startTime, endTime, speakerOrder] = this.createTurnData(line, fileType);
+				updatedTranscript.largestTurnLength = Math.max(updatedTranscript.largestTurnLength, content.length);
+				updatedTranscript.totalTimeInSeconds = Math.max(updatedTranscript.totalTimeInSeconds, endTime);
 
-					updatedTranscript.largestTurnLength = Math.max(updatedTranscript.largestTurnLength, content.length);
-					updatedTranscript.totalTimeInSeconds = Math.max(updatedTranscript.totalTimeInSeconds, endTime);
-
-					content.forEach((word) => {
-						updatedTranscript.wordArray.push(new DataPoint(speakerName, turnNumber, word, speakerOrder, startTime, endTime));
-						updatedTranscript.totalNumOfWords++;
-					});
-					turnNumber++;
-				}
+				content.forEach((word) => {
+					updatedTranscript.wordArray.push(new DataPoint(speakerName, turnNumber, word, speakerOrder, startTime, endTime));
+					updatedTranscript.totalNumOfWords++;
+				});
+				turnNumber++;
 			}
 
 			updatedTranscript.totalConversationTurns = turnNumber;
@@ -229,13 +231,9 @@ export class Core {
 
 	createTurnData(line: any, fileType: string) {
 		if (fileType === 'csv') {
-			// TODO move tests somwehere else or test better here
-			const headers = ['name', 'content', 'start_time', 'end_time'];
-			if (!headers.every((header) => header in line)) {
-				throw new Error('Invalid CSV format: Missing required headers.');
-			}
+			const headers = this.coreUtils.headersTranscript;
 			const tokens = this.createTurnContentArray(String(line[headers[1]]));
-			const speakerName = line[headers[0]].toUpperCase();
+			const speakerName = String(line[headers[0]].toUpperCase());
 			this.updateUsers(speakerName);
 			const speakerOrder = get(UserStore).findIndex((user) => user.name === speakerName);
 			return [speakerName, tokens, parseFloat(line[headers[2]]) || 0, parseFloat(line[headers[3]]) || 0, speakerOrder];

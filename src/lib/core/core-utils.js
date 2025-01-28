@@ -1,18 +1,13 @@
 export class CoreUtils {
 	constructor() {
-		// NOTE: All headers must be lowercase as input data tables are converted to lowercase when loaded using PapaParse transformHeaders method
-		this.headersMovement = ['time', 'x', 'y']; // Each index is tested to be type number
-		this.headersConversation = ['time', 'speaker', 'talk']; // Of type number, string, and not null or undefined
-		this.headersSingleCodes = ['start', 'end']; // Of type number
-		this.headersMultiCodes = ['code', 'start', 'end']; // MUST MATCH singleCodeHeaders with one extra column 'code' of type string
+		// NOTE: headers here must be lowercase as input data tables are converted to lowercase when loaded using PapaParse transformHeaders method
+		this.headersTranscript = ['speaker', 'content', 'start', 'end'];
+		this.headersSingleCodes = ['start', 'end'];
+		this.headersMultiCodes = ['code', 'start', 'end']; // MUST match singleCodeHeaders with one extra column 'code' of type string
 	}
 
-	testMovement(results) {
-		return this.testPapaParseResults(results, this.headersMovement, this.movementRowForType);
-	}
-
-	testConversation(results) {
-		return this.testPapaParseResults(results, this.headersConversation, this.conversationRowForType);
+	testTranscript(results) {
+		return this.testPapaParseResults(results, this.headersTranscript, this.transcriptRowForType);
 	}
 
 	testSingleCode(results) {
@@ -52,20 +47,12 @@ export class CoreUtils {
 		return false;
 	}
 
-	movementRowForType(curRow) {
+	transcriptRowForType(curRow) {
 		return (
-			typeof curRow[this.headersMovement[0]] === 'number' &&
-			typeof curRow[this.headersMovement[1]] === 'number' &&
-			typeof curRow[this.headersMovement[2]] === 'number'
-		);
-	}
-
-	// NOTE: for talk turns/3rd column, allow boolean, number or string values. These are cast as Strings later in program
-	conversationRowForType(curRow) {
-		return (
-			typeof curRow[this.headersConversation[0]] === 'number' &&
-			typeof curRow[this.headersConversation[1]] === 'string' &&
-			this.isStringNumberOrBoolean(curRow[this.headersConversation[2]])
+			this.isStringNumberOrBoolean(curRow[this.headersTranscript[0]]) &&
+			this.isStringNumberOrBoolean(curRow[this.headersTranscript[1]]) &&
+			typeof curRow[this.headersTranscript[2]] === 'number' &&
+			typeof curRow[this.headersTranscript[3]] === 'number'
 		);
 	}
 
