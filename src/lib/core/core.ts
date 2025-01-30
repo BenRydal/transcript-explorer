@@ -166,7 +166,9 @@ export class Core {
 		TranscriptStore.update((currentTranscript) => {
 			const updatedTranscript = { ...currentTranscript }; // Avoid mutating directly
 			for (const line of dataArray) {
-				if (!this.coreUtils.transcriptRowForType(line)) return;
+				console.log(1);
+				if (fileType === 'csv' && !this.coreUtils.transcriptRowForType(line)) return;
+				console.log(2);
 				const [speakerName, content, startTime, endTime, speakerOrder] = this.createTurnData(line, fileType);
 				updatedTranscript.largestTurnLength = Math.max(updatedTranscript.largestTurnLength, content.length);
 				updatedTranscript.totalTimeInSeconds = Math.max(updatedTranscript.totalTimeInSeconds, endTime);

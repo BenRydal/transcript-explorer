@@ -235,7 +235,7 @@
 
 		<!-- Select Dropdown -->
 		<details class="dropdown" use:clickOutside>
-			<summary class="btn btn-sm ml-4 tooltip tooltip-bottom flex items-center justify-center"> Visualization </summary>
+			<summary class="btn btn-sm ml-4 tooltip tooltip-bottom flex items-center justify-center"> Visualizations </summary>
 			<ul class="menu dropdown-content rounded-box z-[1] w-52 p-2 shadow bg-base-100">
 				{#each techniqueToggleOptions as toggle}
 					<li>
