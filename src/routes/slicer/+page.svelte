@@ -92,6 +92,20 @@
 
 	let isModalOpen = writable(true);
 
+	// TODO: this deals with reactive state not updating correctly when values switch from true to false
+	let prevConfig = { echoesToggle: currentConfig.echoesToggle, lastWordToggle: currentConfig.lastWordToggle, stopWordsToggle: currentConfig.stopWordsToggle };
+	$: {
+		const { lastWordToggle, stopWordsToggle, echoesToggle } = currentConfig;
+		if (echoesToggle !== prevConfig.echoesToggle ||
+			lastWordToggle !== prevConfig.lastWordToggle ||
+			stopWordsToggle !== prevConfig.stopWordsToggle
+		) {
+			p5Instance?.sketchController.fillSelectedData();
+			p5Instance?.loop();
+		}
+		prevConfig = { echoesToggle, lastWordToggle, stopWordsToggle };
+	}
+
 	function toggleVideo() {
 		if (p5Instance && p5Instance.videoController) {
 			p5Instance.videoController.toggleShowVideo();
@@ -159,15 +173,11 @@
 	function toggleSelectionOnly(selection: ToggleKey, toggleOptions: ToggleKey[]) {
 		ConfigStore.update((store: ConfigStoreType) => {
 			const updatedStore = { ...store };
-
-			// Toggle only the selected key
 			toggleOptions.forEach((key) => {
 				if (key === selection && key.endsWith('Toggle')) {
 					updatedStore[key] = !updatedStore[key];
 				}
 			});
-			p5Instance.sketchController.fillSelectedData();
-			p5Instance?.loop(); // Ensure p5 updates after the store change
 			return updatedStore;
 		});
 	}
