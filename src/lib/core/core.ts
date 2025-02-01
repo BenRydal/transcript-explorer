@@ -186,7 +186,7 @@ export class Core {
 	parseDataLine(line: any, type: 'csv' | 'txt', currentWordCount: number, dataArray?: any[], rowIndex?: number) {
 		if (type === 'csv') {
 			if (!this.coreUtils.transcriptRowForType(line)) return null;
-			const headers = this.coreUtils.headersTranscript;
+			const headers = this.coreUtils.headersTranscriptWithTime;
 			const speakerName = String(line[headers[0]]).trim().toUpperCase();
 			this.updateUsers(speakerName);
 			const content = this.createTurnContentArray(String(line[headers[1]]).trim());
@@ -194,8 +194,13 @@ export class Core {
 
 			let startTime = parseFloat(line[headers[2]]);
 			let endTime = parseFloat(line[headers[3]]);
-			// Backward search for a missing startTime
-			if (isNaN(startTime) && dataArray && rowIndex !== undefined) {
+
+			// Explicitly check if the start and end time headers exist
+			const hasStartTime = headers[2] !== undefined;
+			const hasEndTime = headers[3] !== undefined;
+
+			if (isNaN(startTime) && hasStartTime) {
+				// Search backward for a missing startTime
 				for (let i = rowIndex - 1; i >= 0; i--) {
 					const prevStart = parseFloat(dataArray[i][headers[2]]);
 					if (!isNaN(prevStart)) {
@@ -204,9 +209,11 @@ export class Core {
 					}
 				}
 			}
-			if (isNaN(startTime)) startTime = currentWordCount; // Final fallback
-			// Forward search for a missing endTime
-			if (isNaN(endTime) && dataArray && rowIndex !== undefined) {
+			if (isNaN(startTime)) startTime = currentWordCount; // Final fallback if still no startTime
+
+			// Check for missing endTime independently
+			if (isNaN(endTime) && hasEndTime) {
+				// Search forward for missing endTime
 				for (let i = rowIndex + 1; i < dataArray.length; i++) {
 					const nextStart = parseFloat(dataArray[i][headers[2]]);
 					if (!isNaN(nextStart) && nextStart > startTime) {
@@ -215,21 +222,73 @@ export class Core {
 					}
 				}
 			}
-			if (isNaN(endTime)) endTime = startTime + content.length; // Final fallback
+			if (isNaN(endTime)) endTime = startTime + content.length; // Final fallback if no endTime found
+
 			return { speakerName, content, speakerOrder, startTime, endTime };
 		} else {
 			if (!line) return null;
 			const content = this.createTurnContentArray(line.trim());
 			if (content.length === 0) return null;
+
 			const speakerName = content.shift()?.trim()?.toUpperCase() || '';
 			if (!speakerName) return null;
+
 			this.updateUsers(speakerName);
 			const speakerOrder = get(UserStore).findIndex((user) => user.name === speakerName);
 			const startTime = currentWordCount;
 			const endTime = currentWordCount + content.length;
+
 			return { speakerName, content, speakerOrder, startTime, endTime };
 		}
 	}
+
+	// parseDataLine(line: any, type: 'csv' | 'txt', currentWordCount: number, dataArray?: any[], rowIndex?: number) {
+	// 	if (type === 'csv') {
+	// 		if (!this.coreUtils.transcriptRowForType(line)) return null;
+	// 		const headers = this.coreUtils.headersTranscriptWithTime;
+	// 		const speakerName = String(line[headers[0]]).trim().toUpperCase();
+	// 		this.updateUsers(speakerName);
+	// 		const content = this.createTurnContentArray(String(line[headers[1]]).trim());
+	// 		const speakerOrder = get(UserStore).findIndex((user) => user.name === speakerName);
+
+	// 		let startTime = parseFloat(line[headers[2]]);
+	// 		let endTime = parseFloat(line[headers[3]]);
+	// 		// Backward search for a missing startTime
+	// 		if (isNaN(startTime) && dataArray && rowIndex !== undefined) {
+	// 			for (let i = rowIndex - 1; i >= 0; i--) {
+	// 				const prevStart = parseFloat(dataArray[i][headers[2]]);
+	// 				if (!isNaN(prevStart)) {
+	// 					startTime = prevStart; // Use closest previous start time
+	// 					break;
+	// 				}
+	// 			}
+	// 		}
+	// 		if (isNaN(startTime)) startTime = currentWordCount; // Final fallback
+	// 		// Forward search for a missing endTime
+	// 		if (isNaN(endTime) && dataArray && rowIndex !== undefined) {
+	// 			for (let i = rowIndex + 1; i < dataArray.length; i++) {
+	// 				const nextStart = parseFloat(dataArray[i][headers[2]]);
+	// 				if (!isNaN(nextStart) && nextStart > startTime) {
+	// 					endTime = nextStart; // Use closest next start time
+	// 					break;
+	// 				}
+	// 			}
+	// 		}
+	// 		if (isNaN(endTime)) endTime = startTime + content.length; // Final fallback
+	// 		return { speakerName, content, speakerOrder, startTime, endTime };
+	// 	} else {
+	// 		if (!line) return null;
+	// 		const content = this.createTurnContentArray(line.trim());
+	// 		if (content.length === 0) return null;
+	// 		const speakerName = content.shift()?.trim()?.toUpperCase() || '';
+	// 		if (!speakerName) return null;
+	// 		this.updateUsers(speakerName);
+	// 		const speakerOrder = get(UserStore).findIndex((user) => user.name === speakerName);
+	// 		const startTime = currentWordCount;
+	// 		const endTime = currentWordCount + content.length;
+	// 		return { speakerName, content, speakerOrder, startTime, endTime };
+	// 	}
+	// }
 
 	setAdditionalDataValues(arr: DataPoint[]): [number, number, number, string] {
 		const speakerWordCounts = new Map<string, number>(); // Map: speaker -> word count
