@@ -166,8 +166,7 @@ export class Core {
 		TranscriptStore.update((currentTranscript) => {
 			const updatedTranscript = { ...currentTranscript };
 			for (let i = 0; i < dataArray.length; i++) {
-				const nextRow = dataArray[i + 1]; // Get next row (if any)
-				const parsedData = this.parseDataLine(dataArray[i], type, updatedTranscript.totalNumOfWords, nextRow);
+				const parsedData = this.parseDataLine(dataArray[i], type, updatedTranscript.totalNumOfWords, dataArray, i);
 				if (!parsedData) continue;
 				const { speakerName, content, speakerOrder, startTime, endTime } = parsedData;
 				updatedTranscript.largestTurnLength = Math.max(updatedTranscript.largestTurnLength, content.length);
@@ -184,7 +183,7 @@ export class Core {
 		});
 	}
 
-	parseDataLine(line: any, type: 'csv' | 'txt', currentWordCount: number, nextRow?: any) {
+	parseDataLine(line: any, type: 'csv' | 'txt', currentWordCount: number, dataArray?: any[], rowIndex?: number) {
 		if (type === 'csv') {
 			if (!this.coreUtils.transcriptRowForType(line)) return null;
 			const headers = this.coreUtils.headersTranscript;
@@ -192,33 +191,42 @@ export class Core {
 			this.updateUsers(speakerName);
 			const content = this.createTurnContentArray(String(line[headers[1]]).trim());
 			const speakerOrder = get(UserStore).findIndex((user) => user.name === speakerName);
+
 			let startTime = parseFloat(line[headers[2]]);
-			if (isNaN(startTime)) startTime = currentWordCount; // Default if missing
 			let endTime = parseFloat(line[headers[3]]);
-			if (isNaN(endTime) && nextRow) {
-				const nextStartTime = parseFloat(nextRow[headers[2]]);
-				if (!isNaN(nextStartTime) && nextStartTime > startTime) {
-					endTime = nextStartTime;
+			// Backward search for a missing startTime
+			if (isNaN(startTime) && dataArray && rowIndex !== undefined) {
+				for (let i = rowIndex - 1; i >= 0; i--) {
+					const prevStart = parseFloat(dataArray[i][headers[2]]);
+					if (!isNaN(prevStart)) {
+						startTime = prevStart; // Use closest previous start time
+						break;
+					}
 				}
 			}
-			if (isNaN(endTime)) {
-				endTime = startTime + content.length; // Fallback default
+			if (isNaN(startTime)) startTime = currentWordCount; // Final fallback
+			// Forward search for a missing endTime
+			if (isNaN(endTime) && dataArray && rowIndex !== undefined) {
+				for (let i = rowIndex + 1; i < dataArray.length; i++) {
+					const nextStart = parseFloat(dataArray[i][headers[2]]);
+					if (!isNaN(nextStart) && nextStart > startTime) {
+						endTime = nextStart; // Use closest next start time
+						break;
+					}
+				}
 			}
-
+			if (isNaN(endTime)) endTime = startTime + content.length; // Final fallback
 			return { speakerName, content, speakerOrder, startTime, endTime };
 		} else {
 			if (!line) return null;
 			const content = this.createTurnContentArray(line.trim());
 			if (content.length === 0) return null;
-
 			const speakerName = content.shift()?.trim()?.toUpperCase() || '';
 			if (!speakerName) return null;
-
 			this.updateUsers(speakerName);
 			const speakerOrder = get(UserStore).findIndex((user) => user.name === speakerName);
 			const startTime = currentWordCount;
 			const endTime = currentWordCount + content.length;
-
 			return { speakerName, content, speakerOrder, startTime, endTime };
 		}
 	}
