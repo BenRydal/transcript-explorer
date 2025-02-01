@@ -161,56 +161,65 @@ export class Core {
 		});
 	}
 
-	processData(dataArray: any, fileType: string) {
+	processData(dataArray: any, type: 'csv' | 'txt') {
 		let turnNumber = 0;
 		TranscriptStore.update((currentTranscript) => {
-			const updatedTranscript = { ...currentTranscript }; // Avoid mutating directly
+			const updatedTranscript = { ...currentTranscript };
 			for (const line of dataArray) {
-				console.log(1);
-				if (fileType === 'csv' && !this.coreUtils.transcriptRowForType(line)) return;
-				console.log(2);
-				const [speakerName, content, startTime, endTime, speakerOrder] = this.createTurnData(line, fileType);
+				const parsedData = this.parseDataLine(line, type, updatedTranscript.totalNumOfWords);
+				if (!parsedData) continue;
+				const { speakerName, content, speakerOrder, startTime, endTime } = parsedData;
 				updatedTranscript.largestTurnLength = Math.max(updatedTranscript.largestTurnLength, content.length);
 				updatedTranscript.totalTimeInSeconds = Math.max(updatedTranscript.totalTimeInSeconds, endTime);
-
 				content.forEach((word) => {
 					updatedTranscript.wordArray.push(new DataPoint(speakerName, turnNumber, word, speakerOrder, startTime, endTime));
 					updatedTranscript.totalNumOfWords++;
 				});
 				turnNumber++;
 			}
-
 			updatedTranscript.totalConversationTurns = turnNumber;
-			[
-				updatedTranscript.largestNumOfWordsByASpeaker,
-				updatedTranscript.largestNumOfTurnsByASpeaker,
-				updatedTranscript.maxCountOfMostRepeatedWord,
-				updatedTranscript.mostFrequentWord
-			] = this.setAdditionalDataValues(updatedTranscript.wordArray);
-
-			return updatedTranscript; // Return the new state to update the store
+			Object.assign(updatedTranscript, this.setAdditionalDataValues(updatedTranscript.wordArray));
+			return updatedTranscript;
 		});
+	}
+
+	parseDataLine(line: any, type: 'csv' | 'txt', currentWordCount: number) {
+		if (type === 'csv') {
+			if (!this.coreUtils.transcriptRowForType(line)) return null;
+			const headers = this.coreUtils.headersTranscript;
+			const speakerName = String(line[headers[0]].trim().toUpperCase());
+			this.updateUsers(speakerName); // must updateUsers before getting speakerOrder
+			const content = this.createTurnContentArray(String(line[headers[1]]));
+			const speakerOrder = get(UserStore).findIndex((user) => user.name === speakerName);
+			const startTime = parseFloat(line[headers[2]]) || 0;
+			const endTime = parseFloat(line[headers[3]]) || 0;
+			return { speakerName, content, speakerOrder, startTime, endTime };
+		} else {
+			if (!line) return null;
+			const content = this.createTurnContentArray(line);
+			const speakerName = content.shift().trim().toUpperCase();
+			this.updateUsers(speakerName);
+			const speakerOrder = get(UserStore).findIndex((user) => user.name === speakerName);
+			const startTime = currentWordCount;
+			const endTime = currentWordCount + content.length;
+			return { speakerName, content, speakerOrder, startTime, endTime };
+		}
 	}
 
 	setAdditionalDataValues(arr: DataPoint[]): [number, number, number, string] {
 		const speakerWordCounts = new Map<string, number>(); // Map: speaker -> word count
 		const speakerTurnCounts = new Map<string, Set<number>>(); // Map: speaker -> Set of turn numbers (unique)
 		const wordFrequency = new Map<string, number>(); // Map: word -> frequency
-
 		let maxWordFrequency = 0;
 		let mostFrequentWord = '';
-
-		// Process each word data
 		arr.forEach(({ speaker, turnNumber, word }) => {
 			// Track word count for each speaker
 			speakerWordCounts.set(speaker, (speakerWordCounts.get(speaker) || 0) + 1);
-
 			// Track unique turns per speaker (turnNumber should be unique for each speaker)
 			if (!speakerTurnCounts.has(speaker)) {
 				speakerTurnCounts.set(speaker, new Set());
 			}
 			speakerTurnCounts.get(speaker)?.add(turnNumber);
-
 			// Track word frequency
 			if (word) {
 				wordFrequency.set(word, (wordFrequency.get(word) || 0) + 1);
@@ -222,31 +231,12 @@ export class Core {
 			}
 		});
 
-		// Return the calculated values in the correct format
-		return [
-			Math.max(...Array.from(speakerWordCounts.values())), // largest number of words by a speaker
-			Math.max(...Array.from(speakerTurnCounts.values()).map((turnSet) => turnSet.size)), // largest number of turns by a speaker
-			maxWordFrequency, // max count of the most repeated word
-			mostFrequentWord // most frequent word
-		];
-	}
-
-	createTurnData(line: any, fileType: string) {
-		if (fileType === 'csv') {
-			const headers = this.coreUtils.headersTranscript;
-			const tokens = this.createTurnContentArray(String(line[headers[1]]));
-			const speakerName = String(line[headers[0]].toUpperCase());
-			this.updateUsers(speakerName);
-			const speakerOrder = get(UserStore).findIndex((user) => user.name === speakerName);
-			return [speakerName, tokens, parseFloat(line[headers[2]]) || 0, parseFloat(line[headers[3]]) || 0, speakerOrder];
-		} else {
-			const tokens = this.createTurnContentArray(line);
-			const speakerName = tokens.shift().toUpperCase();
-			this.updateUsers(speakerName);
-			const speakerOrder = get(UserStore).findIndex((user) => user.name === speakerName);
-			const transcript = get(TranscriptStore);
-			return [speakerName, tokens, transcript.totalNumOfWords, transcript.totalNumOfWords + tokens.length, speakerOrder];
-		}
+		return {
+			largestNumOfWordsByASpeaker: Math.max(...Array.from(speakerWordCounts.values())), // largest number of words by a speaker
+			largestNumOfTurnsByASpeaker: Math.max(...Array.from(speakerTurnCounts.values()).map((turnSet) => turnSet.size)), // largest number of turns by a speaker
+			maxCountOfMostRepeatedWord: maxWordFrequency, // max count of the most repeated word
+			mostFrequentWord
+		};
 	}
 
 	updateUsers(userName: string) {
