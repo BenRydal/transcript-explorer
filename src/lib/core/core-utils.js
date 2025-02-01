@@ -48,12 +48,22 @@ export class CoreUtils {
 	}
 
 	transcriptRowForType(curRow) {
-		return (
-			this.isStringNumberOrBoolean(curRow[this.headersTranscript[0]]) &&
-			this.isStringNumberOrBoolean(curRow[this.headersTranscript[1]]) &&
-			typeof curRow[this.headersTranscript[2]] === 'number' &&
-			typeof curRow[this.headersTranscript[3]] === 'number'
-		);
+		const headers = this.headersTranscript;
+		// Ensure speakerName and content exist and are valid types
+		if (!this.isStringNumberOrBoolean(curRow[headers[0]]) || !this.isStringNumberOrBoolean(curRow[headers[1]])) {
+			return false;
+		}
+		// If startTime exists, it must be a valid number
+		const startTime = curRow[headers[2]];
+		if (startTime !== undefined && typeof startTime !== 'number') {
+			return false;
+		}
+		// If endTime exists, it must be a valid number
+		const endTime = curRow[headers[3]];
+		if (endTime !== undefined && typeof endTime !== 'number') {
+			return false;
+		}
+		return true; // Passes all checks
 	}
 
 	isStringNumberOrBoolean(value) {
