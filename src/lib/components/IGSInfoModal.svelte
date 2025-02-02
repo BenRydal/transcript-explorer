@@ -23,11 +23,9 @@
 						</p>
 						<div class="flex flex-row justify-center flex-wrap gap-4 my-2">
 							<a href="https://youtu.be/FdDVpAYaZwE" target="_blank" class="btn bg-gray-300 text-black">Watch Demo Video</a>
-							<a href="https://www.benrydal.com/software/igs" target="_blank" class="btn bg-gray-300 text-black">Data Collection/Formatting Guide</a>
-							<a href="https://www.benrydal.com/interactiongeography" target="_blank" class="btn bg-gray-300 text-black">Learn About Interaction Geography</a>
-							<a href="https://github.com/BenRydal/igs" target="_blank" class="btn bg-gray-300 text-black">Contribute</a>
-							<!-- <a href="https://link.springer.com/article/10.1007/s11412-017-9264-8" target="_blank" class="btn bg-gray-300 text-black">Reference</a> -->
-							<a href="https://journals.sagepub.com/doi/abs/10.3102/0013189X241238698" target="_blank" class="btn bg-gray-300 text-black">Reference</a>
+							<a href="https://www.benrydal.com/software/igs" target="_blank" class="btn bg-gray-300 text-black">Data Formatting Guide</a>
+							<a href="https://github.com/BenRydal/transcript-explorer" target="_blank" class="btn bg-gray-300 text-black">Contribute</a>
+							<a href="https://doi.org/10.1145/3706598.3713490" target="_blank" class="btn bg-gray-300 text-black">Reference</a>
 						</div>
 						<p class="pt-3 pb-6 italic text-center">
 							Transcript Explorer software is an open-source project built with Svelte, JavaScript and p5.js licensed under the GNU General Public License Version 2.0. It is
