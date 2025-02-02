@@ -23,18 +23,27 @@
 	import TimelinePanel from '$lib/components/TimelinePanel.svelte';
 	import DataPointTable from '$lib/components/DataPointTable.svelte';
 
-	import TimelineStore from '../../stores/timelineStore';	
+	import TimelineStore from '../../stores/timelineStore';
 	import ConfigStore from '../../stores/configStore';
 	import type { ConfigStoreType } from '../../stores/configStore';
 	import { initialConfig } from '../../stores/configStore';
 	import TranscriptStore from '../../stores/transcriptStore';
 
 	const techniqueToggleOptions = ['distributionDiagramToggle', 'turnChartToggle', 'contributionCloudToggle', 'dashboardToggle'] as const;
-	const interactionsToggleOptions = ['flowersToggle', 'separateToggle', 'sortToggle', 'lastWordToggle', 'echoesToggle', 'stopWordsToggle', 'repeatedWordsToggle'] as const;
+	const interactionsToggleOptions = [
+		'flowersToggle',
+		'separateToggle',
+		'sortToggle',
+		'lastWordToggle',
+		'echoesToggle',
+		'stopWordsToggle',
+		'repeatedWordsToggle'
+	] as const;
 
 	let selectedDropDownOption = '';
 	const dropdownOptions = [
-		{label: 'Classrooms',
+		{
+			label: 'Classrooms',
 			items: [
 				{ value: 'example-1', label: 'Kindergarten Activity' },
 				{ value: 'example-3', label: 'Classroom Discussion' },
@@ -42,11 +51,7 @@
 			]
 		},
 		{ label: 'Museums', items: [{ value: 'example-2', label: 'Family Gallery Visit' }] },
-		{ label: 'Presidential Debates',
-			items: [
-				{ value: 'example-5', label: 'Biden-Trump 2020 Debate 1' }
-			]
-		}
+		{ label: 'Presidential Debates', items: [{ value: 'example-5', label: 'Biden-Trump 2020 Debate 1' }] }
 	];
 
 	let showDataPopup = false;
@@ -94,13 +99,14 @@
 	let isModalOpen = writable(true);
 
 	// TODO: this deals with reactive state not updating correctly when values switch from true to false
-	let prevConfig = { echoesToggle: currentConfig.echoesToggle, lastWordToggle: currentConfig.lastWordToggle, stopWordsToggle: currentConfig.stopWordsToggle };
+	let prevConfig = {
+		echoesToggle: currentConfig.echoesToggle,
+		lastWordToggle: currentConfig.lastWordToggle,
+		stopWordsToggle: currentConfig.stopWordsToggle
+	};
 	$: {
 		const { lastWordToggle, stopWordsToggle, echoesToggle } = currentConfig;
-		if (echoesToggle !== prevConfig.echoesToggle ||
-			lastWordToggle !== prevConfig.lastWordToggle ||
-			stopWordsToggle !== prevConfig.stopWordsToggle
-		) {
+		if (echoesToggle !== prevConfig.echoesToggle || lastWordToggle !== prevConfig.lastWordToggle || stopWordsToggle !== prevConfig.stopWordsToggle) {
 			p5Instance?.sketchController.fillSelectedData();
 			p5Instance?.loop();
 		}
@@ -140,7 +146,7 @@
 			.replace('Toggle', '') // Remove 'Toggle'
 			.replace(/([A-Z])/g, ' $1') // Add space before capital letters
 			.trim()
-			.replace(/^./, str => str.toUpperCase()); // Capitalize first letter
+			.replace(/^./, (str) => str.toUpperCase()); // Capitalize first letter
 	}
 
 	function handleConfigChangeFromInput(e: Event, key: keyof ConfigStoreType) {
@@ -186,7 +192,6 @@
 			return updatedStore;
 		});
 	}
-
 
 	function clickOutside(node) {
 		const handleClick = (event) => {
@@ -237,7 +242,6 @@
 	</div>
 
 	<div class="flex justify-end flex-1 px-2">
-
 		<!-- Select Dropdown -->
 		<details class="dropdown" use:clickOutside>
 			<summary class="btn btn-sm ml-4 tooltip tooltip-bottom flex items-center justify-center"> Visualizations </summary>
@@ -293,7 +297,6 @@
 		</details>
 
 		<div class="flex items-stretch">
-
 			{#if isVideoShowing}
 				<IconButton id="btn-toggle-video" icon={MdVideocam} tooltip={'Show/Hide Video'} on:click={toggleVideo} />
 			{:else}
@@ -512,7 +515,6 @@
 
 <div class="btm-nav flex justify-between min-h-20">
 	<div class="flex flex-1 flex-row justify-start items-center bg-[#f6f5f3] items-start px-8">
-		
 		<!-- {#if $ConfigStore.dataHasCodes}
 			<details class="dropdown dropdown-top" use:clickOutside>
 				<summary class="btn">CODES</summary>
