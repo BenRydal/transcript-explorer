@@ -8,7 +8,7 @@ export class CoreUtils {
 	}
 
 	testTranscript(results) {
-		return this.testPapaParseResults(results, this.headersSimpleTranscript, this.transcriptRowForType);
+		return this.testPapaParseResults(results, this.headersSimpleTranscript, this.hasSpeakerNameAndContent);
 	}
 
 	testSingleCode(results) {
@@ -48,23 +48,9 @@ export class CoreUtils {
 		return false;
 	}
 
-	transcriptRowForType(curRow) {
-		const headers = this.headersTranscriptWithTime;
-		// Ensure speakerName and content exist and are valid types
-		if (!this.isStringNumberOrBoolean(curRow[headers[0]]) || !this.isStringNumberOrBoolean(curRow[headers[1]])) {
-			return false;
-		}
-		// If startTime exists, it must be a valid number
-		const startTime = curRow[headers[2]];
-		if (startTime !== undefined && typeof startTime !== 'number') {
-			return false;
-		}
-		// If endTime exists, it must be a valid number
-		const endTime = curRow[headers[3]];
-		if (endTime !== undefined && typeof endTime !== 'number') {
-			return false;
-		}
-		return true; // Passes all checks
+	hasSpeakerNameAndContent(curRow) {
+		const [speakerName, content] = [curRow[this.headersSimpleTranscript[0]], curRow[this.headersSimpleTranscript[1]]];
+		return this.isStringNumberOrBoolean(speakerName) && this.isStringNumberOrBoolean(content);
 	}
 
 	isStringNumberOrBoolean(value) {

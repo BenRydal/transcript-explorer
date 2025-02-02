@@ -122,7 +122,7 @@ export class Core {
 					this.updateAllDataValues();
 				} else {
 					alert(
-						'Error loading CSV file. Please make sure your file is a CSV file formatted with correct column headers: speaker, content, start, end'
+						'Error loading CSV file. Please make sure your file is a CSV file formatted with correct column headers labeled "speaker" and "content". You can also include column headers for start and end times labeled "start" and  "end"'
 					);
 				}
 			},
@@ -209,7 +209,7 @@ export class Core {
 
 	parseDataLine(line: any, type: 'csv' | 'txt', currentWordCount: number, dataArray?: any[], rowIndex?: number) {
 		if (type === 'csv') {
-			if (!this.coreUtils.transcriptRowForType(line)) return null;
+			if (!this.coreUtils.hasSpeakerNameAndContent(line)) return null;
 			const headers = this.coreUtils.headersTranscriptWithTime;
 			const speakerName = String(line[headers[0]]).trim().toUpperCase();
 			this.updateUsers(speakerName);
