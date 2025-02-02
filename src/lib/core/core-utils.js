@@ -1,13 +1,14 @@
 export class CoreUtils {
 	constructor() {
 		// NOTE: headers here must be lowercase as input data tables are converted to lowercase when loaded using PapaParse transformHeaders method
-		this.headersTranscript = ['speaker', 'content', 'start', 'end'];
+		this.headersTranscriptWithTime = ['speaker', 'content', 'start', 'end'];
+		this.headersSimpleTranscript = ['speaker', 'content'];
 		this.headersSingleCodes = ['start', 'end'];
 		this.headersMultiCodes = ['code', 'start', 'end']; // MUST match singleCodeHeaders with one extra column 'code' of type string
 	}
 
 	testTranscript(results) {
-		return this.testPapaParseResults(results, this.headersTranscript, this.transcriptRowForType);
+		return this.testPapaParseResults(results, this.headersSimpleTranscript, this.hasSpeakerNameAndContent);
 	}
 
 	testSingleCode(results) {
@@ -47,17 +48,17 @@ export class CoreUtils {
 		return false;
 	}
 
-	transcriptRowForType(curRow) {
-		return (
-			this.isStringNumberOrBoolean(curRow[this.headersTranscript[0]]) &&
-			this.isStringNumberOrBoolean(curRow[this.headersTranscript[1]]) &&
-			typeof curRow[this.headersTranscript[2]] === 'number' &&
-			typeof curRow[this.headersTranscript[3]] === 'number'
-		);
+	hasSpeakerNameAndContent(curRow) {
+		const [speakerName, content] = [curRow[this.headersSimpleTranscript[0]], curRow[this.headersSimpleTranscript[1]]];
+		return this.isStringNumberOrBoolean(speakerName) && this.isStringNumberOrBoolean(content);
 	}
 
 	isStringNumberOrBoolean(value) {
-		return typeof value === 'string' || typeof value === 'number' || typeof value === 'boolean';
+		return (
+			(typeof value === 'string' && value.trim() !== '') || // Non-empty strings
+			(typeof value === 'number' && !isNaN(value) && isFinite(value)) || // Valid numbers (not NaN, not infinite)
+			typeof value === 'boolean'
+		);
 	}
 
 	codeRowForType(curRow) {

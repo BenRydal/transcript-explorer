@@ -27,8 +27,9 @@
 	import ConfigStore from '../../stores/configStore';
 	import type { ConfigStoreType } from '../../stores/configStore';
 	import { initialConfig } from '../../stores/configStore';
+	import TranscriptStore from '../../stores/transcriptStore';
 
-	const techniqueToggleOptions = ['diagramToggle', 'chartToggle', 'cloudToggle', 'dashboardToggle'] as const;
+	const techniqueToggleOptions = ['distributionDiagramToggle', 'turnChartToggle', 'contributionCloudToggle', 'dashboardToggle'] as const;
 	const interactionsToggleOptions = ['flowersToggle', 'separateToggle', 'sortToggle', 'lastWordToggle', 'echoesToggle', 'stopWordsToggle', 'repeatedWordsToggle'] as const;
 
 	let selectedDropDownOption = '';
@@ -92,6 +93,20 @@
 
 	let isModalOpen = writable(true);
 
+	// TODO: this deals with reactive state not updating correctly when values switch from true to false
+	let prevConfig = { echoesToggle: currentConfig.echoesToggle, lastWordToggle: currentConfig.lastWordToggle, stopWordsToggle: currentConfig.stopWordsToggle };
+	$: {
+		const { lastWordToggle, stopWordsToggle, echoesToggle } = currentConfig;
+		if (echoesToggle !== prevConfig.echoesToggle ||
+			lastWordToggle !== prevConfig.lastWordToggle ||
+			stopWordsToggle !== prevConfig.stopWordsToggle
+		) {
+			p5Instance?.sketchController.fillSelectedData();
+			p5Instance?.loop();
+		}
+		prevConfig = { echoesToggle, lastWordToggle, stopWordsToggle };
+	}
+
 	function toggleVideo() {
 		if (p5Instance && p5Instance.videoController) {
 			p5Instance.videoController.toggleShowVideo();
@@ -120,9 +135,12 @@
 			.join(' ');
 	}
 
-	// TODO: Sync this with the capitalizeEachWord function
-	function capitalizeFirstLetter(string: string) {
-		return string.charAt(0).toUpperCase() + string.slice(1);
+	function formatToggleName(toggle) {
+		return toggle
+			.replace('Toggle', '') // Remove 'Toggle'
+			.replace(/([A-Z])/g, ' $1') // Add space before capital letters
+			.trim()
+			.replace(/^./, str => str.toUpperCase()); // Capitalize first letter
 	}
 
 	function handleConfigChangeFromInput(e: Event, key: keyof ConfigStoreType) {
@@ -150,6 +168,7 @@
 					updatedStore[key] = key === selection ? !updatedStore[key] : false;
 				}
 			});
+			p5Instance?.sketchController.fillSelectedData();
 			p5Instance?.loop();
 			return updatedStore;
 		});
@@ -159,15 +178,11 @@
 	function toggleSelectionOnly(selection: ToggleKey, toggleOptions: ToggleKey[]) {
 		ConfigStore.update((store: ConfigStoreType) => {
 			const updatedStore = { ...store };
-
-			// Toggle only the selected key
 			toggleOptions.forEach((key) => {
 				if (key === selection && key.endsWith('Toggle')) {
 					updatedStore[key] = !updatedStore[key];
 				}
 			});
-			p5Instance.sketchController.fillSelectedData();
-			p5Instance?.loop(); // Ensure p5 updates after the store change
 			return updatedStore;
 		});
 	}
@@ -225,7 +240,7 @@
 
 		<!-- Select Dropdown -->
 		<details class="dropdown" use:clickOutside>
-			<summary class="btn btn-sm ml-4 tooltip tooltip-bottom flex items-center justify-center"> Visualization </summary>
+			<summary class="btn btn-sm ml-4 tooltip tooltip-bottom flex items-center justify-center"> Visualizations </summary>
 			<ul class="menu dropdown-content rounded-box z-[1] w-52 p-2 shadow bg-base-100">
 				{#each techniqueToggleOptions as toggle}
 					<li>
@@ -235,7 +250,7 @@
 									<MdCheck />
 								{/if}
 							</div>
-							{capitalizeFirstLetter(toggle.replace('Toggle', ''))}
+							{formatToggleName(toggle)}
 						</button>
 					</li>
 				{/each}
@@ -254,7 +269,7 @@
 									<MdCheck />
 								{/if}
 							</div>
-							{capitalizeFirstLetter(toggle.replace('Toggle', ''))}
+							{formatToggleName(toggle)}
 						</button>
 					</li>
 				{/each}
@@ -390,66 +405,6 @@
 					/>
 				</div>
 
-				<!-- Sampling Interval -->
-				<div class="flex flex-col">
-					<label for="samplingInterval" class="font-medium">Sampling Interval: {currentConfig.samplingInterval} sec</label>
-					<input
-						id="samplingInterval"
-						type="range"
-						min="0.1"
-						max="5"
-						step="0.1"
-						bind:value={currentConfig.samplingInterval}
-						on:input={(e) => handleConfigChange('samplingInterval', parseFloat(e.target.value))}
-						class="range range-primary"
-					/>
-				</div>
-
-				<!-- Small Data Threshold -->
-				<div class="flex flex-col">
-					<label for="smallDataThreshold" class="font-medium">Small Data Threshold: {currentConfig.smallDataThreshold}</label>
-					<input
-						id="smallDataThreshold"
-						type="range"
-						min="500"
-						max="10000"
-						step="100"
-						bind:value={currentConfig.smallDataThreshold}
-						on:input={(e) => handleConfigChange('smallDataThreshold', parseInt(e.target.value))}
-						class="range range-primary"
-					/>
-				</div>
-
-				<!-- Movement StrokeWeight -->
-				<div class="flex flex-col">
-					<label for="movementStrokeWeight" class="font-medium">Movement Line Weight: {currentConfig.movementStrokeWeight}</label>
-					<input
-						id="movementStrokeWeight"
-						type="range"
-						min="1"
-						max="20"
-						step="1"
-						bind:value={currentConfig.movementStrokeWeight}
-						on:input={(e) => handleConfigChange('movementStrokeWeight', parseInt(e.target.value))}
-						class="range range-primary"
-					/>
-				</div>
-
-				<!-- Stop StrokeWeight -->
-				<div class="flex flex-col">
-					<label for="stopStrokeWeight" class="font-medium">Stop Line Weight: {currentConfig.stopStrokeWeight}</label>
-					<input
-						id="stopStrokeWeight"
-						type="range"
-						min="1"
-						max="20"
-						step="1"
-						bind:value={currentConfig.stopStrokeWeight}
-						on:input={(e) => handleConfigChange('stopStrokeWeight', parseInt(e.target.value))}
-						class="range range-primary"
-					/>
-				</div>
-
 				<!-- Text Input for Seconds (Numeric Only) -->
 				<div class="flex flex-col">
 					<label for="inputSeconds" class="font-medium">End Time (seconds)</label>
@@ -510,9 +465,9 @@
 			<div class="overflow-x-auto">
 				<div class="flex flex-col">
 					<div class="flex-col my-4">
-						<h4 class="font-bold my-2">Codes:</h4>
+						<h4 class="font-bold my-2">Transcript:</h4>
 						<div class="grid grid-cols-5 gap-4">
-							<!-- {#each $CodeStore as code}
+							<!-- {#each $TranscriptStore as code}
 								<div class="badge badge-neutral">{code.code}</div>
 							{/each} -->
 						</div>
@@ -541,7 +496,7 @@
 										</div>
 									</div>
 									<h2 class="font-medium">Data Points:</h2>
-									<DataPointTable dataPoints={user.dataTrail} />
+									<!-- <DataPointTable dataPoints={user.dataTrail} /> -->
 								</div>
 							</div>
 						</div>

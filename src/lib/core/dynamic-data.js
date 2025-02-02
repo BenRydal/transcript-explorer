@@ -16,12 +16,16 @@ export class DynamicData {
 		this.stopWords = ['the', 'of', 'and', 'is', 'to', 'in', 'a', 'from', 'by', 'that', 'with', 'this', 'as', 'an', 'are', 'its', 'at', 'for'];
 	}
 
+	// add this line to show repeated words in CC for selected time: && this.isInTimeRange(animationWord.startTime, animationWord.endTime)
 	update(index) {
 		const animationWord = new DataPoint(index.speaker, index.turnNumber, index.word, index.order, index.startTime, index.endTime);
-		// add this line to show repeated words in CC for selected time: && this.isInTimeRange(animationWord.startTime, animationWord.endTime)
-		if (!this.isStopWord(animationWord.word)) {
+		if (!config.stopWordsToggle || !this.isStopWord(animationWord.word)) {
 			this.updateWordCounts(animationWord);
 		}
+	}
+
+	isStopWord(stringWord) {
+		return this.stopWords.includes(stringWord.toLowerCase());
 	}
 
 	removeLastElement() {
@@ -45,11 +49,6 @@ export class DynamicData {
 			}
 		}
 		this.dynamicWordArray.push(index);
-	}
-
-	isStopWord(stringWord) {
-		if (config.stopWordsToggle) return this.stopWords.includes(stringWord.toLowerCase());
-		else return false;
 	}
 
 	splitIntoArrays(sortedAnimationWordArray, getKey) {

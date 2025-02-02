@@ -122,11 +122,11 @@ export const igsSketch = (p5: any) => {
 		if (p5.videoController.isLoaded && p5.videoController.isShowing) {
 			if (p5.videoController.isPlaying) {
 				p5.videoController.pause();
-			} else if (currConfig.diagramToggle && p5.sketchController.arrayOfFirstWords.length) {
+			} else if (currConfig.distributionDiagramToggle && p5.sketchController.arrayOfFirstWords.length) {
 				p5.videoController.playForDistributionDiagram(p5.sketchController.arrayOfFirstWords);
-			} else if (currConfig.chartToggle) {
+			} else if (currConfig.turnChartToggle) {
 				p5.videoController.playForTurnChart(p5.sketchController.getTimeValueFromPixel(p5.mouseX));
-			} else if (currConfig.cloudToggle && p5.sketchController.selectedWordFromContributionCloud !== undefined) {
+			} else if (currConfig.contributionCloudToggle && p5.sketchController.selectedWordFromContributionCloud !== undefined) {
 				p5.videoController.playForContributionCloud(p5.videoController.jumpTime);
 			} else {
 				if (p5.sketchController.arrayOfFirstWords.length) {

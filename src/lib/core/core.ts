@@ -92,13 +92,17 @@ export class Core {
 		this.sketch.loadStrings(
 			filePath,
 			(stringArray) => {
-				console.log('Text File Loaded');
+				if (!stringArray || stringArray.length === 0) {
+					alert('The text file is empty or could not be read.');
+					return;
+				}
+				console.log('Text File Loaded:', stringArray.length, 'lines');
 				this.processData(stringArray, 'txt');
 				this.updateAllDataValues();
 			},
-			(e) => {
+			(error) => {
 				alert('Error loading text file. Please make sure it is correctly formatted.');
-				console.log(e);
+				console.error('File Load Error:', error);
 			}
 		);
 	}
@@ -118,7 +122,7 @@ export class Core {
 					this.updateAllDataValues();
 				} else {
 					alert(
-						'Error loading CSV file. Please make sure your file is a CSV file formatted with correct column headers: speaker, content, start, end'
+						'Error loading CSV file. Please make sure your file is a CSV file formatted with correct column headers labeled "speaker" and "content". You can also include column headers for start and end times labeled "start" and  "end"'
 					);
 				}
 			},
@@ -161,13 +165,30 @@ export class Core {
 		});
 	}
 
-	processData(dataArray: any, fileType: string) {
+	processData(dataArray: any, type: 'csv' | 'txt') {
+		if (!Array.isArray(dataArray) || dataArray.length === 0) {
+			console.warn('No valid data to process.');
+			return;
+		}
+
 		let turnNumber = 0;
 		TranscriptStore.update((currentTranscript) => {
-			const updatedTranscript = { ...currentTranscript }; // Avoid mutating directly
-			for (const line of dataArray) {
-				if (!this.coreUtils.transcriptRowForType(line)) return;
-				const [speakerName, content, startTime, endTime, speakerOrder] = this.createTurnData(line, fileType);
+			const updatedTranscript = { ...currentTranscript };
+
+			for (let i = 0; i < dataArray.length; i++) {
+				const parsedData = this.parseDataLine(dataArray[i], type, updatedTranscript.totalNumOfWords, dataArray, i);
+				if (!parsedData) {
+					console.warn(`Skipping malformed line at index ${i}:`, dataArray[i]);
+					continue;
+				}
+
+				const { speakerName, content, speakerOrder, startTime, endTime } = parsedData;
+
+				if (!Array.isArray(content) || content.length === 0) {
+					console.warn(`Skipping empty content at index ${i} for speaker:`, speakerName);
+					continue;
+				}
+
 				updatedTranscript.largestTurnLength = Math.max(updatedTranscript.largestTurnLength, content.length);
 				updatedTranscript.totalTimeInSeconds = Math.max(updatedTranscript.totalTimeInSeconds, endTime);
 
@@ -175,40 +196,87 @@ export class Core {
 					updatedTranscript.wordArray.push(new DataPoint(speakerName, turnNumber, word, speakerOrder, startTime, endTime));
 					updatedTranscript.totalNumOfWords++;
 				});
+
 				turnNumber++;
 			}
 
 			updatedTranscript.totalConversationTurns = turnNumber;
-			[
-				updatedTranscript.largestNumOfWordsByASpeaker,
-				updatedTranscript.largestNumOfTurnsByASpeaker,
-				updatedTranscript.maxCountOfMostRepeatedWord,
-				updatedTranscript.mostFrequentWord
-			] = this.setAdditionalDataValues(updatedTranscript.wordArray);
+			Object.assign(updatedTranscript, this.setAdditionalDataValues(updatedTranscript.wordArray));
 
-			return updatedTranscript; // Return the new state to update the store
+			return updatedTranscript;
 		});
+	}
+
+	parseDataLine(line: any, type: 'csv' | 'txt', currentWordCount: number, dataArray?: any[], rowIndex?: number) {
+		if (type === 'csv') {
+			if (!this.coreUtils.hasSpeakerNameAndContent(line)) return null;
+			const headers = this.coreUtils.headersTranscriptWithTime;
+			const speakerName = String(line[headers[0]]).trim().toUpperCase();
+			this.updateUsers(speakerName);
+			const content = this.createTurnContentArray(String(line[headers[1]]).trim());
+			const speakerOrder = get(UserStore).findIndex((user) => user.name === speakerName);
+
+			let startTime = parseFloat(line[headers[2]]);
+			let endTime = parseFloat(line[headers[3]]);
+
+			// Explicitly check if the start and end time headers exist
+			const hasStartTime = headers[2] !== undefined;
+			const hasEndTime = headers[3] !== undefined;
+
+			if (isNaN(startTime) && hasStartTime) {
+				// Search backward for a missing startTime
+				for (let i = rowIndex - 1; i >= 0; i--) {
+					const prevStart = parseFloat(dataArray[i][headers[2]]);
+					if (!isNaN(prevStart)) {
+						startTime = prevStart; // Use closest previous start time
+						break;
+					}
+				}
+			}
+			if (isNaN(startTime)) startTime = currentWordCount; // Final fallback if still no startTime
+
+			// Check for missing endTime independently
+			if (isNaN(endTime) && hasEndTime) {
+				// Search forward for missing endTime
+				for (let i = rowIndex + 1; i < dataArray.length; i++) {
+					const nextStart = parseFloat(dataArray[i][headers[2]]);
+					if (!isNaN(nextStart) && nextStart > startTime) {
+						endTime = nextStart; // Use closest next start time
+						break;
+					}
+				}
+			}
+			if (isNaN(endTime)) endTime = startTime + content.length; // Final fallback if no endTime found
+
+			return { speakerName, content, speakerOrder, startTime, endTime };
+		} else {
+			if (!line || typeof line !== 'string') return null;
+			const content = this.createTurnContentArray(line.trim());
+			if (content.length === 0) return null;
+			const speakerName = content.shift()?.trim()?.toUpperCase() || '';
+			if (!speakerName || content.length === 0) return null;
+			this.updateUsers(speakerName);
+			const speakerOrder = get(UserStore).findIndex((user) => user.name === speakerName);
+			const startTime = currentWordCount;
+			const endTime = currentWordCount + content.length;
+			return { speakerName, content, speakerOrder, startTime, endTime };
+		}
 	}
 
 	setAdditionalDataValues(arr: DataPoint[]): [number, number, number, string] {
 		const speakerWordCounts = new Map<string, number>(); // Map: speaker -> word count
 		const speakerTurnCounts = new Map<string, Set<number>>(); // Map: speaker -> Set of turn numbers (unique)
 		const wordFrequency = new Map<string, number>(); // Map: word -> frequency
-
 		let maxWordFrequency = 0;
 		let mostFrequentWord = '';
-
-		// Process each word data
 		arr.forEach(({ speaker, turnNumber, word }) => {
 			// Track word count for each speaker
 			speakerWordCounts.set(speaker, (speakerWordCounts.get(speaker) || 0) + 1);
-
 			// Track unique turns per speaker (turnNumber should be unique for each speaker)
 			if (!speakerTurnCounts.has(speaker)) {
 				speakerTurnCounts.set(speaker, new Set());
 			}
 			speakerTurnCounts.get(speaker)?.add(turnNumber);
-
 			// Track word frequency
 			if (word) {
 				wordFrequency.set(word, (wordFrequency.get(word) || 0) + 1);
@@ -220,31 +288,12 @@ export class Core {
 			}
 		});
 
-		// Return the calculated values in the correct format
-		return [
-			Math.max(...Array.from(speakerWordCounts.values())), // largest number of words by a speaker
-			Math.max(...Array.from(speakerTurnCounts.values()).map((turnSet) => turnSet.size)), // largest number of turns by a speaker
-			maxWordFrequency, // max count of the most repeated word
-			mostFrequentWord // most frequent word
-		];
-	}
-
-	createTurnData(line: any, fileType: string) {
-		if (fileType === 'csv') {
-			const headers = this.coreUtils.headersTranscript;
-			const tokens = this.createTurnContentArray(String(line[headers[1]]));
-			const speakerName = String(line[headers[0]].toUpperCase());
-			this.updateUsers(speakerName);
-			const speakerOrder = get(UserStore).findIndex((user) => user.name === speakerName);
-			return [speakerName, tokens, parseFloat(line[headers[2]]) || 0, parseFloat(line[headers[3]]) || 0, speakerOrder];
-		} else {
-			const tokens = this.createTurnContentArray(line);
-			const speakerName = tokens.shift().toUpperCase();
-			this.updateUsers(speakerName);
-			const speakerOrder = get(UserStore).findIndex((user) => user.name === speakerName);
-			const transcript = get(TranscriptStore);
-			return [speakerName, tokens, transcript.totalNumOfWords, transcript.totalNumOfWords + tokens.length, speakerOrder];
-		}
+		return {
+			largestNumOfWordsByASpeaker: Math.max(...Array.from(speakerWordCounts.values())), // largest number of words by a speaker
+			largestNumOfTurnsByASpeaker: Math.max(...Array.from(speakerTurnCounts.values()).map((turnSet) => turnSet.size)), // largest number of turns by a speaker
+			maxCountOfMostRepeatedWord: maxWordFrequency, // max count of the most repeated word
+			mostFrequentWord
+		};
 	}
 
 	updateUsers(userName: string) {
