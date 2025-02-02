@@ -15,7 +15,7 @@
 
 <style>
 	#main-hero {
-		background-image: url(/images/te-background.png);
+		background-image: url(/images/te-low-res.png);
 		min-height: calc(100vh);
 	}
 </style>
