@@ -10,7 +10,6 @@
 	import MdSettings from 'svelte-icons/md/MdSettings.svelte';
 
 	import type { User } from '../../models/user';
-
 	import UserStore from '../../stores/userStore';
 	import P5Store from '../../stores/p5Store';
 	import VideoStore from '../../stores/videoStore';
