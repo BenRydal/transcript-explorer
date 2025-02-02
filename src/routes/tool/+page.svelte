@@ -27,6 +27,7 @@
 	import ConfigStore from '../../stores/configStore';
 	import type { ConfigStoreType } from '../../stores/configStore';
 	import { initialConfig } from '../../stores/configStore';
+	import TranscriptStore from '../../stores/transcriptStore';
 
 	const techniqueToggleOptions = ['diagramToggle', 'chartToggle', 'cloudToggle', 'dashboardToggle'] as const;
 	const interactionsToggleOptions = ['flowersToggle', 'separateToggle', 'sortToggle', 'lastWordToggle', 'echoesToggle', 'stopWordsToggle', 'repeatedWordsToggle'] as const;
@@ -400,66 +401,6 @@
 					/>
 				</div>
 
-				<!-- Sampling Interval -->
-				<div class="flex flex-col">
-					<label for="samplingInterval" class="font-medium">Sampling Interval: {currentConfig.samplingInterval} sec</label>
-					<input
-						id="samplingInterval"
-						type="range"
-						min="0.1"
-						max="5"
-						step="0.1"
-						bind:value={currentConfig.samplingInterval}
-						on:input={(e) => handleConfigChange('samplingInterval', parseFloat(e.target.value))}
-						class="range range-primary"
-					/>
-				</div>
-
-				<!-- Small Data Threshold -->
-				<div class="flex flex-col">
-					<label for="smallDataThreshold" class="font-medium">Small Data Threshold: {currentConfig.smallDataThreshold}</label>
-					<input
-						id="smallDataThreshold"
-						type="range"
-						min="500"
-						max="10000"
-						step="100"
-						bind:value={currentConfig.smallDataThreshold}
-						on:input={(e) => handleConfigChange('smallDataThreshold', parseInt(e.target.value))}
-						class="range range-primary"
-					/>
-				</div>
-
-				<!-- Movement StrokeWeight -->
-				<div class="flex flex-col">
-					<label for="movementStrokeWeight" class="font-medium">Movement Line Weight: {currentConfig.movementStrokeWeight}</label>
-					<input
-						id="movementStrokeWeight"
-						type="range"
-						min="1"
-						max="20"
-						step="1"
-						bind:value={currentConfig.movementStrokeWeight}
-						on:input={(e) => handleConfigChange('movementStrokeWeight', parseInt(e.target.value))}
-						class="range range-primary"
-					/>
-				</div>
-
-				<!-- Stop StrokeWeight -->
-				<div class="flex flex-col">
-					<label for="stopStrokeWeight" class="font-medium">Stop Line Weight: {currentConfig.stopStrokeWeight}</label>
-					<input
-						id="stopStrokeWeight"
-						type="range"
-						min="1"
-						max="20"
-						step="1"
-						bind:value={currentConfig.stopStrokeWeight}
-						on:input={(e) => handleConfigChange('stopStrokeWeight', parseInt(e.target.value))}
-						class="range range-primary"
-					/>
-				</div>
-
 				<!-- Text Input for Seconds (Numeric Only) -->
 				<div class="flex flex-col">
 					<label for="inputSeconds" class="font-medium">End Time (seconds)</label>
@@ -520,9 +461,9 @@
 			<div class="overflow-x-auto">
 				<div class="flex flex-col">
 					<div class="flex-col my-4">
-						<h4 class="font-bold my-2">Codes:</h4>
+						<h4 class="font-bold my-2">Transcript:</h4>
 						<div class="grid grid-cols-5 gap-4">
-							<!-- {#each $CodeStore as code}
+							<!-- {#each $TranscriptStore as code}
 								<div class="badge badge-neutral">{code.code}</div>
 							{/each} -->
 						</div>
@@ -551,7 +492,7 @@
 										</div>
 									</div>
 									<h2 class="font-medium">Data Points:</h2>
-									<DataPointTable dataPoints={user.dataTrail} />
+									<!-- <DataPointTable dataPoints={user.dataTrail} /> -->
 								</div>
 							</div>
 						</div>
