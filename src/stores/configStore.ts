@@ -1,9 +1,9 @@
 import { writable } from 'svelte/store';
 
 export interface ConfigStoreType {
-	diagramToggle: boolean;
-	chartToggle: boolean;
-	cloudToggle: boolean;
+	distributionDiagramToggle: boolean;
+	turnChartToggle: boolean;
+	contributionCloudToggle: boolean;
 	dashboardToggle: boolean;
 	flowersToggle: boolean;
 	separateToggle: boolean;
@@ -17,9 +17,9 @@ export interface ConfigStoreType {
 }
 
 export const initialConfig: ConfigStoreType = {
-	diagramToggle: true,
-	chartToggle: false,
-	cloudToggle: false,
+	distributionDiagramToggle: true,
+	turnChartToggle: false,
+	contributionCloudToggle: false,
 	dashboardToggle: false,
 	flowersToggle: false,
 	separateToggle: false,

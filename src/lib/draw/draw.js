@@ -12,13 +12,13 @@ export class Draw {
 
 	drawViz() {
 		const drawMode = get(ConfigStore);
-		if (drawMode.diagramToggle) {
+		if (drawMode.distributionDiagramToggle) {
 			this.resetAll();
 			this.updateDistributionDiagram(this.getFullScreenPos());
-		} else if (drawMode.chartToggle) {
+		} else if (drawMode.turnChartToggle) {
 			this.resetAll();
 			this.updateTurnChart(this.getFullScreenPos());
-		} else if (drawMode.cloudToggle) {
+		} else if (drawMode.contributionCloudToggle) {
 			this.resetForCC();
 			this.updateContributionCloud(this.getFullScreenPos());
 		} else {

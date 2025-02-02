@@ -29,7 +29,7 @@
 	import { initialConfig } from '../../stores/configStore';
 	import TranscriptStore from '../../stores/transcriptStore';
 
-	const techniqueToggleOptions = ['diagramToggle', 'chartToggle', 'cloudToggle', 'dashboardToggle'] as const;
+	const techniqueToggleOptions = ['distributionDiagramToggle', 'turnChartToggle', 'contributionCloudToggle', 'dashboardToggle'] as const;
 	const interactionsToggleOptions = ['flowersToggle', 'separateToggle', 'sortToggle', 'lastWordToggle', 'echoesToggle', 'stopWordsToggle', 'repeatedWordsToggle'] as const;
 
 	let selectedDropDownOption = '';
@@ -135,9 +135,12 @@
 			.join(' ');
 	}
 
-	// TODO: Sync this with the capitalizeEachWord function
-	function capitalizeFirstLetter(string: string) {
-		return string.charAt(0).toUpperCase() + string.slice(1);
+	function formatToggleName(toggle) {
+		return toggle
+			.replace('Toggle', '') // Remove 'Toggle'
+			.replace(/([A-Z])/g, ' $1') // Add space before capital letters
+			.trim()
+			.replace(/^./, str => str.toUpperCase()); // Capitalize first letter
 	}
 
 	function handleConfigChangeFromInput(e: Event, key: keyof ConfigStoreType) {
@@ -165,6 +168,7 @@
 					updatedStore[key] = key === selection ? !updatedStore[key] : false;
 				}
 			});
+			p5Instance?.sketchController.fillSelectedData();
 			p5Instance?.loop();
 			return updatedStore;
 		});
@@ -246,7 +250,7 @@
 									<MdCheck />
 								{/if}
 							</div>
-							{capitalizeFirstLetter(toggle.replace('Toggle', ''))}
+							{formatToggleName(toggle)}
 						</button>
 					</li>
 				{/each}
@@ -265,7 +269,7 @@
 									<MdCheck />
 								{/if}
 							</div>
-							{capitalizeFirstLetter(toggle.replace('Toggle', ''))}
+							{formatToggleName(toggle)}
 						</button>
 					</li>
 				{/each}
