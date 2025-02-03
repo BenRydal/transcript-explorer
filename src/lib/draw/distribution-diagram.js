@@ -198,9 +198,4 @@ export class DistributionDiagram {
 		const radius = Math.sqrt(area / Math.PI);
 		return radius;
 	}
-
-	getSpeakerFromList(speaker) {
-		const hasSameName = (element) => element.name === speaker;
-		return this.sk.core.speakerList[this.sk.core.speakerList.findIndex(hasSameName)];
-	}
 }

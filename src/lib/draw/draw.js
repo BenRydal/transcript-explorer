@@ -95,7 +95,7 @@ export class Draw {
 			x: this.sk.SPACING,
 			y: this.sk.SPACING,
 			width: this.sk.width - this.sk.SPACING,
-			height: this.sk.height - 3 * this.sk.SPACING
+			height: this.sk.height - this.sk.SPACING
 		};
 	}
 
