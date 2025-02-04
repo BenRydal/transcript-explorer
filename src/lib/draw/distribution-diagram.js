@@ -6,6 +6,10 @@ import ConfigStore from '../../stores/configStore';
 export class DistributionDiagram {
 	constructor(sk, pos) {
 		this.sk = sk;
+		this.users = get(UserStore);
+		this.flowersToggle = get(ConfigStore).flowersToggle;
+		this.largestNumOfWordsByASpeaker = get(TranscriptStore).largestNumOfWordsByASpeaker;
+		this.largestNumOfTurnsByASpeaker = get(TranscriptStore).largestNumOfTurnsByASpeaker;
 		this.utils = new drawUtils(sk);
 		this.pixelWidth = pos.width;
 		this.maxCircleRadius = this.getMaxCircleRadius(this.pixelWidth);
@@ -17,19 +21,12 @@ export class DistributionDiagram {
 		this.yPosHalfHeight = pos.y + (pos.height - pos.y) / 2;
 	}
 
-	getMaxCircleRadius(pixelWidth) {
-		const currentUsers = get(UserStore);
-		return pixelWidth / (currentUsers.length + 1);
-	}
-
 	draw(sortedAnimationWordArray) {
 		for (const key in sortedAnimationWordArray) {
 			if (sortedAnimationWordArray[key].length) {
-				const currentUsers = get(UserStore);
-				const user = currentUsers.find((user) => user.name === sortedAnimationWordArray[key][0].speaker);
+				const user = this.users.find((user) => user.name === sortedAnimationWordArray[key][0].speaker);
 				if (user.enabled) {
-					const config = get(ConfigStore);
-					this.drawViz(sortedAnimationWordArray[key], config.flowersToggle);
+					this.drawViz(sortedAnimationWordArray[key], this.flowersToggle);
 				}
 			}
 			this.xPosCurCircle += this.maxCircleRadius;
@@ -39,9 +36,7 @@ export class DistributionDiagram {
 	drawViz(tempTurnArray, isDrawFlower) {
 		const firstElement = tempTurnArray[0];
 		const metrics = this.calculateMetrics(tempTurnArray);
-
-		const currentUsers = get(UserStore);
-		const user = currentUsers.find((user) => user.name === firstElement.speaker);
+		const user = this.users.find((user) => user.name === firstElement.speaker);
 		const color = this.sk.color(user.color);
 
 		if (isDrawFlower) {
@@ -84,8 +79,7 @@ export class DistributionDiagram {
 		const bottom = this.yPosBottom - this.sk.SPACING;
 		const top = this.yPosTop + this.maxCircleRadius;
 
-		const transcript = get(TranscriptStore);
-		const scaledNumOfTurns = this.sk.map(numOfTurns, 0, transcript.largestNumOfTurnsByASpeaker, bottom, top);
+		const scaledNumOfTurns = this.sk.map(numOfTurns, 0, this.largestNumOfTurnsByASpeaker, bottom, top);
 
 		this.drawStalkVisualization(scaledWordArea, this.xPosCurCircle, scaledNumOfTurns, color);
 
@@ -119,8 +113,7 @@ export class DistributionDiagram {
 		this.sk.fill(0);
 		this.sk.noStroke();
 		this.sk.textSize(16);
-		const transcript = get(TranscriptStore);
-		this.sk.text(`${transcript.largestNumOfTurnsByASpeaker} Turns`, this.xLeft - this.sk.SPACING / 2, top - this.sk.SPACING / 2);
+		this.sk.text(`${this.largestNumOfTurnsByASpeaker} Turns`, this.xLeft - this.sk.SPACING / 2, top - this.sk.SPACING / 2);
 	}
 
 	drawStalk(scaleFactor, xPos, yPos) {
@@ -136,18 +129,11 @@ export class DistributionDiagram {
 		}
 	}
 
+	// Calculates the number of unique turns in an array of objects. A "turn" is counted each time the `turnNumber` changes from the previous object.
 	calculateNumOfTurns(objects) {
-		let previousTurnNumber = null;
-		let changeCount = 0;
-		// Iterate through the array
-		objects.forEach((obj) => {
-			// Check if 'order' is different from the previous one
-			if (obj.turnNumber !== previousTurnNumber) {
-				changeCount++;
-				previousTurnNumber = obj.turnNumber;
-			}
-		});
-		return changeCount;
+		return objects.reduce((count, obj, index, arr) => {
+			return index > 0 && obj.turnNumber === arr[index - 1].turnNumber ? count : count + 1;
+		}, 0);
 	}
 
 	setColor(color, alpha) {
@@ -173,23 +159,24 @@ export class DistributionDiagram {
 
 	drawWordDetails(turnArray, speakerColor) {
 		this.sk.textSize(this.sk.toolTipTextSize);
-		let prevTurnNumber = -1;
-		let combined;
-		turnArray.forEach((element, index) => {
-			if (element.turnNumber !== prevTurnNumber) {
-				if (index === 0) combined = element.word.toString();
-				else combined = combined.concat(' ', element.word.toString());
+		const firstWords = new Set();
+		const combined = turnArray.reduce((acc, element) => {
+			if (!firstWords.has(element.turnNumber)) {
+				firstWords.add(element.turnNumber);
 				this.sk.sketchController.arrayOfFirstWords.push(element);
-				prevTurnNumber = element.turnNumber;
+				return acc + (acc ? ' ' : '') + element.word;
 			}
-		});
-		//this.sk.text(combined, 0 + this.sk.SPACING, this.yPosTop + this.sk.SPACING, this.pixelWidth - this.sk.SPACING, this.yPosHalfHeight - this.maxCircleRadius);
+			return acc;
+		}, '');
 		this.utils.drawTextBox(combined, speakerColor);
 	}
 
+	getMaxCircleRadius(pixelWidth) {
+		return pixelWidth / (this.users.length + 1);
+	}
+
 	getScaledArea(value) {
-		const transcript = get(TranscriptStore);
-		const maxValue = transcript.largestNumOfWordsByASpeaker;
+		const maxValue = this.largestNumOfWordsByASpeaker;
 		// Normalize the value to a scale of 0 to 1, relative to the maximum value
 		const normalizedValue = value / maxValue;
 		// Map the normalized value to an area
