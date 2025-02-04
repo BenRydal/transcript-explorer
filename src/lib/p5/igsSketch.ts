@@ -125,7 +125,7 @@ export const igsSketch = (p5: any) => {
 			} else if (currConfig.distributionDiagramToggle && p5.sketchController.arrayOfFirstWords.length) {
 				p5.videoController.playForDistributionDiagram(p5.sketchController.arrayOfFirstWords);
 			} else if (currConfig.turnChartToggle) {
-				p5.videoController.playForTurnChart(p5.sketchController.getTimeValueFromPixel(p5.mouseX));
+				p5.videoController.playForTurnChart(p5.getTimeValueFromPixel(p5.mouseX));
 			} else if (currConfig.contributionCloudToggle && p5.sketchController.selectedWordFromContributionCloud !== undefined) {
 				p5.videoController.playForContributionCloud(p5.videoController.jumpTime);
 			} else {
@@ -138,6 +138,10 @@ export const igsSketch = (p5: any) => {
 				}
 			}
 		}
+	};
+
+	p5.getTimeValueFromPixel = (pixelValue: number) => {
+		return Math.floor(p5.map(pixelValue, p5.SPACING, p5.width - p5.SPACING, timeline.getLeftMarker(), timeline.getRightMarker()));
 	};
 
 	p5.dataIsLoaded = (data: any) => {

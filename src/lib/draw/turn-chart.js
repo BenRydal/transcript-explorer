@@ -61,8 +61,8 @@ export class TurnChart {
 	/** Draws turn bubbles */
 	drawBubs(turnArray) {
 		const turnData = turnArray[0]; // Use meaningful variable name
-		const xStart = this.sk.sketchController.getPixelValueFromTime(turnData.startTime);
-		const xEnd = this.sk.sketchController.getPixelValueFromTime(turnData.endTime);
+		const xStart = this.getPixelValueFromTime(turnData.startTime);
+		const xEnd = this.getPixelValueFromTime(turnData.endTime);
 		const xCenter = xStart + (xEnd - xStart) / 2;
 		let [height, yCenter] = this.getCoordinates(turnArray.length, turnData.order);
 
@@ -107,5 +107,9 @@ export class TurnChart {
 
 	getVerticalLayoutSpacing(height) {
 		return height / this.users.length;
+	}
+
+	getPixelValueFromTime(timeValue) {
+		return this.sk.map(timeValue, this.timeline.getLeftMarker(), this.timeline.getRightMarker(), this.sk.SPACING, this.sk.width - this.sk.SPACING);
 	}
 }
