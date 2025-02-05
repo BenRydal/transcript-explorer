@@ -210,8 +210,6 @@ export const igsSketch = (p5: any) => {
 	p5.windowResized = () => {
 		const bottomNavHeight = (document.querySelector('.btm-nav') as HTMLElement).offsetHeight;
 		p5.resizeCanvas(window.innerWidth, window.innerHeight - bottomNavHeight);
-		// p5.GUITEXTSIZE = p5.width / 70;
-		// p5.textSize(p5.GUITEXTSIZE);
 		p5.loop();
 	};
 
