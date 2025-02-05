@@ -49,7 +49,6 @@
 			if (!isAnimating) p5Instance.resetAnimation();
 			else p5Instance.fillAllData();
 			p5Instance.videoController.timelinePlayPause();
-			p5Instance.loop();
 		}
 	};
 
@@ -73,7 +72,6 @@
 			return timeline;
 		});
 
-		if (p5Instance) p5Instance.loop(); // loop after any update once sketch is defined
 		loaded = true; // Set loaded to true after successful update
 	};
 
@@ -112,8 +110,6 @@
 			const newRate = Math.min(currentConfig.animationRate + 0.05, 1); // Cap at 1
 			return { ...currentConfig, animationRate: newRate };
 		});
-
-		if (p5Instance) p5Instance.loop(); // Trigger redraw if necessary
 	};
 
 	const slowDown = () => {
@@ -121,8 +117,6 @@
 			const newRate = Math.max(currentConfig.animationRate - 0.05, 0.01); // Floor at 0.01
 			return { ...currentConfig, animationRate: newRate };
 		});
-
-		if (p5Instance) p5Instance.loop(); // Trigger redraw if necessary
 	};
 
 	onMount(async () => {

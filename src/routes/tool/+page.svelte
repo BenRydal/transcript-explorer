@@ -105,7 +105,6 @@
 		const { lastWordToggle, stopWordsToggle, echoesToggle } = currentConfig;
 		if (echoesToggle !== prevConfig.echoesToggle || lastWordToggle !== prevConfig.lastWordToggle || stopWordsToggle !== prevConfig.stopWordsToggle) {
 			p5Instance?.fillSelectedData();
-			p5Instance?.loop();
 		}
 		prevConfig = { echoesToggle, lastWordToggle, stopWordsToggle };
 	}
@@ -142,7 +141,6 @@
 			...value,
 			[key]: parseFloat(target.value)
 		}));
-		p5Instance?.loop(); // Trigger redraw
 	}
 
 	function handleConfigChange(key: keyof ConfigStoreType, value: any) {
@@ -150,7 +148,6 @@
 			...store,
 			[key]: value
 		}));
-		p5Instance?.loop();
 	}
 
 	function toggleSelection(selection: ToggleKey, toggleOptions: ToggleKey[]) {
@@ -162,10 +159,8 @@
 				}
 			});
 			p5Instance?.fillSelectedData();
-			p5Instance?.loop();
 			return updatedStore;
 		});
-		p5Instance?.loop();
 	}
 
 	function toggleSelectionOnly(selection: ToggleKey, toggleOptions: ToggleKey[]) {
@@ -198,12 +193,10 @@
 
 	function updateUserLoadedFiles(event) {
 		core.handleUserLoadedFiles(event);
-		p5Instance.loop();
 	}
 
 	function updateExampleDataDropDown(event) {
 		core.handleExampleDropdown(event);
-		p5Instance.loop();
 	}
 
 	function handleWordSearch(event) {
@@ -212,10 +205,6 @@
 			...config,
 			wordToSearch: newWord
 		}));
-		// Trigger a redraw of the P5 sketch
-		if (p5Instance) {
-			p5Instance.loop();
-		}
 	}
 </script>
 
@@ -572,14 +561,13 @@
 								type="checkbox"
 								class="checkbox"
 								bind:checked={user.enabled}
-								on:change={() => p5Instance?.loop()}
 							/>
 							Conversation
 						</div>
 					</li>
 					<li>
 						<div class="flex items-center">
-							<input type="color" class="color-picker max-w-[24px] max-h-[28px]" bind:value={user.color} on:click={() => p5Instance?.loop()} />
+							<input type="color" class="color-picker max-w-[24px] max-h-[28px]" bind:value={user.color} />
 							Color
 						</div>
 					</li>

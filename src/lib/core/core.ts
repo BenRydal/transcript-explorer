@@ -350,7 +350,6 @@ export class Core {
 		this.sketch.resetScalingVars();
 		UserStore.set([]);
 		TranscriptStore.set(new Transcript());
-		this.sketch.loop();
 	}
 
 	clearTranscriptData() {
@@ -359,6 +358,5 @@ export class Core {
 		this.sketch.resetScalingVars();
 		UserStore.set([]);
 		TranscriptStore.set(new Transcript());
-		this.sketch.loop();
 	}
 }

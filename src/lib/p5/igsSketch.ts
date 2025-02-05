@@ -110,10 +110,6 @@ export const igsSketch = (p5: any) => {
 		});
 	};
 
-	p5.mouseMoved = () => {
-		p5.loop();
-	};
-
 	p5.mousePressed = () => {
 		if (p5.videoController.isLoaded && p5.videoController.isShowing) {
 			if (p5.videoController.isPlaying) {
@@ -211,7 +207,6 @@ export const igsSketch = (p5: any) => {
 	p5.windowResized = () => {
 		const bottomNavHeight = (document.querySelector('.btm-nav') as HTMLElement).offsetHeight;
 		p5.resizeCanvas(window.innerWidth, window.innerHeight - bottomNavHeight);
-		p5.loop();
 	};
 
 	p5.overCircle = (x: number, y: number, diameter: number) => {
