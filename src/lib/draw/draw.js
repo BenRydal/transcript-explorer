@@ -5,6 +5,12 @@ import ConfigStore from '../../stores/configStore';
 import TimelineStore from '../../stores/timelineStore';
 import { get } from 'svelte/store';
 
+let currConfig;
+
+ConfigStore.subscribe((data) => {
+	currConfig = data;
+});
+
 export class Draw {
 	constructor(sketch) {
 		this.sk = sketch;
@@ -43,7 +49,10 @@ export class Draw {
 		for (const index of curAnimationArray) {
 			if (this.between(index.startTime, timeline.getLeftMarker(), timeline.getRightMarker())) contributionCloud.draw(index);
 		}
-		this.sk.sketchController.selectedWordFromContributionCloud = contributionCloud.selectedWordFromContributionCloud;
+		ConfigStore.update((currConfig) => ({
+			...currConfig,
+			selectedWordFromContributionCloud: contributionCloud.selectedWordFromContributionCloud
+		}));
 		if (contributionCloud.yPosDynamic > pos.height) this.sk.sketchController.updateScalingVars();
 	}
 
@@ -76,14 +85,14 @@ export class Draw {
 	}
 
 	resetAll() {
-		this.sk.sketchController.arrayOfFirstWords = [];
-		this.sk.sketchController.selectedWordFromContributionCloud = undefined;
-		this.sk.sketchController.firstWordOfTurnSelectedInTurnChart = undefined;
+		currConfig.arrayOfFirstWords = [];
+		currConfig.selectedWordFromContributionCloud = '';
+		currConfig.firstWordOfTurnSelectedInTurnChart = '';
 	}
 
 	resetForCC() {
-		this.sk.sketchController.arrayOfFirstWords = [];
-		this.sk.sketchController.firstWordOfTurnSelectedInTurnChart = undefined;
+		currConfig.arrayOfFirstWords = [];
+		currConfig.firstWordOfTurnSelectedInTurnChart = '';
 	}
 
 	between(x, min, max) {

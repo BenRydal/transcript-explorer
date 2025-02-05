@@ -3,11 +3,16 @@ import { get } from 'svelte/store';
 import TranscriptStore from '../../stores/transcriptStore';
 import UserStore from '../../stores/userStore';
 import ConfigStore from '../../stores/configStore';
+
+let currConfig;
+
+ConfigStore.subscribe((data) => {
+	currConfig = data;
+});
 export class DistributionDiagram {
 	constructor(sk, pos) {
 		this.sk = sk;
 		this.users = get(UserStore);
-		this.flowersToggle = get(ConfigStore).flowersToggle;
 		this.largestNumOfWordsByASpeaker = get(TranscriptStore).largestNumOfWordsByASpeaker;
 		this.largestNumOfTurnsByASpeaker = get(TranscriptStore).largestNumOfTurnsByASpeaker;
 		this.utils = new drawUtils(sk);
@@ -26,7 +31,7 @@ export class DistributionDiagram {
 			if (sortedAnimationWordArray[key].length) {
 				const user = this.users.find((user) => user.name === sortedAnimationWordArray[key][0].speaker);
 				if (user.enabled) {
-					this.drawViz(sortedAnimationWordArray[key], this.flowersToggle);
+					this.drawViz(sortedAnimationWordArray[key], currConfig.flowersToggle);
 				}
 			}
 			this.xPosCurCircle += this.maxCircleRadius;
@@ -163,7 +168,7 @@ export class DistributionDiagram {
 		const combined = turnArray.reduce((acc, element) => {
 			if (!firstWords.has(element.turnNumber)) {
 				firstWords.add(element.turnNumber);
-				this.sk.sketchController.arrayOfFirstWords.push(element);
+				currConfig.arrayOfFirstWords.push(element);
 				return acc + (acc ? ' ' : '') + element.word;
 			}
 			return acc;

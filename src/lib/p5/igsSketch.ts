@@ -122,22 +122,47 @@ export const igsSketch = (p5: any) => {
 		if (p5.videoController.isLoaded && p5.videoController.isShowing) {
 			if (p5.videoController.isPlaying) {
 				p5.videoController.pause();
-			} else if (currConfig.distributionDiagramToggle && p5.sketchController.arrayOfFirstWords.length) {
-				p5.videoController.playForDistributionDiagram(p5.sketchController.arrayOfFirstWords);
+			} else if (currConfig.distributionDiagramToggle && currConfig.arrayOfFirstWords.length) {
+				p5.videoController.playForDistributionDiagram(currConfig.arrayOfFirstWords);
 			} else if (currConfig.turnChartToggle) {
 				p5.videoController.playForTurnChart(p5.getTimeValueFromPixel(p5.mouseX));
-			} else if (currConfig.contributionCloudToggle && p5.sketchController.selectedWordFromContributionCloud !== undefined) {
+			} else if (currConfig.contributionCloudToggle && !currConfig.selectedWordFromContributionCloud) {
 				p5.videoController.playForContributionCloud(p5.videoController.jumpTime);
 			} else {
-				if (p5.sketchController.arrayOfFirstWords.length) {
-					p5.videoController.playForDistributionDiagram(p5.sketchController.arrayOfFirstWords);
-				} else if (p5.sketchController.selectedWordFromContributionCloud !== undefined) {
+				if (currConfig.arrayOfFirstWords.length) {
+					p5.videoController.playForDistributionDiagram(currConfig.arrayOfFirstWords);
+				} else if (!currConfig.selectedWordFromContributionCloud) {
 					p5.videoController.playForContributionCloud(p5.videoController.jumpTime);
 				} else {
 					p5.videoController.playForTurnChart(p5.sketchController.getTimeValueFromPixel(p5.mouseX));
 				}
 			}
 		}
+	};
+
+	/**
+	 * Determines whether to draw an item/word object based on specified properties and conditions.
+	 * Used to highlight data in the dashboard view.
+	 * @param {Object} item - The word/item to be checked for drawing.
+	 * @param {string} comparisonProperty - The property of the word to compare (e.g., 'turnNumber').
+	 * @param {string} selectedProperty - The property name in this object for comparison (e.g., 'firstWordOfTurnSelectedInTurnChart').
+	 * @returns {boolean} - True if the item should be drawn, false otherwise.
+	 */
+	p5.shouldDraw = (item: any, comparisonProperty: string, selectedProperty: string) => {
+		// Retrieve the comparison object from this object's property.
+		const comparisonObject = currConfig[selectedProperty];
+
+		// Determine if there are any first words to consider for comparison.
+		const hasFirstWords = currConfig.arrayOfFirstWords && currConfig.arrayOfFirstWords.length > 0;
+
+		// Check if the item's property matches the corresponding property in the comparison object.
+		const matchesComparisonProperty = comparisonObject ? item[comparisonProperty] === comparisonObject[comparisonProperty] : true;
+
+		// Check if the item's speaker matches the speaker of the first word, if applicable.
+		const matchesFirstSpeaker = hasFirstWords ? item.speaker === currConfig.arrayOfFirstWords[0].speaker : true;
+
+		// The item should be drawn if it matches both the comparison property and the first speaker.
+		return matchesComparisonProperty && matchesFirstSpeaker;
 	};
 
 	p5.getTimeValueFromPixel = (pixelValue: number) => {

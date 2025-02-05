@@ -5,6 +5,12 @@ import TimelineStore from '../../stores/timelineStore';
 import UserStore from '../../stores/userStore';
 import ConfigStore from '../../stores/configStore';
 
+let currConfig;
+
+ConfigStore.subscribe((data) => {
+	currConfig = data;
+});
+
 export class TurnChart {
 	constructor(sk, pos) {
 		this.sk = sk;
@@ -20,7 +26,6 @@ export class TurnChart {
 	getStores() {
 		this.transcript = get(TranscriptStore);
 		this.users = get(UserStore);
-		this.config = get(ConfigStore);
 		this.timeline = get(TimelineStore);
 	}
 
@@ -31,7 +36,7 @@ export class TurnChart {
 		for (const key in sortedAnimationWordArray) {
 			if (!sortedAnimationWordArray[key].length) continue;
 			const user = this.users.find((u) => u.name === sortedAnimationWordArray[key][0].speaker);
-			if (user?.enabled && this.sk.sketchController.shouldDraw(sortedAnimationWordArray[key][0], 'turnNumber', 'selectedWordFromContributionCloud')) {
+			if (user?.enabled && this.sk.shouldDraw(sortedAnimationWordArray[key][0], 'turnNumber', 'selectedWordFromContributionCloud')) {
 				this.drawBubs(sortedAnimationWordArray[key]);
 			}
 		}
@@ -76,7 +81,7 @@ export class TurnChart {
 
 		// Handle hover interaction
 		if (this.sk.overRect(xStart, yCenter - height / 2, xEnd - xStart, height)) {
-			this.sk.sketchController.firstWordOfTurnSelectedInTurnChart = turnArray[0];
+			currConfig.firstWordOfTurnSelectedInTurnChart = turnArray[0];
 			this.drawText(turnArray, speakerColor);
 		}
 	}
@@ -84,7 +89,7 @@ export class TurnChart {
 	/** Determines the coordinates for turn bubbles */
 	getCoordinates(turnLength, order) {
 		let height, yCenter;
-		if (this.config.separateToggle) {
+		if (currConfig.separateToggle) {
 			height = this.sk.map(turnLength, 0, this.transcript.largestTurnLength, 0, this.verticalLayoutSpacing);
 			yCenter = this.yPosTop + this.verticalLayoutSpacing * order;
 		} else {

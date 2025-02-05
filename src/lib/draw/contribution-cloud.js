@@ -10,7 +10,7 @@ export class ContributionCloud {
 		this.yPosDynamic = pos.y + this.sk.sketchController.scalingVars.spacing;
 		this.pixelWidth = pos.width;
 		this.prevSpeaker = undefined;
-		this.selectedWordFromContributionCloud = undefined;
+		this.selectedWordFromContributionCloud = ''; // Used to highlight words in contribution cloud
 		this.getStores();
 	}
 
@@ -24,7 +24,7 @@ export class ContributionCloud {
 		this.sk.noStroke();
 		this.updateCurPos(index);
 		this.setScaledTextSize(index.count);
-		if (user.enabled) this.overText(index); // //if (this.sk.sketchController.shouldDraw(index, "turnNumber", "firstWordOfTurnSelectedInTurnChart")) this.drawText(index);
+		if (user.enabled) this.overText(index);
 		if (this.shouldDrawTest(index)) this.drawText(index, user);
 		this.updateForNextWord(index);
 	}
@@ -86,14 +86,15 @@ export class ContributionCloud {
 	}
 
 	shouldDrawTest(index) {
-		const shouldDraw = this.sk.sketchController.shouldDraw(index, 'turnNumber', 'firstWordOfTurnSelectedInTurnChart');
+		const shouldDraw = this.sk.shouldDraw(index, 'turnNumber', 'firstWordOfTurnSelectedInTurnChart');
 		return shouldDraw && (!this.config.repeatedWordsToggle || index.count >= this.config.repeatWordSliderValue);
 	}
 
 	setTextColor(userColor, index) {
 		let color = 225; // Default color
-		const selectedWord = this.sk.sketchController.selectedWordFromContributionCloud;
+		const selectedWord = this.config.selectedWordFromContributionCloud;
 		if (selectedWord) {
+			console.log(selectedWord);
 			if (index.word === selectedWord.word) {
 				color = userColor; // Highlight same word
 			} else if (index.turnNumber === selectedWord.turnNumber) {

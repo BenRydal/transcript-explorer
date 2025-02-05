@@ -14,6 +14,9 @@ export interface ConfigStoreType {
 	repeatedWordsToggle: boolean;
 	animationRate: number;
 	repeatWordSliderValue: number;
+	selectedWordFromContributionCloud: string;
+	firstWordOfTurnSelectedInTurnChart: string;
+	arrayOfFirstWords: string[];
 }
 
 export const initialConfig: ConfigStoreType = {
@@ -29,7 +32,10 @@ export const initialConfig: ConfigStoreType = {
 	stopWordsToggle: false,
 	repeatedWordsToggle: false,
 	animationRate: 0.05,
-	repeatWordSliderValue: 5
+	repeatWordSliderValue: 5,
+	selectedWordFromContributionCloud: '',
+	firstWordOfTurnSelectedInTurnChart: '',
+	arrayOfFirstWords: []
 };
 
 const ConfigStore = writable<ConfigStoreType>(initialConfig);
