@@ -139,7 +139,7 @@ export class Core {
 		ConfigStore.update((currentConfig) => {
 			return { ...currentConfig, repeatWordSliderValue: transcript.maxCountOfMostRepeatedWord };
 		});
-		this.sketch.sketchController.fillAllData();
+		this.sketch.fillAllData();
 	}
 
 	async loadLocalExampleDataFile(folder: string, fileName: string) {
@@ -331,7 +331,7 @@ export class Core {
 		console.log('Clearing all data');
 		this.sketch.videoController.clear();
 		this.sketch.dynamicData.clear();
-		this.sketch.sketchController.scalingVars = this.sketch.sketchController.createScalingVars();
+		this.sketch.resetScalingVars();
 		UserStore.set([]);
 		TranscriptStore.set(new Transcript());
 		this.sketch.loop();
@@ -340,7 +340,7 @@ export class Core {
 	clearTranscriptData() {
 		console.log('Clearing Transcript Data');
 		this.sketch.dynamicData.clear();
-		this.sketch.sketchController.scalingVars = this.sketch.sketchController.createScalingVars();
+		this.sketch.resetScalingVars();
 		UserStore.set([]);
 		TranscriptStore.set(new Transcript());
 		this.sketch.loop();

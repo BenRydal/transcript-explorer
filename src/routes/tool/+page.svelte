@@ -24,7 +24,6 @@
 	import TimelineStore from '../../stores/timelineStore';
 	import ConfigStore from '../../stores/configStore';
 	import type { ConfigStoreType } from '../../stores/configStore';
-	import { initialConfig } from '../../stores/configStore';
 	import TranscriptStore from '../../stores/transcriptStore';
 
 	const techniqueToggleOptions = ['distributionDiagramToggle', 'turnChartToggle', 'contributionCloudToggle', 'dashboardToggle'] as const;
@@ -105,7 +104,7 @@
 	$: {
 		const { lastWordToggle, stopWordsToggle, echoesToggle } = currentConfig;
 		if (echoesToggle !== prevConfig.echoesToggle || lastWordToggle !== prevConfig.lastWordToggle || stopWordsToggle !== prevConfig.stopWordsToggle) {
-			p5Instance?.sketchController.fillSelectedData();
+			p5Instance?.fillSelectedData();
 			p5Instance?.loop();
 		}
 		prevConfig = { echoesToggle, lastWordToggle, stopWordsToggle };
@@ -119,16 +118,6 @@
 				value.isPlaying = p5Instance.videoController.isPlaying;
 				return value;
 			});
-		}
-	}
-
-	function resetSettings() {
-		ConfigStore.update(() => ({
-			...initialConfig
-		}));
-
-		if (p5Instance) {
-			p5Instance.loop();
 		}
 	}
 
@@ -172,7 +161,7 @@
 					updatedStore[key] = key === selection ? !updatedStore[key] : false;
 				}
 			});
-			p5Instance?.sketchController.fillSelectedData();
+			p5Instance?.fillSelectedData();
 			p5Instance?.loop();
 			return updatedStore;
 		});
@@ -434,7 +423,7 @@
 			</div>
 
 			<div class="modal-action">
-				<button class="btn btn-warning" on:click={resetSettings}> Reset Settings </button>
+				<button class="btn btn-warning" on:click={() => p5Instance?.resetScalingVars()}> Reset Settings </button>
 				<button class="btn" on:click={() => (showSettings = false)}>Close</button>
 			</div>
 		</div>

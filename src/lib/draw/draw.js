@@ -53,7 +53,7 @@ export class Draw {
 			...currConfig,
 			selectedWordFromContributionCloud: contributionCloud.selectedWordFromContributionCloud
 		}));
-		if (contributionCloud.yPosDynamic > pos.height) this.sk.sketchController.updateScalingVars();
+		if (contributionCloud.yPosDynamic > pos.height) this.sk.updateScalingVars();
 	}
 
 	drawDashboard() {

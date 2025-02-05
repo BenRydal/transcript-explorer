@@ -46,8 +46,8 @@
 		});
 
 		if (p5Instance) {
-			if (!isAnimating) p5Instance.sketchController.resetAnimation();
-			else p5Instance.sketchController.fillAllData();
+			if (!isAnimating) p5Instance.resetAnimation();
+			else p5Instance.fillAllData();
 			p5Instance.videoController.timelinePlayPause();
 			p5Instance.loop();
 		}

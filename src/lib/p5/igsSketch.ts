@@ -1,13 +1,11 @@
 import P5Store from '../../stores/p5Store';
+import TranscriptStore from '../../stores/transcriptStore.js';
 import UserStore from '../../stores/userStore';
+import type { User } from '../../models/user';
 import TimelineStore from '../../stores/timelineStore';
 import ConfigStore from '../../stores/configStore';
-import type { User } from '../../models/user';
-
-import { VideoController, Draw, DynamicData, SketchController } from '..';
-
-import TranscriptStore from '../../stores/transcriptStore.js';
-import { get } from 'svelte/store';
+import { initialConfig } from '../../stores/configStore';
+import { VideoController, Draw, DynamicData } from '..';
 
 let users: User[] = [];
 let timeline, transcript, currConfig;
@@ -37,7 +35,6 @@ export const igsSketch = (p5: any) => {
 	p5.setup = () => {
 		const bottomNavHeight = (document.querySelector('.btm-nav') as HTMLElement).offsetHeight;
 		p5.createCanvas(window.innerWidth, window.innerHeight - bottomNavHeight);
-		p5.sketchController = new SketchController(p5);
 		p5.dynamicData = new DynamicData(p5);
 		p5.videoController = new VideoController(p5);
 		p5.SPACING = 25;
@@ -47,7 +44,6 @@ export const igsSketch = (p5: any) => {
 	};
 
 	p5.draw = () => {
-		const transcript = get(TranscriptStore);
 		if (p5.arrayIsLoaded(transcript.wordArray) && p5.arrayIsLoaded(users)) {
 			p5.background(255);
 			const render = new Draw(p5);
@@ -134,10 +130,48 @@ export const igsSketch = (p5: any) => {
 				} else if (!currConfig.selectedWordFromContributionCloud) {
 					p5.videoController.playForContributionCloud(p5.videoController.jumpTime);
 				} else {
-					p5.videoController.playForTurnChart(p5.sketchController.getTimeValueFromPixel(p5.mouseX));
+					p5.videoController.playForTurnChart(p5.getTimeValueFromPixel(p5.mouseX));
 				}
 			}
 		}
+	};
+
+	p5.resetAnimation = () => {
+		p5.resetScalingVars();
+		p5.dynamicData.clear();
+		p5.animationCounter = 0;
+	};
+
+	p5.fillAllData = () => {
+		p5.animationCounter = transcript.wordArray.length;
+		p5.fillSelectedData();
+	};
+
+	p5.fillSelectedData = () => {
+		p5.resetScalingVars();
+		p5.dynamicData.clear();
+		for (let i = 0; i < p5.animationCounter; i++) {
+			p5.dynamicData.update(transcript.wordArray[i]);
+		}
+	};
+
+	p5.resetScalingVars = () => {
+		ConfigStore.update((currConfig) => ({
+			...currConfig,
+			scalingVars: { ...initialConfig.scalingVars } // Reset to initial values
+		}));
+	};
+
+	p5.updateScalingVars = (scaleFactor = 0.9) => {
+		ConfigStore.update((currConfig) => ({
+			...currConfig,
+			scalingVars: {
+				minTextSize: currConfig.scalingVars.minTextSize * scaleFactor,
+				maxTextSize: currConfig.scalingVars.maxTextSize * scaleFactor,
+				spacing: currConfig.scalingVars.spacing * scaleFactor,
+				newSpeakerSpacing: currConfig.scalingVars.newSpeakerSpacing * scaleFactor
+			}
+		}));
 	};
 
 	/**
@@ -167,10 +201,6 @@ export const igsSketch = (p5: any) => {
 
 	p5.getTimeValueFromPixel = (pixelValue: number) => {
 		return Math.floor(p5.map(pixelValue, p5.SPACING, p5.width - p5.SPACING, timeline.getLeftMarker(), timeline.getRightMarker()));
-	};
-
-	p5.dataIsLoaded = (data: any) => {
-		return data != null; // in javascript this tests for both undefined and null values
 	};
 
 	p5.overRect = (x: number, y: number, boxWidth: number, boxHeight: number) => {

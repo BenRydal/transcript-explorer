@@ -5,13 +5,13 @@ import ConfigStore from '../../stores/configStore';
 export class ContributionCloud {
 	constructor(sk, pos) {
 		this.sk = sk;
+		this.getStores();
 		this.xPosBase = pos.x;
 		this.xPosDynamic = pos.x;
-		this.yPosDynamic = pos.y + this.sk.sketchController.scalingVars.spacing;
+		this.yPosDynamic = pos.y + this.config.scalingVars.spacing;
 		this.pixelWidth = pos.width;
 		this.prevSpeaker = undefined;
 		this.selectedWordFromContributionCloud = ''; // Used to highlight words in contribution cloud
-		this.getStores();
 	}
 
 	getStores() {
@@ -40,7 +40,7 @@ export class ContributionCloud {
 	}
 
 	overText(index) {
-		const boxHeight = this.sk.sketchController.scalingVars.spacing;
+		const boxHeight = this.config.scalingVars.spacing;
 		const boxWidth = this.sk.textWidth(index.word);
 		if (this.sk.overRect(this.xPosDynamic, this.yPosDynamic - boxHeight, boxWidth, boxHeight)) {
 			this.selectedWordFromContributionCloud = index;
@@ -52,10 +52,10 @@ export class ContributionCloud {
 	updateCurPos(index) {
 		if (this.config.separateToggle && this.isNewSpeaker(index.speaker)) {
 			this.xPosDynamic = this.xPosBase;
-			this.yPosDynamic += this.sk.sketchController.scalingVars.newSpeakerSpacing;
+			this.yPosDynamic += this.config.scalingVars.newSpeakerSpacing;
 		} else if (this.getAdjustedXPos(index) > this.pixelWidth) {
 			this.xPosDynamic = this.xPosBase;
-			this.yPosDynamic += this.sk.sketchController.scalingVars.spacing;
+			this.yPosDynamic += this.config.scalingVars.spacing;
 		}
 	}
 
@@ -66,14 +66,7 @@ export class ContributionCloud {
 
 	setScaledTextSize(count) {
 		this.sk.textSize(
-			this.sk.map(
-				count,
-				1,
-				this.config.repeatWordSliderValue,
-				this.sk.sketchController.scalingVars.minTextSize,
-				this.sk.sketchController.scalingVars.maxTextSize,
-				true
-			)
+			this.sk.map(count, 1, this.config.repeatWordSliderValue, this.config.scalingVars.minTextSize, this.config.scalingVars.maxTextSize, true)
 		);
 	}
 
@@ -94,7 +87,6 @@ export class ContributionCloud {
 		let color = 225; // Default color
 		const selectedWord = this.config.selectedWordFromContributionCloud;
 		if (selectedWord) {
-			console.log(selectedWord);
 			if (index.word === selectedWord.word) {
 				color = userColor; // Highlight same word
 			} else if (index.turnNumber === selectedWord.turnNumber) {
