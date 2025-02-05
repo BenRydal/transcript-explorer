@@ -17,14 +17,13 @@ export class Draw {
 	}
 
 	drawViz() {
-		const drawMode = get(ConfigStore);
-		if (drawMode.distributionDiagramToggle) {
+		if (currConfig.distributionDiagramToggle) {
 			this.resetAll();
 			this.updateDistributionDiagram(this.getFullScreenPos());
-		} else if (drawMode.turnChartToggle) {
+		} else if (currConfig.turnChartToggle) {
 			this.resetAll();
 			this.updateTurnChart(this.getFullScreenPos());
-		} else if (drawMode.contributionCloudToggle) {
+		} else if (currConfig.contributionCloudToggle) {
 			this.resetForCC();
 			this.updateContributionCloud(this.getFullScreenPos());
 		} else {
@@ -85,14 +84,20 @@ export class Draw {
 	}
 
 	resetAll() {
-		currConfig.arrayOfFirstWords = [];
-		currConfig.selectedWordFromContributionCloud = '';
-		currConfig.firstWordOfTurnSelectedInTurnChart = '';
+		ConfigStore.update((currConfig) => ({
+			...currConfig,
+			arrayOfFirstWords: [],
+			selectedWordFromContributionCloud: '',
+			firstWordOfTurnSelectedInTurnChart: ''
+		}));
 	}
 
 	resetForCC() {
-		currConfig.arrayOfFirstWords = [];
-		currConfig.firstWordOfTurnSelectedInTurnChart = '';
+		ConfigStore.update((currConfig) => ({
+			...currConfig,
+			arrayOfFirstWords: [],
+			firstWordOfTurnSelectedInTurnChart: ''
+		}));
 	}
 
 	between(x, min, max) {
