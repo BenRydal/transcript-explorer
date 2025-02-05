@@ -74,7 +74,7 @@ export class DistributionDiagram {
 		this.drawSpeakerText(firstElement.speaker, numOfTurns, numOfWords);
 
 		if (this.sk.overCircle(this.xPosCurCircle, this.yPosHalfHeight, scaledWordArea)) {
-			this.drawWordDetails(tempTurnArray, color);
+			this.drawFirstWords(tempTurnArray, color);
 		}
 	}
 
@@ -89,7 +89,7 @@ export class DistributionDiagram {
 		this.drawStalkVisualization(scaledWordArea, this.xPosCurCircle, scaledNumOfTurns, color);
 
 		if (this.sk.overCircle(this.xPosCurCircle, scaledNumOfTurns, scaledWordArea)) {
-			this.drawWordDetails(tempTurnArray, color);
+			this.drawFirstWords(tempTurnArray, color);
 		}
 
 		this.drawFlowerGuideLines(bottom, top);
@@ -162,17 +162,27 @@ export class DistributionDiagram {
 		this.sk.text(text, this.xPosCurCircle, this.yPosHalfHeight + this.maxCircleRadius + yOffset);
 	}
 
-	drawWordDetails(turnArray, speakerColor) {
+	drawFirstWords(turnArray, speakerColor) {
 		this.sk.textSize(this.sk.toolTipTextSize);
 		const firstWords = new Set();
-		const combined = turnArray.reduce((acc, element) => {
+		const wordsToDisplay = [];
+
+		// First, go through the array and collect first words
+		turnArray.forEach((element) => {
 			if (!firstWords.has(element.turnNumber)) {
 				firstWords.add(element.turnNumber);
-				currConfig.arrayOfFirstWords.push(element);
-				return acc + (acc ? ' ' : '') + element.word;
+				wordsToDisplay.push(element.word); // Collect words to display
 			}
-			return acc;
-		}, '');
+		});
+
+		// Now that we have the full set of first words, update the store once
+		ConfigStore.update((currConfig) => ({
+			...currConfig,
+			arrayOfFirstWords: [...(currConfig.arrayOfFirstWords || []), ...Array.from(firstWords)] // Add new first words
+		}));
+
+		// Combine all the words into a single string
+		const combined = wordsToDisplay.join(' ');
 		this.utils.drawTextBox(combined, speakerColor);
 	}
 
