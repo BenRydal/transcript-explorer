@@ -34,11 +34,18 @@ export class Draw {
 	updateDistributionDiagram(pos) {
 		const distributionDiagram = new DistributionDiagram(this.sk, pos);
 		distributionDiagram.draw(this.sk.dynamicData.getDynamicArrayForDistributionDiagram());
+		ConfigStore.update((currConfig) => ({
+			...currConfig,
+			arrayOfFirstWords: [...(currConfig.arrayOfFirstWords || []), ...Array.from(distributionDiagram.localArrayOfFirstWords)] // Add new first words
+		}));
 	}
 
 	updateTurnChart(pos) {
 		const turnChart = new TurnChart(this.sk, pos);
 		turnChart.draw(this.sk.dynamicData.getDynamicArrayForTurnChart());
+		ConfigStore.update((currConfig) => {
+			return { ...currConfig, firstWordOfTurnSelectedInTurnChart: turnChart.localFirstWordOfTurnSelectedInTurnChart };
+		});
 	}
 
 	updateContributionCloud(pos) {

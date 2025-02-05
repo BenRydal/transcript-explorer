@@ -3,18 +3,15 @@ import { get } from 'svelte/store';
 import TranscriptStore from '../../stores/transcriptStore';
 import UserStore from '../../stores/userStore';
 import ConfigStore from '../../stores/configStore';
-
-let currConfig;
-
-ConfigStore.subscribe((data) => {
-	currConfig = data;
-});
 export class DistributionDiagram {
 	constructor(sk, pos) {
 		this.sk = sk;
 		this.users = get(UserStore);
-		this.largestNumOfWordsByASpeaker = get(TranscriptStore).largestNumOfWordsByASpeaker;
-		this.largestNumOfTurnsByASpeaker = get(TranscriptStore).largestNumOfTurnsByASpeaker;
+		this.config = get(ConfigStore);
+		const transcriptData = get(TranscriptStore);
+		this.largestNumOfWordsByASpeaker = transcriptData.largestNumOfWordsByASpeaker;
+		this.largestNumOfTurnsByASpeaker = transcriptData.largestNumOfTurnsByASpeaker;
+		this.localArrayOfFirstWords = [];
 		this.utils = new drawUtils(sk);
 		this.pixelWidth = pos.width;
 		this.maxCircleRadius = this.getMaxCircleRadius(this.pixelWidth);
@@ -31,7 +28,7 @@ export class DistributionDiagram {
 			if (sortedAnimationWordArray[key].length) {
 				const user = this.users.find((user) => user.name === sortedAnimationWordArray[key][0].speaker);
 				if (user.enabled) {
-					this.drawViz(sortedAnimationWordArray[key], currConfig.flowersToggle);
+					this.drawViz(sortedAnimationWordArray[key], this.config.flowersToggle);
 				}
 			}
 			this.xPosCurCircle += this.maxCircleRadius;
@@ -175,12 +172,7 @@ export class DistributionDiagram {
 			}
 		});
 
-		// Now that we have the full set of first words, update the store once
-		ConfigStore.update((currConfig) => ({
-			...currConfig,
-			arrayOfFirstWords: [...(currConfig.arrayOfFirstWords || []), ...Array.from(firstWords)] // Add new first words
-		}));
-
+		this.localArrayOfFirstWords.push(...Array.from(firstWords));
 		// Combine all the words into a single string
 		const combined = wordsToDisplay.join(' ');
 		this.utils.drawTextBox(combined, speakerColor);

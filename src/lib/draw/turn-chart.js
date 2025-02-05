@@ -5,12 +5,6 @@ import TimelineStore from '../../stores/timelineStore';
 import UserStore from '../../stores/userStore';
 import ConfigStore from '../../stores/configStore';
 
-let currConfig;
-
-ConfigStore.subscribe((data) => {
-	currConfig = data;
-});
-
 export class TurnChart {
 	constructor(sk, pos) {
 		this.sk = sk;
@@ -21,9 +15,11 @@ export class TurnChart {
 		this.verticalLayoutSpacing = this.getVerticalLayoutSpacing(pos.height - this.sk.SPACING);
 		this.yPosTop = pos.y + this.sk.SPACING;
 		this.yPosHalfHeight = (this.yPosTop + pos.height - this.sk.SPACING) / 2;
+		this.localFirstWordOfTurnSelectedInTurnChart = '';
 	}
 
 	getStores() {
+		this.config = get(ConfigStore);
 		this.transcript = get(TranscriptStore);
 		this.users = get(UserStore);
 		this.timeline = get(TimelineStore);
@@ -81,7 +77,7 @@ export class TurnChart {
 
 		// Handle hover interaction
 		if (this.sk.overRect(xStart, yCenter - height / 2, xEnd - xStart, height)) {
-			currConfig.firstWordOfTurnSelectedInTurnChart = turnArray[0];
+			this.localFirstWordOfTurnSelectedInTurnChart = turnArray[0];
 			this.drawText(turnArray, speakerColor);
 		}
 	}
@@ -89,7 +85,7 @@ export class TurnChart {
 	/** Determines the coordinates for turn bubbles */
 	getCoordinates(turnLength, order) {
 		let height, yCenter;
-		if (currConfig.separateToggle) {
+		if (this.config.separateToggle) {
 			height = this.sk.map(turnLength, 0, this.transcript.largestTurnLength, 0, this.verticalLayoutSpacing);
 			yCenter = this.yPosTop + this.verticalLayoutSpacing * order;
 		} else {
