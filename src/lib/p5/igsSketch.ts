@@ -183,19 +183,20 @@ export const igsSketch = (p5: any) => {
 	 * @returns {boolean} - True if the item should be drawn, false otherwise.
 	 */
 	p5.shouldDraw = (item: any, comparisonProperty: string, selectedProperty: string) => {
-		// Retrieve the comparison object from this object's property.
-		const comparisonObject = currConfig[selectedProperty];
+		// Retrieve the comparison object safely
+		const comparisonObject = currConfig[selectedProperty] ?? {};
 
-		// Determine if there are any first words to consider for comparison.
-		const hasFirstWords = currConfig.arrayOfFirstWords && currConfig.arrayOfFirstWords.length > 0;
+		// Ensure first words array is defined and has at least one element
+		const hasFirstWords = Array.isArray(currConfig.arrayOfFirstWords) && currConfig.arrayOfFirstWords.length > 0;
 
-		// Check if the item's property matches the corresponding property in the comparison object.
-		const matchesComparisonProperty = comparisonObject ? item[comparisonProperty] === comparisonObject[comparisonProperty] : true;
+		// Safely check if the item's property matches the comparison object's property
+		const matchesComparisonProperty =
+			comparisonObject && comparisonProperty in comparisonObject ? item[comparisonProperty] === comparisonObject[comparisonProperty] : true;
 
-		// Check if the item's speaker matches the speaker of the first word, if applicable.
-		const matchesFirstSpeaker = hasFirstWords ? item.speaker === currConfig.arrayOfFirstWords[0].speaker : true;
+		// Safely check if the item's speaker matches the first word's speaker
+		const matchesFirstSpeaker =
+			hasFirstWords && currConfig.arrayOfFirstWords[0]?.speaker ? item.speaker === currConfig.arrayOfFirstWords[0].speaker : true;
 
-		// The item should be drawn if it matches both the comparison property and the first speaker.
 		return matchesComparisonProperty && matchesFirstSpeaker;
 	};
 

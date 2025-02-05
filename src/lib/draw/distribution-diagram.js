@@ -163,16 +163,15 @@ export class DistributionDiagram {
 		this.sk.textSize(this.sk.toolTipTextSize);
 		const firstWords = new Set();
 		const wordsToDisplay = [];
+		this.localArrayOfFirstWords = []; // Reset before adding
 
-		// First, go through the array and collect first words
 		turnArray.forEach((element) => {
 			if (!firstWords.has(element.turnNumber)) {
 				firstWords.add(element.turnNumber);
+				this.localArrayOfFirstWords.push(element); // Store the full element object
 				wordsToDisplay.push(element.word); // Collect words to display
 			}
 		});
-
-		this.localArrayOfFirstWords.push(...Array.from(firstWords));
 		// Combine all the words into a single string
 		const combined = wordsToDisplay.join(' ');
 		this.utils.drawTextBox(combined, speakerColor);

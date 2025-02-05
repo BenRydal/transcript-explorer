@@ -34,10 +34,13 @@ export class Draw {
 	updateDistributionDiagram(pos) {
 		const distributionDiagram = new DistributionDiagram(this.sk, pos);
 		distributionDiagram.draw(this.sk.dynamicData.getDynamicArrayForDistributionDiagram());
+		//console.log('printing' + distributionDiagram.localArrayOfFirstWords);
+		//console.log(currConfig.arrayOfFirstWords);
 		ConfigStore.update((currConfig) => ({
 			...currConfig,
 			arrayOfFirstWords: [...(currConfig.arrayOfFirstWords || []), ...Array.from(distributionDiagram.localArrayOfFirstWords)] // Add new first words
 		}));
+		console.log(currConfig.arrayOfFirstWords);
 	}
 
 	updateTurnChart(pos) {
