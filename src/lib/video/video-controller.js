@@ -92,7 +92,6 @@ export class VideoController {
 		this.toggleShowVideo();
 		this.videoPlayer.hide();
 		this.isShowing = false;
-		this.sk.loop();
 	}
 
 	/**

@@ -24,7 +24,6 @@
 	import TimelineStore from '../../stores/timelineStore';
 	import ConfigStore from '../../stores/configStore';
 	import type { ConfigStoreType } from '../../stores/configStore';
-	import { initialConfig } from '../../stores/configStore';
 	import TranscriptStore from '../../stores/transcriptStore';
 
 	const techniqueToggleOptions = ['distributionDiagramToggle', 'turnChartToggle', 'contributionCloudToggle', 'dashboardToggle'] as const;
@@ -105,8 +104,7 @@
 	$: {
 		const { lastWordToggle, stopWordsToggle, echoesToggle } = currentConfig;
 		if (echoesToggle !== prevConfig.echoesToggle || lastWordToggle !== prevConfig.lastWordToggle || stopWordsToggle !== prevConfig.stopWordsToggle) {
-			p5Instance?.sketchController.fillSelectedData();
-			p5Instance?.loop();
+			p5Instance?.fillSelectedData();
 		}
 		prevConfig = { echoesToggle, lastWordToggle, stopWordsToggle };
 	}
@@ -119,16 +117,6 @@
 				value.isPlaying = p5Instance.videoController.isPlaying;
 				return value;
 			});
-		}
-	}
-
-	function resetSettings() {
-		ConfigStore.update(() => ({
-			...initialConfig
-		}));
-
-		if (p5Instance) {
-			p5Instance.loop();
 		}
 	}
 
@@ -153,7 +141,6 @@
 			...value,
 			[key]: parseFloat(target.value)
 		}));
-		p5Instance?.loop(); // Trigger redraw
 	}
 
 	function handleConfigChange(key: keyof ConfigStoreType, value: any) {
@@ -161,7 +148,6 @@
 			...store,
 			[key]: value
 		}));
-		p5Instance?.loop();
 	}
 
 	function toggleSelection(selection: ToggleKey, toggleOptions: ToggleKey[]) {
@@ -172,11 +158,9 @@
 					updatedStore[key] = key === selection ? !updatedStore[key] : false;
 				}
 			});
-			p5Instance?.sketchController.fillSelectedData();
-			p5Instance?.loop();
+			p5Instance?.fillSelectedData();
 			return updatedStore;
 		});
-		p5Instance?.loop();
 	}
 
 	function toggleSelectionOnly(selection: ToggleKey, toggleOptions: ToggleKey[]) {
@@ -209,12 +193,10 @@
 
 	function updateUserLoadedFiles(event) {
 		core.handleUserLoadedFiles(event);
-		p5Instance.loop();
 	}
 
 	function updateExampleDataDropDown(event) {
 		core.handleExampleDropdown(event);
-		p5Instance.loop();
 	}
 
 	function handleWordSearch(event) {
@@ -223,10 +205,6 @@
 			...config,
 			wordToSearch: newWord
 		}));
-		// Trigger a redraw of the P5 sketch
-		if (p5Instance) {
-			p5Instance.loop();
-		}
 	}
 </script>
 
@@ -434,7 +412,7 @@
 			</div>
 
 			<div class="modal-action">
-				<button class="btn btn-warning" on:click={resetSettings}> Reset Settings </button>
+				<button class="btn btn-warning" on:click={() => p5Instance?.resetScalingVars()}> Reset Settings </button>
 				<button class="btn" on:click={() => (showSettings = false)}>Close</button>
 			</div>
 		</div>
@@ -612,14 +590,13 @@
 								type="checkbox"
 								class="checkbox"
 								bind:checked={user.enabled}
-								on:change={() => p5Instance?.loop()}
 							/>
 							Conversation
 						</div>
 					</li>
 					<li>
 						<div class="flex items-center">
-							<input type="color" class="color-picker max-w-[24px] max-h-[28px]" bind:value={user.color} on:click={() => p5Instance?.loop()} />
+							<input type="color" class="color-picker max-w-[24px] max-h-[28px]" bind:value={user.color} />
 							Color
 						</div>
 					</li>

@@ -1,13 +1,11 @@
 import P5Store from '../../stores/p5Store';
+import TranscriptStore from '../../stores/transcriptStore.js';
 import UserStore from '../../stores/userStore';
+import type { User } from '../../models/user';
 import TimelineStore from '../../stores/timelineStore';
 import ConfigStore from '../../stores/configStore';
-import type { User } from '../../models/user';
-
-import { VideoController, Draw, DynamicData, SketchController } from '..';
-
-import TranscriptStore from '../../stores/transcriptStore.js';
-import { get } from 'svelte/store';
+import { initialConfig } from '../../stores/configStore';
+import { VideoController, Draw, DynamicData } from '..';
 
 let users: User[] = [];
 let timeline, transcript, currConfig;
@@ -37,7 +35,6 @@ export const igsSketch = (p5: any) => {
 	p5.setup = () => {
 		const bottomNavHeight = (document.querySelector('.btm-nav') as HTMLElement).offsetHeight;
 		p5.createCanvas(window.innerWidth, window.innerHeight - bottomNavHeight);
-		p5.sketchController = new SketchController(p5);
 		p5.dynamicData = new DynamicData(p5);
 		p5.videoController = new VideoController(p5);
 		p5.SPACING = 25;
@@ -47,7 +44,6 @@ export const igsSketch = (p5: any) => {
 	};
 
 	p5.draw = () => {
-		const transcript = get(TranscriptStore);
 		if (p5.arrayIsLoaded(transcript.wordArray) && p5.arrayIsLoaded(users)) {
 			p5.background(255);
 			const render = new Draw(p5);
@@ -114,34 +110,94 @@ export const igsSketch = (p5: any) => {
 		});
 	};
 
-	p5.mouseMoved = () => {
-		p5.loop();
-	};
-
 	p5.mousePressed = () => {
 		if (p5.videoController.isLoaded && p5.videoController.isShowing) {
 			if (p5.videoController.isPlaying) {
 				p5.videoController.pause();
-			} else if (currConfig.distributionDiagramToggle && p5.sketchController.arrayOfFirstWords.length) {
-				p5.videoController.playForDistributionDiagram(p5.sketchController.arrayOfFirstWords);
+			} else if (currConfig.distributionDiagramToggle && currConfig.arrayOfFirstWords.length) {
+				p5.videoController.playForDistributionDiagram(currConfig.arrayOfFirstWords);
 			} else if (currConfig.turnChartToggle) {
-				p5.videoController.playForTurnChart(p5.sketchController.getTimeValueFromPixel(p5.mouseX));
-			} else if (currConfig.contributionCloudToggle && p5.sketchController.selectedWordFromContributionCloud !== undefined) {
+				p5.videoController.playForTurnChart(p5.getTimeValueFromPixel(p5.mouseX));
+			} else if (currConfig.contributionCloudToggle && !currConfig.selectedWordFromContributionCloud) {
 				p5.videoController.playForContributionCloud(p5.videoController.jumpTime);
 			} else {
-				if (p5.sketchController.arrayOfFirstWords.length) {
-					p5.videoController.playForDistributionDiagram(p5.sketchController.arrayOfFirstWords);
-				} else if (p5.sketchController.selectedWordFromContributionCloud !== undefined) {
+				if (currConfig.arrayOfFirstWords.length) {
+					p5.videoController.playForDistributionDiagram(currConfig.arrayOfFirstWords);
+				} else if (!currConfig.selectedWordFromContributionCloud) {
 					p5.videoController.playForContributionCloud(p5.videoController.jumpTime);
 				} else {
-					p5.videoController.playForTurnChart(p5.sketchController.getTimeValueFromPixel(p5.mouseX));
+					p5.videoController.playForTurnChart(p5.getTimeValueFromPixel(p5.mouseX));
 				}
 			}
 		}
 	};
 
-	p5.dataIsLoaded = (data: any) => {
-		return data != null; // in javascript this tests for both undefined and null values
+	p5.resetAnimation = () => {
+		p5.resetScalingVars();
+		p5.dynamicData.clear();
+		p5.animationCounter = 0;
+	};
+
+	p5.fillAllData = () => {
+		p5.animationCounter = transcript.wordArray.length;
+		p5.fillSelectedData();
+	};
+
+	p5.fillSelectedData = () => {
+		p5.resetScalingVars();
+		p5.dynamicData.clear();
+		for (let i = 0; i < p5.animationCounter; i++) {
+			p5.dynamicData.update(transcript.wordArray[i]);
+		}
+	};
+
+	p5.resetScalingVars = () => {
+		ConfigStore.update((currConfig) => ({
+			...currConfig,
+			scalingVars: { ...initialConfig.scalingVars } // Reset to initial values
+		}));
+	};
+
+	p5.updateScalingVars = (scaleFactor = 0.9) => {
+		ConfigStore.update((currConfig) => ({
+			...currConfig,
+			scalingVars: {
+				minTextSize: currConfig.scalingVars.minTextSize * scaleFactor,
+				maxTextSize: currConfig.scalingVars.maxTextSize * scaleFactor,
+				spacing: currConfig.scalingVars.spacing * scaleFactor,
+				newSpeakerSpacing: currConfig.scalingVars.newSpeakerSpacing * scaleFactor
+			}
+		}));
+	};
+
+	/**
+	 * Determines whether to draw an item/word object based on specified properties and conditions.
+	 * Used to highlight data in the dashboard view.
+	 * @param {Object} item - The word/item to be checked for drawing.
+	 * @param {string} comparisonProperty - The property of the word to compare (e.g., 'turnNumber').
+	 * @param {string} selectedProperty - The property name in this object for comparison (e.g., 'firstWordOfTurnSelectedInTurnChart').
+	 * @returns {boolean} - True if the item should be drawn, false otherwise.
+	 */
+	p5.shouldDraw = (item: any, comparisonProperty: string, selectedProperty: string) => {
+		// Retrieve the comparison object safely
+		const comparisonObject = currConfig[selectedProperty] ?? {};
+
+		// Ensure first words array is defined and has at least one element
+		const hasFirstWords = Array.isArray(currConfig.arrayOfFirstWords) && currConfig.arrayOfFirstWords.length > 0;
+
+		// Safely check if the item's property matches the comparison object's property
+		const matchesComparisonProperty =
+			comparisonObject && comparisonProperty in comparisonObject ? item[comparisonProperty] === comparisonObject[comparisonProperty] : true;
+
+		// Safely check if the item's speaker matches the first word's speaker
+		const matchesFirstSpeaker =
+			hasFirstWords && currConfig.arrayOfFirstWords[0]?.speaker ? item.speaker === currConfig.arrayOfFirstWords[0].speaker : true;
+
+		return matchesComparisonProperty && matchesFirstSpeaker;
+	};
+
+	p5.getTimeValueFromPixel = (pixelValue: number) => {
+		return Math.floor(p5.map(pixelValue, p5.SPACING, p5.width - p5.SPACING, timeline.getLeftMarker(), timeline.getRightMarker()));
 	};
 
 	p5.overRect = (x: number, y: number, boxWidth: number, boxHeight: number) => {
@@ -151,9 +207,6 @@ export const igsSketch = (p5: any) => {
 	p5.windowResized = () => {
 		const bottomNavHeight = (document.querySelector('.btm-nav') as HTMLElement).offsetHeight;
 		p5.resizeCanvas(window.innerWidth, window.innerHeight - bottomNavHeight);
-		// p5.GUITEXTSIZE = p5.width / 70;
-		// p5.textSize(p5.GUITEXTSIZE);
-		p5.loop();
 	};
 
 	p5.overCircle = (x: number, y: number, diameter: number) => {

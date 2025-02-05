@@ -14,6 +14,15 @@ export interface ConfigStoreType {
 	repeatedWordsToggle: boolean;
 	animationRate: number;
 	repeatWordSliderValue: number;
+	selectedWordFromContributionCloud: string;
+	firstWordOfTurnSelectedInTurnChart: string;
+	arrayOfFirstWords: string[];
+	scalingVars: {
+		minTextSize: number;
+		maxTextSize: number;
+		spacing: number;
+		newSpeakerSpacing: number;
+	};
 }
 
 export const initialConfig: ConfigStoreType = {
@@ -29,7 +38,16 @@ export const initialConfig: ConfigStoreType = {
 	stopWordsToggle: false,
 	repeatedWordsToggle: false,
 	animationRate: 0.05,
-	repeatWordSliderValue: 5
+	repeatWordSliderValue: 5,
+	selectedWordFromContributionCloud: '',
+	firstWordOfTurnSelectedInTurnChart: '',
+	arrayOfFirstWords: [],
+	scalingVars: {
+		minTextSize: 20,
+		maxTextSize: 50,
+		spacing: 50,
+		newSpeakerSpacing: 75
+	}
 };
 
 const ConfigStore = writable<ConfigStoreType>(initialConfig);

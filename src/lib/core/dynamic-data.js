@@ -13,7 +13,7 @@ export class DynamicData {
 	constructor(sketch) {
 		this.sk = sketch;
 		this.dynamicWordArray = [];
-		this.stopWords = ['the', 'of', 'and', 'is', 'to', 'in', 'a', 'from', 'by', 'that', 'with', 'this', 'as', 'an', 'are', 'its', 'at', 'for'];
+		this.stopWords = this.getStopWords();
 	}
 
 	// add this line to show repeated words in CC for selected time: && this.isInTimeRange(animationWord.startTime, animationWord.endTime)
@@ -41,7 +41,7 @@ export class DynamicData {
 		if (foundWords.length) {
 			if (config.lastWordToggle) {
 				index.count += foundWords[foundWords.length - 1].count; // Increments last word by previous last word in CC
-				if (config.echoesToggle) {
+				if (!config.echoesToggle) {
 					foundWords[foundWords.length - 1].count = 1; // also add this line if you want to reset and highlight ONLY last word, not incremental echo
 				}
 			} else {
@@ -73,7 +73,7 @@ export class DynamicData {
 	}
 
 	getDynamicArrayForDistributionDiagram() {
-		let sortedAnimationWordArrayDeepCopy = this.getAnimationArrayDeepCopy().sort((a, b) => a.order - b.order); // always sort by order for distribution diagrams
+		const sortedAnimationWordArrayDeepCopy = this.getAnimationArrayDeepCopy().sort((a, b) => a.order - b.order); // always sort by order for distribution diagrams
 		return this.sk.dynamicData.splitIntoArrays(sortedAnimationWordArrayDeepCopy, (item) => item.order);
 	}
 
@@ -94,5 +94,105 @@ export class DynamicData {
 
 	clear() {
 		this.dynamicWordArray = [];
+	}
+
+	getStopWords() {
+		return [
+			'the',
+			'of',
+			'and',
+			'is',
+			'to',
+			'in',
+			'a',
+			'from',
+			'by',
+			'that',
+			'with',
+			'this',
+			'as',
+			'an',
+			'are',
+			'its',
+			'at',
+			'for',
+			'on',
+			'at',
+			'by',
+			'with',
+			'for',
+			'in',
+			'to',
+			'from',
+			'about',
+			'as',
+			'into',
+			'during',
+			'after',
+			'before',
+			'above',
+			'below',
+			'around',
+			'between',
+			'under',
+			'he',
+			'she',
+			'it',
+			'they',
+			'we',
+			'I',
+			'you',
+			'them',
+			'my',
+			'your',
+			'his',
+			'her',
+			'its',
+			'our',
+			'their',
+			'whose',
+			'was',
+			'were',
+			'am',
+			'be',
+			'been',
+			'being',
+			'have',
+			'has',
+			'had',
+			'having',
+			'do',
+			'does',
+			'did',
+			'doing',
+			'can',
+			'could',
+			'will',
+			'would',
+			'may',
+			'might',
+			'must',
+			'shall',
+			'should',
+			'not',
+			'no',
+			'yes',
+			'here',
+			'there',
+			'when',
+			'where',
+			'how',
+			'why',
+			'up',
+			'down',
+			'even',
+			'very',
+			'just',
+			'so',
+			'only',
+			'now',
+			'still',
+			'also'
+		];
 	}
 }

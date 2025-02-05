@@ -5,20 +5,25 @@ import ConfigStore from '../../stores/configStore';
 import TimelineStore from '../../stores/timelineStore';
 import { get } from 'svelte/store';
 
+let currConfig;
+
+ConfigStore.subscribe((data) => {
+	currConfig = data;
+});
+
 export class Draw {
 	constructor(sketch) {
 		this.sk = sketch;
 	}
 
 	drawViz() {
-		const drawMode = get(ConfigStore);
-		if (drawMode.distributionDiagramToggle) {
+		if (currConfig.distributionDiagramToggle) {
 			this.resetAll();
 			this.updateDistributionDiagram(this.getFullScreenPos());
-		} else if (drawMode.turnChartToggle) {
+		} else if (currConfig.turnChartToggle) {
 			this.resetAll();
 			this.updateTurnChart(this.getFullScreenPos());
-		} else if (drawMode.contributionCloudToggle) {
+		} else if (currConfig.contributionCloudToggle) {
 			this.resetForCC();
 			this.updateContributionCloud(this.getFullScreenPos());
 		} else {
@@ -29,11 +34,18 @@ export class Draw {
 	updateDistributionDiagram(pos) {
 		const distributionDiagram = new DistributionDiagram(this.sk, pos);
 		distributionDiagram.draw(this.sk.dynamicData.getDynamicArrayForDistributionDiagram());
+		ConfigStore.update((currConfig) => ({
+			...currConfig,
+			arrayOfFirstWords: [...(currConfig.arrayOfFirstWords || []), ...Array.from(distributionDiagram.localArrayOfFirstWords)] // Add new first words
+		}));
 	}
 
 	updateTurnChart(pos) {
 		const turnChart = new TurnChart(this.sk, pos);
 		turnChart.draw(this.sk.dynamicData.getDynamicArrayForTurnChart());
+		ConfigStore.update((currConfig) => {
+			return { ...currConfig, firstWordOfTurnSelectedInTurnChart: turnChart.localFirstWordOfTurnSelectedInTurnChart };
+		});
 	}
 
 	updateContributionCloud(pos) {
@@ -43,8 +55,11 @@ export class Draw {
 		for (const index of curAnimationArray) {
 			if (this.between(index.startTime, timeline.getLeftMarker(), timeline.getRightMarker())) contributionCloud.draw(index);
 		}
-		this.sk.sketchController.selectedWordFromContributionCloud = contributionCloud.selectedWordFromContributionCloud;
-		if (contributionCloud.yPosDynamic > pos.height) this.sk.sketchController.updateScalingVars();
+		ConfigStore.update((currConfig) => ({
+			...currConfig,
+			selectedWordFromContributionCloud: contributionCloud.selectedWordFromContributionCloud
+		}));
+		if (contributionCloud.yPosDynamic > pos.height) this.sk.updateScalingVars();
 	}
 
 	drawDashboard() {
@@ -76,14 +91,20 @@ export class Draw {
 	}
 
 	resetAll() {
-		this.sk.sketchController.arrayOfFirstWords = [];
-		this.sk.sketchController.selectedWordFromContributionCloud = undefined;
-		this.sk.sketchController.firstWordOfTurnSelectedInTurnChart = undefined;
+		ConfigStore.update((currConfig) => ({
+			...currConfig,
+			arrayOfFirstWords: [],
+			selectedWordFromContributionCloud: '',
+			firstWordOfTurnSelectedInTurnChart: ''
+		}));
 	}
 
 	resetForCC() {
-		this.sk.sketchController.arrayOfFirstWords = [];
-		this.sk.sketchController.firstWordOfTurnSelectedInTurnChart = undefined;
+		ConfigStore.update((currConfig) => ({
+			...currConfig,
+			arrayOfFirstWords: [],
+			firstWordOfTurnSelectedInTurnChart: ''
+		}));
 	}
 
 	between(x, min, max) {
@@ -95,7 +116,7 @@ export class Draw {
 			x: this.sk.SPACING,
 			y: this.sk.SPACING,
 			width: this.sk.width - this.sk.SPACING,
-			height: this.sk.height - 3 * this.sk.SPACING
+			height: this.sk.height - this.sk.SPACING
 		};
 	}
 

@@ -1,6 +1,5 @@
 import type p5 from 'p5';
 import Papa from 'papaparse';
-import { get } from 'svelte/store';
 
 import { CoreUtils } from './core-utils.js';
 import { DataPoint } from '../../models/dataPoint.js';
@@ -12,6 +11,16 @@ import TimelineStore from '../../stores/timelineStore';
 import TranscriptStore from '../../stores/transcriptStore.js';
 import { Transcript } from '../../models/transcript';
 import ConfigStore from '../../stores/configStore.js';
+
+let transcript, users;
+
+TranscriptStore.subscribe((data) => {
+	transcript = data;
+});
+
+UserStore.subscribe((data) => {
+	users = data;
+});
 
 const examples = {
 	'example-1': {
@@ -134,12 +143,12 @@ export class Core {
 	};
 
 	updateAllDataValues() {
-		const transcript = get(TranscriptStore);
 		this.updateTimelineValues(transcript.totalTimeInSeconds);
-		ConfigStore.update((currentConfig) => {
-			return { ...currentConfig, repeatWordSliderValue: transcript.maxCountOfMostRepeatedWord };
-		});
-		this.sketch.sketchController.fillAllData();
+		ConfigStore.update((currentConfig) => ({
+			...currentConfig,
+			repeatWordSliderValue: transcript?.maxCountOfMostRepeatedWord ?? 0
+		}));
+		this.sketch.fillAllData();
 	}
 
 	async loadLocalExampleDataFile(folder: string, fileName: string) {
@@ -171,37 +180,44 @@ export class Core {
 			return;
 		}
 
-		let turnNumber = 0;
 		TranscriptStore.update((currentTranscript) => {
 			const updatedTranscript = { ...currentTranscript };
+			let turnNumber = 0;
 
-			for (let i = 0; i < dataArray.length; i++) {
-				const parsedData = this.parseDataLine(dataArray[i], type, updatedTranscript.totalNumOfWords, dataArray, i);
+			const wordArray: DataPoint[] = [];
+
+			dataArray.forEach((data, i) => {
+				const parsedData = this.parseDataLine(data, type, updatedTranscript.totalNumOfWords, dataArray, i);
 				if (!parsedData) {
-					console.warn(`Skipping malformed line at index ${i}:`, dataArray[i]);
-					continue;
+					console.warn(`Skipping malformed line at index ${i}:`, data);
+					return;
 				}
 
 				const { speakerName, content, speakerOrder, startTime, endTime } = parsedData;
 
 				if (!Array.isArray(content) || content.length === 0) {
 					console.warn(`Skipping empty content at index ${i} for speaker:`, speakerName);
-					continue;
+					return;
 				}
 
+				// Update transcript values
 				updatedTranscript.largestTurnLength = Math.max(updatedTranscript.largestTurnLength, content.length);
 				updatedTranscript.totalTimeInSeconds = Math.max(updatedTranscript.totalTimeInSeconds, endTime);
 
+				// Add words to wordArray
 				content.forEach((word) => {
-					updatedTranscript.wordArray.push(new DataPoint(speakerName, turnNumber, word, speakerOrder, startTime, endTime));
+					wordArray.push(new DataPoint(speakerName, turnNumber, word, speakerOrder, startTime, endTime));
 					updatedTranscript.totalNumOfWords++;
 				});
 
 				turnNumber++;
-			}
+			});
 
+			updatedTranscript.wordArray = wordArray;
 			updatedTranscript.totalConversationTurns = turnNumber;
-			Object.assign(updatedTranscript, this.setAdditionalDataValues(updatedTranscript.wordArray));
+
+			// Update additional data values
+			Object.assign(updatedTranscript, this.setAdditionalDataValues(wordArray));
 
 			return updatedTranscript;
 		});
@@ -214,7 +230,7 @@ export class Core {
 			const speakerName = String(line[headers[0]]).trim().toUpperCase();
 			this.updateUsers(speakerName);
 			const content = this.createTurnContentArray(String(line[headers[1]]).trim());
-			const speakerOrder = get(UserStore).findIndex((user) => user.name === speakerName);
+			const speakerOrder = users.findIndex((user) => user.name === speakerName);
 
 			let startTime = parseFloat(line[headers[2]]);
 			let endTime = parseFloat(line[headers[3]]);
@@ -256,7 +272,7 @@ export class Core {
 			const speakerName = content.shift()?.trim()?.toUpperCase() || '';
 			if (!speakerName || content.length === 0) return null;
 			this.updateUsers(speakerName);
-			const speakerOrder = get(UserStore).findIndex((user) => user.name === speakerName);
+			const speakerOrder = users.findIndex((user) => user.name === speakerName);
 			const startTime = currentWordCount;
 			const endTime = currentWordCount + content.length;
 			return { speakerName, content, speakerOrder, startTime, endTime };
@@ -331,18 +347,16 @@ export class Core {
 		console.log('Clearing all data');
 		this.sketch.videoController.clear();
 		this.sketch.dynamicData.clear();
-		this.sketch.sketchController.scalingVars = this.sketch.sketchController.createScalingVars();
+		this.sketch.resetScalingVars();
 		UserStore.set([]);
 		TranscriptStore.set(new Transcript());
-		this.sketch.loop();
 	}
 
 	clearTranscriptData() {
 		console.log('Clearing Transcript Data');
 		this.sketch.dynamicData.clear();
-		this.sketch.sketchController.scalingVars = this.sketch.sketchController.createScalingVars();
+		this.sketch.resetScalingVars();
 		UserStore.set([]);
 		TranscriptStore.set(new Transcript());
-		this.sketch.loop();
 	}
 }
