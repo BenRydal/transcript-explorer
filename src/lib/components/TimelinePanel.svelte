@@ -94,7 +94,8 @@
 		if (value1 === timelineLeft && value2 === timelineCurr && value3 === timelineRight) {
 			return;
 		}
-		p5Instance.resetScalingVars();
+		const timeline = $TimelineStore;
+		if (!timeline.getIsAnimating()) p5Instance.fillSelectedData();
 		TimelineStore.update((timeline) => {
 			timeline.setLeftMarker(value1);
 			timeline.setCurrTime(value2);
