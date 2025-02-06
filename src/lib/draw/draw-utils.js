@@ -6,8 +6,7 @@ export class DrawUtils {
 
 	drawTextBox(stringTurn, speakerColor) {
 		const textBox = this.calculateTextBoxDimensions(this.getTextBoxParams(), stringTurn);
-		const fontSize = this.calculateFontSizeForText(stringTurn, textBox);
-		this.sk.textSize(fontSize);
+		this.calculateFontSizeForText(stringTurn, textBox);
 
 		// Draw the box with padding
 		this.sk.stroke(0);
@@ -79,11 +78,11 @@ export class DrawUtils {
 
 	calculateFontSizeForText(text, textBox) {
 		let fontSize = this.sk.toolTipTextSize; // Start with the default font size
-		const lines = Math.ceil(this.sk.textWidth(text) / textBox.width);
-		let textHeight = lines * this.sk.toolTipTextSize;
-		if (textHeight > textBox.height) {
-			fontSize = fontSize - (textHeight / this.scaleFactor - textBox.height) / lines;
+		while (Math.ceil(this.sk.textWidth(text) / textBox.width) * fontSize * this.scaleFactor > textBox.height) {
+			console.log(this.sk.textWidth(text));
+			fontSize--;
+			this.sk.textSize(fontSize);
+			if (fontSize <= 8) break; // Prevent infinite loop
 		}
-		return fontSize;
 	}
 }
