@@ -147,7 +147,7 @@ export class Core {
 		this.updateTimelineValues(transcript.totalTimeInSeconds);
 		ConfigStore.update((currentConfig) => ({
 			...currentConfig,
-			repeatedWordsToggle: transcript.totalNumOfWords > enableRepeatedWordsThreshold ? true : currentConfig.repeatedWordsToggle
+			repeatedWordsToggle: transcript.totalNumOfWords > enableRepeatedWordsThreshold
 		}));
 		this.sketch.fillAllData();
 	}
