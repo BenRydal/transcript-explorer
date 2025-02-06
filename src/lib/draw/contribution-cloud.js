@@ -19,14 +19,18 @@ export class ContributionCloud {
 		this.config = get(ConfigStore);
 	}
 
-	draw(index) {
-		const user = this.users.find((user) => user.name === index.speaker);
-		this.sk.noStroke();
-		this.updateCurPos(index);
-		this.setScaledTextSize(index.count);
-		if (user.enabled) this.overText(index);
-		if (this.shouldDrawTest(index)) this.drawText(index, user);
-		this.updateForNextWord(index);
+	draw(curAnimationArray) {
+		for (const index of curAnimationArray) {
+			const user = this.users.find((user) => user.name === index.speaker);
+			this.sk.noStroke();
+			this.updateCurPos(index);
+			this.setScaledTextSize(index.count);
+			if (this.shouldDrawTest(index)) {
+				this.drawText(index, user);
+				if (user.enabled) this.overText(index);
+			}
+			this.updateForNextWord(index);
+		}
 	}
 
 	drawText(index, user) {

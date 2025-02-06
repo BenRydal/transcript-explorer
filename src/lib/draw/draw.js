@@ -50,11 +50,7 @@ export class Draw {
 
 	updateContributionCloud(pos) {
 		const contributionCloud = new ContributionCloud(this.sk, pos);
-		const curAnimationArray = this.sk.dynamicData.getDynamicArraySortedForContributionCloud();
-		const timeline = get(TimelineStore);
-		for (const index of curAnimationArray) {
-			if (this.between(index.startTime, timeline.getLeftMarker(), timeline.getRightMarker())) contributionCloud.draw(index);
-		}
+		contributionCloud.draw(this.sk.dynamicData.getDynamicArraySortedForContributionCloud());
 		ConfigStore.update((currConfig) => ({
 			...currConfig,
 			selectedWordFromContributionCloud: contributionCloud.selectedWordFromContributionCloud
