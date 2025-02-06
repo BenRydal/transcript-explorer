@@ -1,4 +1,4 @@
-import { drawUtils } from './draw-utils.js';
+import { DrawUtils } from './draw-utils.js';
 import { get } from 'svelte/store';
 import TranscriptStore from '../../stores/transcriptStore';
 import TimelineStore from '../../stores/timelineStore';
@@ -8,14 +8,14 @@ import ConfigStore from '../../stores/configStore';
 export class TurnChart {
 	constructor(sk, pos) {
 		this.sk = sk;
-		this.utils = new drawUtils(sk);
+		this.utils = new DrawUtils(sk);
 		this.xPosBase = pos.x;
 		this.pixelWidth = pos.width;
 		this.getStores();
 		this.verticalLayoutSpacing = this.getVerticalLayoutSpacing(pos.height - this.sk.SPACING);
 		this.yPosTop = pos.y + this.sk.SPACING;
 		this.yPosHalfHeight = (this.yPosTop + pos.height - this.sk.SPACING) / 2;
-		this.localFirstWordOfTurnSelectedInTurnChart = '';
+		this.userSelectedTurn = { turn: '', color: '' };
 	}
 
 	getStores() {
@@ -35,6 +35,9 @@ export class TurnChart {
 			if (user?.enabled && this.sk.shouldDraw(sortedAnimationWordArray[key][0], 'turnNumber', 'selectedWordFromContributionCloud')) {
 				this.drawBubs(sortedAnimationWordArray[key]);
 			}
+		}
+		if (this.userSelectedTurn && this.userSelectedTurn.turn && this.userSelectedTurn.color) {
+			this.drawText(this.userSelectedTurn.turn, this.sk.color(this.userSelectedTurn.color));
 		}
 	}
 
@@ -77,8 +80,7 @@ export class TurnChart {
 
 		// Handle hover interaction
 		if (this.sk.overRect(xStart, yCenter - height / 2, xEnd - xStart, height)) {
-			this.localFirstWordOfTurnSelectedInTurnChart = turnArray[0];
-			this.drawText(turnArray, speakerColor);
+			this.userSelectedTurn = { turn: turnArray, color: speakerColor };
 		}
 	}
 

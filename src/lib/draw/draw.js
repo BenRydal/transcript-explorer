@@ -44,7 +44,7 @@ export class Draw {
 		const turnChart = new TurnChart(this.sk, pos);
 		turnChart.draw(this.sk.dynamicData.getDynamicArrayForTurnChart());
 		ConfigStore.update((currConfig) => {
-			return { ...currConfig, firstWordOfTurnSelectedInTurnChart: turnChart.localFirstWordOfTurnSelectedInTurnChart };
+			return { ...currConfig, firstWordOfTurnSelectedInTurnChart: turnChart.userSelectedTurn.turn[0] };
 		});
 	}
 

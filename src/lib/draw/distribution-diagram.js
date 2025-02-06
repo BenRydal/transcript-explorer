@@ -1,4 +1,4 @@
-import { drawUtils } from './draw-utils.js';
+import { DrawUtils } from './draw-utils.js';
 import { get } from 'svelte/store';
 import TranscriptStore from '../../stores/transcriptStore';
 import UserStore from '../../stores/userStore';
@@ -12,7 +12,7 @@ export class DistributionDiagram {
 		this.largestNumOfWordsByASpeaker = transcriptData.largestNumOfWordsByASpeaker;
 		this.largestNumOfTurnsByASpeaker = transcriptData.largestNumOfTurnsByASpeaker;
 		this.localArrayOfFirstWords = [];
-		this.utils = new drawUtils(sk);
+		this.utils = new DrawUtils(sk);
 		this.pixelWidth = pos.width;
 		this.maxCircleRadius = this.getMaxCircleRadius(this.pixelWidth);
 		this.maxCircleArea = Math.PI * this.maxCircleRadius * this.maxCircleRadius;

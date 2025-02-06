@@ -1,14 +1,15 @@
-export class drawUtils {
+export class DrawUtils {
 	constructor(sk) {
 		this.sk = sk;
+		this.scaleFactor = 1.3;
 	}
 
-	/**
-	 * Draws textbox and cartoon "bubble" for user selected conversation
-	 * Sets box dimensions based on size of conversation turn/text
-	 */
 	drawTextBox(stringTurn, speakerColor) {
-		const textBox = this.addTextBoxParams(this.getTextBoxParams(), stringTurn);
+		const textBox = this.calculateTextBoxDimensions(this.getTextBoxParams(), stringTurn);
+		const fontSize = this.calculateFontSizeForText(stringTurn, textBox);
+		this.sk.textSize(fontSize);
+
+		// Draw the box with padding
 		this.sk.stroke(0);
 		this.sk.strokeWeight(1);
 		this.sk.fill(255, 200);
@@ -18,11 +19,20 @@ export class drawUtils {
 			textBox.width + 2 * textBox.boxSpacing,
 			textBox.height + 2 * textBox.boxSpacing
 		);
-		// Draw Text
+
+		// Draw the text inside the box
 		this.sk.fill(speakerColor);
 		this.sk.noStroke();
 		this.sk.text(stringTurn, textBox.xPos, textBox.adjustYPos + this.sk.toolTipTextSize, textBox.width, textBox.height);
-		// Cartoon bubble lines
+
+		// Draw cartoon bubble lines
+		this.drawCartoonBubbleLines(textBox);
+	}
+
+	/**
+	 * Draws cartoon bubble lines from the mouse position to the textbox
+	 */
+	drawCartoonBubbleLines(textBox) {
 		this.sk.stroke(255);
 		this.sk.strokeWeight(2);
 		this.sk.line(
@@ -30,7 +40,8 @@ export class drawUtils {
 			textBox.adjustYPos + textBox.yDif,
 			this.sk.mouseX - textBox.rectSpacing / 2,
 			textBox.adjustYPos + textBox.yDif
-		); // white line to hide black rect under cartoon bubble
+		);
+
 		this.sk.stroke(0);
 		this.sk.strokeWeight(1);
 		this.sk.line(this.sk.mouseX, this.sk.mouseY, this.sk.mouseX - textBox.rectSpacing, textBox.adjustYPos + textBox.yDif);
@@ -38,26 +49,41 @@ export class drawUtils {
 	}
 
 	getTextBoxParams() {
+		const widthScale = this.sk.width / 3;
+		const heightScale = this.sk.height / 4;
+
 		return {
-			width: this.sk.width / 3,
-			textLeading: this.sk.width / 57,
-			boxSpacing: this.sk.width / 141, // general textBox spacing variable
-			rectSpacing: this.sk.width / 28.2 // distance from text rectangle of textbox
+			width: widthScale,
+			height: heightScale,
+			textLeading: this.sk.height / 30,
+			boxSpacing: 20,
+			rectSpacing: 50
 		};
 	}
 
-	addTextBoxParams(textBox, talkTurn) {
-		textBox.height = textBox.textLeading * Math.ceil(this.sk.textWidth(talkTurn) / textBox.width) * 1.3;
+	calculateTextBoxDimensions(textBox, talkTurn) {
+		const lines = Math.ceil(this.sk.textWidth(talkTurn) / textBox.width);
+		textBox.height = textBox.textLeading * lines * this.scaleFactor; // Calculate the height based on lines and leading
+		textBox.height = Math.min(textBox.height, this.sk.height / 2); // limit height
 		textBox.xPos = this.sk.constrain(this.sk.mouseX - textBox.width / 2, textBox.boxSpacing, this.sk.width - textBox.width - 2 * textBox.boxSpacing);
-		if (this.sk.mouseY < this.sk.height / 5) {
-			//if top half of screen, text box below rectangle
+
+		if (this.sk.mouseY < this.sk.height / 4) {
 			textBox.adjustYPos = this.sk.mouseY + textBox.rectSpacing;
 			textBox.yDif = -textBox.boxSpacing;
 		} else {
-			//if bottom half of screen, text box above rectangle
 			textBox.adjustYPos = this.sk.mouseY - textBox.rectSpacing - textBox.height;
 			textBox.yDif = textBox.height + textBox.boxSpacing;
 		}
 		return textBox;
+	}
+
+	calculateFontSizeForText(text, textBox) {
+		let fontSize = this.sk.toolTipTextSize; // Start with the default font size
+		const lines = Math.ceil(this.sk.textWidth(text) / textBox.width);
+		let textHeight = lines * this.sk.toolTipTextSize;
+		if (textHeight > textBox.height) {
+			fontSize = fontSize - (textHeight / this.scaleFactor - textBox.height) / lines;
+		}
+		return fontSize;
 	}
 }
