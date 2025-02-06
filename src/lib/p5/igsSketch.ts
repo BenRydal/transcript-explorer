@@ -58,7 +58,6 @@ export const igsSketch = (p5: any) => {
 		p5.handleTimelineAnimationState();
 	};
 
-	// Synchronize animationCounter with mappedTime
 	p5.syncAnimationCounter = (mappedTime) => {
 		if (p5.animationCounter < mappedTime) {
 			p5.scrubForward(mappedTime);
