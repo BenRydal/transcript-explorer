@@ -79,7 +79,6 @@ export class DrawUtils {
 	calculateFontSizeForText(text, textBox) {
 		let fontSize = this.sk.toolTipTextSize; // Start with the default font size
 		while (Math.ceil(this.sk.textWidth(text) / textBox.width) * fontSize * this.scaleFactor > textBox.height) {
-			console.log(this.sk.textWidth(text));
 			fontSize--;
 			this.sk.textSize(fontSize);
 			if (fontSize <= 8) break; // Prevent infinite loop
