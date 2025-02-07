@@ -32,13 +32,24 @@ export class TurnChart {
 		for (const key in sortedAnimationWordArray) {
 			if (!sortedAnimationWordArray[key].length) continue;
 			const user = this.users.find((u) => u.name === sortedAnimationWordArray[key][0].speaker);
-			if (user?.enabled && this.sk.shouldDraw(sortedAnimationWordArray[key][0], 'turnNumber', 'selectedWordFromContributionCloud')) {
+			if (this.testShouldDraw(user, sortedAnimationWordArray[key])) {
 				this.drawBubs(sortedAnimationWordArray[key]);
 			}
 		}
 		if (this.userSelectedTurn && this.userSelectedTurn.turn && this.userSelectedTurn.color) {
 			this.drawText(this.userSelectedTurn.turn, this.sk.color(this.userSelectedTurn.color));
 		}
+	}
+
+	testShouldDraw(user, array) {
+		const isUserEnabled = user.enabled;
+		const shouldDraw = !this.config?.dashboardToggle || this.sk.shouldDraw(array[0], 'turnNumber', 'selectedWordFromContributionCloud');
+		let hasSearchWord = true;
+		if (this.config.wordToSearch) {
+			const combinedString = array.map(({ word }) => word).join(' ');
+			hasSearchWord = combinedString.includes(this.config.wordToSearch);
+		}
+		return isUserEnabled && shouldDraw && hasSearchWord;
 	}
 
 	/** Draws the timeline axis */

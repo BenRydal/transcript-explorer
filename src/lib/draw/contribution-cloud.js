@@ -25,7 +25,7 @@ export class ContributionCloud {
 			this.sk.noStroke();
 			this.updateCurPos(index);
 			this.setScaledTextSize(index.count);
-			if (this.shouldDrawTest(index)) {
+			if (this.testShouldDraw(index)) {
 				this.drawText(index, user);
 				if (user.enabled) this.overText(index);
 			}
@@ -82,9 +82,11 @@ export class ContributionCloud {
 		return curSpeaker !== this.prevSpeaker;
 	}
 
-	shouldDrawTest(index) {
-		const shouldDraw = this.sk.shouldDraw(index, 'turnNumber', 'firstWordOfTurnSelectedInTurnChart');
-		return shouldDraw && (!this.config.repeatedWordsToggle || index.count >= this.config.repeatWordSliderValue);
+	testShouldDraw(index) {
+		const shouldDraw = !this.config?.dashboardToggle || this.sk.shouldDraw(index, 'turnNumber', 'firstWordOfTurnSelectedInTurnChart');
+		const isRepeat = !this.config.repeatedWordsToggle || index.count >= this.config.repeatWordSliderValue;
+		const hasSearchWord = !this.config.wordToSearch || index.word.includes(this.config.wordToSearch);
+		return shouldDraw && isRepeat && hasSearchWord;
 	}
 
 	setTextColor(userColor, index) {
