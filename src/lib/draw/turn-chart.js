@@ -67,7 +67,8 @@ export class TurnChart {
 		// Labels
 		this.sk.noStroke();
 		this.sk.textAlign(this.sk.LEFT);
-		this.sk.text(this.timeline.getLeftMarker() + ' seconds', start, height + this.sk.SPACING);
+		this.sk.textSize(this.sk.toolTipTextSize);
+		this.sk.text(this.timeline.getLeftMarker(), start, height + this.sk.SPACING);
 		this.sk.textAlign(this.sk.RIGHT);
 		this.sk.text(this.timeline.getRightMarker(), end, height + this.sk.SPACING);
 		this.sk.textAlign(this.sk.LEFT);
