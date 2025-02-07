@@ -32,7 +32,7 @@
 		'separateToggle',
 		'sortToggle',
 		'lastWordToggle',
-		'echoesToggle',
+		'echoWordsToggle',
 		'stopWordsToggle',
 		'repeatedWordsToggle'
 	] as const;
@@ -97,16 +97,16 @@
 
 	// TODO: this deals with reactive state not updating correctly when values switch from true to false
 	let prevConfig = {
-		echoesToggle: currentConfig.echoesToggle,
+		echoWordsToggle: currentConfig.echoWordsToggle,
 		lastWordToggle: currentConfig.lastWordToggle,
 		stopWordsToggle: currentConfig.stopWordsToggle
 	};
 	$: {
-		const { lastWordToggle, stopWordsToggle, echoesToggle } = currentConfig;
-		if (echoesToggle !== prevConfig.echoesToggle || lastWordToggle !== prevConfig.lastWordToggle || stopWordsToggle !== prevConfig.stopWordsToggle) {
+		const { lastWordToggle, stopWordsToggle, echoWordsToggle } = currentConfig;
+		if (echoWordsToggle !== prevConfig.echoWordsToggle || lastWordToggle !== prevConfig.lastWordToggle || stopWordsToggle !== prevConfig.stopWordsToggle) {
 			p5Instance?.fillSelectedData();
 		}
-		prevConfig = { echoesToggle, lastWordToggle, stopWordsToggle };
+		prevConfig = { echoWordsToggle, lastWordToggle, stopWordsToggle };
 	}
 
 	function toggleVideo() {

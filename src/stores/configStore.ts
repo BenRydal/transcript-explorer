@@ -9,7 +9,7 @@ export interface ConfigStoreType {
 	separateToggle: boolean;
 	sortToggle: boolean;
 	lastWordToggle: boolean;
-	echoesToggle: boolean;
+	echoWordsToggle: boolean;
 	stopWordsToggle: boolean;
 	repeatedWordsToggle: boolean;
 	animationRate: number;
@@ -35,7 +35,7 @@ export const initialConfig: ConfigStoreType = {
 	separateToggle: false,
 	sortToggle: false,
 	lastWordToggle: false,
-	echoesToggle: false,
+	echoWordsToggle: false,
 	stopWordsToggle: false,
 	repeatedWordsToggle: false,
 	animationRate: 0.05,

@@ -41,7 +41,7 @@ export class DynamicData {
 		if (foundWords.length) {
 			if (config.lastWordToggle) {
 				index.count += foundWords[foundWords.length - 1].count; // Increments last word by previous last word in CC
-				if (!config.echoesToggle) {
+				if (!config.echoWordsToggle) {
 					foundWords[foundWords.length - 1].count = 1; // also add this line if you want to reset and highlight ONLY last word, not incremental echo
 				}
 			} else {
