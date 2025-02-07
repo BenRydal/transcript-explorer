@@ -158,9 +158,9 @@
 					updatedStore[key] = key === selection ? !updatedStore[key] : false;
 				}
 			});
-			p5Instance?.fillSelectedData();
 			return updatedStore;
 		});
+		p5Instance?.fillSelectedData();
 	}
 
 	function toggleSelectionOnly(selection: ToggleKey, toggleOptions: ToggleKey[]) {
@@ -254,14 +254,14 @@
 					</li>
 				{/each}
 				<li class="cursor-none">
-					<p>Highest repeat count: {$ConfigStore.repeatWordSliderValue}</p>
+					<p>Repeated Word Filter: {$ConfigStore.repeatWordSliderValue}</p>
 				</li>
 				<li>
 					<label for="repeatWordRange" class="sr-only">Adjust rect width</label>
 					<input
 						id="repeatWordRange"
 						type="range"
-						min="1"
+						min="2"
 						max="30"
 						value={$ConfigStore.repeatWordSliderValue}
 						class="range"

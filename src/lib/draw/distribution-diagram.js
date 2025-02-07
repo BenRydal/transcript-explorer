@@ -1,4 +1,4 @@
-import { drawUtils } from './draw-utils.js';
+import { DrawUtils } from './draw-utils.js';
 import { get } from 'svelte/store';
 import TranscriptStore from '../../stores/transcriptStore';
 import UserStore from '../../stores/userStore';
@@ -8,11 +8,11 @@ export class DistributionDiagram {
 		this.sk = sk;
 		this.users = get(UserStore);
 		this.config = get(ConfigStore);
-		const transcriptData = get(TranscriptStore);
-		this.largestNumOfWordsByASpeaker = transcriptData.largestNumOfWordsByASpeaker;
-		this.largestNumOfTurnsByASpeaker = transcriptData.largestNumOfTurnsByASpeaker;
+		const transcript = get(TranscriptStore);
+		this.largestNumOfWordsByASpeaker = transcript.largestNumOfWordsByASpeaker;
+		this.largestNumOfTurnsByASpeaker = transcript.largestNumOfTurnsByASpeaker;
 		this.localArrayOfFirstWords = [];
-		this.utils = new drawUtils(sk);
+		this.utils = new DrawUtils(sk);
 		this.pixelWidth = pos.width;
 		this.maxCircleRadius = this.getMaxCircleRadius(this.pixelWidth);
 		this.maxCircleArea = Math.PI * this.maxCircleRadius * this.maxCircleRadius;
@@ -145,34 +145,26 @@ export class DistributionDiagram {
 	}
 
 	drawSpeakerText(speaker, numOfTurns, wordCount) {
-		const textScaling = this.maxCircleRadius / 10;
-		this.sk.textSize(textScaling);
+		this.sk.textSize(this.sk.toolTipTextSize / 2);
 		this.sk.strokeWeight(1);
 		this.sk.textAlign(this.sk.CENTER);
-		this.drawCenteredText(speaker, 0);
-		this.drawCenteredText(numOfTurns + ' turns', 1.5 * textScaling);
-		this.drawCenteredText(wordCount + ' words', 2.5 * textScaling);
+		const text = speaker + '\n' + numOfTurns + ' turns' + '\n' + wordCount + ' words';
+		this.sk.text(text, this.xPosCurCircle - this.maxCircleRadius / 2, this.yPosHalfHeight + this.maxCircleRadius / 1.5, this.maxCircleRadius);
 		this.sk.textAlign(this.sk.LEFT);
-	}
-
-	drawCenteredText(text, yOffset) {
-		this.sk.text(text, this.xPosCurCircle, this.yPosHalfHeight + this.maxCircleRadius + yOffset);
 	}
 
 	drawFirstWords(turnArray, speakerColor) {
 		this.sk.textSize(this.sk.toolTipTextSize);
 		const firstWords = new Set();
 		const wordsToDisplay = [];
-		this.localArrayOfFirstWords = []; // Reset before adding
 
 		turnArray.forEach((element) => {
 			if (!firstWords.has(element.turnNumber)) {
 				firstWords.add(element.turnNumber);
-				this.localArrayOfFirstWords.push(element); // Store the full element object
-				wordsToDisplay.push(element.word); // Collect words to display
+				this.localArrayOfFirstWords.push(element);
+				wordsToDisplay.push(element.word);
 			}
 		});
-		// Combine all the words into a single string
 		const combined = wordsToDisplay.join(' ');
 		this.utils.drawTextBox(combined, speakerColor);
 	}

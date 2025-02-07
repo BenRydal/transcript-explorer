@@ -143,10 +143,11 @@ export class Core {
 	};
 
 	updateAllDataValues() {
+		const enableRepeatedWordsThreshold = 5000;
 		this.updateTimelineValues(transcript.totalTimeInSeconds);
 		ConfigStore.update((currentConfig) => ({
 			...currentConfig,
-			repeatWordSliderValue: transcript?.maxCountOfMostRepeatedWord ?? 0
+			repeatedWordsToggle: transcript.totalNumOfWords > enableRepeatedWordsThreshold
 		}));
 		this.sketch.fillAllData();
 	}
@@ -215,7 +216,6 @@ export class Core {
 
 			updatedTranscript.wordArray = wordArray;
 			updatedTranscript.totalConversationTurns = turnNumber;
-
 			// Update additional data values
 			Object.assign(updatedTranscript, this.setAdditionalDataValues(wordArray));
 

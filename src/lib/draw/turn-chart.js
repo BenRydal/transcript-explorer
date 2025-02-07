@@ -1,4 +1,4 @@
-import { drawUtils } from './draw-utils.js';
+import { DrawUtils } from './draw-utils.js';
 import { get } from 'svelte/store';
 import TranscriptStore from '../../stores/transcriptStore';
 import TimelineStore from '../../stores/timelineStore';
@@ -8,14 +8,14 @@ import ConfigStore from '../../stores/configStore';
 export class TurnChart {
 	constructor(sk, pos) {
 		this.sk = sk;
-		this.utils = new drawUtils(sk);
+		this.utils = new DrawUtils(sk);
 		this.xPosBase = pos.x;
 		this.pixelWidth = pos.width;
 		this.getStores();
 		this.verticalLayoutSpacing = this.getVerticalLayoutSpacing(pos.height - this.sk.SPACING);
 		this.yPosTop = pos.y + this.sk.SPACING;
 		this.yPosHalfHeight = (this.yPosTop + pos.height - this.sk.SPACING) / 2;
-		this.localFirstWordOfTurnSelectedInTurnChart = '';
+		this.userSelectedTurn = { turn: '', color: '' };
 	}
 
 	getStores() {
@@ -32,10 +32,24 @@ export class TurnChart {
 		for (const key in sortedAnimationWordArray) {
 			if (!sortedAnimationWordArray[key].length) continue;
 			const user = this.users.find((u) => u.name === sortedAnimationWordArray[key][0].speaker);
-			if (user?.enabled && this.sk.shouldDraw(sortedAnimationWordArray[key][0], 'turnNumber', 'selectedWordFromContributionCloud')) {
+			if (this.testShouldDraw(user, sortedAnimationWordArray[key])) {
 				this.drawBubs(sortedAnimationWordArray[key]);
 			}
 		}
+		if (this.userSelectedTurn && this.userSelectedTurn.turn && this.userSelectedTurn.color) {
+			this.drawText(this.userSelectedTurn.turn, this.sk.color(this.userSelectedTurn.color));
+		}
+	}
+
+	testShouldDraw(user, array) {
+		const isUserEnabled = user.enabled;
+		const shouldDraw = !this.config?.dashboardToggle || this.sk.shouldDraw(array[0], 'turnNumber', 'selectedWordFromContributionCloud');
+		let hasSearchWord = true;
+		if (this.config.wordToSearch) {
+			const combinedString = array.map(({ word }) => word).join(' ');
+			hasSearchWord = combinedString.includes(this.config.wordToSearch);
+		}
+		return isUserEnabled && shouldDraw && hasSearchWord;
 	}
 
 	/** Draws the timeline axis */
@@ -53,7 +67,8 @@ export class TurnChart {
 		// Labels
 		this.sk.noStroke();
 		this.sk.textAlign(this.sk.LEFT);
-		this.sk.text(this.timeline.getLeftMarker() + ' seconds', start, height + this.sk.SPACING);
+		this.sk.textSize(this.sk.toolTipTextSize);
+		this.sk.text(this.timeline.getLeftMarker(), start, height + this.sk.SPACING);
 		this.sk.textAlign(this.sk.RIGHT);
 		this.sk.text(this.timeline.getRightMarker(), end, height + this.sk.SPACING);
 		this.sk.textAlign(this.sk.LEFT);
@@ -77,8 +92,7 @@ export class TurnChart {
 
 		// Handle hover interaction
 		if (this.sk.overRect(xStart, yCenter - height / 2, xEnd - xStart, height)) {
-			this.localFirstWordOfTurnSelectedInTurnChart = turnArray[0];
-			this.drawText(turnArray, speakerColor);
+			this.userSelectedTurn = { turn: turnArray, color: speakerColor };
 		}
 	}
 

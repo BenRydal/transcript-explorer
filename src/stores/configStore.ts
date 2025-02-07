@@ -17,6 +17,7 @@ export interface ConfigStoreType {
 	selectedWordFromContributionCloud: string;
 	firstWordOfTurnSelectedInTurnChart: string;
 	arrayOfFirstWords: string[];
+	wordToSearch: string;
 	scalingVars: {
 		minTextSize: number;
 		maxTextSize: number;
@@ -42,6 +43,7 @@ export const initialConfig: ConfigStoreType = {
 	selectedWordFromContributionCloud: '',
 	firstWordOfTurnSelectedInTurnChart: '',
 	arrayOfFirstWords: [],
+	wordToSearch: '',
 	scalingVars: {
 		minTextSize: 20,
 		maxTextSize: 50,

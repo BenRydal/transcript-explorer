@@ -44,17 +44,13 @@ export class Draw {
 		const turnChart = new TurnChart(this.sk, pos);
 		turnChart.draw(this.sk.dynamicData.getDynamicArrayForTurnChart());
 		ConfigStore.update((currConfig) => {
-			return { ...currConfig, firstWordOfTurnSelectedInTurnChart: turnChart.localFirstWordOfTurnSelectedInTurnChart };
+			return { ...currConfig, firstWordOfTurnSelectedInTurnChart: turnChart.userSelectedTurn.turn[0] };
 		});
 	}
 
 	updateContributionCloud(pos) {
 		const contributionCloud = new ContributionCloud(this.sk, pos);
-		const curAnimationArray = this.sk.dynamicData.getDynamicArraySortedForContributionCloud();
-		const timeline = get(TimelineStore);
-		for (const index of curAnimationArray) {
-			if (this.between(index.startTime, timeline.getLeftMarker(), timeline.getRightMarker())) contributionCloud.draw(index);
-		}
+		contributionCloud.draw(this.sk.dynamicData.getDynamicArraySortedForContributionCloud());
 		ConfigStore.update((currConfig) => ({
 			...currConfig,
 			selectedWordFromContributionCloud: contributionCloud.selectedWordFromContributionCloud

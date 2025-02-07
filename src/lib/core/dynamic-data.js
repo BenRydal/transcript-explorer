@@ -82,7 +82,7 @@ export class DynamicData {
 	}
 
 	getDynamicArraySortedForContributionCloud() {
-		let curAnimationArray = this.getAnimationArrayDeepCopy();
+		let curAnimationArray = this.getAnimationArrayDeepCopy().filter((word) => this.isInTimeRange(word.startTime, word.endTime));
 		if (config.sortToggle) curAnimationArray.sort((a, b) => b.count - a.count); // sort descending by word count
 		if (config.separateToggle) curAnimationArray.sort((a, b) => a.order - b.order); // only sort by order if not in paragraph mode
 		return curAnimationArray;
