@@ -64,9 +64,9 @@ export class Draw {
 		const cc = this.getDashBoardBottomRight();
 		this.drawDashboardBackground(dd, tc, cc);
 		this.resetVizVarsForDashboard(dd, tc, cc);
-		this.updateDistributionDiagram(this.getDashBoardBottomLeft());
 		this.updateTurnChart(this.getDashBoardTop());
 		this.updateContributionCloud(this.getDashBoardBottomRight());
+		this.updateDistributionDiagram(this.getDashBoardBottomLeft());
 	}
 
 	drawDashboardBackground(dd, tc, cc) {
