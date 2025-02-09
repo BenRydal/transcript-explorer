@@ -64,14 +64,6 @@ export class TurnChart {
 		this.sk.line(start, height - tickLength, start, height + tickLength);
 		this.sk.line(end, height - tickLength, end, height + tickLength);
 		this.sk.line(start, height, end, height);
-		// Labels
-		this.sk.noStroke();
-		this.sk.textAlign(this.sk.LEFT);
-		this.sk.textSize(this.sk.toolTipTextSize);
-		this.sk.text(this.timeline.getLeftMarker(), start, height + this.sk.SPACING);
-		this.sk.textAlign(this.sk.RIGHT);
-		this.sk.text(this.timeline.getRightMarker(), end, height + this.sk.SPACING);
-		this.sk.textAlign(this.sk.LEFT);
 	}
 
 	/** Draws turn bubbles */

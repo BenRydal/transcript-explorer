@@ -32,6 +32,7 @@
 
 	let sliderContainer: HTMLDivElement;
 	let loaded = false;
+	let debounceTimeout; // to handle fillSelectedData call setTimeout
 
 	// Subscribe to ConfigStore to access animationRate
 	let config: ConfigStoreType;
@@ -95,7 +96,13 @@
 			return;
 		}
 		const timeline = $TimelineStore;
-		if (!timeline.getIsAnimating()) p5Instance.fillSelectedData();
+		if (!timeline.getIsAnimating()) {
+			clearTimeout(debounceTimeout);
+			debounceTimeout = setTimeout(() => {
+				p5Instance.fillSelectedData();
+			}, 100); // Adjust delay as needed
+		}
+
 		TimelineStore.update((timeline) => {
 			timeline.setLeftMarker(value1);
 			timeline.setCurrTime(value2);
