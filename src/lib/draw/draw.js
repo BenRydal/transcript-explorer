@@ -2,8 +2,6 @@ import { TurnChart } from './turn-chart.js';
 import { ContributionCloud } from './contribution-cloud.js';
 import { DistributionDiagram } from './distribution-diagram.js';
 import ConfigStore from '../../stores/configStore';
-import TimelineStore from '../../stores/timelineStore';
-import { get } from 'svelte/store';
 
 let currConfig;
 
@@ -18,13 +16,10 @@ export class Draw {
 
 	drawViz() {
 		if (currConfig.distributionDiagramToggle) {
-			this.resetAll();
 			this.updateDistributionDiagram(this.getFullScreenPos());
 		} else if (currConfig.turnChartToggle) {
-			this.resetAll();
 			this.updateTurnChart(this.getFullScreenPos());
 		} else if (currConfig.contributionCloudToggle) {
-			this.resetForCC();
 			this.updateContributionCloud(this.getFullScreenPos());
 		} else {
 			this.drawDashboard();
@@ -34,10 +29,9 @@ export class Draw {
 	updateDistributionDiagram(pos) {
 		const distributionDiagram = new DistributionDiagram(this.sk, pos);
 		distributionDiagram.draw(this.sk.dynamicData.getDynamicArrayForDistributionDiagram());
-		ConfigStore.update((currConfig) => ({
-			...currConfig,
-			arrayOfFirstWords: [...(currConfig.arrayOfFirstWords || []), ...Array.from(distributionDiagram.localArrayOfFirstWords)] // Add new first words
-		}));
+		ConfigStore.update((currConfig) => {
+			return { ...currConfig, arrayOfFirstWords: distributionDiagram.localArrayOfFirstWords };
+		});
 	}
 
 	updateTurnChart(pos) {
@@ -51,10 +45,9 @@ export class Draw {
 	updateContributionCloud(pos) {
 		const contributionCloud = new ContributionCloud(this.sk, pos);
 		contributionCloud.draw(this.sk.dynamicData.getDynamicArraySortedForContributionCloud());
-		ConfigStore.update((currConfig) => ({
-			...currConfig,
-			selectedWordFromContributionCloud: contributionCloud.selectedWordFromContributionCloud
-		}));
+		ConfigStore.update((currConfig) => {
+			return { ...currConfig, selectedWordFromContributionCloud: contributionCloud.selectedWordFromContributionCloud };
+		});
 		if (contributionCloud.yPosDynamic > pos.height) this.sk.updateScalingVars();
 	}
 
@@ -63,10 +56,9 @@ export class Draw {
 		const tc = this.getDashBoardTop();
 		const cc = this.getDashBoardBottomRight();
 		this.drawDashboardBackground(dd, tc, cc);
-		this.resetVizVarsForDashboard(dd, tc, cc);
 		this.updateTurnChart(this.getDashBoardTop());
 		this.updateContributionCloud(this.getDashBoardBottomRight());
-		this.updateDistributionDiagram(this.getDashBoardBottomLeft());
+		this.updateDistributionDiagram(this.getDashBoardBottomLeft()); // draw last to display dd text over other visualizations
 	}
 
 	drawDashboardBackground(dd, tc, cc) {
@@ -74,37 +66,6 @@ export class Draw {
 		this.sk.strokeWeight(2);
 		this.sk.line(dd.x, cc.y, cc.width, dd.y);
 		this.sk.line(dd.width, dd.y, dd.width, cc.height);
-	} // // creates/returns new sorted array but maintains current dynamicArray order right?
-
-	resetVizVarsForDashboard(dd, tc, cc) {
-		if (this.sk.overRect(tc.x, tc.y, tc.width, tc.height)) {
-			this.resetAll();
-		} else if (this.sk.overRect(dd.x, dd.y, dd.width, dd.height)) {
-			this.resetAll();
-		} else if (this.sk.overRect(cc.x, cc.y, cc.width, cc.height)) {
-			this.resetForCC();
-		}
-	}
-
-	resetAll() {
-		ConfigStore.update((currConfig) => ({
-			...currConfig,
-			arrayOfFirstWords: [],
-			selectedWordFromContributionCloud: '',
-			firstWordOfTurnSelectedInTurnChart: ''
-		}));
-	}
-
-	resetForCC() {
-		ConfigStore.update((currConfig) => ({
-			...currConfig,
-			arrayOfFirstWords: [],
-			firstWordOfTurnSelectedInTurnChart: ''
-		}));
-	}
-
-	between(x, min, max) {
-		return x >= min && x <= max;
 	}
 
 	getFullScreenPos() {
