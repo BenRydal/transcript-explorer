@@ -22,7 +22,7 @@
 							and filtering data, watching video, and rescaling data with the interactive timeline.
 						</p>
 						<div class="flex flex-row justify-center flex-wrap gap-4 my-2">
-							<a href="https://youtu.be/FdDVpAYaZwE" target="_blank" class="btn bg-gray-300 text-black">Watch Demo Video</a>
+							<a href="https://youtu.be/_2_3ilMm4pQ" target="_blank" class="btn bg-gray-300 text-black">Watch Demo Video</a>
 							<a href="/images/data_formatting_guide.pdf" target="_blank" class="btn bg-gray-300 text-black">Data Formatting Guide</a>
 							<a href="https://github.com/BenRydal/transcript-explorer" target="_blank" class="btn bg-gray-300 text-black">Contribute</a>
 							<a href="https://doi.org/10.1145/3706598.3713490" target="_blank" class="btn bg-gray-300 text-black">Reference</a>
