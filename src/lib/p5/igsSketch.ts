@@ -80,9 +80,8 @@ export const igsSketch = (p5: any) => {
 		}
 	};
 
-	// Handle continuation or end of animation
 	p5.handleTimelineAnimationState = () => {
-		if (timeline.getCurrTime() < timeline.getEndTime()) {
+		if (timeline.getCurrTime() < timeline.getRightMarker()) {
 			p5.continueTimelineAnimation();
 		} else {
 			p5.endTimelineAnimation();
