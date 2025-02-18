@@ -12,7 +12,9 @@ import TranscriptStore from '../../stores/transcriptStore.js';
 import { Transcript } from '../../models/transcript';
 import ConfigStore from '../../stores/configStore.js';
 
-let transcript, users;
+import { TimeUtils } from './time-utils.js';
+let transcript: Transcript = new Transcript();
+let users: User[] = [];
 
 TranscriptStore.subscribe((data) => {
 	transcript = data;
@@ -232,8 +234,8 @@ export class Core {
 			const content = this.createTurnContentArray(String(line[headers[1]]).trim());
 			const speakerOrder = users.findIndex((user) => user.name === speakerName);
 
-			let startTime = parseFloat(line[headers[2]]);
-			let endTime = parseFloat(line[headers[3]]);
+			let startTime = TimeUtils.toSeconds(line[headers[2]]);
+			let endTime = TimeUtils.toSeconds(line[headers[3]]);
 
 			// Explicitly check if the start and end time headers exist
 			const hasStartTime = headers[2] !== undefined;
@@ -242,7 +244,7 @@ export class Core {
 			if (isNaN(startTime) && hasStartTime) {
 				// Search backward for a missing startTime
 				for (let i = rowIndex - 1; i >= 0; i--) {
-					const prevStart = parseFloat(dataArray[i][headers[2]]);
+					const prevStart = TimeUtils.toSeconds(dataArray[i][headers[2]]);
 					if (!isNaN(prevStart)) {
 						startTime = prevStart; // Use closest previous start time
 						break;
@@ -255,7 +257,7 @@ export class Core {
 			if (isNaN(endTime) && hasEndTime) {
 				// Search forward for missing endTime
 				for (let i = rowIndex + 1; i < dataArray.length; i++) {
-					const nextStart = parseFloat(dataArray[i][headers[2]]);
+					const nextStart = TimeUtils.toSeconds(dataArray[i][headers[2]]);
 					if (!isNaN(nextStart) && nextStart > startTime) {
 						endTime = nextStart; // Use closest next start time
 						break;
