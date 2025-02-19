@@ -7,29 +7,62 @@
 	import MdFastForward from 'svelte-icons/md/MdFastForward.svelte';
 	import MdFastRewind from 'svelte-icons/md/MdFastRewind.svelte';
 	import type p5 from 'p5';
+	import TranscriptStore from '../../stores/transcriptStore';
 
-	// Reactive declarations for store values
 	$: timelineLeft = $TimelineStore.getLeftMarker();
 	$: timelineRight = $TimelineStore.getRightMarker();
 	$: timelineCurr = $TimelineStore.getCurrTime();
 	$: startTime = $TimelineStore.getStartTime();
 	$: endTime = $TimelineStore.getEndTime();
+	$: leftX = $TimelineStore.getLeftX();
+	$: rightX = $TimelineStore.getRightX();
 	$: isAnimating = $TimelineStore.getIsAnimating();
 
+	$: formattedLeft = formatTimeDisplay(timelineLeft);
 	$: formattedRight = formatTimeDisplay(timelineRight);
 	$: formattedCurr = formatTimeDisplay(timelineCurr);
 
-	type TimeFormat = 'HHMMSS' | 'MMSS' | 'SECONDS' | 'DECIMAL';
+	$: {
+		if (currentTimeFormat) {
+			formattedLeft = formatTimeDisplay(timelineLeft);
+			formattedRight = formatTimeDisplay(timelineRight);
+			formattedCurr = formatTimeDisplay(timelineCurr);
+		}
+	}
+
+	type TimeFormat = 'HHMMSS' | 'MMSS' | 'SECONDS' | 'DECIMAL' | 'WORDS';
 
 	let currentTimeFormat: TimeFormat = 'HHMMSS';
+	let useWordCounts = false;
+	let totalWords = 0;
+
+	TranscriptStore.subscribe((transcript) => {
+		totalWords = transcript.totalNumOfWords;
+
+		// Auto-detect if we should use word counts
+		const hasTimeData =
+			transcript.wordArray.length > 0 &&
+			transcript.wordArray.some((word) => typeof word.startTime === 'number' && typeof word.endTime === 'number' && !word.useWordCountsAsFallback);
+
+		useWordCounts = !hasTimeData && transcript.wordArray.length > 0;
+
+		if (useWordCounts && currentTimeFormat !== 'WORDS') {
+			currentTimeFormat = 'WORDS';
+		}
+	});
 
 	function cycleTimeFormat() {
-		const formats: TimeFormat[] = ['HHMMSS', 'MMSS', 'SECONDS', 'DECIMAL'];
+		let formats: TimeFormat[];
+
+		if (useWordCounts) {
+			formats = ['WORDS'];
+		} else {
+			formats = ['HHMMSS', 'MMSS', 'SECONDS', 'DECIMAL', 'WORDS'];
+		}
+
 		const currentIndex = formats.indexOf(currentTimeFormat);
 		const nextIndex = (currentIndex + 1) % formats.length;
 		currentTimeFormat = formats[nextIndex];
-		formattedRight = formatTimeDisplay(timelineRight);
-		formattedCurr = formatTimeDisplay(timelineCurr);
 	}
 
 	function formatTimeDisplay(seconds: number): string {
@@ -42,8 +75,10 @@
 				return `${Math.round(seconds)}s`;
 			case 'DECIMAL':
 				return seconds.toFixed(1) + 's';
+			case 'WORDS':
+				return `${Math.round(seconds)} words`;
 			default:
-				return TimeUtils.formatTimeAuto(seconds);
+				return useWordCounts ? `${Math.round(seconds)} words` : TimeUtils.formatTimeAuto(seconds);
 		}
 	}
 
@@ -57,7 +92,6 @@
 	let loaded = false;
 	let debounceTimeout: number;
 
-	// Subscribe to ConfigStore to access animationRate
 	let config: ConfigStoreType;
 	ConfigStore.subscribe((value) => {
 		config = value;

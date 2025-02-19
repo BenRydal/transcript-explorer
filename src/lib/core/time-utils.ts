@@ -8,8 +8,14 @@ export class TimeUtils {
 	 * - MM:SS
 	 * - Seconds as number
 	 * - Seconds as string
+	 * If empty/null/undefined, returns null to indicate fallback to word count
 	 */
-	static toSeconds(time: string | number): number {
+	static toSeconds(time: string | number | null | undefined): number | null {
+		// If time is null, undefined, or empty string, return null
+		if (time === null || time === undefined || time === '') {
+			return null;
+		}
+
 		// If time is already a number, return it
 		if (typeof time === 'number') {
 			return time;
@@ -33,11 +39,11 @@ export class TimeUtils {
 			}
 		} catch (error) {
 			console.error('Error parsing time:', error);
-			return 0;
+			return null;
 		}
 
-		// Default to 0 if format is not recognized
-		return 0;
+		// Default to null if format is not recognized
+		return null;
 	}
 
 	/**
@@ -54,6 +60,21 @@ export class TimeUtils {
 	static formatTimeAuto(seconds: number): string {
 		const duration = Duration.fromObject({ seconds: Math.round(seconds) });
 		return seconds < 3600 ? duration.toFormat('mm:ss') : duration.toFormat('hh:mm:ss');
+	}
+
+	/**
+	 * Formats word count with appropriate units
+	 */
+	static formatWordCount(count: number): string {
+		return `${count} words`;
+	}
+
+	/**
+	 * Format progress as percentage of words
+	 */
+	static formatWordProgress(current: number, total: number): string {
+		const percentage = Math.round((current / total) * 100);
+		return `${current}/${total} (${percentage}%)`;
 	}
 
 	/**
