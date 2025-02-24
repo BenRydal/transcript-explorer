@@ -196,7 +196,7 @@ export class Core {
 					return;
 				}
 
-				const { speakerName, content, speakerOrder, startTime, endTime } = parsedData;
+				const { speakerName, content, speakerOrder, startTime, endTime, useWordCountsAsFallback } = parsedData;
 
 				if (!Array.isArray(content) || content.length === 0) {
 					console.warn(`Skipping empty content at index ${i} for speaker:`, speakerName);
@@ -209,7 +209,7 @@ export class Core {
 
 				// Add words to wordArray
 				content.forEach((word) => {
-					wordArray.push(new DataPoint(speakerName, turnNumber, word, speakerOrder, startTime, endTime));
+					wordArray.push(new DataPoint(speakerName, turnNumber, word, speakerOrder, startTime, endTime, useWordCountsAsFallback));
 					updatedTranscript.totalNumOfWords++;
 				});
 
@@ -238,7 +238,8 @@ export class Core {
 			let endTime = TimeUtils.toSeconds(line[headers[3]]);
 
 			// Check if we need to fallback to word counts
-			const useWordCountsAsFallback = startTime === null || endTime === null;
+			const useWordCountsAsFallback = startTime === null && endTime === null;
+			console.log(useWordCountsAsFallback);
 
 			if (useWordCountsAsFallback) {
 				// Use word position as time

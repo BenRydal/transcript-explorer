@@ -34,21 +34,17 @@
 
 	let currentTimeFormat: TimeFormat = 'HHMMSS';
 	let useWordCounts = false;
-	let totalWords = 0;
 
 	TranscriptStore.subscribe((transcript) => {
-		totalWords = transcript.totalNumOfWords;
-
-		// Auto-detect if we should use word counts
 		const hasTimeData =
 			transcript.wordArray.length > 0 &&
-			transcript.wordArray.some((word) => typeof word.startTime === 'number' && typeof word.endTime === 'number' && !word.useWordCountsAsFallback);
-
-		useWordCounts = !hasTimeData && transcript.wordArray.length > 0;
-
-		if (useWordCounts && currentTimeFormat !== 'WORDS') {
-			currentTimeFormat = 'WORDS';
-		}
+			transcript.wordArray.some((word) => word.useWordCountsAsFallback === false);
+			useWordCounts = !hasTimeData && transcript.wordArray.length > 0;
+			if (useWordCounts) {
+				currentTimeFormat = 'WORDS';
+			} else if (hasTimeData) {
+				currentTimeFormat = 'TIME';
+			}
 	});
 
 	function cycleTimeFormat() {
