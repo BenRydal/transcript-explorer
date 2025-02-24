@@ -1,21 +1,14 @@
 <script lang="ts">
 	import { onMount, onDestroy, tick } from 'svelte';
-	import moment from 'moment';
+	import { TimeUtils } from '../core/time-utils';
 	import TimelineStore from '../../stores/timelineStore';
 	import P5Store from '../../stores/p5Store';
 	import ConfigStore, { type ConfigStoreType } from '../../stores/configStore';
 	import MdFastForward from 'svelte-icons/md/MdFastForward.svelte';
 	import MdFastRewind from 'svelte-icons/md/MdFastRewind.svelte';
-
 	import type p5 from 'p5';
+	import TranscriptStore from '../../stores/transcriptStore';
 
-	let p5Instance: p5 | null = null;
-
-	P5Store.subscribe((value) => {
-		p5Instance = value;
-	});
-
-	// Reactive declarations for store values
 	$: timelineLeft = $TimelineStore.getLeftMarker();
 	$: timelineRight = $TimelineStore.getRightMarker();
 	$: timelineCurr = $TimelineStore.getCurrTime();
@@ -25,16 +18,76 @@
 	$: rightX = $TimelineStore.getRightX();
 	$: isAnimating = $TimelineStore.getIsAnimating();
 
-	// Formatting times for display
-	$: formattedLeft = moment.utc(timelineLeft * 1000).format('HH:mm:ss');
-	$: formattedRight = moment.utc(timelineRight * 1000).format('HH:mm:ss');
-	$: formattedCurr = moment.utc(timelineCurr * 1000).format('HH:mm:ss');
+	$: formattedLeft = formatTimeDisplay(timelineLeft);
+	$: formattedRight = formatTimeDisplay(timelineRight);
+	$: formattedCurr = formatTimeDisplay(timelineCurr);
+
+	$: {
+		if (currentTimeFormat) {
+			formattedLeft = formatTimeDisplay(timelineLeft);
+			formattedRight = formatTimeDisplay(timelineRight);
+			formattedCurr = formatTimeDisplay(timelineCurr);
+		}
+	}
+
+	type TimeFormat = 'HHMMSS' | 'MMSS' | 'SECONDS' | 'DECIMAL' | 'WORDS';
+
+	let currentTimeFormat: TimeFormat = 'HHMMSS';
+	let useWordCounts = false;
+
+	TranscriptStore.subscribe((transcript) => {
+		const hasTimeData =
+			transcript.wordArray.length > 0 &&
+			transcript.wordArray.some((word) => word.useWordCountsAsFallback === false);
+			useWordCounts = !hasTimeData && transcript.wordArray.length > 0;
+			if (useWordCounts) {
+				currentTimeFormat = 'WORDS';
+			} else if (hasTimeData) {
+				currentTimeFormat = 'TIME';
+			}
+	});
+
+	function cycleTimeFormat() {
+		let formats: TimeFormat[];
+
+		if (useWordCounts) {
+			formats = ['WORDS'];
+		} else {
+			formats = ['HHMMSS', 'MMSS', 'SECONDS', 'DECIMAL', 'WORDS'];
+		}
+
+		const currentIndex = formats.indexOf(currentTimeFormat);
+		const nextIndex = (currentIndex + 1) % formats.length;
+		currentTimeFormat = formats[nextIndex];
+	}
+
+	function formatTimeDisplay(seconds: number): string {
+		switch (currentTimeFormat) {
+			case 'HHMMSS':
+				return TimeUtils.formatTime(seconds);
+			case 'MMSS':
+				return TimeUtils.formatTimeAuto(seconds);
+			case 'SECONDS':
+				return `${Math.round(seconds)}s`;
+			case 'DECIMAL':
+				return seconds.toFixed(1) + 's';
+			case 'WORDS':
+				return `${Math.round(seconds)} words`;
+			default:
+				return useWordCounts ? `${Math.round(seconds)} words` : TimeUtils.formatTimeAuto(seconds);
+		}
+	}
+
+	let p5Instance: p5 | null = null;
+
+	P5Store.subscribe((value) => {
+		p5Instance = value;
+	});
 
 	let sliderContainer: HTMLDivElement;
 	let loaded = false;
-	let debounceTimeout; // to handle fillSelectedData call setTimeout
+	let debounceTimeout: number;
 
-	// Subscribe to ConfigStore to access animationRate
 	let config: ConfigStoreType;
 	ConfigStore.subscribe((value) => {
 		config = value;
@@ -53,14 +106,10 @@
 		}
 	};
 
-	/**
-	 * Updates the X positions based on the current dimensions of the slider container.
-	 * This function is called whenever the window is resized or the slider container is mounted.
-	 */
 	const updateXPositions = (): void => {
 		if (!sliderContainer) {
 			console.warn('Slider container not available.');
-			loaded = false; // Ensure loaded is false if sliderContainer is not available
+			loaded = false;
 			return;
 		}
 
@@ -73,23 +122,17 @@
 			return timeline;
 		});
 
-		loaded = true; // Set loaded to true after successful update
+		loaded = true;
 	};
 
-	// Used to properly type the event used in handleChange
 	interface SliderChangeEvent extends Event {
 		detail: {
 			value1: number;
 			value2: number;
-
 			value3: number;
 		};
 	}
 
-	/**
-	 * Handles changes in the range slider, updating the timeline markers and X positions accordingly.
-	 * @param {SliderChangeEvent} event - The event object emitted by the range slider on change.
-	 */
 	const handleChange = (event: SliderChangeEvent): void => {
 		const { value1, value2, value3 } = event.detail;
 		if (value1 === timelineLeft && value2 === timelineCurr && value3 === timelineRight) {
@@ -100,7 +143,7 @@
 			clearTimeout(debounceTimeout);
 			debounceTimeout = setTimeout(() => {
 				p5Instance.fillSelectedData();
-			}, 100); // Adjust delay as needed
+			}, 100);
 		}
 
 		TimelineStore.update((timeline) => {
@@ -112,24 +155,22 @@
 		});
 	};
 
-	// Speed control functions
 	const speedUp = () => {
 		ConfigStore.update((currentConfig) => {
-			const newRate = Math.min(currentConfig.animationRate + 0.05, 1); // Cap at 1
+			const newRate = Math.min(currentConfig.animationRate + 0.05, 1);
 			return { ...currentConfig, animationRate: newRate };
 		});
 	};
 
 	const slowDown = () => {
 		ConfigStore.update((currentConfig) => {
-			const newRate = Math.max(currentConfig.animationRate - 0.05, 0.01); // Floor at 0.01
+			const newRate = Math.max(currentConfig.animationRate - 0.05, 0.01);
 			return { ...currentConfig, animationRate: newRate };
 		});
 	};
 
 	onMount(async () => {
 		if (typeof window !== 'undefined') {
-			// Dynamically import the slider only on the client side
 			import('toolcool-range-slider').then(async () => {
 				loaded = true;
 				const slider = document.querySelector('tc-range-slider');
@@ -154,7 +195,6 @@
 
 {#if loaded}
 	<div class="flex flex-col w-11/12 h-full py-5">
-		<!-- This slider-container div is used to get measurements of the timeline -->
 		<div class="slider-container" bind:this={sliderContainer}>
 			<tc-range-slider
 				min={startTime}
@@ -180,12 +220,10 @@
 		</div>
 
 		<div class="flex w-full mt-2 items-center space-x-4">
-			<!-- Slow Down Button -->
 			<button on:click={slowDown} class="speed-btn" aria-label="Slow Down">
 				<MdFastRewind class="w-6 h-6" />
 			</button>
 
-			<!-- Play/Pause Button -->
 			<button on:click={toggleAnimation} class="play-pause-btn" aria-label={isAnimating ? 'Pause' : 'Play'}>
 				{#if isAnimating}
 					<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" class="w-6 h-6">
@@ -206,21 +244,34 @@
 				{/if}
 			</button>
 
-			<!-- Speed Up Button -->
 			<button on:click={speedUp} class="speed-btn" aria-label="Speed Up">
 				<MdFastForward class="w-6 h-6" />
 			</button>
 
-			<!-- Display Current Time / End Time and Animation Rate -->
-			<div class="flex flex-col">
-				<p>{formattedCurr}/{formattedRight}</p>
-				<p class="text-sm text-gray-600">Speed: {config.animationRate.toFixed(2)}x</p>
+			<div class="flex flex-col items-start">
+				<button
+					class="time-display hover:bg-gray-100 rounded px-2 transition-colors h-6 flex items-center"
+					on:click={cycleTimeFormat}
+					title="Click to change time format"
+				>
+					<span class="font-mono text-sm">{formattedCurr} / {formattedRight}</span>
+				</button>
+				<span class="text-sm text-gray-600 px-2">Speed: {config.animationRate.toFixed(2)}x</span>
 			</div>
 		</div>
 	</div>
 {/if}
 
 <style>
+	.time-display {
+		cursor: pointer;
+		transition: background-color 0.2s;
+	}
+
+	.time-display:hover {
+		background-color: rgba(0, 0, 0, 0.05);
+	}
+
 	:host {
 		width: 100% !important;
 	}

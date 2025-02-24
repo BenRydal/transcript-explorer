@@ -12,7 +12,9 @@ import TranscriptStore from '../../stores/transcriptStore.js';
 import { Transcript } from '../../models/transcript';
 import ConfigStore from '../../stores/configStore.js';
 
-let transcript, users;
+import { TimeUtils } from './time-utils.js';
+let transcript: Transcript = new Transcript();
+let users: User[] = [];
 
 TranscriptStore.subscribe((data) => {
 	transcript = data;
@@ -194,7 +196,7 @@ export class Core {
 					return;
 				}
 
-				const { speakerName, content, speakerOrder, startTime, endTime } = parsedData;
+				const { speakerName, content, speakerOrder, startTime, endTime, useWordCountsAsFallback } = parsedData;
 
 				if (!Array.isArray(content) || content.length === 0) {
 					console.warn(`Skipping empty content at index ${i} for speaker:`, speakerName);
@@ -207,7 +209,7 @@ export class Core {
 
 				// Add words to wordArray
 				content.forEach((word) => {
-					wordArray.push(new DataPoint(speakerName, turnNumber, word, speakerOrder, startTime, endTime));
+					wordArray.push(new DataPoint(speakerName, turnNumber, word, speakerOrder, startTime, endTime, useWordCountsAsFallback));
 					updatedTranscript.totalNumOfWords++;
 				});
 
@@ -232,40 +234,51 @@ export class Core {
 			const content = this.createTurnContentArray(String(line[headers[1]]).trim());
 			const speakerOrder = users.findIndex((user) => user.name === speakerName);
 
-			let startTime = parseFloat(line[headers[2]]);
-			let endTime = parseFloat(line[headers[3]]);
+			let startTime = TimeUtils.toSeconds(line[headers[2]]);
+			let endTime = TimeUtils.toSeconds(line[headers[3]]);
 
-			// Explicitly check if the start and end time headers exist
-			const hasStartTime = headers[2] !== undefined;
-			const hasEndTime = headers[3] !== undefined;
+			// Check if we need to fallback to word counts
+			const useWordCountsAsFallback = startTime === null && endTime === null;
+			console.log(useWordCountsAsFallback);
 
-			if (isNaN(startTime) && hasStartTime) {
-				// Search backward for a missing startTime
-				for (let i = rowIndex - 1; i >= 0; i--) {
-					const prevStart = parseFloat(dataArray[i][headers[2]]);
-					if (!isNaN(prevStart)) {
-						startTime = prevStart; // Use closest previous start time
-						break;
+			if (useWordCountsAsFallback) {
+				// Use word position as time
+				startTime = currentWordCount;
+				endTime = currentWordCount + content.length;
+			} else {
+				// TimeUtils.toSeconds returned actual time values, handle missing data
+				const hasStartTime = headers[2] !== undefined;
+				const hasEndTime = headers[3] !== undefined;
+
+				if (startTime === null && hasStartTime) {
+					// Search backward for a missing startTime
+					for (let i = rowIndex - 1; i >= 0; i--) {
+						const prevStart = TimeUtils.toSeconds(dataArray[i][headers[2]]);
+						if (prevStart !== null) {
+							startTime = prevStart; // Use closest previous start time
+							break;
+						}
 					}
 				}
-			}
-			if (isNaN(startTime)) startTime = currentWordCount; // Final fallback if still no startTime
+				if (startTime === null) startTime = currentWordCount; // Final fallback if still no startTime
 
-			// Check for missing endTime independently
-			if (isNaN(endTime) && hasEndTime) {
-				// Search forward for missing endTime
-				for (let i = rowIndex + 1; i < dataArray.length; i++) {
-					const nextStart = parseFloat(dataArray[i][headers[2]]);
-					if (!isNaN(nextStart) && nextStart > startTime) {
-						endTime = nextStart; // Use closest next start time
-						break;
+				// Check for missing endTime independently
+				if (endTime === null && hasEndTime) {
+					// Search forward for missing endTime
+					for (let i = rowIndex + 1; i < dataArray.length; i++) {
+						const nextStart = TimeUtils.toSeconds(dataArray[i][headers[2]]);
+						if (nextStart !== null && nextStart > startTime) {
+							endTime = nextStart; // Use closest next start time
+							break;
+						}
 					}
 				}
+				if (endTime === null) endTime = startTime + content.length; // Final fallback if no endTime found
 			}
-			if (isNaN(endTime)) endTime = startTime + content.length; // Final fallback if no endTime found
 
-			return { speakerName, content, speakerOrder, startTime, endTime };
+			return { speakerName, content, speakerOrder, startTime, endTime, useWordCountsAsFallback };
 		} else {
+			// For text files, always use word count as metric
 			if (!line || typeof line !== 'string') return null;
 			const content = this.createTurnContentArray(line.trim());
 			if (content.length === 0) return null;
@@ -275,7 +288,7 @@ export class Core {
 			const speakerOrder = users.findIndex((user) => user.name === speakerName);
 			const startTime = currentWordCount;
 			const endTime = currentWordCount + content.length;
-			return { speakerName, content, speakerOrder, startTime, endTime };
+			return { speakerName, content, speakerOrder, startTime, endTime, useWordCountsAsFallback: true };
 		}
 	}
 
