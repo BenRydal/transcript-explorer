@@ -202,8 +202,7 @@ export class Core {
 					return;
 				}
 
-				const { speakerName, content, speakerOrder, startTime, endTime, useWordCountsAsFallback, newLastValidStartTime, newLastValidEndTime } =
-					parsedData;
+				const { speakerName, content, speakerOrder, startTime, endTime, useWordCountsAsFallback } = parsedData;
 
 				if (!content.length) {
 					console.warn(`Skipping empty content at index ${i} for speaker:`, speakerName);
@@ -213,18 +212,6 @@ export class Core {
 				// Update last valid timestamps for efficient CSV processing
 				lastValidStartTime = startTime;
 				lastValidEndTime = endTime;
-
-				if (endTime === null && hasEndTime) {
-					// Search forward for missing endTime
-					for (let i = rowIndex + 1; i < dataArray.length; i++) {
-						const nextStart = TimeUtils.toSeconds(dataArray[i][headers[2]]);
-						if (nextStart !== null && nextStart > startTime) {
-							endTime = nextStart; // Use closest next start time
-							break;
-						}
-					}
-				}
-				if (endTime === null) endTime = startTime + content.length; // Final fallback if no endTime found
 
 				// Update transcript values
 				updatedTranscript.largestTurnLength = Math.max(updatedTranscript.largestTurnLength, content.length);
