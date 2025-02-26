@@ -197,18 +197,13 @@ export class Core {
 				else {
 					parsedData = this.parseDataRowCSV(data, dataArray[i + 1] ?? null, updatedTranscript.totalNumOfWords, lastValidStartTime, lastValidEndTime);
 				}
+
 				if (!parsedData) {
 					console.warn(`Skipping malformed line at index ${i}:`, data);
 					return;
 				}
 
 				const { speakerName, content, speakerOrder, startTime, endTime, useWordCountsAsFallback } = parsedData;
-
-				if (!content.length) {
-					console.warn(`Skipping empty content at index ${i} for speaker:`, speakerName);
-					return;
-				}
-
 				// Update last valid timestamps for efficient CSV processing
 				lastValidStartTime = startTime;
 				lastValidEndTime = endTime;
