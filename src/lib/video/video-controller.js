@@ -23,50 +23,6 @@ export class VideoController {
 		this.isLoaded = false; // this is an additional boolean to test if video successfully loaded
 	}
 
-	playForTurnChart(time) {
-		this.play();
-		this.seekTo(time);
-		this.updatePosition();
-	}
-
-	playForDistributionDiagram(arrayOfFirstWords) {
-		this.playVideoListFirst2Seconds(arrayOfFirstWords);
-		this.updatePosition();
-	}
-
-	playForContributionCloud(time) {
-		this.play();
-		this.seekTo(time);
-		this.updatePosition();
-	}
-
-	updatePosition() {
-		this.videoPlayer.updatePos(this.sk.mouseX, this.sk.mouseY, 0, this.sk.height);
-	}
-
-	seekTo(videoTime) {
-		this.videoPlayer.seekTo(videoTime);
-	}
-
-	playVideoListFirst2Seconds = async function (arrayOfFirstWords) {
-		this.isPlaying = true;
-		for (const index of arrayOfFirstWords) {
-			if (!this.isPlaying) break; // IMPORTANT: break loop if user stops playing video
-			this.play();
-			this.seekTo(index.startTime);
-			await this.resolveAfter2Seconds();
-		}
-		this.pause();
-	};
-
-	resolveAfter2Seconds = function () {
-		return new Promise((resolve) => {
-			setTimeout(() => {
-				resolve('resolved');
-			}, 2000);
-		});
-	};
-
 	createVideoPlayer(platform, params) {
 		try {
 			switch (platform) {
@@ -92,16 +48,6 @@ export class VideoController {
 		this.toggleShowVideo();
 		this.videoPlayer.hide();
 		this.isShowing = false;
-	}
-
-	/**
-	 * Updates video image and position
-	 */
-	updateDisplay() {
-		if (this.isPlayerAndDivLoaded() && this.isShowing) {
-			this.videoPlayer.updatePos(this.sk.mouseX, this.sk.mouseY, 60, this.sk.height);
-			if (!this.isPlaying) this.setVideoScrubbing();
-		}
 	}
 
 	setVideoScrubbing() {
@@ -172,4 +118,48 @@ export class VideoController {
 			this.isLoaded = false;
 		}
 	}
+
+	playForTurnChart(time) {
+		this.play();
+		this.seekTo(time);
+		this.updatePosition();
+	}
+
+	playForDistributionDiagram(arrayOfFirstWords) {
+		this.playVideoListFirst2Seconds(arrayOfFirstWords);
+		this.updatePosition();
+	}
+
+	playForContributionCloud(time) {
+		this.play();
+		this.seekTo(time);
+		this.updatePosition();
+	}
+
+	updatePosition() {
+		this.videoPlayer.updatePos(this.sk.mouseX, this.sk.mouseY, 0, this.sk.height);
+	}
+
+	seekTo(videoTime) {
+		this.videoPlayer.seekTo(videoTime);
+	}
+
+	playVideoListFirst2Seconds = async function (arrayOfFirstWords) {
+		this.isPlaying = true;
+		for (const index of arrayOfFirstWords) {
+			if (!this.isPlaying) break; // IMPORTANT: break loop if user stops playing video
+			this.play();
+			this.seekTo(index.startTime);
+			await this.resolveAfter2Seconds();
+		}
+		this.pause();
+	};
+
+	resolveAfter2Seconds = function () {
+		return new Promise((resolve) => {
+			setTimeout(() => {
+				resolve('resolved');
+			}, 2000);
+		});
+	};
 }

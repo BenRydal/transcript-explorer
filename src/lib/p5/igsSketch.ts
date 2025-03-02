@@ -50,6 +50,9 @@ export const igsSketch = (p5: any) => {
 			render.drawViz();
 		}
 		if (timeline.getIsAnimating()) p5.updateAnimation();
+		if (p5.videoController.isLoaded && p5.videoController.isShowing && p5.videoController.videoPlayer.isOver) {
+			p5.videoController.updatePosition();
+		}
 	};
 
 	p5.updateAnimation = () => {
@@ -109,24 +112,30 @@ export const igsSketch = (p5: any) => {
 	};
 
 	p5.mousePressed = () => {
-		if (p5.videoController.isLoaded && p5.videoController.isShowing) {
-			if (p5.videoController.isPlaying) {
-				p5.videoController.pause();
-			} else if (currConfig.distributionDiagramToggle && currConfig.arrayOfFirstWords.length) {
-				p5.videoController.playForDistributionDiagram(currConfig.arrayOfFirstWords);
-			} else if (currConfig.turnChartToggle) {
-				p5.videoController.playForTurnChart(p5.getTimeValueFromPixel(p5.mouseX));
-			} else if (currConfig.contributionCloudToggle && !currConfig.selectedWordFromContributionCloud) {
-				p5.videoController.playForContributionCloud(p5.videoController.jumpTime);
-			} else {
-				if (currConfig.arrayOfFirstWords.length) {
-					p5.videoController.playForDistributionDiagram(currConfig.arrayOfFirstWords);
-				} else if (!currConfig.selectedWordFromContributionCloud) {
-					p5.videoController.playForContributionCloud(p5.videoController.jumpTime);
-				} else {
-					p5.videoController.playForTurnChart(p5.getTimeValueFromPixel(p5.mouseX));
-				}
+		if (!p5.videoController.isLoaded || !p5.videoController.isShowing) return;
+		if (!p5.videoController.videoPlayer.isOver) {
+			if (p5.videoController.isPlaying) p5.videoController.pause();
+			else if (p5.overRect(0, 0, p5.width, p5.height)) p5.handleVideoPlay();
+		}
+	};
+
+	p5.handleVideoPlay = () => {
+		const { distributionDiagramToggle, turnChartToggle, contributionCloudToggle, arrayOfFirstWords, selectedWordFromContributionCloud } = currConfig;
+
+		if (distributionDiagramToggle) {
+			if (arrayOfFirstWords.length) {
+				p5.videoController.playForDistributionDiagram(arrayOfFirstWords);
 			}
+		} else if (turnChartToggle) {
+			p5.videoController.playForTurnChart(p5.getTimeValueFromPixel(p5.mouseX));
+		} else if (contributionCloudToggle) {
+			if (selectedWordFromContributionCloud) {
+				p5.videoController.playForContributionCloud(selectedWordFromContributionCloud.startTime);
+			}
+		} else {
+			if (arrayOfFirstWords.length) p5.videoController.playForDistributionDiagram(arrayOfFirstWords);
+			else if (selectedWordFromContributionCloud) p5.videoController.playForContributionCloud(selectedWordFromContributionCloud.startTime);
+			else p5.videoController.playForTurnChart(p5.getTimeValueFromPixel(p5.mouseX));
 		}
 	};
 

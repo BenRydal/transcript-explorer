@@ -48,7 +48,6 @@ export class ContributionCloud {
 		const boxWidth = this.sk.textWidth(index.word);
 		if (this.sk.overRect(this.xPosDynamic, this.yPosDynamic - boxHeight, boxWidth, boxHeight)) {
 			this.selectedWordFromContributionCloud = index;
-			this.sk.videoController.jumpTime = index.startTime;
 		}
 	}
 

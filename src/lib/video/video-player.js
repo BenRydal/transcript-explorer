@@ -16,6 +16,7 @@ export class YoutubePlayer {
 		this.videoWidth = this.sk.width / 4; // these dimensions work nicely for example data
 		this.videoHeight = this.sk.width / 6;
 		this.increment = 25;
+		this.isOver = false; // used internally to test if user selected movie element
 		this.movie = this.sk.createDiv();
 		this.setMovieDiv();
 		this.initializePlayer();
