@@ -24,7 +24,7 @@
 						<div class="flex flex-row justify-center flex-wrap gap-4 my-2">
 							<a href="https://youtu.be/_2_3ilMm4pQ" target="_blank" class="btn bg-gray-300 text-black">Demo Video</a>
 							<a href="/images/data_formatting_guide.pdf" target="_blank" class="btn bg-gray-300 text-black">Data Formatting Guide</a>
-							<a href="https://doi.org/10.1145/3706598.3713490" target="_blank" class="btn bg-gray-300 text-black">Reference</a>
+							<a href="https://static1.squarespace.com/static/64f88a928f65ec467d0ea422/t/67c8e6d39309be2f9ea36ffd/1741219552860/CHI_EVAT-TranscriptExplorer.pdf" target="_blank" class="btn bg-gray-300 text-black">Reference</a>
 							<a href="https://forms.gle/3i1F74V6cy5Q8RHv5" target="_blank" class="btn bg-gray-300 text-black">Feedback</a>
 						</div>
 						<p class="pt-3 pb-6 italic text-center">
