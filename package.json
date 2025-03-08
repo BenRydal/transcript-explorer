@@ -14,6 +14,7 @@
 		"format": "prettier --plugin-search-dir . --write ."
 	},
 	"devDependencies": {
+		"@rollup/plugin-replace": "^6.0.2",
 		"@sveltejs/adapter-auto": "^3.0.0",
 		"@sveltejs/adapter-vercel": "^5.4.5",
 		"@sveltejs/kit": "^2.0.0",
@@ -39,6 +40,7 @@
 		"vite": "^5.0.3"
 	},
 	"dependencies": {
+		"@floating-ui/dom": "^1.6.13",
 		"@rollup/plugin-typescript": "^11.1.6",
 		"@tsconfig/svelte": "^5.0.0",
 		"daisyui": "^4.12.10",

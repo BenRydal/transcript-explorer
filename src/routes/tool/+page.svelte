@@ -16,6 +16,7 @@
 	import { Core } from '$lib';
 	import { igsSketch } from '$lib/p5/igsSketch';
 	import { writable } from 'svelte/store';
+	import { onMount } from 'svelte';
 	import IconButton from '$lib/components/IconButton.svelte';
 	import IgsInfoModal from '$lib/components/IGSInfoModal.svelte';
 	import TimelinePanel from '$lib/components/TimelinePanel.svelte';
@@ -25,6 +26,162 @@
 	import ConfigStore from '../../stores/configStore';
 	import type { ConfigStoreType } from '../../stores/configStore';
 	import TranscriptStore from '../../stores/transcriptStore';
+	import { computePosition, flip, shift, offset, autoUpdate } from '@floating-ui/dom';
+
+	// Define ToggleKey type to fix TypeScript errors
+	type ToggleKey = string;
+
+	// Floating UI references
+	type FloatingElement = {
+		button: HTMLElement | null;
+		content: HTMLElement | null;
+		cleanup: (() => void) | null;
+		isOpen: boolean;
+	};
+
+	// Store references to floating elements
+	const floatingElements: Record<string, FloatingElement> = {};
+
+	// Function to position a floating element
+	function positionFloatingElement(reference: HTMLElement, floating: HTMLElement) {
+		return computePosition(reference, floating, {
+			placement: 'top',
+			middleware: [
+				offset(6),
+				flip(),
+				shift({ padding: 5 })
+			]
+		}).then(({ x, y }) => {
+			Object.assign(floating.style, {
+				left: `${x}px`,
+				top: `${y}px`,
+				position: 'absolute',
+				width: 'max-content',
+				zIndex: '100'
+			});
+		});
+	}
+
+	// Function to toggle a floating element
+	function toggleFloating(id: string) {
+		const element = floatingElements[id];
+		if (!element || !element.button || !element.content) return;
+
+		element.isOpen = !element.isOpen;
+
+		if (element.isOpen) {
+			// Show the floating element
+			element.content.style.display = 'block';
+			document.body.appendChild(element.content);
+
+			// Position it initially
+			positionFloatingElement(element.button, element.content);
+
+			// Set up auto-update to reposition on scroll/resize
+			element.cleanup = autoUpdate(
+				element.button,
+				element.content,
+				() => positionFloatingElement(element.button, element.content)
+			);
+
+			// Add click outside listener
+			const handleClickOutside = (event: MouseEvent) => {
+				if (
+					element.content &&
+					element.button &&
+					!element.content.contains(event.target as Node) &&
+					!element.button.contains(event.target as Node)
+				) {
+					toggleFloating(id);
+				}
+			};
+
+			document.addEventListener('click', handleClickOutside);
+
+			// Update cleanup to include removing the event listener
+			const prevCleanup = element.cleanup;
+			element.cleanup = () => {
+				prevCleanup?.();
+				document.removeEventListener('click', handleClickOutside);
+			};
+		} else {
+			// Hide the floating element
+			if (element.content) {
+				element.content.style.display = 'none';
+			}
+
+			// Clean up auto-update
+			if (element.cleanup) {
+				element.cleanup();
+				element.cleanup = null;
+			}
+		}
+	}
+
+	// Function to register a floating element
+	function registerFloating(id: string, button: HTMLElement, content: HTMLElement) {
+		floatingElements[id] = {
+			button,
+			content,
+			cleanup: null,
+			isOpen: false
+		};
+
+		// Initially hide the content
+		content.style.display = 'none';
+	}
+
+	// Action function for initializing floating elements
+	function initFloating(node: HTMLElement) {
+		const userId = node.getAttribute('data-user-id');
+		if (userId) {
+			const button = document.querySelector(`button[data-user="${userId}"]`);
+			if (button) {
+				registerFloating(`user-${userId}`, button as HTMLElement, node);
+			}
+		}
+
+		return {
+			destroy() {
+				// Cleanup if needed
+			}
+		};
+	}
+
+	// Add click outside and scroll handlers for dropdowns
+	onMount(() => {
+		// Add global click handler to close dropdowns when clicking outside
+		document.addEventListener('click', (event) => {
+			const target = event.target as HTMLElement;
+
+			// Close all dropdowns when clicking outside
+			$UserStore.forEach(user => {
+				const dropdown = document.getElementById(`dropdown-${user.name}`);
+				const button = document.getElementById(`btn-${user.name}`);
+
+				if (dropdown && button &&
+					!dropdown.contains(target) &&
+					!button.contains(target) &&
+					!dropdown.classList.contains('hidden')) {
+					dropdown.classList.add('hidden');
+				}
+			});
+		});
+
+		// Add scroll handler to close dropdowns when scrolling
+		const userContainer = document.querySelector('.btm-nav .overflow-x-auto');
+		if (userContainer) {
+			userContainer.addEventListener('scroll', () => {
+				// Close all dropdowns when scrolling
+				$UserStore.forEach(user => {
+					const dropdown = document.getElementById(`dropdown-${user.name}`);
+					if (dropdown && !dropdown.classList.contains('hidden')) {
+						dropdown.classList.add('hidden');
+					}
+				});
+			});
+		}
+	});
 
 	const techniqueToggleOptions = ['distributionDiagramToggle', 'turnChartToggle', 'contributionCloudToggle', 'dashboardToggle'] as const;
 	const interactionsToggleOptions = [
@@ -519,90 +676,82 @@
 {/if}
 
 <div class="btm-nav flex justify-between min-h-20">
-	<div class="flex flex-1 flex-row justify-start items-center bg-[#f6f5f3] items-start px-8">
-		<!-- {#if $ConfigStore.dataHasCodes}
-			<details class="dropdown dropdown-top" use:clickOutside>
-				<summary class="btn">CODES</summary>
-				<ul class="menu dropdown-content p-2 bg-base-100 rounded-box w-64 max-h-[75vh] overflow-y-auto flex-nowrap">
-					<li>
-						<div class="flex items-center">
-							<input
-								id="enableAllCodes"
-								type="checkbox"
-								class="checkbox"
-								checked={$CodeStore.every((code) => code.enabled)}
-								on:change={() => {
-									toggleSelectAllCodes();
-									p5Instance?.loop();
-								}}
-							/>
-							Enable All
-						</div>
-						<div class="flex items-center">
-							<input
-								id="colorByCodes"
-								type="checkbox"
-								class="checkbox"
-								bind:checked={$ConfigStore.isPathColorMode}
-								on:change={() => p5Instance?.loop()}
-							/>
-							Color by Codes
-						</div>
-						<div class="divider" />
-					</li>
-					{#each sortedCodes as code, index}
-						<li><h3 class="pointer-events-none">{code.code.toUpperCase()}</h3></li>
-						<li>
+	<div class="flex flex-1 flex-row justify-start items-center bg-[#f6f5f3] items-start px-8 overflow-x-auto"
+		on:wheel={(e) => {
+			if (e.deltaY !== 0) {
+				e.preventDefault();
+				e.currentTarget.scrollLeft += e.deltaY;
+			}
+		}}>
+		<!-- Users Dropdowns with Floating UI -->
+		{#each $UserStore as user, index}
+			<div class="relative mr-2">
+				<button
+					class="btn"
+					on:click={() => {
+						const dropdown = document.getElementById(`dropdown-${user.name}`);
+						if (dropdown) {
+							dropdown.classList.toggle('hidden');
+
+							// Position the dropdown using Floating UI
+							const button = document.getElementById(`btn-${user.name}`);
+							if (button && !dropdown.classList.contains('hidden')) {
+								// Move dropdown to body to avoid clipping by overflow
+								document.body.appendChild(dropdown);
+
+								computePosition(button, dropdown, {
+									placement: 'top',
+									middleware: [
+										offset(6),
+										flip(),
+										shift({ padding: 5 })
+									]
+								}).then(({x, y}) => {
+									Object.assign(dropdown.style, {
+										left: `${x}px`,
+										top: `${y}px`,
+										position: 'absolute',
+										zIndex: '9999' // Higher z-index to ensure it's above canvas
+									});
+								});
+							}
+						}
+					}}
+					id={`btn-${user.name}`}
+				>
+					{user.name}
+				</button>
+
+				<div
+					id={`dropdown-${user.name}`}
+					class="hidden bg-base-100 rounded-box p-2 shadow absolute"
+					style="z-index: 9999;"
+				>
+					<ul class="w-52">
+						<li class="py-2">
 							<div class="flex items-center">
 								<input
-									id="codeCheckbox-{code.code}"
+									id="userCheckbox-{user.name}"
 									type="checkbox"
-									class="checkbox"
-									bind:checked={code.enabled}
-									on:change={() => p5Instance?.loop()}
+									class="checkbox mr-2"
+									bind:checked={user.enabled}
 								/>
-								Enabled
+								<label for="userCheckbox-{user.name}">Conversation</label>
 							</div>
 						</li>
-						<li>
+						<li class="py-2">
 							<div class="flex items-center">
-								<input type="color" class="color-picker max-w-[24px] max-h-[28px]" bind:value={code.color} on:change={() => p5Instance?.loop()} />
-								Color
+								<input
+									type="color"
+									class="color-picker max-w-[24px] max-h-[28px] mr-2"
+									bind:value={user.color}
+								/>
+								<span>Color</span>
 							</div>
 						</li>
-						{#if index !== sortedCodes.length - 1}
-							<div class="divider" />
-						{/if}
-					{/each}
-				</ul>
-			</details>
-		{/if} -->
-
-		<!-- Users Dropdowns -->
-		{#each $UserStore as user}
-			<details class="dropdown dropdown-top" use:clickOutside>
-				<summary class="btn">{user.name}</summary>
-				<ul class="menu dropdown-content bg-base-100 rounded-box z-[1] w-52 p-2 shadow">
-					<li>
-						<div class="flex items-center">
-							<input
-								id="userCheckbox-{user.name}"
-								type="checkbox"
-								class="checkbox"
-								bind:checked={user.enabled}
-							/>
-							Conversation
-						</div>
-					</li>
-					<li>
-						<div class="flex items-center">
-							<input type="color" class="color-picker max-w-[24px] max-h-[28px]" bind:value={user.color} />
-							Color
-						</div>
-					</li>
-					<!-- Add Transcripts section if needed -->
-				</ul>
-			</details>
+					</ul>
+				</div>
+			</div>
 		{/each}
 	</div>
 
