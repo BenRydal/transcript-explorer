@@ -687,7 +687,7 @@
 		{#each $UserStore as user, index}
 			<div class="relative mr-2">
 				<button
-					class="btn"
+					class="btn" style="color: {user.color};"
 					on:click={() => {
 						const dropdown = document.getElementById(`dropdown-${user.name}`);
 						if (dropdown) {
