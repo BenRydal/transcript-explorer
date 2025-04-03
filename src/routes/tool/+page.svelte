@@ -18,7 +18,7 @@
 	import { writable } from 'svelte/store';
 	import { onMount } from 'svelte';
 	import IconButton from '$lib/components/IconButton.svelte';
-	import IgsInfoModal from '$lib/components/IGSInfoModal.svelte';
+	import InfoModal from '$lib/components/InfoModal.svelte';
 	import TimelinePanel from '$lib/components/TimelinePanel.svelte';
 	import DataPointTable from '$lib/components/DataPointTable.svelte';
 
@@ -763,7 +763,7 @@
 
 <slot />
 
-<IgsInfoModal {isModalOpen} />
+<InfoModal {isModalOpen} />
 
 <style>
 	.color-picker {
