@@ -205,7 +205,7 @@
 			]
 		},
 		{ label: 'Museums', items: [{ value: 'example-2', label: 'Family Gallery Visit' }] },
-		{ label: 'Presidential Debates', items: [{ value: 'example-5', label: 'Biden-Trump 2020 Debate 1' }] }
+		{ label: 'Presidential Debates', items: [{ value: 'example-5', label: 'Biden-Trump 2020 Debate' }] }
 	];
 
 	let showDataPopup = false;
@@ -425,7 +425,8 @@
 						on:input={(e) => handleConfigChangeFromInput(e, 'repeatWordSliderValue')}
 					/>
 				</li>
-				<input type="text" placeholder="Search conversations..." on:input={(e) => handleWordSearch(e)} class="input input-bordered w-full" />
+				<hr class="my-4 border-t border-gray-300" />
+				<input type="text" placeholder="Search conversations..." on:input={(e) => handleWordSearch(e)} class="input input-bordered w-full"/>
 			</ul>
 		</details>
 

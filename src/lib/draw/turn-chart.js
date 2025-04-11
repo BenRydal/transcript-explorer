@@ -13,9 +13,9 @@ export class TurnChart {
 		this.pixelWidth = pos.width;
 		this.getStores();
 		this.verticalLayoutSpacing = this.getVerticalLayoutSpacing(pos.height - this.sk.SPACING);
-		this.yPosTop = pos.y + this.sk.SPACING;
-		this.yPosHalfHeight = (this.yPosTop + pos.height - this.sk.SPACING) / 2;
+		this.yPosHalfHeight = pos.y + pos.height / 2;
 		this.userSelectedTurn = { turn: '', color: '' };
+		this.yPosSeparate = this.getYPosTopSeparate();
 	}
 
 	getStores() {
@@ -23,6 +23,12 @@ export class TurnChart {
 		this.transcript = get(TranscriptStore);
 		this.users = get(UserStore);
 		this.timeline = get(TimelineStore);
+	}
+
+	getYPosTopSeparate() {
+		const total = this.users?.length || 0;
+		const centerIndex = (total - 1) / 2;
+		return this.yPosHalfHeight - centerIndex * this.verticalLayoutSpacing;
 	}
 
 	/** Draws the main chart */
@@ -93,7 +99,7 @@ export class TurnChart {
 		let height, yCenter;
 		if (this.config.separateToggle) {
 			height = this.sk.map(turnLength, 0, this.transcript.largestTurnLength, 0, this.verticalLayoutSpacing);
-			yCenter = this.yPosTop + this.verticalLayoutSpacing * order;
+			yCenter = this.yPosSeparate + this.verticalLayoutSpacing * order;
 		} else {
 			height = this.sk.map(turnLength, 0, this.transcript.largestTurnLength, 0, this.yPosHalfHeight);
 			yCenter = this.yPosHalfHeight;
