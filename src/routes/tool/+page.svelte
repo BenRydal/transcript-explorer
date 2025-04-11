@@ -205,7 +205,7 @@
 			]
 		},
 		{ label: 'Museums', items: [{ value: 'example-2', label: 'Family Gallery Visit' }] },
-		{ label: 'Presidential Debates', items: [{ value: 'example-5', label: 'Biden-Trump 2020 Debate 1' }] }
+		{ label: 'Presidential Debates', items: [{ value: 'example-5', label: 'Biden-Trump 2020 Debate' }] }
 	];
 
 	let showDataPopup = false;
