@@ -425,7 +425,8 @@
 						on:input={(e) => handleConfigChangeFromInput(e, 'repeatWordSliderValue')}
 					/>
 				</li>
-				<input type="text" placeholder="Search conversations..." on:input={(e) => handleWordSearch(e)} class="input input-bordered w-full" />
+				<hr class="my-4 border-t border-gray-300" />
+				<input type="text" placeholder="Search conversations..." on:input={(e) => handleWordSearch(e)} class="input input-bordered w-full"/>
 			</ul>
 		</details>
 
