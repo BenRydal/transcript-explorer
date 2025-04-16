@@ -17,9 +17,10 @@
 						<h1 class="text-5xl font-bold pb-8 text-center">TRANSCRIPT EXPLORER</h1>
 						<p class="py-3 text-xl text-justify">
 							Welcome to Transcript Explorer! Transcript Explorer is an open-source tool for dynamically visualizing transcripts linked to video. 
-							Explore your data with various visualization techniques, including distribution diagrams, turn charts, and contribution clouds. 
+							Explore your data with various visualization techniques, including <strong>distribution diagrams</strong>, <strong>turn charts</strong>, and <strong>contribution clouds</strong>. 
 							Animate, filter, and interact with transcript data, shift seamlessly between video clips, and rescale data using the interactive timeline. 
-							Use the top menu to explore sample datasets or upload your own and start exploring!
+							Use the top menu to explore sample datasets or upload your own and start exploring! Transcript Explorer runs entirely in your browser. 
+							No transcripts or videos are uploaded, stored, or transmitted—your data stays on your device at all times.
 						</p>
 						<div class="flex flex-row justify-center flex-wrap gap-4 my-2">
 							<a href="https://youtu.be/_2_3ilMm4pQ" target="_blank" class="btn bg-gray-300 text-black">Watch Demo Video</a>
