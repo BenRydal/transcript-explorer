@@ -61,25 +61,36 @@ export const igsSketch = (p5: any) => {
 		p5.handleTimelineAnimationState();
 	};
 
-	p5.syncAnimationCounter = (mappedTime) => {
-		if (p5.animationCounter < mappedTime) {
-			p5.scrubForward(mappedTime);
-		} else if (p5.animationCounter > mappedTime) {
-			p5.scrubBackward(mappedTime);
-		}
-	};
+	p5.syncAnimationCounter = () => {
+		const currTime = timeline.getCurrTime();
+		// Find the index of the first word that starts after the current time
+		let targetIndex = transcript.wordArray.findIndex((word) => word.startTime > currTime);
+		if (targetIndex < 0) targetIndex = 0;
+		// Calculate the delta between the current animation counter and the target index
+		const delta = Math.abs(targetIndex - p5.animationCounter);
+		const fastCatchUpThreshold = 30; // for catching up when user scrubs forward or backward
 
-	p5.scrubForward = (mappedTime) => {
-		for (let i = p5.animationCounter; i < mappedTime; i++) {
-			p5.dynamicData.update(transcript.wordArray[p5.animationCounter]);
-			p5.animationCounter++;
-		}
-	};
+		if (delta > fastCatchUpThreshold) {
+			p5.dynamicData.clear();
+			for (let i = 0; i <= targetIndex; i++) {
+				p5.dynamicData.update(transcript.wordArray[i]);
+			}
+			p5.animationCounter = targetIndex;
+		} else {
+			const maxStepsPerFrame = 1;
+			let steps = 0;
 
-	p5.scrubBackward = (mappedTime) => {
-		for (let i = p5.animationCounter; i > mappedTime; i--) {
-			p5.dynamicData.removeLastElement();
-			p5.animationCounter--;
+			while (p5.animationCounter < targetIndex && steps < maxStepsPerFrame && p5.animationCounter < transcript.wordArray.length) {
+				p5.dynamicData.update(transcript.wordArray[p5.animationCounter]);
+				p5.animationCounter++;
+				steps++;
+			}
+
+			while (p5.animationCounter > targetIndex && steps < maxStepsPerFrame && p5.animationCounter > 0) {
+				p5.dynamicData.removeLastElement();
+				p5.animationCounter--;
+				steps++;
+			}
 		}
 	};
 
