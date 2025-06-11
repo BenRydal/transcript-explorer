@@ -262,7 +262,7 @@
 					on:click={cycleTimeFormat}
 					title="Click to change time format"
 				>
-					<span class="font-mono text-sm">{formattedCurr} / {formattedRight}</span>
+					<span class="font-mono text-sm">{formattedLeft} / {formattedRight}</span>
 				</button>
 				<span class="text-sm text-gray-600 px-2">Speed: {config.animationRate.toFixed(2)}x</span>
 			</div>
