@@ -34,8 +34,10 @@
 
 	let currentTimeFormat: TimeFormat = 'HHMMSS';
 	let useWordCounts = false;
+	let transcript;
 
-	TranscriptStore.subscribe((transcript) => {
+	TranscriptStore.subscribe((data) => {
+		transcript = data;
 		const hasTimeData =
 			transcript.wordArray.length > 0 &&
 			transcript.wordArray.some((word) => word.useWordCountsAsFallback === false);
@@ -100,8 +102,14 @@
 		});
 
 		if (p5Instance) {
-			if (!isAnimating) p5Instance.resetAnimation();
-			else p5Instance.fillAllData();
+			if (!isAnimating) {
+				let targetIndex = p5Instance.getAnimationTargetIndex();
+				p5Instance.setAnimationCounter(targetIndex);
+			}
+			else {
+				p5Instance.fillAllData();
+
+			}
 			p5Instance.videoController.timelinePlayPause();
 		}
 	};
@@ -254,7 +262,7 @@
 					on:click={cycleTimeFormat}
 					title="Click to change time format"
 				>
-					<span class="font-mono text-sm">{formattedCurr} / {formattedRight}</span>
+					<span class="font-mono text-sm">{formattedLeft} / {formattedRight}</span>
 				</button>
 				<span class="text-sm text-gray-600 px-2">Speed: {config.animationRate.toFixed(2)}x</span>
 			</div>
