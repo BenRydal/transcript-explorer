@@ -66,7 +66,7 @@ export const igsSketch = (p5: any) => {
 		let targetIndex = p5.getAnimationTargetIndex();
 		// Calculate the delta between the current animation counter and the target index
 		const delta = Math.abs(targetIndex - p5.animationCounter);
-		const fastCatchUpThreshold = 30; // for catching up when user scrubs forward or backward
+		const fastCatchUpThreshold = 100; // for catching up when user scrubs forward or backward
 
 		if (delta > fastCatchUpThreshold) {
 			p5.setAnimationCounter(targetIndex);
@@ -122,6 +122,7 @@ export const igsSketch = (p5: any) => {
 	};
 
 	p5.endTimelineAnimation = () => {
+		p5.setAnimationCounter(p5.getAnimationTargetIndex()); // important if user scrubs to end quickly
 		TimelineStore.update((timeline) => {
 			timeline.setIsAnimating(false);
 			return timeline;
