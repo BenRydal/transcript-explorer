@@ -34,8 +34,10 @@
 
 	let currentTimeFormat: TimeFormat = 'HHMMSS';
 	let useWordCounts = false;
+	let transcript;
 
-	TranscriptStore.subscribe((transcript) => {
+	TranscriptStore.subscribe((data) => {
+		transcript = data;
 		const hasTimeData =
 			transcript.wordArray.length > 0 &&
 			transcript.wordArray.some((word) => word.useWordCountsAsFallback === false);
@@ -100,8 +102,14 @@
 		});
 
 		if (p5Instance) {
-			if (!isAnimating) p5Instance.resetAnimation();
-			else p5Instance.fillAllData();
+			if (!isAnimating) {
+				let targetIndex = p5Instance.getAnimationTargetIndex();
+				p5Instance.setAnimationCounter(targetIndex);
+			}
+			else {
+				p5Instance.fillAllData();
+
+			}
 			p5Instance.videoController.timelinePlayPause();
 		}
 	};

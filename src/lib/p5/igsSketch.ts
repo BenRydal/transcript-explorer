@@ -62,20 +62,14 @@ export const igsSketch = (p5: any) => {
 	};
 
 	p5.syncAnimationCounter = () => {
-		const currTime = timeline.getCurrTime();
 		// Find the index of the first word that starts after the current time
-		let targetIndex = transcript.wordArray.findIndex((word) => word.startTime > currTime);
-		if (targetIndex < 0) targetIndex = 0;
+		let targetIndex = p5.getAnimationTargetIndex();
 		// Calculate the delta between the current animation counter and the target index
 		const delta = Math.abs(targetIndex - p5.animationCounter);
 		const fastCatchUpThreshold = 30; // for catching up when user scrubs forward or backward
 
 		if (delta > fastCatchUpThreshold) {
-			p5.dynamicData.clear();
-			for (let i = 0; i <= targetIndex; i++) {
-				p5.dynamicData.update(transcript.wordArray[i]);
-			}
-			p5.animationCounter = targetIndex;
+			p5.setAnimationCounter(targetIndex);
 		} else {
 			const maxStepsPerFrame = 1;
 			let steps = 0;
@@ -92,6 +86,18 @@ export const igsSketch = (p5: any) => {
 				steps++;
 			}
 		}
+	};
+
+	p5.getAnimationTargetIndex = () => {
+		const currTime = timeline.getCurrTime();
+		let targetIndex = transcript.wordArray.findIndex((word) => word.startTime > currTime);
+		if (targetIndex < 0) targetIndex = transcript.wordArray.length;
+		return targetIndex;
+	};
+
+	p5.setAnimationCounter = (targetIndex: number) => {
+		p5.animationCounter = targetIndex;
+		p5.fillSelectedData();
 	};
 
 	p5.handleTimelineAnimationState = () => {
