@@ -25,7 +25,6 @@
 						<div class="flex flex-row justify-center flex-wrap gap-4 my-2">
 							<a href="https://youtu.be/_2_3ilMm4pQ" target="_blank" class="btn bg-gray-300 text-black">Watch Demo Video</a>
 							<a href="/images/data_formatting_guide.pdf" target="_blank" class="btn bg-gray-300 text-black">Data Formatting Guide</a>
-							<a href="https://static1.squarespace.com/static/64f88a928f65ec467d0ea422/t/67c8e6d39309be2f9ea36ffd/1741219552860/CHI_EVAT-TranscriptExplorer.pdf" target="_blank" class="btn bg-gray-300 text-black">View Publication</a>
 							<a href="https://forms.gle/3i1F74V6cy5Q8RHv5" target="_blank" class="btn bg-gray-300 text-black">Share Feedback</a>
 						</div>
 						<p class="pt-3 pb-6 text-justify">
@@ -33,7 +32,7 @@
 							built with Svelte, JavaScript and p5.js licensed under the GNU General Public License Version 3.0. It is
 							developed by Ben Rydal Shapiro, Edwin Zhao, Rogers Hall, Arpit Mathur, and contributors with support from the National Science Foundation #1623690 and #2100784. 
 							Example data is from the <a href="https://www.timssvideo.com" class="text-blue-500 underline" target="_blank">TIMSS 1999 Video Study</a> and 
-							<a href="https://deepblue.lib.umich.edu/handle/2027.42/65013" class="text-blue-500 underline" target="_blank">the Case of Sean Numbers</a> from Mathematics Teaching and Learning to Teach (MTLT), University of Michigan (2010) used with special permission.
+							<a href="https://deepblue.lib.umich.edu/handle/2027.42/65013" class="text-blue-500 underline" target="_blank">the Case of Sean Numbers</a> from Mathematics Teaching and Learning to Teach, University of Michigan.
 							If using Transcript Explorer in your research, kindly reference: 
 						</p>
 
