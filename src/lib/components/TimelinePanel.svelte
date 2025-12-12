@@ -38,15 +38,13 @@
 
 	TranscriptStore.subscribe((data) => {
 		transcript = data;
-		const hasTimeData =
-			transcript.wordArray.length > 0 &&
-			transcript.wordArray.some((word) => word.useWordCountsAsFallback === false);
-			useWordCounts = !hasTimeData && transcript.wordArray.length > 0;
-			if (useWordCounts) {
-				currentTimeFormat = 'WORDS';
-			} else if (hasTimeData) {
-				currentTimeFormat = 'TIME';
-			}
+		const hasTimeData = transcript.wordArray.length > 0 && transcript.wordArray.some((word) => word.useWordCountsAsFallback === false);
+		useWordCounts = !hasTimeData && transcript.wordArray.length > 0;
+		if (useWordCounts) {
+			currentTimeFormat = 'WORDS';
+		} else if (hasTimeData) {
+			currentTimeFormat = 'TIME';
+		}
 	});
 
 	function cycleTimeFormat() {
@@ -105,12 +103,9 @@
 			if (!isAnimating) {
 				let targetIndex = p5Instance.getAnimationTargetIndex();
 				p5Instance.setAnimationCounter(targetIndex);
-			}
-			else {
+			} else {
 				p5Instance.fillAllData();
-
 			}
-			p5Instance.videoController.timelinePlayPause();
 		}
 	};
 

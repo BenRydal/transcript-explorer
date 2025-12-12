@@ -9,7 +9,7 @@ import { USER_COLORS } from '../constants/index.js';
 import UserStore from '../../stores/userStore';
 import TimelineStore from '../../stores/timelineStore';
 import TranscriptStore from '../../stores/transcriptStore.js';
-import VideoStore from '../../stores/videoStore';
+import VideoStore, { loadVideo, reset as resetVideo } from '../../stores/videoStore';
 import { Transcript } from '../../models/transcript';
 import ConfigStore from '../../stores/configStore.js';
 
@@ -72,7 +72,7 @@ export class Core {
 				await this.loadLocalExampleDataFile(`/data/${selectedValue}/`, file);
 			}
 			if (videoId) {
-				this.sketch.videoController.createVideoPlayer('Youtube', { videoId });
+				loadVideo({ type: 'youtube', videoId });
 			}
 		}
 	};
@@ -95,7 +95,7 @@ export class Core {
 			this.clearTranscriptData();
 			this.loadP5Strings(URL.createObjectURL(file));
 		} else if (fileName.endsWith('.mp4') || file.type === 'video/mp4') {
-			this.sketch.videoController.clear();
+			resetVideo();
 			this.prepVideoFromFile(URL.createObjectURL(file));
 		} else alert('Error loading file. Please make sure your file is an accepted format'); // this should not be possible due to HTML5 accept for file inputs, but in case
 	}
@@ -173,9 +173,7 @@ export class Core {
 	 * @param  {MP4 File} input
 	 */
 	prepVideoFromFile(fileLocation) {
-		this.sketch.videoController.createVideoPlayer('File', {
-			fileName: fileLocation
-		});
+		loadVideo({ type: 'file', fileUrl: fileLocation });
 	}
 
 	processData(dataArray: unknown[], type: 'csv' | 'txt') {
@@ -339,13 +337,12 @@ export class Core {
 
 	clearAllData() {
 		console.log('Clearing all data');
-		this.sketch.videoController.clear();
 		this.sketch.dynamicData.clear();
 		this.sketch.resetScalingVars();
 		UserStore.set([]);
 		TranscriptStore.set(new Transcript());
-		// Reset video overlay state
-		VideoStore.set({ isShowing: false, isPlaying: false });
+		// Reset video state
+		resetVideo();
 	}
 
 	clearTranscriptData() {

@@ -5,10 +5,14 @@ import type { User } from '../../models/user';
 import TimelineStore from '../../stores/timelineStore';
 import ConfigStore from '../../stores/configStore';
 import { initialConfig } from '../../stores/configStore';
-import { VideoController, Draw, DynamicData } from '..';
+import VideoStore, { play as videoPlay, pause as videoPause, requestSeek } from '../../stores/videoStore';
+import type { VideoState } from '../../stores/videoStore';
+import { Draw, DynamicData } from '..';
 
 let users: User[] = [];
 let timeline, transcript, currConfig;
+let videoState: VideoState;
+
 TimelineStore.subscribe((data) => {
 	timeline = data;
 });
@@ -25,6 +29,10 @@ TranscriptStore.subscribe((data) => {
 	transcript = data;
 });
 
+VideoStore.subscribe((data) => {
+	videoState = data;
+});
+
 export const igsSketch = (p5: any) => {
 	P5Store.set(p5);
 
@@ -36,7 +44,6 @@ export const igsSketch = (p5: any) => {
 		const { width, height } = p5.getContainerSize();
 		p5.createCanvas(width, height);
 		p5.dynamicData = new DynamicData(p5);
-		p5.videoController = new VideoController(p5);
 		p5.SPACING = 25;
 		p5.toolTipTextSize = 30;
 		p5.textFont(p5.font);
@@ -61,7 +68,6 @@ export const igsSketch = (p5: any) => {
 			render.drawViz();
 		}
 		if (timeline.getIsAnimating()) p5.updateAnimation();
-		// Video positioning is now handled by VideoOverlay.svelte
 	};
 
 	p5.updateAnimation = () => {
@@ -119,8 +125,9 @@ export const igsSketch = (p5: any) => {
 
 	p5.continueTimelineAnimation = () => {
 		let timeToSet = 0;
-		if (p5.videoController.isLoadedAndIsPlaying()) {
-			timeToSet = p5.videoController.getVideoPlayerCurTime();
+		if (videoState.isLoaded && videoState.isPlaying) {
+			// Get time from video via VideoStore's currentTime
+			timeToSet = videoState.currentTime;
 		} else {
 			timeToSet = timeline.getCurrTime() + currConfig.animationRate;
 		}
@@ -139,30 +146,47 @@ export const igsSketch = (p5: any) => {
 	};
 
 	p5.mousePressed = () => {
-		if (!p5.videoController.isLoaded || !p5.videoController.isShowing) return;
-		if (!p5.videoController.videoPlayer.isOver) {
-			if (p5.videoController.isPlaying) p5.videoController.pause();
-			else if (p5.overRect(0, 0, p5.width, p5.height)) p5.handleVideoPlay();
+		// Video interaction is now handled by VideoContainer.svelte
+		// This mousePressed only handles canvas interactions when video is not over the click
+		if (!videoState.isLoaded || !videoState.isVisible) return;
+
+		if (videoState.isPlaying) {
+			videoPause();
+		} else if (p5.overRect(0, 0, p5.width, p5.height)) {
+			p5.handleVideoPlay();
 		}
 	};
 
 	p5.handleVideoPlay = () => {
 		const { distributionDiagramToggle, turnChartToggle, contributionCloudToggle, arrayOfFirstWords, selectedWordFromContributionCloud } = currConfig;
 
+		let seekTime: number | null = null;
+
 		if (distributionDiagramToggle) {
 			if (arrayOfFirstWords.length) {
-				p5.videoController.playForDistributionDiagram(arrayOfFirstWords);
+				// Play first 2 seconds of each turn (simplified - just seek to first)
+				seekTime = arrayOfFirstWords[0]?.startTime;
 			}
 		} else if (turnChartToggle) {
-			p5.videoController.playForTurnChart(p5.getTimeValueFromPixel(p5.mouseX));
+			seekTime = p5.getTimeValueFromPixel(p5.mouseX);
 		} else if (contributionCloudToggle) {
 			if (selectedWordFromContributionCloud) {
-				p5.videoController.playForContributionCloud(selectedWordFromContributionCloud.startTime);
+				seekTime = selectedWordFromContributionCloud.startTime;
 			}
 		} else {
-			if (arrayOfFirstWords.length) p5.videoController.playForDistributionDiagram(arrayOfFirstWords);
-			else if (selectedWordFromContributionCloud) p5.videoController.playForContributionCloud(selectedWordFromContributionCloud.startTime);
-			else p5.videoController.playForTurnChart(p5.getTimeValueFromPixel(p5.mouseX));
+			// Dashboard mode - use most relevant selection
+			if (arrayOfFirstWords.length) {
+				seekTime = arrayOfFirstWords[0]?.startTime;
+			} else if (selectedWordFromContributionCloud) {
+				seekTime = selectedWordFromContributionCloud.startTime;
+			} else {
+				seekTime = p5.getTimeValueFromPixel(p5.mouseX);
+			}
+		}
+
+		if (seekTime !== null) {
+			requestSeek(seekTime);
+			videoPlay();
 		}
 	};
 
