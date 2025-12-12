@@ -10,7 +10,6 @@
 		pause,
 		clearSeekRequest
 	} from '../../stores/videoStore';
-	import EditorStore from '../../stores/editorStore';
 	import {
 		playVideo,
 		pauseVideo,
@@ -24,18 +23,9 @@
 
 	const DRAG_HANDLE_HEIGHT = 24;
 	const MIN_WIDTH = 160;
-	const CONTROLS_HEIGHT = 36;
-	const CHROME_HEIGHT = DRAG_HANDLE_HEIGHT + CONTROLS_HEIGHT;
-	const FULLSCREEN_PADDING = 8;
 
 	let videoPlayerComponent: VideoPlayerComponent;
 	let player: VideoPlayer | null = null;
-	let isFullscreen = false;
-	let resizeObserver: ResizeObserver | null = null;
-
-	// Store pre-fullscreen state for restoration
-	let preFullscreenPosition = { x: 0, y: 0 };
-	let preFullscreenSize = { width: 320, height: 180 };
 
 	// Get reactive state from store
 	$: position = $VideoStore.position;
@@ -47,7 +37,6 @@
 	$: isMuted = $VideoStore.isMuted;
 	$: seekRequest = $VideoStore.seekRequest;
 	$: isVisible = $VideoStore.isVisible;
-	$: showAdvancedControls = $EditorStore.config.showAdvancedVideoControls;
 
 	// Handle seek requests from p5 or other sources
 	let lastSeekRequestId = 0;
@@ -112,7 +101,7 @@
 	}
 
 	function handleDragStart(e: MouseEvent) {
-		if (isResizing || isFullscreen) return;
+		if (isResizing) return;
 		setDragging(true);
 		dragStartX = e.clientX;
 		dragStartY = e.clientY;
@@ -211,83 +200,6 @@
 		return player;
 	}
 
-	// Calculate fullscreen dimensions based on container size
-	function calculateFullscreenDimensions(containerEl: HTMLElement) {
-		const rect = containerEl.getBoundingClientRect();
-
-		// Available space in the container (with padding)
-		const availableWidth = rect.width - (FULLSCREEN_PADDING * 2);
-		const availableHeight = rect.height - (FULLSCREEN_PADDING * 2);
-
-		// Calculate video dimensions that fit while maintaining aspect ratio
-		let newWidth = availableWidth;
-		let videoHeight = newWidth / aspectRatio;
-		let totalHeight = videoHeight + CHROME_HEIGHT;
-
-		// If too tall, constrain by height instead
-		if (totalHeight > availableHeight) {
-			totalHeight = availableHeight;
-			videoHeight = totalHeight - CHROME_HEIGHT;
-			newWidth = videoHeight * aspectRatio;
-		}
-
-		// Center in container
-		const newX = (rect.width - newWidth) / 2;
-		const newY = (rect.height - totalHeight) / 2;
-
-		return {
-			x: Math.max(0, newX),
-			y: Math.max(0, newY),
-			width: newWidth,
-			height: totalHeight
-		};
-	}
-
-	// Update fullscreen dimensions when container resizes
-	function handleContainerResize() {
-		if (!isFullscreen) return;
-
-		const containerEl = document.getElementById('p5-container');
-		if (!containerEl) return;
-
-		const dims = calculateFullscreenDimensions(containerEl);
-		updatePosition(dims.x, dims.y);
-		updateSize(dims.width, dims.height);
-	}
-
-	function handleToggleFullscreen() {
-		const containerEl = document.getElementById('p5-container');
-		if (!containerEl) return;
-
-		if (isFullscreen) {
-			// Exit fullscreen - restore previous position and size
-			updatePosition(preFullscreenPosition.x, preFullscreenPosition.y);
-			updateSize(preFullscreenSize.width, preFullscreenSize.height);
-			isFullscreen = false;
-
-			// Stop observing container resize
-			if (resizeObserver) {
-				resizeObserver.disconnect();
-				resizeObserver = null;
-			}
-		} else {
-			// Enter fullscreen - save current state and expand
-			preFullscreenPosition = { x: position.x, y: position.y };
-			preFullscreenSize = { width: size.width, height: size.height };
-
-			const dims = calculateFullscreenDimensions(containerEl);
-			updatePosition(dims.x, dims.y);
-			updateSize(dims.width, dims.height);
-			isFullscreen = true;
-
-			// Start observing container resize to adapt fullscreen dimensions
-			resizeObserver = new ResizeObserver(() => {
-				handleContainerResize();
-			});
-			resizeObserver.observe(containerEl);
-		}
-	}
-
 	onMount(() => {
 		if (browser) {
 			document.addEventListener('mousemove', handleMouseMove);
@@ -299,10 +211,6 @@
 		if (browser) {
 			document.removeEventListener('mousemove', handleMouseMove);
 			document.removeEventListener('mouseup', handleMouseUp);
-		}
-		if (resizeObserver) {
-			resizeObserver.disconnect();
-			resizeObserver = null;
 		}
 	});
 </script>
@@ -335,32 +243,30 @@
 
 	<!-- Controls bar at bottom -->
 	<div class="controls-bar">
-		<VideoControls {player} {isFullscreen} {showAdvancedControls} on:toggleFullscreen={handleToggleFullscreen} />
+		<VideoControls {player} />
 	</div>
 
-	<!-- Resize handles (hidden in fullscreen) -->
-	{#if !isFullscreen}
-		<button
-			class="resize-handle nw"
-			on:mousedown={(e) => handleResizeStart(e, 'nw')}
-			aria-label="Resize from top-left corner"
-		></button>
-		<button
-			class="resize-handle ne"
-			on:mousedown={(e) => handleResizeStart(e, 'ne')}
-			aria-label="Resize from top-right corner"
-		></button>
-		<button
-			class="resize-handle sw"
-			on:mousedown={(e) => handleResizeStart(e, 'sw')}
-			aria-label="Resize from bottom-left corner"
-		></button>
-		<button
-			class="resize-handle se"
-			on:mousedown={(e) => handleResizeStart(e, 'se')}
-			aria-label="Resize from bottom-right corner"
-		></button>
-	{/if}
+	<!-- Resize handles -->
+	<button
+		class="resize-handle nw"
+		on:mousedown={(e) => handleResizeStart(e, 'nw')}
+		aria-label="Resize from top-left corner"
+	></button>
+	<button
+		class="resize-handle ne"
+		on:mousedown={(e) => handleResizeStart(e, 'ne')}
+		aria-label="Resize from top-right corner"
+	></button>
+	<button
+		class="resize-handle sw"
+		on:mousedown={(e) => handleResizeStart(e, 'sw')}
+		aria-label="Resize from bottom-left corner"
+	></button>
+	<button
+		class="resize-handle se"
+		on:mousedown={(e) => handleResizeStart(e, 'se')}
+		aria-label="Resize from bottom-right corner"
+	></button>
 </div>
 
 <style>
@@ -410,7 +316,7 @@
 		top: 0;
 		left: 0;
 		right: 0;
-		bottom: 0;
+		bottom: 36px; /* Leave space for controls */
 		z-index: 1;
 		background: transparent;
 	}

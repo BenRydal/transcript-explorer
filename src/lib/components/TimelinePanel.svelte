@@ -33,10 +33,13 @@
 	let useWordCounts = false;
 
 	TranscriptStore.subscribe((data) => {
-		const hasTimeData = data.wordArray.length > 0 && data.wordArray.some((word) => word.useWordCountsAsFallback === false);
-		useWordCounts = !hasTimeData && data.wordArray.length > 0;
+		transcript = data;
+		const hasTimeData = transcript.wordArray.length > 0 && transcript.wordArray.some((word) => word.useWordCountsAsFallback === false);
+		useWordCounts = !hasTimeData && transcript.wordArray.length > 0;
 		if (useWordCounts) {
 			currentTimeFormat = 'WORDS';
+		} else if (hasTimeData) {
+			currentTimeFormat = 'TIME';
 		}
 	});
 

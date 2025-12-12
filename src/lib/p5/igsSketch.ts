@@ -4,16 +4,14 @@ import UserStore from '../../stores/userStore';
 import type { User } from '../../models/user';
 import TimelineStore from '../../stores/timelineStore';
 import ConfigStore from '../../stores/configStore';
-import EditorStore from '../../stores/editorStore';
+import { initialConfig } from '../../stores/configStore';
 import VideoStore, { play as videoPlay, pause as videoPause, requestSeek } from '../../stores/videoStore';
 import type { VideoState } from '../../stores/videoStore';
-import { Draw } from '../draw/draw';
-import { DynamicData } from '../core/dynamic-data';
+import { Draw, DynamicData } from '..';
 
 let users: User[] = [];
-let timeline, transcript, currConfig, editorState;
+let timeline, transcript, currConfig;
 let videoState: VideoState;
-let isPlayingTurnSnippets = false;
 
 TimelineStore.subscribe((data) => {
 	timeline = data;
@@ -33,10 +31,6 @@ TranscriptStore.subscribe((data) => {
 
 VideoStore.subscribe((data) => {
 	videoState = data;
-});
-
-EditorStore.subscribe((data) => {
-	editorState = data;
 });
 
 export const igsSketch = (p5: any) => {
@@ -74,7 +68,6 @@ export const igsSketch = (p5: any) => {
 			render.drawViz();
 		}
 		if (timeline.getIsAnimating()) p5.updateAnimation();
-		// Video positioning is now handled by VideoOverlay.svelte
 	};
 
 	p5.updateAnimation = () => {
@@ -156,29 +149,11 @@ export const igsSketch = (p5: any) => {
 	};
 
 	p5.mousePressed = () => {
-		// Handle distribution diagram click to lock speaker filter (only if editor is open)
-		if ((currConfig.distributionDiagramToggle || currConfig.dashboardToggle) && editorState?.config?.isVisible) {
-			const hoveredSpeaker = currConfig.hoveredSpeakerInDistributionDiagram;
-			if (hoveredSpeaker) {
-				EditorStore.update((state) => ({
-					...state,
-					selection: {
-						...state.selection,
-						filteredSpeaker: hoveredSpeaker,
-						highlightedSpeaker: hoveredSpeaker,
-						selectedTurnNumber: null,
-						selectionSource: 'distributionDiagramClick'
-					}
-				}));
-			}
-		}
-
 		// Video interaction is now handled by VideoContainer.svelte
 		// This mousePressed only handles canvas interactions when video is not over the click
 		if (!videoState.isLoaded || !videoState.isVisible) return;
 
-		if (videoState.isPlaying || isPlayingTurnSnippets) {
-			p5.stopTurnSnippets();
+		if (videoState.isPlaying) {
 			videoPause();
 		} else if (p5.overRect(0, 0, p5.width, p5.height)) {
 			p5.handleVideoPlay();
@@ -188,23 +163,33 @@ export const igsSketch = (p5: any) => {
 	p5.handleVideoPlay = () => {
 		const { distributionDiagramToggle, turnChartToggle, contributionCloudToggle, arrayOfFirstWords, selectedWordFromContributionCloud, firstWordOfTurnSelectedInTurnChart } = currConfig;
 
-		if (distributionDiagramToggle || (currConfig.dashboardToggle && arrayOfFirstWords.length && !firstWordOfTurnSelectedInTurnChart && !selectedWordFromContributionCloud)) {
-			// Distribution diagram: play first 2 seconds of each turn
+		let seekTime: number | null = null;
+
+		if (distributionDiagramToggle) {
 			if (arrayOfFirstWords.length) {
-				p5.playTurnSnippets(arrayOfFirstWords);
+				// Play first 2 seconds of each turn (simplified - just seek to first)
+				seekTime = arrayOfFirstWords[0]?.startTime;
 			}
-		} else if (turnChartToggle || (currConfig.dashboardToggle && firstWordOfTurnSelectedInTurnChart)) {
-			// Turn chart: play from hovered turn
-			if (firstWordOfTurnSelectedInTurnChart) {
-				requestSeek(firstWordOfTurnSelectedInTurnChart.startTime);
-				videoPlay();
-			}
-		} else if (contributionCloudToggle || (currConfig.dashboardToggle && selectedWordFromContributionCloud)) {
-			// Contribution cloud: play from hovered word
+		} else if (turnChartToggle) {
+			seekTime = p5.getTimeValueFromPixel(p5.mouseX);
+		} else if (contributionCloudToggle) {
 			if (selectedWordFromContributionCloud) {
-				requestSeek(selectedWordFromContributionCloud.startTime);
-				videoPlay();
+				seekTime = selectedWordFromContributionCloud.startTime;
 			}
+		} else {
+			// Dashboard mode - use most relevant selection
+			if (arrayOfFirstWords.length) {
+				seekTime = arrayOfFirstWords[0]?.startTime;
+			} else if (selectedWordFromContributionCloud) {
+				seekTime = selectedWordFromContributionCloud.startTime;
+			} else {
+				seekTime = p5.getTimeValueFromPixel(p5.mouseX);
+			}
+		}
+
+		if (seekTime !== null) {
+			requestSeek(seekTime);
+			videoPlay();
 		}
 	};
 

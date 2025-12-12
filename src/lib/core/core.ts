@@ -9,7 +9,7 @@ import { USER_COLORS } from '../constants/index.js';
 import UserStore from '../../stores/userStore';
 import TimelineStore from '../../stores/timelineStore';
 import TranscriptStore from '../../stores/transcriptStore.js';
-import VideoStore from '../../stores/videoStore';
+import VideoStore, { loadVideo, reset as resetVideo } from '../../stores/videoStore';
 import { Transcript } from '../../models/transcript';
 import ConfigStore from '../../stores/configStore.js';
 
@@ -331,8 +331,8 @@ export class Core {
 		this.sketch.dynamicData.clear();
 		UserStore.set([]);
 		TranscriptStore.set(new Transcript());
-		// Reset video overlay state
-		VideoStore.set({ isShowing: false, isPlaying: false });
+		// Reset video state
+		resetVideo();
 	}
 
 	clearTranscriptData() {

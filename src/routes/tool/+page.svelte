@@ -13,7 +13,7 @@
 	import type { User } from '../../models/user';
 	import UserStore from '../../stores/userStore';
 	import P5Store from '../../stores/p5Store';
-	import VideoStore from '../../stores/videoStore';
+	import VideoStore, { toggleVisibility as toggleVideoVisibility } from '../../stores/videoStore';
 	import EditorStore from '../../stores/editorStore';
 
 	import { Core } from '$lib/core/core';
@@ -29,7 +29,7 @@
 	import SplitPane from '$lib/components/SplitPane.svelte';
 	import TranscriptEditor from '$lib/components/TranscriptEditor.svelte';
 	import CanvasTooltip from '$lib/components/CanvasTooltip.svelte';
-	import VideoOverlay from '$lib/components/VideoOverlay.svelte';
+	import VideoContainer from '$lib/components/VideoContainer.svelte';
 
 	import TimelineStore from '../../stores/timelineStore';
 	import ConfigStore from '../../stores/configStore';
@@ -144,27 +144,6 @@
 	$: isVideoLoaded = $VideoStore.isLoaded;
 	$: isVideoVisible = $VideoStore.isVisible;
 	$: hasVideoSource = $VideoStore.source.type !== null;
-
-	// When video loads, convert transcript from word-count mode to timestamp mode
-	$: if (isVideoLoaded) {
-		TranscriptStore.update((transcript) => {
-			const hasWordCountFallback = transcript.wordArray.some((dp) => dp.useWordCountsAsFallback);
-			if (hasWordCountFallback) {
-				transcript.wordArray.forEach((dp) => {
-					dp.useWordCountsAsFallback = false;
-				});
-			}
-			return transcript;
-		});
-	}
-
-	// Reactive binding for editor visibility
-	$: isEditorVisible = $EditorStore.config.isVisible;
-
-	// Get currently active visualization name
-	$: activeVisualization = techniqueToggleOptions.find(t => $ConfigStore[t]) || '';
-	$: activeVisualizationName = activeVisualization ? formatToggleName(activeVisualization) : 'Select';
-
 	let timeline;
 
 	ConfigStore.subscribe((value) => {
@@ -173,6 +152,11 @@
 
 	TimelineStore.subscribe((value) => {
 		timeline = value;
+	});
+
+	
+	UserStore.subscribe((data) => {
+		users = data;
 	});
 
 	P5Store.subscribe((value) => {
@@ -214,18 +198,6 @@
 			// Trigger resize after DOM updates
 			requestAnimationFrame(() => {
 				triggerCanvasResize();
-			});
-		}
-		prevEditorConfig = { orientation, isCollapsed };
-	}
-
-	function toggleVideo() {
-		if (p5Instance && p5Instance.videoController) {
-			p5Instance.videoController.toggleShowVideo();
-			VideoStore.update((value) => {
-				value.isShowing = p5Instance.videoController.isShowing;
-				value.isPlaying = p5Instance.videoController.isPlaying;
-				return value;
 			});
 		}
 		prevEditorConfig = { orientation, isCollapsed };
@@ -625,10 +597,10 @@
 				on:click={toggleEditor}
 			/>
 
-			{#if isVideoShowing}
-				<IconButton id="btn-toggle-video" icon={MdVideocam} tooltip={'Show/Hide Video'} on:click={toggleVideo} />
+			{#if isVideoVisible}
+				<IconButton id="btn-toggle-video" icon={MdVideocam} tooltip={'Hide Video'} on:click={toggleVideo} disabled={!isVideoLoaded} />
 			{:else}
-				<IconButton id="btn-toggle-video" icon={MdVideocamOff} tooltip={'Show/Hide Video'} on:click={toggleVideo} />
+				<IconButton id="btn-toggle-video" icon={MdVideocamOff} tooltip={'Show Video'} on:click={toggleVideo} disabled={!isVideoLoaded} />
 			{/if}
 
 			<!-- TODO: Need to move this logic into the IconButton component eventually -->
@@ -735,7 +707,9 @@
 		<div slot="first" class="h-full relative" id="p5-container">
 			<P5 {sketch} />
 			<CanvasTooltip />
-			<VideoOverlay visible={isVideoShowing} />
+			{#if hasVideoSource}
+				<VideoContainer bind:this={videoContainerRef} />
+			{/if}
 		</div>
 		<div slot="second" class="h-full">
 			<TranscriptEditor />
