@@ -8,10 +8,12 @@
 	import MdVideocamOff from 'svelte-icons/md/MdVideocamOff.svelte';
 	import MdCheck from 'svelte-icons/md/MdCheck.svelte';
 	import MdSettings from 'svelte-icons/md/MdSettings.svelte';
+	import MdSubject from 'svelte-icons/md/MdSubject.svelte';
 	import type { User } from '../../models/user';
 	import UserStore from '../../stores/userStore';
 	import P5Store from '../../stores/p5Store';
 	import VideoStore from '../../stores/videoStore';
+	import EditorStore from '../../stores/editorStore';
 
 	import { Core } from '$lib';
 	import { igsSketch } from '$lib/p5/igsSketch';
@@ -21,6 +23,8 @@
 	import InfoModal from '$lib/components/InfoModal.svelte';
 	import TimelinePanel from '$lib/components/TimelinePanel.svelte';
 	import DataPointTable from '$lib/components/DataPointTable.svelte';
+	import SplitPane from '$lib/components/SplitPane.svelte';
+	import TranscriptEditor from '$lib/components/TranscriptEditor.svelte';
 
 	import TimelineStore from '../../stores/timelineStore';
 	import ConfigStore from '../../stores/configStore';
@@ -266,6 +270,22 @@
 		prevConfig = { echoWordsToggle, lastWordToggle, stopWordsToggle };
 	}
 
+	// Watch for editor layout changes (orientation, collapse) and trigger canvas resize
+	let prevEditorConfig = {
+		orientation: $EditorStore.config.orientation,
+		isCollapsed: $EditorStore.config.isCollapsed
+	};
+	$: {
+		const { orientation, isCollapsed } = $EditorStore.config;
+		if (orientation !== prevEditorConfig.orientation || isCollapsed !== prevEditorConfig.isCollapsed) {
+			// Trigger resize after DOM updates
+			requestAnimationFrame(() => {
+				triggerCanvasResize();
+			});
+		}
+		prevEditorConfig = { orientation, isCollapsed };
+	}
+
 	function toggleVideo() {
 		if (p5Instance && p5Instance.videoController) {
 			p5Instance.videoController.toggleShowVideo();
@@ -363,12 +383,55 @@
 			wordToSearch: newWord
 		}));
 	}
+
+	// Toggle transcript editor visibility
+	function toggleEditor() {
+		EditorStore.update((state) => ({
+			...state,
+			config: {
+				...state.config,
+				isVisible: !state.config.isVisible
+			}
+		}));
+		// Trigger canvas resize after editor toggle
+		// Use requestAnimationFrame to wait for DOM to update
+		requestAnimationFrame(() => {
+			triggerCanvasResize();
+		});
+	}
+
+	// Handle split pane resize
+	function handlePanelResize(event: CustomEvent<{ sizes: [number, number] }>) {
+		EditorStore.update((state) => ({
+			...state,
+			config: {
+				...state.config,
+				panelSizes: event.detail.sizes
+			}
+		}));
+		// Trigger canvas resize
+		triggerCanvasResize();
+	}
+
+	// Safely trigger canvas resize only when container exists and has valid dimensions
+	function triggerCanvasResize() {
+		if (!p5Instance) return;
+		const container = document.getElementById('p5-container');
+		if (container) {
+			const rect = container.getBoundingClientRect();
+			// Only resize if container has valid dimensions
+			if (rect.width > 0 && rect.height > 0) {
+				p5Instance.windowResized?.();
+			}
+		}
+	}
 </script>
 
 <svelte:head>
 	<title>TRANSCRIPT EXPLORER</title>
 </svelte:head>
 
+<div class="page-container">
 <div class="navbar min-h-16 bg-[#ffffff]">
 	<div class="flex-1 px-2 lg:flex-none">
 		<a class="text-2xl text-black italic" href="/">TRANSCRIPT EXPLORER</a>
@@ -431,6 +494,13 @@
 		</details>
 
 		<div class="flex items-stretch">
+			<IconButton
+				id="btn-toggle-editor"
+				icon={MdSubject}
+				tooltip={'Toggle Editor'}
+				on:click={toggleEditor}
+			/>
+
 			{#if isVideoShowing}
 				<IconButton id="btn-toggle-video" icon={MdVideocam} tooltip={'Show/Hide Video'} on:click={toggleVideo} />
 			{:else}
@@ -504,8 +574,21 @@
 	</div>
 </div>
 
-<div class="h-10">
-	<P5 {sketch} />
+<div class="main-content">
+	<SplitPane
+		orientation={$EditorStore.config.orientation}
+		sizes={$EditorStore.config.panelSizes}
+		collapsed={!$EditorStore.config.isVisible}
+		collapsedPanel="second"
+		on:resize={handlePanelResize}
+	>
+		<div slot="first" class="h-full" id="p5-container">
+			<P5 {sketch} />
+		</div>
+		<div slot="second" class="h-full">
+			<TranscriptEditor />
+		</div>
+	</SplitPane>
 </div>
 
 {#if showSettings}
@@ -761,17 +844,31 @@
 		<TimelinePanel />
 	</div>
 </div>
+</div>
 
 <slot />
 
 <InfoModal {isModalOpen} />
 
 <style>
+	.page-container {
+		display: flex;
+		flex-direction: column;
+		height: 100vh;
+		overflow: hidden;
+	}
+
 	.color-picker {
 		width: 30px;
 		height: 30px;
 		border: none;
 		border-radius: 50%;
 		cursor: pointer;
+	}
+
+	.main-content {
+		flex: 1;
+		min-height: 0;
+		overflow: hidden;
 	}
 </style>

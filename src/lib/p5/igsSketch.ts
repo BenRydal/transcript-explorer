@@ -33,14 +33,25 @@ export const igsSketch = (p5: any) => {
 	};
 
 	p5.setup = () => {
-		const bottomNavHeight = (document.querySelector('.btm-nav') as HTMLElement).offsetHeight;
-		p5.createCanvas(window.innerWidth, window.innerHeight - bottomNavHeight);
+		const { width, height } = p5.getContainerSize();
+		p5.createCanvas(width, height);
 		p5.dynamicData = new DynamicData(p5);
 		p5.videoController = new VideoController(p5);
 		p5.SPACING = 25;
 		p5.toolTipTextSize = 30;
 		p5.textFont(p5.font);
 		p5.animationCounter = 0; // controls animation of data
+	};
+
+	p5.getContainerSize = () => {
+		const container = document.getElementById('p5-container');
+		if (container) {
+			const rect = container.getBoundingClientRect();
+			return { width: rect.width, height: rect.height };
+		}
+		// Fallback to window-based calculation
+		const bottomNavHeight = (document.querySelector('.btm-nav') as HTMLElement)?.offsetHeight || 80;
+		return { width: window.innerWidth, height: window.innerHeight - bottomNavHeight };
 	};
 
 	p5.draw = () => {
@@ -169,6 +180,7 @@ export const igsSketch = (p5: any) => {
 	};
 
 	p5.fillSelectedData = () => {
+		if (!p5.dynamicData) return; // Guard against calls before setup completes
 		p5.resetScalingVars();
 		p5.dynamicData.clear();
 		for (let i = 0; i < p5.animationCounter; i++) {
@@ -230,8 +242,9 @@ export const igsSketch = (p5: any) => {
 	};
 
 	p5.windowResized = () => {
-		const bottomNavHeight = (document.querySelector('.btm-nav') as HTMLElement).offsetHeight;
-		p5.resizeCanvas(window.innerWidth, window.innerHeight - bottomNavHeight);
+		if (!p5.dynamicData) return; // Guard against calls before setup completes
+		const { width, height } = p5.getContainerSize();
+		p5.resizeCanvas(width, height);
 		p5.fillSelectedData();
 	};
 

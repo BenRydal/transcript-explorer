@@ -27,7 +27,7 @@ export class DistributionDiagram {
 		for (const key in sortedAnimationWordArray) {
 			if (sortedAnimationWordArray[key].length) {
 				const user = this.users.find((user) => user.name === sortedAnimationWordArray[key][0].speaker);
-				if (user.enabled) {
+				if (user?.enabled) {
 					this.drawViz(sortedAnimationWordArray[key], this.config.flowersToggle);
 				}
 			}
@@ -39,6 +39,7 @@ export class DistributionDiagram {
 		const firstElement = tempTurnArray[0];
 		const metrics = this.calculateMetrics(tempTurnArray);
 		const user = this.users.find((user) => user.name === firstElement.speaker);
+		if (!user) return; // Guard against missing user
 		const color = this.sk.color(user.color);
 
 		if (isDrawFlower) {

@@ -2,6 +2,7 @@ import { TurnChart } from './turn-chart.js';
 import { ContributionCloud } from './contribution-cloud.js';
 import { DistributionDiagram } from './distribution-diagram.js';
 import ConfigStore from '../../stores/configStore';
+import EditorStore from '../../stores/editorStore';
 
 let currConfig;
 
@@ -32,22 +33,64 @@ export class Draw {
 		ConfigStore.update((currConfig) => {
 			return { ...currConfig, arrayOfFirstWords: distributionDiagram.localArrayOfFirstWords };
 		});
+		// Sync to EditorStore for transcript editor highlighting
+		const firstWords = distributionDiagram.localArrayOfFirstWords;
+		if (firstWords && firstWords.length > 0) {
+			EditorStore.update((state) => ({
+				...state,
+				selection: {
+					...state.selection,
+					highlightedSpeaker: firstWords[0]?.speaker || null,
+					selectedTurnNumber: null,
+					selectedWordIndex: null,
+					selectionSource: 'distributionDiagram'
+				}
+			}));
+		}
 	}
 
 	updateTurnChart(pos) {
 		const turnChart = new TurnChart(this.sk, pos);
 		turnChart.draw(this.sk.dynamicData.getDynamicArrayForTurnChart());
+		const selectedTurn = turnChart.userSelectedTurn;
 		ConfigStore.update((currConfig) => {
-			return { ...currConfig, firstWordOfTurnSelectedInTurnChart: turnChart.userSelectedTurn.turn[0] };
+			return { ...currConfig, firstWordOfTurnSelectedInTurnChart: selectedTurn.turn[0] };
 		});
+		// Sync to EditorStore for transcript editor highlighting
+		if (selectedTurn && selectedTurn.turn && selectedTurn.turn.length > 0) {
+			EditorStore.update((state) => ({
+				...state,
+				selection: {
+					...state.selection,
+					selectedTurnNumber: selectedTurn.turn[0]?.turnNumber ?? null,
+					highlightedSpeaker: null,
+					selectedWordIndex: null,
+					selectionSource: 'turnChart'
+				}
+			}));
+		}
 	}
 
 	updateContributionCloud(pos) {
 		const contributionCloud = new ContributionCloud(this.sk, pos);
 		contributionCloud.draw(this.sk.dynamicData.getDynamicArraySortedForContributionCloud());
+		const selectedWord = contributionCloud.selectedWordFromContributionCloud;
 		ConfigStore.update((currConfig) => {
-			return { ...currConfig, selectedWordFromContributionCloud: contributionCloud.selectedWordFromContributionCloud };
+			return { ...currConfig, selectedWordFromContributionCloud: selectedWord };
 		});
+		// Sync to EditorStore for transcript editor highlighting
+		if (selectedWord) {
+			EditorStore.update((state) => ({
+				...state,
+				selection: {
+					...state.selection,
+					selectedTurnNumber: selectedWord.turnNumber ?? null,
+					highlightedSpeaker: null,
+					selectedWordIndex: null, // Could calculate word index if needed
+					selectionSource: 'contributionCloud'
+				}
+			}));
+		}
 		if (contributionCloud.yPosDynamic > pos.height) this.sk.updateScalingVars();
 	}
 
