@@ -1,11 +1,8 @@
 <script lang="ts">
-	import { createEventDispatcher, onMount } from 'svelte';
+	import { createEventDispatcher } from 'svelte';
 	import type { Turn } from '$lib/core/turn-utils';
 	import { formatTurnTimecode, getTurnContent } from '$lib/core/turn-utils';
 	import { TimeUtils } from '$lib/core/time-utils';
-	import VideoStore from '../../stores/videoStore';
-
-	let rowElement: HTMLElement;
 
 	export let turn: Turn;
 	export let speakerColor: string = '#666666';
@@ -14,8 +11,6 @@
 	export let speakers: string[] = [];
 
 	const dispatch = createEventDispatcher();
-
-	let isHovering = false;
 
 	let isEditingContent = false;
 	let isEditingSpeaker = false;
@@ -141,116 +136,37 @@
 		}
 	}
 
-	// Close all edit modes, saving any changes
-	function closeAllEditModes() {
-		if (isEditingTime) saveTime();
-		if (isEditingSpeaker) saveSpeaker();
-		if (isEditingContent) saveContent();
-	}
-
 	// Handle row click
 	function handleRowClick() {
-		// If any edit mode is active, close it first
-		closeAllEditModes();
 		dispatch('select', { turn });
 	}
-
-	// Handle delete turn
-	function handleDelete() {
-		dispatch('delete', { turnNumber: turn.turnNumber });
-	}
-
-	// Handle add turn after this one
-	function handleAddAfter() {
-		dispatch('addAfter', { turnNumber: turn.turnNumber, speaker: turn.speaker });
-	}
-
-	// Capture current video time for this turn's start time
-	function captureStartTime() {
-		const videoState = $VideoStore;
-		if (videoState.isLoaded) {
-			const formattedTime = TimeUtils.formatTimeAuto(videoState.currentTime);
-			// Update the local input value
-			editedStartTime = formattedTime;
-			// Also dispatch the edit to save immediately
-			dispatch('edit', {
-				turnNumber: turn.turnNumber,
-				field: 'time',
-				value: { startTime: videoState.currentTime, endTime: turn.endTime }
-			});
-		}
-	}
-
-	// Capture current video time for this turn's end time
-	function captureEndTime() {
-		const videoState = $VideoStore;
-		if (videoState.isLoaded) {
-			const formattedTime = TimeUtils.formatTimeAuto(videoState.currentTime);
-			// Update the local input value
-			editedEndTime = formattedTime;
-			// Also dispatch the edit to save immediately
-			dispatch('edit', {
-				turnNumber: turn.turnNumber,
-				field: 'time',
-				value: { startTime: turn.startTime, endTime: videoState.currentTime }
-			});
-		}
-	}
-
-	// Check if video is loaded and has real timestamps (not word count fallback)
-	$: canCaptureTime = $VideoStore.isLoaded && !turn.useWordCountsAsFallback;
 
 	// Format speaker name for display
 	function formatSpeaker(name: string): string {
 		return name.charAt(0).toUpperCase() + name.slice(1).toLowerCase();
 	}
 
-	// Reactive time display - updates when turn.startTime changes
-	$: timeDisplay = turn.useWordCountsAsFallback
-		? `[${turn.startTime}]`
-		: `[${TimeUtils.formatTimeAuto(turn.startTime)}]`;
-
-	// Handle clicks outside this row to close edit modes
-	onMount(() => {
-		function handleDocumentClick(event: MouseEvent) {
-			// Check current edit state at click time
-			const isAnyEditActive = isEditingTime || isEditingSpeaker || isEditingContent;
-			if (isAnyEditActive && rowElement && !rowElement.contains(event.target as Node)) {
-				closeAllEditModes();
-			}
+	// Get time display
+	function getTimeDisplay(): string {
+		if (turn.useWordCountsAsFallback) {
+			return `[${turn.startTime}]`;
 		}
-
-		document.addEventListener('click', handleDocumentClick);
-		return () => {
-			document.removeEventListener('click', handleDocumentClick);
-		};
-	});
+		return `[${TimeUtils.formatTimeAuto(turn.startTime)}]`;
+	}
 </script>
 
 <div
 	class="turn-row"
 	class:selected={isSelected}
 	class:speaker-highlighted={isSpeakerHighlighted}
-	bind:this={rowElement}
 	on:click={handleRowClick}
 	on:keydown={(e) => e.key === 'Enter' && handleRowClick()}
-	on:mouseenter={() => (isHovering = true)}
-	on:mouseleave={() => (isHovering = false)}
 	role="button"
 	tabindex="0"
 >
 	<!-- Timecode -->
 	{#if isEditingTime}
-		<div class="time-edit-container" on:click|stopPropagation>
-			{#if canCaptureTime}
-				<button
-					class="time-capture-btn capture-start-btn"
-					on:click={captureStartTime}
-					title="Set IN point from video"
-				>
-					<span class="capture-bracket">[</span>
-				</button>
-			{/if}
+		<div class="time-edit-container">
 			<input
 				type="text"
 				class="time-input"
@@ -268,15 +184,6 @@
 				on:blur={saveTime}
 				placeholder="End"
 			/>
-			{#if canCaptureTime}
-				<button
-					class="time-capture-btn capture-end-btn"
-					on:click={captureEndTime}
-					title="Set OUT point from video"
-				>
-					<span class="capture-bracket">]</span>
-				</button>
-			{/if}
 		</div>
 	{:else}
 		<button
@@ -284,7 +191,7 @@
 			on:click|stopPropagation={startEditingTime}
 			title="Click to edit time"
 		>
-			{timeDisplay}
+			{getTimeDisplay()}
 		</button>
 	{/if}
 
@@ -297,22 +204,13 @@
 				bind:value={editedSpeaker}
 				on:keydown={handleSpeakerKeydown}
 				on:blur={saveSpeaker}
-				placeholder="New speaker..."
+				list="speakers-list"
 			/>
-			{#if speakers.length > 0}
-				<select
-					class="speaker-select"
-					on:change={(e) => {
-						editedSpeaker = e.currentTarget.value;
-						saveSpeaker();
-					}}
-				>
-					<option value="" disabled selected>Select</option>
-					{#each speakers as speakerOption}
-						<option value={speakerOption}>{speakerOption}</option>
-					{/each}
-				</select>
-			{/if}
+			<datalist id="speakers-list">
+				{#each speakers as speaker}
+					<option value={speaker}>{speaker}</option>
+				{/each}
+			</datalist>
 		</div>
 	{:else}
 		<button
@@ -345,30 +243,6 @@
 		>
 			{getTurnContent(turn)}
 		</button>
-	{/if}
-
-	<!-- Action buttons (visible on hover) -->
-	{#if isHovering}
-		<div class="row-actions" on:click|stopPropagation>
-			<button
-				class="action-btn add-btn"
-				on:click={handleAddAfter}
-				title="Add turn after"
-			>
-				<svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" viewBox="0 0 20 20" fill="currentColor">
-					<path fill-rule="evenodd" d="M10 3a1 1 0 011 1v5h5a1 1 0 110 2h-5v5a1 1 0 11-2 0v-5H4a1 1 0 110-2h5V4a1 1 0 011-1z" clip-rule="evenodd" />
-				</svg>
-			</button>
-			<button
-				class="action-btn delete-btn"
-				on:click={handleDelete}
-				title="Delete turn"
-			>
-				<svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" viewBox="0 0 20 20" fill="currentColor">
-					<path fill-rule="evenodd" d="M9 2a1 1 0 00-.894.553L7.382 4H4a1 1 0 000 2v10a2 2 0 002 2h8a2 2 0 002-2V6a1 1 0 100-2h-3.382l-.724-1.447A1 1 0 0011 2H9zM7 8a1 1 0 012 0v6a1 1 0 11-2 0V8zm5-1a1 1 0 00-1 1v6a1 1 0 102 0V8a1 1 0 00-1-1z" clip-rule="evenodd" />
-				</svg>
-			</button>
-		</div>
 	{/if}
 </div>
 
@@ -477,65 +351,17 @@
 		color: #6b7280;
 	}
 
-	.time-capture-btn {
-		display: flex;
-		align-items: center;
-		justify-content: center;
-		width: 1.25rem;
-		height: 1.25rem;
-		border: none;
-		border-radius: 0.25rem;
-		cursor: pointer;
-		transition: background-color 0.15s, color 0.15s;
-		background-color: #e5e7eb;
-		color: #6b7280;
-		flex-shrink: 0;
-	}
-
-	.time-capture-btn.capture-start-btn:hover {
-		color: #2563eb;
-		background-color: #dbeafe;
-	}
-
-	.time-capture-btn.capture-end-btn:hover {
-		color: #7c3aed;
-		background-color: #ede9fe;
-	}
-
-	.capture-bracket {
-		font-weight: bold;
-		font-size: 0.875rem;
-		line-height: 1;
-	}
-
 	.speaker-edit-container {
 		flex-shrink: 0;
-		display: flex;
-		align-items: center;
 	}
 
 	.speaker-input {
-		width: 100px;
+		width: 120px;
 		font-weight: 600;
 		padding: 0.25rem;
 		border: 1px solid #d1d5db;
-		border-radius: 0.25rem 0 0 0.25rem;
+		border-radius: 0.25rem;
 		text-transform: uppercase;
-	}
-
-	.speaker-select {
-		padding: 0.25rem 0.5rem;
-		border: 1px solid #d1d5db;
-		border-left: none;
-		border-radius: 0 0.25rem 0.25rem 0;
-		background-color: #f9fafb;
-		cursor: pointer;
-		font-size: 0.75rem;
-		height: 100%;
-	}
-
-	.speaker-select:hover {
-		background-color: #e5e7eb;
 	}
 
 	.content-edit-container {
@@ -558,42 +384,4 @@
 		color: #9ca3af;
 		margin-top: 0.125rem;
 	}
-
-	/* Action buttons */
-	.row-actions {
-		display: flex;
-		gap: 0.25rem;
-		align-items: center;
-		margin-left: auto;
-		flex-shrink: 0;
-	}
-
-	.action-btn {
-		display: flex;
-		align-items: center;
-		justify-content: center;
-		width: 1.5rem;
-		height: 1.5rem;
-		border: none;
-		border-radius: 0.25rem;
-		cursor: pointer;
-		transition: background-color 0.15s, color 0.15s;
-		background-color: transparent;
-		color: #9ca3af;
-	}
-
-	.action-btn:hover {
-		background-color: #e5e7eb;
-	}
-
-	.add-btn:hover {
-		color: #059669;
-		background-color: #d1fae5;
-	}
-
-	.delete-btn:hover {
-		color: #dc2626;
-		background-color: #fee2e2;
-	}
-
-	</style>
+</style>

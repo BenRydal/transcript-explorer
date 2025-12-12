@@ -28,24 +28,6 @@
 	// Get list of unique speakers
 	$: speakers = $UserStore.map((u) => u.name);
 
-	// Filter turns by speaker if filteredSpeaker is set
-	$: displayedTurns = $EditorStore.selection.filteredSpeaker
-		? turns.filter((turn) => turn.speaker === $EditorStore.selection.filteredSpeaker)
-		: turns;
-
-	// Clear the locked speaker filter
-	function clearSpeakerFilter() {
-		EditorStore.update((state) => ({
-			...state,
-			selection: {
-				...state.selection,
-				filteredSpeaker: null,
-				highlightedSpeaker: null,
-				selectionSource: null
-			}
-		}));
-	}
-
 	// Get user color for a speaker
 	function getSpeakerColor(speakerName: string): string {
 		const users = $UserStore;
@@ -73,6 +55,7 @@
 			selection: {
 				...state.selection,
 				selectedTurnNumber: turn.turnNumber,
+				selectedWordIndex: null,
 				highlightedSpeaker: null,
 				selectionSource: 'editor'
 			}
@@ -97,10 +80,26 @@
 	function handleTurnEdit(event: CustomEvent<{ turnNumber: number; field: string; value: any }>) {
 		const { turnNumber, field, value } = event.detail;
 
-		// Handle speaker name change - need to update UserStore and recalculate all speaker orders
-		let newSpeakerName: string | null = null;
+		// Handle speaker name change - need to update UserStore and get new speaker's order
+		let newSpeakerOrder: number | null = null;
 		if (field === 'speaker') {
-			newSpeakerName = value.trim().toUpperCase();
+			const newSpeakerName = value.trim().toUpperCase();
+			// Add new user if they don't exist, and get the speaker's order
+			UserStore.update((users) => {
+				const existingUserIndex = users.findIndex((u) => u.name === newSpeakerName);
+				if (existingUserIndex >= 0) {
+					// Speaker already exists, use their order
+					newSpeakerOrder = existingUserIndex;
+					return users;
+				} else {
+					// Create new user with a color from the palette
+					const colors = ['#FF6B6B', '#4ECDC4', '#45B7D1', '#96CEB4', '#FFEAA7', '#DDA0DD', '#98D8C8', '#F7DC6F'];
+					const usedColors = users.map((u) => u.color);
+					const availableColor = colors.find((c) => !usedColors.includes(c)) || colors[users.length % colors.length];
+					newSpeakerOrder = users.length; // New speaker gets the next order
+					return [...users, { name: newSpeakerName, color: availableColor, enabled: true }];
+				}
+			});
 		}
 
 		TranscriptStore.update((transcript) => {
@@ -134,132 +133,20 @@
 				const wordsBefore = transcript.wordArray.filter((dp) => dp.turnNumber < turnNumber);
 				const wordsAfter = transcript.wordArray.filter((dp) => dp.turnNumber > turnNumber);
 				updatedWordArray = [...wordsBefore, ...newDataPoints, ...wordsAfter];
-			} else if (field === 'speaker') {
-				// Handle speaker edit - update speaker name (order will be recalculated below)
-				updatedWordArray = transcript.wordArray.map((dp) => {
-					if (dp.turnNumber !== turnNumber) return dp;
-
-					return new DataPoint(
-						newSpeakerName!,
-						dp.turnNumber,
-						dp.word,
-						dp.order, // Will be recalculated below
-						dp.startTime,
-						dp.endTime,
-						dp.useWordCountsAsFallback
-					);
-				});
 			} else {
-				// Handle time edits
+				// Handle speaker or time edits - update existing DataPoints
 				updatedWordArray = transcript.wordArray.map((dp) => {
 					if (dp.turnNumber !== turnNumber) return dp;
 
 					return new DataPoint(
-						dp.speaker,
+						field === 'speaker' ? value.trim().toUpperCase() : dp.speaker,
 						dp.turnNumber,
 						dp.word,
-						dp.order,
+						field === 'speaker' && newSpeakerOrder !== null ? newSpeakerOrder : dp.order,
 						field === 'time' ? value.startTime : dp.startTime,
 						field === 'time' ? value.endTime : dp.endTime,
 						dp.useWordCountsAsFallback
 					);
-				});
-			}
-
-			// If time was changed, sort by start time and renumber turns
-			if (field === 'time') {
-				// Group words by turn
-				const turnGroups = new Map<number, DataPoint[]>();
-				updatedWordArray.forEach((dp) => {
-					if (!turnGroups.has(dp.turnNumber)) {
-						turnGroups.set(dp.turnNumber, []);
-					}
-					turnGroups.get(dp.turnNumber)!.push(dp);
-				});
-
-				// Sort turns by their start time (use first word's startTime)
-				const sortedTurns = Array.from(turnGroups.entries()).sort((a, b) => {
-					const aStart = a[1][0]?.startTime ?? 0;
-					const bStart = b[1][0]?.startTime ?? 0;
-					return aStart - bStart;
-				});
-
-				// Renumber turns and rebuild word array
-				updatedWordArray = [];
-				sortedTurns.forEach(([_oldTurnNumber, words], newTurnIndex) => {
-					words.forEach((dp) => {
-						updatedWordArray.push(
-							new DataPoint(
-								dp.speaker,
-								newTurnIndex, // new turn number based on sorted order
-								dp.word,
-								dp.order,
-								dp.startTime,
-								dp.endTime,
-								dp.useWordCountsAsFallback
-							)
-						);
-					});
-				});
-			}
-
-			// If speaker was changed, recalculate speaker orders based on transcript order
-			if (field === 'speaker') {
-				// Get speakers in order of first appearance in transcript
-				const speakerOrder: string[] = [];
-				updatedWordArray.forEach((dp) => {
-					if (!speakerOrder.includes(dp.speaker)) {
-						speakerOrder.push(dp.speaker);
-					}
-				});
-
-				// Create speaker to order mapping
-				const speakerToOrder = new Map<string, number>();
-				speakerOrder.forEach((speaker, index) => {
-					speakerToOrder.set(speaker, index);
-				});
-
-				// Update order field in all DataPoints
-				updatedWordArray = updatedWordArray.map((dp) => {
-					const newOrder = speakerToOrder.get(dp.speaker) ?? dp.order;
-					if (newOrder !== dp.order) {
-						return new DataPoint(
-							dp.speaker,
-							dp.turnNumber,
-							dp.word,
-							newOrder,
-							dp.startTime,
-							dp.endTime,
-							dp.useWordCountsAsFallback
-						);
-					}
-					return dp;
-				});
-
-				// Update UserStore to match the new speaker order
-				UserStore.update((users) => {
-					// Add new speaker if they don't exist
-					let updatedUsers = [...users];
-					if (!updatedUsers.some((u) => u.name === newSpeakerName)) {
-						const colors = ['#FF6B6B', '#4ECDC4', '#45B7D1', '#96CEB4', '#FFEAA7', '#DDA0DD', '#98D8C8', '#F7DC6F'];
-						const usedColors = updatedUsers.map((u) => u.color);
-						const availableColor = colors.find((c) => !usedColors.includes(c)) || colors[updatedUsers.length % colors.length];
-						updatedUsers.push({ name: newSpeakerName!, color: availableColor, enabled: true });
-					}
-
-					// Reorder users based on transcript order
-					const reorderedUsers = speakerOrder.map((speakerName) => {
-						return updatedUsers.find((u) => u.name === speakerName)!;
-					}).filter(Boolean);
-
-					// Add any users that aren't in the transcript (they may have been removed from all turns)
-					updatedUsers.forEach((user) => {
-						if (!reorderedUsers.some((u) => u.name === user.name)) {
-							reorderedUsers.push(user);
-						}
-					});
-
-					return reorderedUsers;
 				});
 			}
 
@@ -349,125 +236,6 @@
 			element.scrollIntoView({ behavior: 'smooth', block: 'center' });
 		}
 	}
-
-	// Handle delete turn
-	function handleTurnDelete(event: CustomEvent<{ turnNumber: number }>) {
-		const { turnNumber } = event.detail;
-
-		TranscriptStore.update((transcript) => {
-			// Remove all words from this turn
-			const updatedWordArray = transcript.wordArray.filter((dp) => dp.turnNumber !== turnNumber);
-
-			// Renumber turns that come after the deleted one
-			const renumberedWordArray = updatedWordArray.map((dp) => {
-				if (dp.turnNumber > turnNumber) {
-					return new DataPoint(
-						dp.speaker,
-						dp.turnNumber - 1,
-						dp.word,
-						dp.order,
-						dp.startTime,
-						dp.endTime,
-						dp.useWordCountsAsFallback
-					);
-				}
-				return dp;
-			});
-
-			// Recalculate stats
-			const stats = recalculateTranscriptStats(renumberedWordArray);
-
-			return {
-				...transcript,
-				wordArray: renumberedWordArray,
-				totalNumOfWords: renumberedWordArray.length,
-				...stats
-			};
-		});
-
-		// Mark as dirty
-		EditorStore.update((state) => ({
-			...state,
-			isDirty: true
-		}));
-
-		// Refresh visualization
-		const p5Instance = get(P5Store);
-		if (p5Instance) {
-			p5Instance.fillAllData?.();
-		}
-	}
-
-	// Handle add turn after
-	function handleAddAfter(event: CustomEvent<{ turnNumber: number; speaker: string }>) {
-		const { turnNumber, speaker } = event.detail;
-
-		TranscriptStore.update((transcript) => {
-			// Get the last word of the current turn to get timing info
-			const currentTurnWords = transcript.wordArray.filter((dp) => dp.turnNumber === turnNumber);
-			const lastWord = currentTurnWords[currentTurnWords.length - 1];
-
-			// Create a new turn number
-			const newTurnNumber = turnNumber + 1;
-
-			// Renumber all turns after the insertion point
-			const renumberedWordArray = transcript.wordArray.map((dp) => {
-				if (dp.turnNumber > turnNumber) {
-					return new DataPoint(
-						dp.speaker,
-						dp.turnNumber + 1,
-						dp.word,
-						dp.order,
-						dp.startTime,
-						dp.endTime,
-						dp.useWordCountsAsFallback
-					);
-				}
-				return dp;
-			});
-
-			// Create a new DataPoint for the new turn with placeholder text
-			const newDataPoint = new DataPoint(
-				speaker,
-				newTurnNumber,
-				'[new]',
-				lastWord?.order ?? 0,
-				lastWord?.endTime ?? 0,
-				lastWord?.endTime ?? 0,
-				lastWord?.useWordCountsAsFallback ?? false
-			);
-
-			// Insert the new turn at the right position
-			const insertIndex = renumberedWordArray.findIndex((dp) => dp.turnNumber > newTurnNumber);
-			if (insertIndex === -1) {
-				renumberedWordArray.push(newDataPoint);
-			} else {
-				renumberedWordArray.splice(insertIndex, 0, newDataPoint);
-			}
-
-			// Recalculate stats
-			const stats = recalculateTranscriptStats(renumberedWordArray);
-
-			return {
-				...transcript,
-				wordArray: renumberedWordArray,
-				totalNumOfWords: renumberedWordArray.length,
-				...stats
-			};
-		});
-
-		// Mark as dirty
-		EditorStore.update((state) => ({
-			...state,
-			isDirty: true
-		}));
-
-		// Refresh visualization
-		const p5Instance = get(P5Store);
-		if (p5Instance) {
-			p5Instance.fillAllData?.();
-		}
-	}
 </script>
 
 <div class="transcript-editor" bind:this={editorContainer}>
@@ -481,19 +249,8 @@
 				</p>
 			</div>
 		{:else}
-			{#if $EditorStore.selection.filteredSpeaker}
-				<div class="filter-banner">
-					<span>
-						Showing turns by <strong>{$EditorStore.selection.filteredSpeaker}</strong>
-						<span class="filter-count">({displayedTurns.length} of {turns.length} turns)</span>
-					</span>
-					{#if $EditorStore.selection.selectionSource === 'distributionDiagramClick'}
-						<button class="clear-filter-btn" on:click={clearSpeakerFilter}>× Show all</button>
-					{/if}
-				</div>
-			{/if}
 			<div class="turns-list">
-				{#each displayedTurns as turn (turn.turnNumber)}
+				{#each turns as turn (turn.turnNumber)}
 					<div id="turn-{turn.turnNumber}">
 						<TranscriptEditorRow
 							{turn}
@@ -503,8 +260,6 @@
 							{speakers}
 							on:select={handleTurnSelect}
 							on:edit={handleTurnEdit}
-							on:delete={handleTurnDelete}
-							on:addAfter={handleAddAfter}
 						/>
 					</div>
 				{/each}
@@ -539,38 +294,5 @@
 		align-items: center;
 		justify-content: center;
 		height: 100%;
-	}
-
-	.filter-banner {
-		display: flex;
-		justify-content: space-between;
-		align-items: center;
-		background-color: #f0f9ff;
-		border: 1px solid #bae6fd;
-		border-radius: 6px;
-		padding: 0.5rem 0.75rem;
-		margin-bottom: 0.5rem;
-		font-size: 0.875rem;
-		color: #0369a1;
-	}
-
-	.filter-count {
-		opacity: 0.7;
-		margin-left: 0.25rem;
-	}
-
-	.clear-filter-btn {
-		background: none;
-		border: 1px solid #0369a1;
-		border-radius: 4px;
-		padding: 0.25rem 0.5rem;
-		font-size: 0.75rem;
-		color: #0369a1;
-		cursor: pointer;
-		transition: background-color 0.15s;
-	}
-
-	.clear-filter-btn:hover {
-		background-color: #e0f2fe;
 	}
 </style>

@@ -2,7 +2,8 @@
 	import MdSwapVert from 'svelte-icons/md/MdSwapVert.svelte';
 	import MdSwapHoriz from 'svelte-icons/md/MdSwapHoriz.svelte';
 	import MdFileDownload from 'svelte-icons/md/MdFileDownload.svelte';
-	import MdVideoLibrary from 'svelte-icons/md/MdVideoLibrary.svelte';
+	import MdKeyboardArrowDown from 'svelte-icons/md/MdKeyboardArrowDown.svelte';
+	import MdKeyboardArrowUp from 'svelte-icons/md/MdKeyboardArrowUp.svelte';
 	import EditorStore from '../../stores/editorStore';
 	import { exportTranscriptToCSV } from '$lib/core/export-utils';
 
@@ -18,12 +19,12 @@
 		}));
 	}
 
-	function toggleAdvancedVideoControls() {
+	function toggleCollapse() {
 		EditorStore.update((state) => ({
 			...state,
 			config: {
 				...state.config,
-				showAdvancedVideoControls: !state.config.showAdvancedVideoControls
+				isCollapsed: !state.config.isCollapsed
 			}
 		}));
 	}
@@ -33,7 +34,7 @@
 	}
 
 	$: isVertical = $EditorStore.config.orientation === 'vertical';
-	$: showAdvancedVideoControls = $EditorStore.config.showAdvancedVideoControls;
+	$: isCollapsed = $EditorStore.config.isCollapsed;
 </script>
 
 <div class="editor-toolbar">
@@ -45,15 +46,6 @@
 	</div>
 
 	<div class="toolbar-right">
-		<button
-			class="toolbar-btn"
-			class:active={showAdvancedVideoControls}
-			on:click={toggleAdvancedVideoControls}
-			title={showAdvancedVideoControls ? 'Hide video controls' : 'Show video controls (for transcript editing)'}
-		>
-			<MdVideoLibrary />
-		</button>
-
 		<button
 			class="toolbar-btn"
 			on:click={toggleOrientation}
@@ -72,6 +64,18 @@
 			title="Export transcript as CSV"
 		>
 			<MdFileDownload />
+		</button>
+
+		<button
+			class="toolbar-btn"
+			on:click={toggleCollapse}
+			title={isCollapsed ? 'Expand editor' : 'Collapse editor'}
+		>
+			{#if isCollapsed}
+				<MdKeyboardArrowUp />
+			{:else}
+				<MdKeyboardArrowDown />
+			{/if}
 		</button>
 	</div>
 </div>
@@ -133,14 +137,5 @@
 
 	.toolbar-btn:active {
 		background-color: #d1d5db;
-	}
-
-	.toolbar-btn.active {
-		background-color: #dbeafe;
-		color: #2563eb;
-	}
-
-	.toolbar-btn.active:hover {
-		background-color: #bfdbfe;
 	}
 </style>

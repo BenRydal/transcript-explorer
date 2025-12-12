@@ -238,6 +238,7 @@ export const igsSketch = (p5: any) => {
 
 	p5.fillSelectedData = () => {
 		if (!p5.dynamicData) return; // Guard against calls before setup completes
+		p5.resetScalingVars();
 		p5.dynamicData.clear();
 		for (let i = 0; i < p5.animationCounter; i++) {
 			p5.dynamicData.update(transcript.wordArray[i]);

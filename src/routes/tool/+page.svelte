@@ -10,11 +10,10 @@
 	import MdCheck from 'svelte-icons/md/MdCheck.svelte';
 	import MdSettings from 'svelte-icons/md/MdSettings.svelte';
 	import MdSubject from 'svelte-icons/md/MdSubject.svelte';
-	import MdInsertChart from 'svelte-icons/md/MdInsertChart.svelte';
-	import MdTouchApp from 'svelte-icons/md/MdTouchApp.svelte';
+	import type { User } from '../../models/user';
 	import UserStore from '../../stores/userStore';
 	import P5Store from '../../stores/p5Store';
-	import VideoStore, { toggleVisibility as toggleVideoVisibility } from '../../stores/videoStore';
+	import VideoStore from '../../stores/videoStore';
 	import EditorStore from '../../stores/editorStore';
 
 	import { Core } from '$lib/core/core';
@@ -26,10 +25,9 @@
 	import IconButton from '$lib/components/IconButton.svelte';
 	import InfoModal from '$lib/components/InfoModal.svelte';
 	import TimelinePanel from '$lib/components/TimelinePanel.svelte';
+	import DataPointTable from '$lib/components/DataPointTable.svelte';
 	import SplitPane from '$lib/components/SplitPane.svelte';
 	import TranscriptEditor from '$lib/components/TranscriptEditor.svelte';
-	import CanvasTooltip from '$lib/components/CanvasTooltip.svelte';
-	import VideoContainer from '$lib/components/VideoContainer.svelte';
 
 	import TimelineStore from '../../stores/timelineStore';
 	import ConfigStore from '../../stores/configStore';
@@ -214,6 +212,18 @@
 			// Trigger resize after DOM updates
 			requestAnimationFrame(() => {
 				triggerCanvasResize();
+			});
+		}
+		prevEditorConfig = { orientation, isCollapsed };
+	}
+
+	function toggleVideo() {
+		if (p5Instance && p5Instance.videoController) {
+			p5Instance.videoController.toggleShowVideo();
+			VideoStore.update((value) => {
+				value.isShowing = p5Instance.videoController.isShowing;
+				value.isPlaying = p5Instance.videoController.isPlaying;
+				return value;
 			});
 		}
 		prevEditorConfig = { orientation, isCollapsed };
@@ -613,11 +623,28 @@
 				</ul>
 			</details>
 
-			<!-- Editor Toggle -->
-			<button
-				class="btn btn-sm gap-1 {isEditorVisible ? 'btn-primary' : ''}"
+		<div class="flex items-stretch">
+			<IconButton
+				id="btn-toggle-editor"
+				icon={MdSubject}
+				tooltip={'Toggle Editor'}
 				on:click={toggleEditor}
-				title={isEditorVisible ? 'Hide Editor' : 'Show Editor'}
+			/>
+
+			{#if isVideoShowing}
+				<IconButton id="btn-toggle-video" icon={MdVideocam} tooltip={'Show/Hide Video'} on:click={toggleVideo} />
+			{:else}
+				<IconButton id="btn-toggle-video" icon={MdVideocamOff} tooltip={'Show/Hide Video'} on:click={toggleVideo} />
+			{/if}
+
+			<!-- TODO: Need to move this logic into the IconButton component eventually -->
+			<div
+				data-tip="Upload"
+				class="tooltip tooltip-bottom btn capitalize icon max-h-8 max-w-16 bg-[#ffffff] border-[#ffffff] flex items-center justify-center"
+				role="button"
+				tabindex="0"
+				on:click
+				on:keydown
 			>
 				<div class="w-4 h-4">
 					<MdSubject />
@@ -711,12 +738,8 @@
 		collapsedPanel="second"
 		on:resize={handlePanelResize}
 	>
-		<div slot="first" class="h-full relative" id="p5-container">
+		<div slot="first" class="h-full" id="p5-container">
 			<P5 {sketch} />
-			<CanvasTooltip />
-			{#if hasVideoSource}
-				<VideoContainer bind:this={videoContainerRef} />
-			{/if}
 		</div>
 		<div slot="second" class="h-full">
 			<TranscriptEditor />
