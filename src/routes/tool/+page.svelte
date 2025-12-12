@@ -188,15 +188,29 @@
 	});
 
 	const techniqueToggleOptions = ['distributionDiagramToggle', 'turnChartToggle', 'contributionCloudToggle', 'dashboardToggle'] as const;
-	const interactionsToggleOptions = [
-		'flowersToggle',
-		'separateToggle',
-		'sortToggle',
-		'lastWordToggle',
-		'echoWordsToggle',
-		'stopWordsToggle',
-		'repeatedWordsToggle'
-	] as const;
+
+	// Define which interactions apply to which visualizations
+	const distributionDiagramInteractions = ['flowersToggle'] as const;
+	const turnChartInteractions = ['separateToggle'] as const;
+	const contributionCloudInteractions = ['separateToggle', 'sortToggle', 'lastWordToggle', 'echoWordsToggle', 'stopWordsToggle', 'repeatedWordsToggle'] as const;
+	const allInteractions = [...new Set([...distributionDiagramInteractions, ...turnChartInteractions, ...contributionCloudInteractions])] as const;
+
+	// Compute visible interactions based on active visualization
+	$: visibleInteractions = (() => {
+		if ($ConfigStore.dashboardToggle) {
+			return allInteractions;
+		} else if ($ConfigStore.distributionDiagramToggle) {
+			return distributionDiagramInteractions;
+		} else if ($ConfigStore.turnChartToggle) {
+			return turnChartInteractions;
+		} else if ($ConfigStore.contributionCloudToggle) {
+			return contributionCloudInteractions;
+		}
+		return allInteractions; // fallback
+	})();
+
+	// Check if repeated words slider should show (only for contribution cloud or dashboard)
+	$: showRepeatedWordsSlider = $ConfigStore.contributionCloudToggle || $ConfigStore.dashboardToggle;
 
 	let selectedDropDownOption = '';
 	const dropdownOptions = [
@@ -461,9 +475,9 @@
 		<details class="dropdown" use:clickOutside>
 			<summary class="btn btn-sm ml-4 tooltip tooltip-bottom flex items-center justify-center"> Interactions </summary>
 			<ul class="menu dropdown-content rounded-box z-[1] w-52 p-2 shadow bg-base-100">
-				{#each interactionsToggleOptions as toggle}
+				{#each visibleInteractions as toggle}
 					<li>
-						<button on:click={() => toggleSelectionOnly(toggle, interactionsToggleOptions)} class="w-full text-left flex items-center">
+						<button on:click={() => toggleSelectionOnly(toggle, allInteractions)} class="w-full text-left flex items-center">
 							<div class="w-4 h-4 mr-2">
 								{#if $ConfigStore[toggle]}
 									<MdCheck />
@@ -473,21 +487,23 @@
 						</button>
 					</li>
 				{/each}
-				<li class="cursor-none">
-					<p>Repeated Word Filter: {$ConfigStore.repeatWordSliderValue}</p>
-				</li>
-				<li>
-					<label for="repeatWordRange" class="sr-only">Adjust rect width</label>
-					<input
-						id="repeatWordRange"
-						type="range"
-						min="2"
-						max="30"
-						value={$ConfigStore.repeatWordSliderValue}
-						class="range"
-						on:input={(e) => handleConfigChangeFromInput(e, 'repeatWordSliderValue')}
-					/>
-				</li>
+				{#if showRepeatedWordsSlider}
+					<li class="cursor-none">
+						<p>Repeated Word Filter: {$ConfigStore.repeatWordSliderValue}</p>
+					</li>
+					<li>
+						<label for="repeatWordRange" class="sr-only">Adjust rect width</label>
+						<input
+							id="repeatWordRange"
+							type="range"
+							min="2"
+							max="30"
+							value={$ConfigStore.repeatWordSliderValue}
+							class="range"
+							on:input={(e) => handleConfigChangeFromInput(e, 'repeatWordSliderValue')}
+						/>
+					</li>
+				{/if}
 				<hr class="my-4 border-t border-gray-300" />
 				<input type="text" placeholder="Search conversations..." on:input={(e) => handleWordSearch(e)} class="input input-bordered w-full"/>
 			</ul>
