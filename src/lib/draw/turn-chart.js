@@ -1,14 +1,13 @@
-import { DrawUtils } from './draw-utils.js';
 import { get } from 'svelte/store';
 import TranscriptStore from '../../stores/transcriptStore';
 import TimelineStore from '../../stores/timelineStore';
 import UserStore from '../../stores/userStore';
 import ConfigStore from '../../stores/configStore';
+import { showTooltip } from '../../stores/tooltipStore';
 
 export class TurnChart {
 	constructor(sk, pos) {
 		this.sk = sk;
-		this.utils = new DrawUtils(sk);
 		this.xPosBase = pos.x;
 		this.pixelWidth = pos.width;
 		this.getStores();
@@ -33,6 +32,7 @@ export class TurnChart {
 
 	/** Draws the main chart */
 	draw(sortedAnimationWordArray) {
+		this.userSelectedTurn = { turn: '', color: '' }; // Reset each frame
 		this.drawTimeline();
 		this.sk.textSize(this.sk.toolTipTextSize);
 		for (const key in sortedAnimationWordArray) {
@@ -43,7 +43,7 @@ export class TurnChart {
 			}
 		}
 		if (this.userSelectedTurn && this.userSelectedTurn.turn && this.userSelectedTurn.color) {
-			this.drawText(this.userSelectedTurn.turn, this.sk.color(this.userSelectedTurn.color));
+			this.drawText(this.userSelectedTurn.turn, this.userSelectedTurn.color);
 		}
 	}
 
@@ -115,7 +115,8 @@ export class TurnChart {
 
 	drawText(turnArray, speakerColor) {
 		const combined = turnArray.map((e) => e.word.toString()).join(' ');
-		this.utils.drawTextBox(combined, speakerColor);
+		// Use Svelte tooltip instead of p5 drawing
+		showTooltip(this.sk.mouseX, this.sk.mouseY, combined, speakerColor, this.sk.height);
 	}
 
 	getVerticalLayoutSpacing(height) {
