@@ -28,6 +28,7 @@
 	import DataPointTable from '$lib/components/DataPointTable.svelte';
 	import SplitPane from '$lib/components/SplitPane.svelte';
 	import TranscriptEditor from '$lib/components/TranscriptEditor.svelte';
+	import CanvasTooltip from '$lib/components/CanvasTooltip.svelte';
 
 	import TimelineStore from '../../stores/timelineStore';
 	import ConfigStore from '../../stores/configStore';
@@ -730,8 +731,9 @@
 		collapsedPanel="second"
 		on:resize={handlePanelResize}
 	>
-		<div slot="first" class="h-full" id="p5-container">
+		<div slot="first" class="h-full relative" id="p5-container">
 			<P5 {sketch} />
+			<CanvasTooltip />
 		</div>
 		<div slot="second" class="h-full">
 			<TranscriptEditor />

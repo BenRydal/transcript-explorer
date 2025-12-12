@@ -3,6 +3,7 @@ import { ContributionCloud } from './contribution-cloud.js';
 import { DistributionDiagram } from './distribution-diagram.js';
 import ConfigStore from '../../stores/configStore';
 import EditorStore from '../../stores/editorStore';
+import { resetTooltipFrame, finalizeTooltipFrame } from '../../stores/tooltipStore';
 
 let currConfig;
 
@@ -16,6 +17,9 @@ export class Draw {
 	}
 
 	drawViz() {
+		// Reset tooltip state at start of each frame
+		resetTooltipFrame();
+
 		if (currConfig.distributionDiagramToggle) {
 			this.updateDistributionDiagram(this.getFullScreenPos());
 		} else if (currConfig.turnChartToggle) {
@@ -25,6 +29,9 @@ export class Draw {
 		} else {
 			this.drawDashboard();
 		}
+
+		// Hide tooltip if nothing requested it this frame
+		finalizeTooltipFrame();
 	}
 
 	updateDistributionDiagram(pos) {

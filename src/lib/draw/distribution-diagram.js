@@ -1,8 +1,8 @@
-import { DrawUtils } from './draw-utils.js';
 import { get } from 'svelte/store';
 import TranscriptStore from '../../stores/transcriptStore';
 import UserStore from '../../stores/userStore';
 import ConfigStore from '../../stores/configStore';
+import { showTooltip } from '../../stores/tooltipStore';
 export class DistributionDiagram {
 	constructor(sk, pos) {
 		this.sk = sk;
@@ -12,7 +12,6 @@ export class DistributionDiagram {
 		this.largestNumOfWordsByASpeaker = transcript.largestNumOfWordsByASpeaker;
 		this.largestNumOfTurnsByASpeaker = transcript.largestNumOfTurnsByASpeaker;
 		this.localArrayOfFirstWords = [];
-		this.utils = new DrawUtils(sk);
 		this.pixelWidth = pos.width;
 		this.maxCircleRadius = this.getMaxCircleRadius(this.pixelWidth);
 		this.maxCircleArea = Math.PI * this.maxCircleRadius * this.maxCircleRadius;
@@ -21,6 +20,7 @@ export class DistributionDiagram {
 		this.yPosTop = pos.y;
 		this.yPosBottom = pos.height;
 		this.yPosHalfHeight = pos.y + (pos.height - pos.y) / 2;
+		this.isHovering = false; // Track if any circle is being hovered
 	}
 
 	draw(sortedAnimationWordArray) {
@@ -155,7 +155,6 @@ export class DistributionDiagram {
 	}
 
 	drawFirstWords(turnArray, speakerColor) {
-		this.sk.textSize(this.sk.toolTipTextSize);
 		const firstWords = new Set();
 		const wordsToDisplay = [];
 
@@ -167,7 +166,9 @@ export class DistributionDiagram {
 			}
 		});
 		const combined = wordsToDisplay.join(' ');
-		this.utils.drawTextBox(combined, speakerColor);
+
+		// Use Svelte tooltip instead of p5 drawing
+		showTooltip(this.sk.mouseX, this.sk.mouseY, combined, speakerColor, this.sk.height);
 	}
 
 	getMaxCircleRadius(pixelWidth) {

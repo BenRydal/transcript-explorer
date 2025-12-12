@@ -1,20 +1,9 @@
-import type p5 from 'p5';
 import { get } from 'svelte/store';
 import TranscriptStore from '../../stores/transcriptStore';
 import TimelineStore from '../../stores/timelineStore';
 import UserStore from '../../stores/userStore';
-import ConfigStore, { type ConfigStoreType } from '../../stores/configStore';
+import ConfigStore from '../../stores/configStore';
 import { showTooltip } from '../../stores/tooltipStore';
-import type { DataPoint } from '../../models/dataPoint';
-import type { User } from '../../models/user';
-import type { Transcript } from '../../models/transcript';
-import type { Timeline } from '../../models/timeline';
-import type { Bounds } from './types/bounds';
-
-interface SelectedTurn {
-	turn: DataPoint[] | '';
-	color: string;
-}
 
 export class TurnChart {
 	sk: p5;
@@ -30,12 +19,10 @@ export class TurnChart {
 
 	constructor(sk: p5, pos: Bounds) {
 		this.sk = sk;
-		this.bounds = pos;
-		this.config = get(ConfigStore);
-		this.transcript = get(TranscriptStore);
-		this.users = get(UserStore);
-		this.timeline = get(TimelineStore);
-		this.verticalLayoutSpacing = this.getVerticalLayoutSpacing(pos.height);
+		this.xPosBase = pos.x;
+		this.pixelWidth = pos.width;
+		this.getStores();
+		this.verticalLayoutSpacing = this.getVerticalLayoutSpacing(pos.height - this.sk.SPACING);
 		this.yPosHalfHeight = pos.y + pos.height / 2;
 		this.userSelectedTurn = { turn: '', color: '' };
 		this.yPosSeparate = this.getYPosTopSeparate();
@@ -48,7 +35,7 @@ export class TurnChart {
 	}
 
 	/** Draws the main chart */
-	draw(sortedAnimationWordArray: Record<number, DataPoint[]>): void {
+	draw(sortedAnimationWordArray) {
 		this.userSelectedTurn = { turn: '', color: '' }; // Reset each frame
 		this.drawTimeline();
 		this.sk.textSize(this.sk.toolTipTextSize);
@@ -60,7 +47,7 @@ export class TurnChart {
 			}
 		}
 		if (this.userSelectedTurn && this.userSelectedTurn.turn && this.userSelectedTurn.color) {
-			this.drawText(this.userSelectedTurn.turn as DataPoint[], this.userSelectedTurn.color);
+			this.drawText(this.userSelectedTurn.turn, this.userSelectedTurn.color);
 		}
 	}
 
