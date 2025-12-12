@@ -47,11 +47,15 @@ export class YoutubePlayer {
 	}
 
 	show() {
-		document.querySelector(this.selectId).style.display = 'block';
+		// Visibility is controlled by VideoOverlay.svelte
+		// Just ensure the element is displayable when inside the overlay
+		const el = document.querySelector(this.selectId);
+		if (el) el.style.display = 'block';
 	}
 
 	hide() {
-		document.querySelector(this.selectId).style.display = 'none';
+		// Visibility is controlled by VideoOverlay.svelte
+		// Don't hide the element - let the overlay container handle visibility
 	}
 
 	seekTo(time) {
@@ -145,13 +149,14 @@ export class P5FilePlayer {
 	}
 
 	show() {
-		let element = document.querySelector(this.selectId);
-		element.style.display = 'block';
+		// Visibility is now controlled by VideoOverlay.svelte
+		const el = document.querySelector(this.selectId);
+		if (el) el.style.display = 'block';
 	}
 
 	hide() {
-		let element = document.querySelector(this.selectId);
-		element.style.display = 'none';
+		// Visibility is now controlled by VideoOverlay.svelte
+		// We just ensure the element stays visible within the overlay
 	}
 
 	seekTo(t) {

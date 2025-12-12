@@ -45,8 +45,10 @@ export class VideoController {
 	 */
 	videoPlayerReady() {
 		this.isLoaded = true;
-		this.toggleShowVideo();
-		this.videoPlayer.hide();
+		// Don't auto-show - user must click the video button
+		// Hide the raw video element until the overlay adopts it
+		const el = document.getElementById('moviePlayer');
+		if (el) el.style.display = 'none';
 		this.isShowing = false;
 	}
 
@@ -122,22 +124,15 @@ export class VideoController {
 	playForTurnChart(time) {
 		this.play();
 		this.seekTo(time);
-		this.updatePosition();
 	}
 
 	playForDistributionDiagram(arrayOfFirstWords) {
 		this.playVideoListFirst2Seconds(arrayOfFirstWords);
-		this.updatePosition();
 	}
 
 	playForContributionCloud(time) {
 		this.play();
 		this.seekTo(time);
-		this.updatePosition();
-	}
-
-	updatePosition() {
-		this.videoPlayer.updatePos(this.sk.mouseX, this.sk.mouseY, 0, this.sk.height);
 	}
 
 	seekTo(videoTime) {

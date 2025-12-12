@@ -26,6 +26,7 @@
 	import SplitPane from '$lib/components/SplitPane.svelte';
 	import TranscriptEditor from '$lib/components/TranscriptEditor.svelte';
 	import CanvasTooltip from '$lib/components/CanvasTooltip.svelte';
+	import VideoOverlay from '$lib/components/VideoOverlay.svelte';
 
 	import TimelineStore from '../../stores/timelineStore';
 	import ConfigStore from '../../stores/configStore';
@@ -602,6 +603,7 @@
 		<div slot="first" class="h-full relative" id="p5-container">
 			<P5 {sketch} />
 			<CanvasTooltip />
+			<VideoOverlay visible={isVideoShowing} />
 		</div>
 		<div slot="second" class="h-full">
 			<TranscriptEditor />
