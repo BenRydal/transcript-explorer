@@ -577,51 +577,43 @@
 				</ul>
 			</details>
 
-			<!-- Interactions Dropdown -->
-			<details class="dropdown" use:clickOutside>
-				<summary class="btn btn-sm gap-1 flex items-center">
-					<div class="w-4 h-4">
-						<MdTouchApp />
-					</div>
-					<span class="hidden sm:inline">Interactions</span>
-					<svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-						<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" />
-					</svg>
-				</summary>
-				<ul class="menu dropdown-content rounded-box z-[1] w-52 p-2 shadow bg-base-100">
-					{#each visibleInteractions as toggle}
-						<li>
-							<button on:click={() => toggleSelectionOnly(toggle, allInteractions)} class="w-full text-left flex items-center">
-								<div class="w-4 h-4 mr-2">
-									{#if $ConfigStore[toggle]}
-										<MdCheck />
-									{/if}
-								</div>
-								{formatToggleName(toggle)}
-							</button>
-						</li>
-					{/each}
-					{#if showRepeatedWordsSlider}
-						<li class="cursor-none">
-							<p>Repeated Word Filter: {$ConfigStore.repeatWordSliderValue}</p>
-						</li>
-						<li>
-							<label for="repeatWordRange" class="sr-only">Adjust rect width</label>
-							<input
-								id="repeatWordRange"
-								type="range"
-								min="2"
-								max="30"
-								value={$ConfigStore.repeatWordSliderValue}
-								class="range"
-								on:input={(e) => handleConfigChangeFromInput(e, 'repeatWordSliderValue')}
-							/>
-						</li>
-					{/if}
-					<hr class="my-4 border-t border-gray-300" />
-					<input type="text" placeholder="Search conversations..." on:input={(e) => handleWordSearch(e)} class="input input-bordered w-full"/>
-				</ul>
-			</details>
+		<!-- Talk Dropdown -->
+		<details class="dropdown" use:clickOutside>
+			<summary class="btn btn-sm ml-4 tooltip tooltip-bottom flex items-center justify-center"> Interactions </summary>
+			<ul class="menu dropdown-content rounded-box z-[1] w-52 p-2 shadow bg-base-100">
+				{#each visibleInteractions as toggle}
+					<li>
+						<button on:click={() => toggleSelectionOnly(toggle, allInteractions)} class="w-full text-left flex items-center">
+							<div class="w-4 h-4 mr-2">
+								{#if $ConfigStore[toggle]}
+									<MdCheck />
+								{/if}
+							</div>
+							{formatToggleName(toggle)}
+						</button>
+					</li>
+				{/each}
+				{#if showRepeatedWordsSlider}
+					<li class="cursor-none">
+						<p>Repeated Word Filter: {$ConfigStore.repeatWordSliderValue}</p>
+					</li>
+					<li>
+						<label for="repeatWordRange" class="sr-only">Adjust rect width</label>
+						<input
+							id="repeatWordRange"
+							type="range"
+							min="2"
+							max="30"
+							value={$ConfigStore.repeatWordSliderValue}
+							class="range"
+							on:input={(e) => handleConfigChangeFromInput(e, 'repeatWordSliderValue')}
+						/>
+					</li>
+				{/if}
+				<hr class="my-4 border-t border-gray-300" />
+				<input type="text" placeholder="Search conversations..." on:input={(e) => handleWordSearch(e)} class="input input-bordered w-full"/>
+			</ul>
+		</details>
 
 		<div class="flex items-stretch">
 			<IconButton
