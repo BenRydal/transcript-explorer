@@ -79,7 +79,9 @@
 		position: absolute;
 		z-index: 1000;
 		pointer-events: none;
+		width: max-content;
 		max-width: 350px;
+		min-width: 150px;
 	}
 
 	.tooltip-content {
