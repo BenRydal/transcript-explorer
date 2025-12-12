@@ -74,6 +74,7 @@ export const igsSketch = (p5: any) => {
 			render.drawViz();
 		}
 		if (timeline.getIsAnimating()) p5.updateAnimation();
+		// Video positioning is now handled by VideoOverlay.svelte
 	};
 
 	p5.updateAnimation = () => {
