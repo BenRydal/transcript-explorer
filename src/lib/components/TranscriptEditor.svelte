@@ -80,26 +80,10 @@
 	function handleTurnEdit(event: CustomEvent<{ turnNumber: number; field: string; value: any }>) {
 		const { turnNumber, field, value } = event.detail;
 
-		// Handle speaker name change - need to update UserStore and get new speaker's order
-		let newSpeakerOrder: number | null = null;
+		// Handle speaker name change - need to update UserStore and recalculate all speaker orders
+		let newSpeakerName: string | null = null;
 		if (field === 'speaker') {
-			const newSpeakerName = value.trim().toUpperCase();
-			// Add new user if they don't exist, and get the speaker's order
-			UserStore.update((users) => {
-				const existingUserIndex = users.findIndex((u) => u.name === newSpeakerName);
-				if (existingUserIndex >= 0) {
-					// Speaker already exists, use their order
-					newSpeakerOrder = existingUserIndex;
-					return users;
-				} else {
-					// Create new user with a color from the palette
-					const colors = ['#FF6B6B', '#4ECDC4', '#45B7D1', '#96CEB4', '#FFEAA7', '#DDA0DD', '#98D8C8', '#F7DC6F'];
-					const usedColors = users.map((u) => u.color);
-					const availableColor = colors.find((c) => !usedColors.includes(c)) || colors[users.length % colors.length];
-					newSpeakerOrder = users.length; // New speaker gets the next order
-					return [...users, { name: newSpeakerName, color: availableColor, enabled: true }];
-				}
-			});
+			newSpeakerName = value.trim().toUpperCase();
 		}
 
 		TranscriptStore.update((transcript) => {
@@ -133,20 +117,95 @@
 				const wordsBefore = transcript.wordArray.filter((dp) => dp.turnNumber < turnNumber);
 				const wordsAfter = transcript.wordArray.filter((dp) => dp.turnNumber > turnNumber);
 				updatedWordArray = [...wordsBefore, ...newDataPoints, ...wordsAfter];
-			} else {
-				// Handle speaker or time edits - update existing DataPoints
+			} else if (field === 'speaker') {
+				// Handle speaker edit - update speaker name (order will be recalculated below)
 				updatedWordArray = transcript.wordArray.map((dp) => {
 					if (dp.turnNumber !== turnNumber) return dp;
 
 					return new DataPoint(
-						field === 'speaker' ? value.trim().toUpperCase() : dp.speaker,
+						newSpeakerName!,
 						dp.turnNumber,
 						dp.word,
-						field === 'speaker' && newSpeakerOrder !== null ? newSpeakerOrder : dp.order,
+						dp.order, // Will be recalculated below
+						dp.startTime,
+						dp.endTime,
+						dp.useWordCountsAsFallback
+					);
+				});
+			} else {
+				// Handle time edits
+				updatedWordArray = transcript.wordArray.map((dp) => {
+					if (dp.turnNumber !== turnNumber) return dp;
+
+					return new DataPoint(
+						dp.speaker,
+						dp.turnNumber,
+						dp.word,
+						dp.order,
 						field === 'time' ? value.startTime : dp.startTime,
 						field === 'time' ? value.endTime : dp.endTime,
 						dp.useWordCountsAsFallback
 					);
+				});
+			}
+
+			// If speaker was changed, recalculate speaker orders based on transcript order
+			if (field === 'speaker') {
+				// Get speakers in order of first appearance in transcript
+				const speakerOrder: string[] = [];
+				updatedWordArray.forEach((dp) => {
+					if (!speakerOrder.includes(dp.speaker)) {
+						speakerOrder.push(dp.speaker);
+					}
+				});
+
+				// Create speaker to order mapping
+				const speakerToOrder = new Map<string, number>();
+				speakerOrder.forEach((speaker, index) => {
+					speakerToOrder.set(speaker, index);
+				});
+
+				// Update order field in all DataPoints
+				updatedWordArray = updatedWordArray.map((dp) => {
+					const newOrder = speakerToOrder.get(dp.speaker) ?? dp.order;
+					if (newOrder !== dp.order) {
+						return new DataPoint(
+							dp.speaker,
+							dp.turnNumber,
+							dp.word,
+							newOrder,
+							dp.startTime,
+							dp.endTime,
+							dp.useWordCountsAsFallback
+						);
+					}
+					return dp;
+				});
+
+				// Update UserStore to match the new speaker order
+				UserStore.update((users) => {
+					// Add new speaker if they don't exist
+					let updatedUsers = [...users];
+					if (!updatedUsers.some((u) => u.name === newSpeakerName)) {
+						const colors = ['#FF6B6B', '#4ECDC4', '#45B7D1', '#96CEB4', '#FFEAA7', '#DDA0DD', '#98D8C8', '#F7DC6F'];
+						const usedColors = updatedUsers.map((u) => u.color);
+						const availableColor = colors.find((c) => !usedColors.includes(c)) || colors[updatedUsers.length % colors.length];
+						updatedUsers.push({ name: newSpeakerName!, color: availableColor, enabled: true });
+					}
+
+					// Reorder users based on transcript order
+					const reorderedUsers = speakerOrder.map((speakerName) => {
+						return updatedUsers.find((u) => u.name === speakerName)!;
+					}).filter(Boolean);
+
+					// Add any users that aren't in the transcript (they may have been removed from all turns)
+					updatedUsers.forEach((user) => {
+						if (!reorderedUsers.some((u) => u.name === user.name)) {
+							reorderedUsers.push(user);
+						}
+					});
+
+					return reorderedUsers;
 				});
 			}
 
