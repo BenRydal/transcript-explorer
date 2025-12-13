@@ -788,7 +788,7 @@
 	</div>
 {/if}
 
-<div class="btm-nav flex justify-between min-h-20">
+<div class="btm-nav flex justify-between min-h-20" style="position: relative;">
 	<div class="flex flex-1 flex-row justify-start items-center bg-[#f6f5f3] items-start px-8 overflow-x-auto"
 		on:wheel={(e) => {
 			if (e.deltaY !== 0) {

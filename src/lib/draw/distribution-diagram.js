@@ -14,7 +14,6 @@ const STALK_BASE_COLOR = [55, 85, 35];
 const NUM_PETALS = 11;
 const GRADIENT_STEPS = 6;
 const MIN_FLOWER_SIZE = 25; // Minimum flower radius so small speakers are still visible
-const MIN_STALK_HEIGHT = 80; // Minimum stalk height so flowers aren't hidden by navbar
 
 export class DistributionDiagram {
 	constructor(sk, pos) {
@@ -101,13 +100,11 @@ export class DistributionDiagram {
 		const { scaledWordArea, numOfTurns, numOfWords } = metrics;
 		const speaker = tempTurnArray[0]?.speaker || '';
 
-		const bottom = this.yPosBottom - this.sk.SPACING;
+		const bottom = this.yPosBottom;
 		const top = this.yPosTop + this.maxCircleRadius;
 
-		// Map turns to Y position, but ensure minimum height so flower isn't hidden
-		let scaledNumOfTurns = this.sk.map(numOfTurns, 0, this.largestNumOfTurnsByASpeaker, bottom, top);
-		const maxY = bottom - MIN_STALK_HEIGHT; // Flower can't be lower than this
-		scaledNumOfTurns = Math.min(scaledNumOfTurns, maxY);
+		// Map turns to Y position
+		const scaledNumOfTurns = this.sk.map(numOfTurns, 0, this.largestNumOfTurnsByASpeaker, bottom, top);
 
 		this.drawStalkVisualization(scaledWordArea, this.xPosCurCircle, scaledNumOfTurns, color);
 
@@ -142,7 +139,7 @@ export class DistributionDiagram {
 	}
 
 	drawStalk(scaleFactor, xPos, yPos) {
-		const bottomY = this.yPosBottom - this.sk.SPACING;
+		const bottomY = this.yPosBottom;
 		// Connect directly to flower center (yPos is where flower is drawn)
 		const topY = yPos;
 		const stalkHeight = bottomY - topY;
@@ -393,8 +390,8 @@ export class DistributionDiagram {
 
 		// Build tooltip content
 		const firstWordsLine = wordsToDisplay.join(' ');
-		const statsLine = `${numOfWords} words (${wordPercent}%)\n${numOfTurns} turns (${turnPercent}%)`;
-		const tooltipContent = `<b>First words per turn:</b>\n${firstWordsLine}\n\n${statsLine}`;
+		const statsLine = `${numOfWords} total words (${wordPercent}%)\n${numOfTurns} turns (${turnPercent}%)`;
+		const tooltipContent = `<b>First word in each turn:</b>\n${firstWordsLine}\n\n${statsLine}`;
 
 		showTooltip(this.sk.mouseX, this.sk.mouseY, tooltipContent, speakerColor, this.sk.height);
 	}
