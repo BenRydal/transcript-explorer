@@ -130,6 +130,7 @@
 
 	let showDataPopup = false;
 	let showSettings = false;
+	let showDataDropDown = false;
 	let showUploadModal = false;
 	let isDraggingOver = false;
 	let uploadedFiles: { name: string; type: string; status: 'pending' | 'processing' | 'done' | 'error'; error?: string }[] = [];
@@ -377,85 +378,6 @@
 		uploadedFiles = [];
 	}
 
-	function createNewTranscript() {
-		// Clear existing data
-		if (p5Instance) {
-			p5Instance.dynamicData?.clear();
-		}
-
-		// Clear users first
-		UserStore.set([]);
-
-		// Check if video is loaded to determine if we should use timestamps or word counts
-		const videoState = get(VideoStore);
-		const hasVideo = videoState.isLoaded;
-		const useWordCountsAsFallback = !hasVideo;
-
-		// Create a default speaker
-		const defaultSpeaker = 'SPEAKER 1';
-		const defaultColor = '#FF6B6B';
-
-		// Set up users
-		UserStore.set([{ name: defaultSpeaker, color: defaultColor, enabled: true }]);
-
-		// Create one empty turn with placeholder text
-		const startTime = hasVideo ? videoState.currentTime : 0;
-		const endTime = hasVideo ? Math.max(videoState.currentTime + 1, videoState.duration) : 10;
-
-		const initialDataPoint = new DataPoint(
-			defaultSpeaker,
-			0, // turnNumber
-			'[new]', // placeholder word
-			0, // order
-			startTime,
-			startTime + 1, // endTime - just 1 second/word after start
-			useWordCountsAsFallback
-		);
-
-		// Create new transcript with all required stats populated
-		const newTranscript = new Transcript();
-		newTranscript.wordArray = [initialDataPoint];
-		newTranscript.totalNumOfWords = 1;
-		newTranscript.totalConversationTurns = 1;
-		newTranscript.totalTimeInSeconds = hasVideo ? Math.max(videoState.duration, 1) : 10;
-		newTranscript.largestTurnLength = 1;
-		newTranscript.largestNumOfWordsByASpeaker = 1;
-		newTranscript.largestNumOfTurnsByASpeaker = 1;
-		newTranscript.maxCountOfMostRepeatedWord = 1;
-		newTranscript.mostFrequentWord = '[new]';
-
-		TranscriptStore.set(newTranscript);
-
-		// Update timeline
-		const timelineEnd = hasVideo ? Math.max(videoState.duration, 1) : 10;
-		TimelineStore.update((timeline) => {
-			timeline.setCurrTime(0);
-			timeline.setStartTime(0);
-			timeline.setEndTime(timelineEnd);
-			timeline.setLeftMarker(0);
-			timeline.setRightMarker(timelineEnd);
-			return timeline;
-		});
-
-		// Open the editor if not already open
-		EditorStore.update((state) => ({
-			...state,
-			config: {
-				...state.config,
-				isVisible: true
-			}
-		}));
-
-		// Trigger canvas resize and refresh visualization after a delay
-		requestAnimationFrame(() => {
-			triggerCanvasResize();
-			// Refresh visualization after resize
-			if (p5Instance) {
-				p5Instance.fillAllData?.();
-			}
-		});
-	}
-
 	function updateExampleDataDropDown(event) {
 		core.handleExampleDropdown(event);
 	}
@@ -603,49 +525,10 @@
 				<IconButton id="btn-toggle-video" icon={MdVideocamOff} tooltip={'Show Video'} on:click={toggleVideo} disabled={!isVideoLoaded} />
 			{/if}
 
-			<!-- TODO: Need to move this logic into the IconButton component eventually -->
-			<div
-				data-tip="Upload"
-				class="tooltip tooltip-bottom btn capitalize icon max-h-8 max-w-16 bg-[#ffffff] border-[#ffffff] flex items-center justify-center"
-				role="button"
-				tabindex="0"
-				on:click
-				on:keydown
-			>
-				<div class="w-4 h-4">
-					<MdSubject />
-				</div>
-				<span class="hidden sm:inline">Editor</span>
-			</button>
-		</div>
-
-		<!-- Divider -->
-		<div class="divider divider-horizontal mx-1 h-8"></div>
-
-		<!-- Media Controls Group -->
-		<div class="flex items-center gap-1">
-			{#if isVideoVisible}
-				<IconButton id="btn-toggle-video" icon={MdVideocam} tooltip={'Hide Video'} on:click={toggleVideo} disabled={!isVideoLoaded} />
-			{:else}
-				<IconButton id="btn-toggle-video" icon={MdVideocamOff} tooltip={'Show Video'} on:click={toggleVideo} disabled={!isVideoLoaded} />
-			{/if}
-		</div>
-
-		<!-- Divider -->
-		<div class="divider divider-horizontal mx-1 h-8"></div>
-
-		<!-- File & Settings Group -->
-		<div class="flex items-center gap-1">
 			<IconButton
 				icon={MdCloudUpload}
-				tooltip={'Upload Files'}
+				tooltip={'Upload'}
 				on:click={() => (showUploadModal = true)}
-			/>
-
-			<IconButton
-				icon={MdNoteAdd}
-				tooltip={'Create New Transcript'}
-				on:click={createNewTranscript}
 			/>
 
 			<input
