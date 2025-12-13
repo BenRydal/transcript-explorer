@@ -387,6 +387,89 @@
 		uploadedFiles = [];
 	}
 
+	function createNewTranscript() {
+		// Close the upload modal first
+		showUploadModal = false;
+
+		// Clear existing data
+		if (p5Instance) {
+			p5Instance.dynamicData?.clear();
+			p5Instance.resetScalingVars?.();
+		}
+
+		// Clear users first
+		UserStore.set([]);
+
+		// Check if video is loaded to determine if we should use timestamps or word counts
+		const videoState = get(VideoStore);
+		const hasVideo = videoState.isLoaded;
+		const useWordCountsAsFallback = !hasVideo;
+
+		// Create a default speaker
+		const defaultSpeaker = 'SPEAKER 1';
+		const defaultColor = '#FF6B6B';
+
+		// Set up users
+		UserStore.set([{ name: defaultSpeaker, color: defaultColor, enabled: true }]);
+
+		// Create one empty turn with placeholder text
+		const startTime = hasVideo ? videoState.currentTime : 0;
+		const endTime = hasVideo ? Math.max(videoState.currentTime + 1, videoState.duration) : 10;
+
+		const initialDataPoint = new DataPoint(
+			defaultSpeaker,
+			0, // turnNumber
+			'[new]', // placeholder word
+			0, // order
+			startTime,
+			startTime + 1, // endTime - just 1 second/word after start
+			useWordCountsAsFallback
+		);
+
+		// Create new transcript with all required stats populated
+		const newTranscript = new Transcript();
+		newTranscript.wordArray = [initialDataPoint];
+		newTranscript.totalNumOfWords = 1;
+		newTranscript.totalConversationTurns = 1;
+		newTranscript.totalTimeInSeconds = hasVideo ? Math.max(videoState.duration, 1) : 10;
+		newTranscript.largestTurnLength = 1;
+		newTranscript.largestNumOfWordsByASpeaker = 1;
+		newTranscript.largestNumOfTurnsByASpeaker = 1;
+		newTranscript.maxCountOfMostRepeatedWord = 1;
+		newTranscript.mostFrequentWord = '[new]';
+
+		TranscriptStore.set(newTranscript);
+
+		// Update timeline
+		const timelineEnd = hasVideo ? Math.max(videoState.duration, 1) : 10;
+		TimelineStore.update((timeline) => {
+			timeline.setCurrTime(0);
+			timeline.setStartTime(0);
+			timeline.setEndTime(timelineEnd);
+			timeline.setLeftMarker(0);
+			timeline.setRightMarker(timelineEnd);
+			return timeline;
+		});
+
+		// Open the editor if not already open
+		EditorStore.update((state) => ({
+			...state,
+			config: {
+				...state.config,
+				isVisible: true
+			}
+		}));
+
+		// Trigger canvas resize and refresh visualization after a delay
+		requestAnimationFrame(() => {
+			triggerCanvasResize();
+			// Refresh visualization after resize
+			if (p5Instance) {
+				p5Instance.fillAllData?.();
+			}
+		});
+	}
+
 	function updateExampleDataDropDown(event) {
 		core.handleExampleDropdown(event);
 	}
@@ -750,6 +833,22 @@
 				<p class="text-xs text-gray-500 mt-2">
 					CSV/TXT files should contain transcript data with speaker and content columns.
 					MP4 files will be used as video overlay.
+				</p>
+			</div>
+
+			<!-- Create new transcript -->
+			<div class="divider">OR</div>
+			<div class="text-center">
+				<button class="btn btn-outline btn-primary" on:click={createNewTranscript}>
+					Create New Transcript
+				</button>
+				<p class="text-xs text-gray-500 mt-2">
+					Start with a blank transcript and build it using the editor.
+					{#if isVideoLoaded}
+						<span class="text-success">Video detected - timestamps will be enabled.</span>
+					{:else}
+						<span>Load a video first to enable timestamp capture.</span>
+					{/if}
 				</p>
 			</div>
 

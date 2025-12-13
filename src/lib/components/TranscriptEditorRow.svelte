@@ -1,8 +1,11 @@
 <script lang="ts">
-	import { createEventDispatcher } from 'svelte';
+	import { createEventDispatcher, onMount } from 'svelte';
 	import type { Turn } from '$lib/core/turn-utils';
 	import { formatTurnTimecode, getTurnContent } from '$lib/core/turn-utils';
 	import { TimeUtils } from '$lib/core/time-utils';
+	import VideoStore from '../../stores/videoStore';
+
+	let rowElement: HTMLElement;
 
 	export let turn: Turn;
 	export let speakerColor: string = '#666666';
@@ -138,8 +141,17 @@
 		}
 	}
 
+	// Close all edit modes, saving any changes
+	function closeAllEditModes() {
+		if (isEditingTime) saveTime();
+		if (isEditingSpeaker) saveSpeaker();
+		if (isEditingContent) saveContent();
+	}
+
 	// Handle row click
 	function handleRowClick() {
+		// If any edit mode is active, close it first
+		closeAllEditModes();
 		dispatch('select', { turn });
 	}
 
@@ -153,24 +165,73 @@
 		dispatch('addAfter', { turnNumber: turn.turnNumber, speaker: turn.speaker });
 	}
 
+	// Capture current video time for this turn's start time
+	function captureStartTime() {
+		const videoState = $VideoStore;
+		if (videoState.isLoaded) {
+			const formattedTime = TimeUtils.formatTimeAuto(videoState.currentTime);
+			// Update the local input value
+			editedStartTime = formattedTime;
+			// Also dispatch the edit to save immediately
+			dispatch('edit', {
+				turnNumber: turn.turnNumber,
+				field: 'time',
+				value: { startTime: videoState.currentTime, endTime: turn.endTime }
+			});
+		}
+	}
+
+	// Capture current video time for this turn's end time
+	function captureEndTime() {
+		const videoState = $VideoStore;
+		if (videoState.isLoaded) {
+			const formattedTime = TimeUtils.formatTimeAuto(videoState.currentTime);
+			// Update the local input value
+			editedEndTime = formattedTime;
+			// Also dispatch the edit to save immediately
+			dispatch('edit', {
+				turnNumber: turn.turnNumber,
+				field: 'time',
+				value: { startTime: turn.startTime, endTime: videoState.currentTime }
+			});
+		}
+	}
+
+	// Check if video is loaded and has real timestamps (not word count fallback)
+	$: canCaptureTime = $VideoStore.isLoaded && !turn.useWordCountsAsFallback;
+
 	// Format speaker name for display
 	function formatSpeaker(name: string): string {
 		return name.charAt(0).toUpperCase() + name.slice(1).toLowerCase();
 	}
 
-	// Get time display
-	function getTimeDisplay(): string {
-		if (turn.useWordCountsAsFallback) {
-			return `[${turn.startTime}]`;
+	// Reactive time display - updates when turn.startTime changes
+	$: timeDisplay = turn.useWordCountsAsFallback
+		? `[${turn.startTime}]`
+		: `[${TimeUtils.formatTimeAuto(turn.startTime)}]`;
+
+	// Handle clicks outside this row to close edit modes
+	onMount(() => {
+		function handleDocumentClick(event: MouseEvent) {
+			// Check current edit state at click time
+			const isAnyEditActive = isEditingTime || isEditingSpeaker || isEditingContent;
+			if (isAnyEditActive && rowElement && !rowElement.contains(event.target as Node)) {
+				closeAllEditModes();
+			}
 		}
-		return `[${TimeUtils.formatTimeAuto(turn.startTime)}]`;
-	}
+
+		document.addEventListener('click', handleDocumentClick);
+		return () => {
+			document.removeEventListener('click', handleDocumentClick);
+		};
+	});
 </script>
 
 <div
 	class="turn-row"
 	class:selected={isSelected}
 	class:speaker-highlighted={isSpeakerHighlighted}
+	bind:this={rowElement}
 	on:click={handleRowClick}
 	on:keydown={(e) => e.key === 'Enter' && handleRowClick()}
 	on:mouseenter={() => (isHovering = true)}
@@ -180,7 +241,16 @@
 >
 	<!-- Timecode -->
 	{#if isEditingTime}
-		<div class="time-edit-container">
+		<div class="time-edit-container" on:click|stopPropagation>
+			{#if canCaptureTime}
+				<button
+					class="time-capture-btn capture-start-btn"
+					on:click={captureStartTime}
+					title="Set IN point from video"
+				>
+					<span class="capture-bracket">[</span>
+				</button>
+			{/if}
 			<input
 				type="text"
 				class="time-input"
@@ -198,6 +268,15 @@
 				on:blur={saveTime}
 				placeholder="End"
 			/>
+			{#if canCaptureTime}
+				<button
+					class="time-capture-btn capture-end-btn"
+					on:click={captureEndTime}
+					title="Set OUT point from video"
+				>
+					<span class="capture-bracket">]</span>
+				</button>
+			{/if}
 		</div>
 	{:else}
 		<button
@@ -205,7 +284,7 @@
 			on:click|stopPropagation={startEditingTime}
 			title="Click to edit time"
 		>
-			{getTimeDisplay()}
+			{timeDisplay}
 		</button>
 	{/if}
 
@@ -218,13 +297,22 @@
 				bind:value={editedSpeaker}
 				on:keydown={handleSpeakerKeydown}
 				on:blur={saveSpeaker}
-				list="speakers-list"
+				placeholder="New speaker..."
 			/>
-			<datalist id="speakers-list">
-				{#each speakers as speaker}
-					<option value={speaker}>{speaker}</option>
-				{/each}
-			</datalist>
+			{#if speakers.length > 0}
+				<select
+					class="speaker-select"
+					on:change={(e) => {
+						editedSpeaker = e.currentTarget.value;
+						saveSpeaker();
+					}}
+				>
+					<option value="" disabled selected>Select</option>
+					{#each speakers as speakerOption}
+						<option value={speakerOption}>{speakerOption}</option>
+					{/each}
+				</select>
+			{/if}
 		</div>
 	{:else}
 		<button
@@ -389,17 +477,65 @@
 		color: #6b7280;
 	}
 
-	.speaker-edit-container {
+	.time-capture-btn {
+		display: flex;
+		align-items: center;
+		justify-content: center;
+		width: 1.25rem;
+		height: 1.25rem;
+		border: none;
+		border-radius: 0.25rem;
+		cursor: pointer;
+		transition: background-color 0.15s, color 0.15s;
+		background-color: #e5e7eb;
+		color: #6b7280;
 		flex-shrink: 0;
 	}
 
+	.time-capture-btn.capture-start-btn:hover {
+		color: #2563eb;
+		background-color: #dbeafe;
+	}
+
+	.time-capture-btn.capture-end-btn:hover {
+		color: #7c3aed;
+		background-color: #ede9fe;
+	}
+
+	.capture-bracket {
+		font-weight: bold;
+		font-size: 0.875rem;
+		line-height: 1;
+	}
+
+	.speaker-edit-container {
+		flex-shrink: 0;
+		display: flex;
+		align-items: center;
+	}
+
 	.speaker-input {
-		width: 120px;
+		width: 100px;
 		font-weight: 600;
 		padding: 0.25rem;
 		border: 1px solid #d1d5db;
-		border-radius: 0.25rem;
+		border-radius: 0.25rem 0 0 0.25rem;
 		text-transform: uppercase;
+	}
+
+	.speaker-select {
+		padding: 0.25rem 0.5rem;
+		border: 1px solid #d1d5db;
+		border-left: none;
+		border-radius: 0 0.25rem 0.25rem 0;
+		background-color: #f9fafb;
+		cursor: pointer;
+		font-size: 0.75rem;
+		height: 100%;
+	}
+
+	.speaker-select:hover {
+		background-color: #e5e7eb;
 	}
 
 	.content-edit-container {
@@ -459,4 +595,5 @@
 		color: #dc2626;
 		background-color: #fee2e2;
 	}
-</style>
+
+	</style>
