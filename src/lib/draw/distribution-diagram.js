@@ -13,6 +13,8 @@ const STALK_LEAF_COLORS = {
 const STALK_BASE_COLOR = [55, 85, 35];
 const NUM_PETALS = 11;
 const GRADIENT_STEPS = 6;
+const MIN_FLOWER_SIZE = 25; // Minimum flower radius so small speakers are still visible
+const MIN_STALK_HEIGHT = 80; // Minimum stalk height so flowers aren't hidden by navbar
 
 export class DistributionDiagram {
 	constructor(sk, pos) {
@@ -48,9 +50,9 @@ export class DistributionDiagram {
 
 	drawViz(tempTurnArray, isDrawFlower) {
 		const firstElement = tempTurnArray[0];
-		const metrics = this.calculateMetrics(tempTurnArray);
+		const metrics = this.calculateMetrics(tempTurnArray, isDrawFlower);
 		const user = this.users.find((user) => user.name === firstElement.speaker);
-		if (!user) return; // Guard against missing user
+		if (!user) return;
 		const color = this.sk.color(user.color);
 
 		if (isDrawFlower) {
@@ -60,14 +62,14 @@ export class DistributionDiagram {
 		}
 	}
 
-	calculateMetrics(tempTurnArray) {
+	calculateMetrics(tempTurnArray, isFlower = false) {
 		const numOfTurns = this.calculateNumOfTurns(tempTurnArray);
 		const numOfWords = tempTurnArray.length;
 		return {
 			numOfTurns,
 			numOfWords,
-			scaledWordArea: this.getScaledArea(numOfWords),
-			scaledTurnArea: this.getScaledArea(numOfTurns)
+			scaledWordArea: this.getScaledArea(numOfWords, isFlower),
+			scaledTurnArea: this.getScaledArea(numOfTurns, isFlower)
 		};
 	}
 
@@ -92,7 +94,10 @@ export class DistributionDiagram {
 		const bottom = this.yPosBottom - this.sk.SPACING;
 		const top = this.yPosTop + this.maxCircleRadius;
 
-		const scaledNumOfTurns = this.sk.map(numOfTurns, 0, this.largestNumOfTurnsByASpeaker, bottom, top);
+		// Map turns to Y position, but ensure minimum height so flower isn't hidden
+		let scaledNumOfTurns = this.sk.map(numOfTurns, 0, this.largestNumOfTurnsByASpeaker, bottom, top);
+		const maxY = bottom - MIN_STALK_HEIGHT; // Flower can't be lower than this
+		scaledNumOfTurns = Math.min(scaledNumOfTurns, maxY);
 
 		this.drawStalkVisualization(scaledWordArea, this.xPosCurCircle, scaledNumOfTurns, color);
 
@@ -116,6 +121,7 @@ export class DistributionDiagram {
 
 	drawFlowerGuideLines(bottom, top) {
 		this.sk.stroke(0);
+		this.sk.strokeWeight(2);
 		this.sk.line(this.xLeft, top, this.xLeft, bottom);
 		this.sk.line(this.xLeft - this.sk.SPACING / 2, top, this.xLeft + this.sk.SPACING / 2, top);
 
@@ -146,10 +152,14 @@ export class DistributionDiagram {
 
 			// More organic S-curve - end at flower center
 			this.sk.bezier(
-				xPos, bottomY,
-				xPos + bendAmount * 0.8, bottomY - stalkHeight * 0.25,
-				xPos - bendAmount, bottomY - stalkHeight * 0.6,
-				xPos, topY  // End exactly at flower center (no x offset)
+				xPos,
+				bottomY,
+				xPos + bendAmount * 0.8,
+				bottomY - stalkHeight * 0.25,
+				xPos - bendAmount,
+				bottomY - stalkHeight * 0.6,
+				xPos,
+				topY // End exactly at flower center (no x offset)
 			);
 		}
 
@@ -223,16 +233,8 @@ export class DistributionDiagram {
 		const midX = (startX + endX) / 2 + 3;
 		this.sk.beginShape();
 		this.sk.vertex(scale * startX, 0);
-		this.sk.bezierVertex(
-			scale * midX, -scale * curveHeight,
-			scale * (endX - 7), -scale * (curveHeight * 0.67),
-			scale * endX, 0
-		);
-		this.sk.bezierVertex(
-			scale * (endX - 7), scale * (curveHeight * 0.67),
-			scale * midX, scale * curveHeight,
-			scale * startX, 0
-		);
+		this.sk.bezierVertex(scale * midX, -scale * curveHeight, scale * (endX - 7), -scale * (curveHeight * 0.67), scale * endX, 0);
+		this.sk.bezierVertex(scale * (endX - 7), scale * (curveHeight * 0.67), scale * midX, scale * curveHeight, scale * startX, 0);
 		this.sk.endShape(this.sk.CLOSE);
 	}
 
@@ -266,12 +268,7 @@ export class DistributionDiagram {
 
 				this.sk.fill(r, gColor, b, 90 + t * 110);
 				this.sk.noStroke();
-				this.drawOrganicPetal(
-					centerRadius * 0.9,
-					petalLength * layerScale * sizeVariation,
-					petalWidth * layerScale * widthVariation,
-					i
-				);
+				this.drawOrganicPetal(centerRadius * 0.9, petalLength * layerScale * sizeVariation, petalWidth * layerScale * widthVariation, i);
 			}
 
 			// Subtle vein line on larger flowers
@@ -299,16 +296,22 @@ export class DistributionDiagram {
 
 		// Left curve - slightly asymmetric
 		this.sk.bezierVertex(
-			-width * (0.65 + asymmetry), startDist + length * 0.18,
-			-width * (0.75 + asymmetry * 0.5), startDist + length * 0.65,
-			tipOffset, startDist + length
+			-width * (0.65 + asymmetry),
+			startDist + length * 0.18,
+			-width * (0.75 + asymmetry * 0.5),
+			startDist + length * 0.65,
+			tipOffset,
+			startDist + length
 		);
 
 		// Right curve - mirror with slight variation
 		this.sk.bezierVertex(
-			width * (0.75 - asymmetry * 0.5), startDist + length * 0.65,
-			width * (0.65 - asymmetry), startDist + length * 0.18,
-			0, startDist
+			width * (0.75 - asymmetry * 0.5),
+			startDist + length * 0.65,
+			width * (0.65 - asymmetry),
+			startDist + length * 0.18,
+			0,
+			startDist
 		);
 
 		this.sk.endShape(this.sk.CLOSE);
@@ -323,12 +326,7 @@ export class DistributionDiagram {
 		// Middle gradient rings
 		for (let r = radius * 0.85; r > radius * 0.3; r -= radius * 0.15) {
 			const t = 1 - r / radius;
-			this.sk.fill(
-				baseR - 40 + t * 50,
-				baseG - 40 + t * 50,
-				baseB - 40 + t * 50,
-				220
-			);
+			this.sk.fill(baseR - 40 + t * 50, baseG - 40 + t * 50, baseB - 40 + t * 50, 220);
 			this.sk.circle(0, 0, r * 2);
 		}
 
@@ -395,14 +393,10 @@ export class DistributionDiagram {
 		return pixelWidth / (this.users.length + 1);
 	}
 
-	getScaledArea(value) {
-		const maxValue = this.largestNumOfWordsByASpeaker;
-		// Normalize the value to a scale of 0 to 1, relative to the maximum value
-		const normalizedValue = value / maxValue;
-		// Map the normalized value to an area
+	getScaledArea(value, applyMinimum = false) {
+		const normalizedValue = value / this.largestNumOfWordsByASpeaker;
 		const area = normalizedValue * this.maxCircleArea;
-		// Calculate the radius from the area
 		const radius = Math.sqrt(area / Math.PI);
-		return radius;
+		return applyMinimum ? Math.max(radius, MIN_FLOWER_SIZE) : radius;
 	}
 }

@@ -31,7 +31,7 @@ export const initialConfig: ConfigStoreType = {
 	turnChartToggle: false,
 	contributionCloudToggle: false,
 	dashboardToggle: false,
-	flowersToggle: false,
+	flowersToggle: true,
 	separateToggle: false,
 	sortToggle: false,
 	lastWordToggle: false,
