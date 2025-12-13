@@ -12,7 +12,6 @@
 	import MdSubject from 'svelte-icons/md/MdSubject.svelte';
 	import MdInsertChart from 'svelte-icons/md/MdInsertChart.svelte';
 	import MdTouchApp from 'svelte-icons/md/MdTouchApp.svelte';
-	import type { User } from '../../models/user';
 	import UserStore from '../../stores/userStore';
 	import P5Store from '../../stores/p5Store';
 	import VideoStore, { toggleVisibility as toggleVideoVisibility } from '../../stores/videoStore';
@@ -27,7 +26,6 @@
 	import IconButton from '$lib/components/IconButton.svelte';
 	import InfoModal from '$lib/components/InfoModal.svelte';
 	import TimelinePanel from '$lib/components/TimelinePanel.svelte';
-	import DataPointTable from '$lib/components/DataPointTable.svelte';
 	import SplitPane from '$lib/components/SplitPane.svelte';
 	import TranscriptEditor from '$lib/components/TranscriptEditor.svelte';
 	import CanvasTooltip from '$lib/components/CanvasTooltip.svelte';
@@ -162,11 +160,6 @@
 
 	TimelineStore.subscribe((value) => {
 		timeline = value;
-	});
-
-	
-	UserStore.subscribe((data) => {
-		users = data;
 	});
 
 	P5Store.subscribe((value) => {
