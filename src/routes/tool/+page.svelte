@@ -132,7 +132,6 @@
 
 	let showDataPopup = false;
 	let showSettings = false;
-	let showDataDropDown = false;
 	let showUploadModal = false;
 	let isDraggingOver = false;
 	let uploadedFiles: { name: string; type: string; status: 'pending' | 'processing' | 'done' | 'error'; error?: string }[] = [];
@@ -578,46 +577,6 @@
 			<IconButton icon={MdHelpOutline} tooltip={'Help'} on:click={() => ($isModalOpen = !$isModalOpen)} />
 
 			<IconButton icon={MdSettings} tooltip={'Settings'} on:click={() => (showSettings = true)} />
-		</div>
-
-		<!-- Divider -->
-		<div class="divider divider-horizontal mx-1 h-8"></div>
-
-		<!-- Example Data Dropdown -->
-		<div class="relative inline-block text-left">
-			<button
-				on:click={() => (showDataDropDown = !showDataDropDown)}
-				class="flex justify-between w-full rounded border border-gray-300 p-2 bg-white text-sm font-medium text-gray-700 hover:bg-gray-50 focus:outline-none focus:ring focus:ring-indigo-500"
-			>
-				{selectedDropDownOption || '-- Select an Example --'}
-				<div class={`ml-2 transition-transform duration-300 ${showDataDropDown ? 'rotate-0' : 'rotate-180'}`}>
-					<span class="block w-3 h-3 border-l border-t border-gray-700 transform rotate-45"></span>
-				</div>
-			</button>
-
-			{#if showDataDropDown}
-				<div class="absolute z-10 mt-2 w-full rounded-md bg-white shadow-lg max-h-[75vh] overflow-y-auto">
-					<ul class="py-1" role="menu" aria-orientation="vertical">
-						{#each dropdownOptions as group}
-							<li class="px-4 py-2 font-semibold text-gray-600">{group.label}</li>
-							{#each group.items as item}
-								<li>
-									<button
-										on:click={() => {
-											updateExampleDataDropDown({ target: { value: item.value } });
-											showDataDropDown = false;
-											selectedDropDownOption = item.label;
-										}}
-										class="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 w-full text-left"
-									>
-										{item.label}
-									</button>
-								</li>
-							{/each}
-						{/each}
-					</ul>
-				</div>
-			{/if}
 		</div>
 
 		<!-- Divider -->
