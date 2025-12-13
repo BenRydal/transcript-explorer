@@ -11,7 +11,6 @@
 	import MdSubject from 'svelte-icons/md/MdSubject.svelte';
 	import MdInsertChart from 'svelte-icons/md/MdInsertChart.svelte';
 	import MdTouchApp from 'svelte-icons/md/MdTouchApp.svelte';
-	import type { User } from '../../models/user';
 	import UserStore from '../../stores/userStore';
 	import P5Store from '../../stores/p5Store';
 	import VideoStore, { toggleVisibility as toggleVideoVisibility } from '../../stores/videoStore';
@@ -26,7 +25,6 @@
 	import IconButton from '$lib/components/IconButton.svelte';
 	import InfoModal from '$lib/components/InfoModal.svelte';
 	import TimelinePanel from '$lib/components/TimelinePanel.svelte';
-	import DataPointTable from '$lib/components/DataPointTable.svelte';
 	import SplitPane from '$lib/components/SplitPane.svelte';
 	import TranscriptEditor from '$lib/components/TranscriptEditor.svelte';
 	import CanvasTooltip from '$lib/components/CanvasTooltip.svelte';
@@ -36,127 +34,10 @@
 	import ConfigStore from '../../stores/configStore';
 	import type { ConfigStoreType } from '../../stores/configStore';
 	import TranscriptStore from '../../stores/transcriptStore';
-	import { computePosition, flip, shift, offset, autoUpdate } from '@floating-ui/dom';
+	import { computePosition, flip, shift, offset } from '@floating-ui/dom';
 
 	// Define ToggleKey type to fix TypeScript errors
 	type ToggleKey = string;
-
-	// Floating UI references
-	type FloatingElement = {
-		button: HTMLElement | null;
-		content: HTMLElement | null;
-		cleanup: (() => void) | null;
-		isOpen: boolean;
-	};
-
-	// Store references to floating elements
-	const floatingElements: Record<string, FloatingElement> = {};
-
-	// Function to position a floating element
-	function positionFloatingElement(reference: HTMLElement, floating: HTMLElement) {
-		return computePosition(reference, floating, {
-			placement: 'top',
-			middleware: [
-				offset(6),
-				flip(),
-				shift({ padding: 5 })
-			]
-		}).then(({ x, y }) => {
-			Object.assign(floating.style, {
-				left: `${x}px`,
-				top: `${y}px`,
-				position: 'absolute',
-				width: 'max-content',
-				zIndex: '100'
-			});
-		});
-	}
-
-	// Function to toggle a floating element
-	function toggleFloating(id: string) {
-		const element = floatingElements[id];
-		if (!element || !element.button || !element.content) return;
-
-		element.isOpen = !element.isOpen;
-
-		if (element.isOpen) {
-			// Show the floating element
-			element.content.style.display = 'block';
-			document.body.appendChild(element.content);
-
-			// Position it initially
-			positionFloatingElement(element.button, element.content);
-
-			// Set up auto-update to reposition on scroll/resize
-			element.cleanup = autoUpdate(
-				element.button,
-				element.content,
-				() => positionFloatingElement(element.button, element.content)
-			);
-
-			// Add click outside listener
-			const handleClickOutside = (event: MouseEvent) => {
-				if (
-					element.content &&
-					element.button &&
-					!element.content.contains(event.target as Node) &&
-					!element.button.contains(event.target as Node)
-				) {
-					toggleFloating(id);
-				}
-			};
-
-			document.addEventListener('click', handleClickOutside);
-
-			// Update cleanup to include removing the event listener
-			const prevCleanup = element.cleanup;
-			element.cleanup = () => {
-				prevCleanup?.();
-				document.removeEventListener('click', handleClickOutside);
-			};
-		} else {
-			// Hide the floating element
-			if (element.content) {
-				element.content.style.display = 'none';
-			}
-
-			// Clean up auto-update
-			if (element.cleanup) {
-				element.cleanup();
-				element.cleanup = null;
-			}
-		}
-	}
-
-	// Function to register a floating element
-	function registerFloating(id: string, button: HTMLElement, content: HTMLElement) {
-		floatingElements[id] = {
-			button,
-			content,
-			cleanup: null,
-			isOpen: false
-		};
-
-		// Initially hide the content
-		content.style.display = 'none';
-	}
-
-	// Action function for initializing floating elements
-	function initFloating(node: HTMLElement) {
-		const userId = node.getAttribute('data-user-id');
-		if (userId) {
-			const button = document.querySelector(`button[data-user="${userId}"]`);
-			if (button) {
-				registerFloating(`user-${userId}`, button as HTMLElement, node);
-			}
-		}
-
-		return {
-			destroy() {
-				// Cleanup if needed
-			}
-		};
-	}
 
 	// Add click outside and scroll handlers for dropdowns
 	onMount(() => {
@@ -254,7 +135,6 @@
 	let currentConfig: ConfigStoreType;
 
 	let files: any = [];
-	let users: User[] = [];
 	let p5Instance: p5 | null = null;
 	let core: Core;
 	let videoContainerRef: VideoContainer;
@@ -279,11 +159,6 @@
 
 	TimelineStore.subscribe((value) => {
 		timeline = value;
-	});
-
-	
-	UserStore.subscribe((data) => {
-		users = data;
 	});
 
 	P5Store.subscribe((value) => {
