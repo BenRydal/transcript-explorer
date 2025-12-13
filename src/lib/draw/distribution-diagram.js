@@ -3,6 +3,17 @@ import TranscriptStore from '../../stores/transcriptStore';
 import UserStore from '../../stores/userStore';
 import ConfigStore from '../../stores/configStore';
 import { showTooltip } from '../../stores/tooltipStore';
+
+// Flower drawing constants
+const STALK_LEAF_COLORS = {
+	outer: [65, 105, 45, 200],
+	inner: [85, 130, 55, 150],
+	vein: [50, 80, 35, 180]
+};
+const STALK_BASE_COLOR = [55, 85, 35];
+const NUM_PETALS = 11;
+const GRADIENT_STEPS = 6;
+
 export class DistributionDiagram {
 	constructor(sk, pos) {
 		this.sk = sk;
@@ -92,15 +103,13 @@ export class DistributionDiagram {
 		this.drawFlowerGuideLines(bottom, top);
 	}
 
-	drawStalkVisualization(scaledWordArea, xPos, scaledNumOfTurns, color) {
+	drawStalkVisualization(scaledWordArea, xPos, yPos, color) {
 		const scaleFactor = scaledWordArea / 100;
 
-		// Draw the curved stalk with leaf
-		this.drawStalk(scaleFactor, xPos, scaledNumOfTurns, color);
+		this.drawStalk(scaleFactor, xPos, yPos);
 
-		// Draw the flower head
 		this.sk.push();
-		this.sk.translate(xPos, scaledNumOfTurns);
+		this.sk.translate(xPos, yPos);
 		this.drawPetals(scaleFactor, color);
 		this.sk.pop();
 	}
@@ -116,7 +125,7 @@ export class DistributionDiagram {
 		this.sk.text(`${this.largestNumOfTurnsByASpeaker} Turns`, this.xLeft - this.sk.SPACING / 2, top - this.sk.SPACING / 2);
 	}
 
-	drawStalk(scaleFactor, xPos, yPos, color) {
+	drawStalk(scaleFactor, xPos, yPos) {
 		const bottomY = this.yPosBottom - this.sk.SPACING;
 		// Connect directly to flower center (yPos is where flower is drawn)
 		const topY = yPos;
@@ -131,8 +140,8 @@ export class DistributionDiagram {
 		// Draw multiple strokes for thickness gradient effect
 		for (let i = 0; i < 3; i++) {
 			const thickness = Math.max(2, scaleFactor * 3.5) - i * 0.5;
-			const greenShade = 55 + i * 15;
-			this.sk.stroke(greenShade, 85 + i * 10, 35 + i * 5, 255 - i * 30);
+			const [r, g, b] = STALK_BASE_COLOR;
+			this.sk.stroke(r + i * 15, g + i * 10, b + i * 5, 255 - i * 30);
 			this.sk.strokeWeight(thickness);
 
 			// More organic S-curve - end at flower center
@@ -185,47 +194,21 @@ export class DistributionDiagram {
 		this.sk.rotate(rotation);
 		if (flipX) this.sk.scale(-1, 1);
 
-		// Leaf with multiple layers for depth
-		// Outer leaf shape (darker)
-		this.sk.fill(65, 105, 45, 200);
+		// Outer leaf shape
+		this.sk.fill(...STALK_LEAF_COLORS.outer);
 		this.sk.noStroke();
-		this.sk.beginShape();
-		this.sk.vertex(0, 0);
-		this.sk.bezierVertex(
-			scale * 8, -scale * 3,
-			scale * 18, -scale * 2,
-			scale * 25, 0
-		);
-		this.sk.bezierVertex(
-			scale * 18, scale * 2,
-			scale * 8, scale * 3,
-			0, 0
-		);
-		this.sk.endShape(this.sk.CLOSE);
+		this.drawLeafShape(scale, 0, 25, 3);
 
-		// Inner leaf highlight (lighter green)
-		this.sk.fill(85, 130, 55, 150);
-		this.sk.beginShape();
-		this.sk.vertex(scale * 2, 0);
-		this.sk.bezierVertex(
-			scale * 8, -scale * 1.5,
-			scale * 14, -scale * 1,
-			scale * 20, 0
-		);
-		this.sk.bezierVertex(
-			scale * 14, scale * 1,
-			scale * 8, scale * 1.5,
-			scale * 2, 0
-		);
-		this.sk.endShape(this.sk.CLOSE);
+		// Inner leaf highlight
+		this.sk.fill(...STALK_LEAF_COLORS.inner);
+		this.drawLeafShape(scale, 2, 20, 1.5);
 
-		// Center vein
-		this.sk.stroke(50, 80, 35, 180);
+		// Veins
+		this.sk.stroke(...STALK_LEAF_COLORS.vein);
 		this.sk.strokeWeight(scale * 0.4);
 		this.sk.noFill();
-		this.sk.line(scale * 1, 0, scale * 22, 0);
+		this.sk.line(scale, 0, scale * 22, 0);
 
-		// Small veins
 		this.sk.strokeWeight(scale * 0.2);
 		for (let i = 1; i <= 4; i++) {
 			const vx = scale * (4 + i * 4);
@@ -236,60 +219,66 @@ export class DistributionDiagram {
 		this.sk.pop();
 	}
 
+	drawLeafShape(scale, startX, endX, curveHeight) {
+		const midX = (startX + endX) / 2 + 3;
+		this.sk.beginShape();
+		this.sk.vertex(scale * startX, 0);
+		this.sk.bezierVertex(
+			scale * midX, -scale * curveHeight,
+			scale * (endX - 7), -scale * (curveHeight * 0.67),
+			scale * endX, 0
+		);
+		this.sk.bezierVertex(
+			scale * (endX - 7), scale * (curveHeight * 0.67),
+			scale * midX, scale * curveHeight,
+			scale * startX, 0
+		);
+		this.sk.endShape(this.sk.CLOSE);
+	}
+
 	drawPetals(scaleFactor, color) {
-		// Natural, organic flower petals
 		const baseR = this.sk.red(color);
 		const baseG = this.sk.green(color);
 		const baseB = this.sk.blue(color);
 
-		const numPetals = 11; // Odd number looks more natural
 		const petalLength = scaleFactor * 52;
 		const petalWidth = scaleFactor * 18;
 		const centerRadius = scaleFactor * 11;
-		const gradientSteps = 6;
 
-		// Draw petals with natural variation
-		for (let i = 0; i < numPetals; i++) {
-			// Slight angle variation for organic feel
+		for (let i = 0; i < NUM_PETALS; i++) {
 			const angleVariation = Math.sin(i * 2.3) * 0.08;
-			const angle = (this.sk.TWO_PI / numPetals) * i + angleVariation;
+			const angle = (this.sk.TWO_PI / NUM_PETALS) * i + angleVariation;
 
-			// Natural size variation (some petals bigger than others)
 			const sizeVariation = 0.82 + Math.sin(i * 1.7 + 0.5) * 0.18;
-			// Slight width variation independent of length
 			const widthVariation = 0.9 + Math.cos(i * 2.1) * 0.15;
 
 			this.sk.push();
 			this.sk.rotate(angle);
 
 			// Draw gradient layers from outside in
-			for (let g = 0; g < gradientSteps; g++) {
-				const t = g / (gradientSteps - 1);
+			for (let g = 0; g < GRADIENT_STEPS; g++) {
+				const t = g / (GRADIENT_STEPS - 1);
 				const layerScale = 1 - t * 0.55;
 
-				// Color gradient: lighter/warmer at tips, darker at base
 				const r = Math.min(255, baseR + (1 - t) * 55 + Math.sin(i) * 10);
 				const gColor = Math.min(255, baseG + (1 - t) * 50);
 				const b = Math.min(255, baseB + (1 - t) * 45);
-				const alpha = 90 + t * 110;
 
-				this.sk.fill(r, gColor, b, alpha);
+				this.sk.fill(r, gColor, b, 90 + t * 110);
 				this.sk.noStroke();
-
 				this.drawOrganicPetal(
 					centerRadius * 0.9,
 					petalLength * layerScale * sizeVariation,
 					petalWidth * layerScale * widthVariation,
-					i // Pass index for unique shape variation
+					i
 				);
 			}
 
-			// Add subtle vein line on each petal
+			// Subtle vein line on larger flowers
 			if (scaleFactor > 0.4) {
 				this.sk.stroke(baseR - 30, baseG - 30, baseB - 30, 40);
 				this.sk.strokeWeight(0.5);
-				const veinLength = petalLength * sizeVariation * 0.7;
-				this.sk.line(0, centerRadius, 0, centerRadius + veinLength);
+				this.sk.line(0, centerRadius, 0, centerRadius + petalLength * sizeVariation * 0.7);
 			}
 
 			this.sk.pop();
@@ -388,8 +377,6 @@ export class DistributionDiagram {
 			}
 		});
 
-		// Calculate additional stats
-		const avgWordsPerTurn = numOfTurns > 0 ? Math.round(numOfWords / numOfTurns) : 0;
 		const transcript = get(TranscriptStore);
 		const totalWords = transcript.totalNumOfWords;
 		const totalTurns = transcript.totalConversationTurns;
@@ -403,7 +390,6 @@ export class DistributionDiagram {
 
 		showTooltip(this.sk.mouseX, this.sk.mouseY, tooltipContent, speakerColor, this.sk.height);
 	}
-
 
 	getMaxCircleRadius(pixelWidth) {
 		return pixelWidth / (this.users.length + 1);
