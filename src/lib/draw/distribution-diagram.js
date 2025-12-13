@@ -37,11 +37,21 @@ export class DistributionDiagram {
 	}
 
 	draw(sortedAnimationWordArray) {
+		const searchTerm = this.config.wordToSearch?.toLowerCase();
+
 		for (const key in sortedAnimationWordArray) {
 			if (sortedAnimationWordArray[key].length) {
 				const user = this.users.find((user) => user.name === sortedAnimationWordArray[key][0].speaker);
 				if (user?.enabled) {
-					this.drawViz(sortedAnimationWordArray[key], this.config.flowersToggle);
+					// Filter words by search term if one is set
+					let wordsToVisualize = sortedAnimationWordArray[key];
+					if (searchTerm) {
+						wordsToVisualize = wordsToVisualize.filter((w) => w.word.toLowerCase().includes(searchTerm));
+					}
+
+					if (wordsToVisualize.length > 0) {
+						this.drawViz(wordsToVisualize, this.config.flowersToggle);
+					}
 				}
 			}
 			this.xPosCurCircle += this.maxCircleRadius;
