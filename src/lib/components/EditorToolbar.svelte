@@ -2,8 +2,6 @@
 	import MdSwapVert from 'svelte-icons/md/MdSwapVert.svelte';
 	import MdSwapHoriz from 'svelte-icons/md/MdSwapHoriz.svelte';
 	import MdFileDownload from 'svelte-icons/md/MdFileDownload.svelte';
-	import MdKeyboardArrowDown from 'svelte-icons/md/MdKeyboardArrowDown.svelte';
-	import MdKeyboardArrowUp from 'svelte-icons/md/MdKeyboardArrowUp.svelte';
 	import EditorStore from '../../stores/editorStore';
 	import { exportTranscriptToCSV } from '$lib/core/export-utils';
 
@@ -19,22 +17,11 @@
 		}));
 	}
 
-	function toggleCollapse() {
-		EditorStore.update((state) => ({
-			...state,
-			config: {
-				...state.config,
-				isCollapsed: !state.config.isCollapsed
-			}
-		}));
-	}
-
 	function handleExport() {
 		exportTranscriptToCSV();
 	}
 
 	$: isVertical = $EditorStore.config.orientation === 'vertical';
-	$: isCollapsed = $EditorStore.config.isCollapsed;
 </script>
 
 <div class="editor-toolbar">
@@ -64,18 +51,6 @@
 			title="Export transcript as CSV"
 		>
 			<MdFileDownload />
-		</button>
-
-		<button
-			class="toolbar-btn"
-			on:click={toggleCollapse}
-			title={isCollapsed ? 'Expand editor' : 'Collapse editor'}
-		>
-			{#if isCollapsed}
-				<MdKeyboardArrowUp />
-			{:else}
-				<MdKeyboardArrowDown />
-			{/if}
 		</button>
 	</div>
 </div>
