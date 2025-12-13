@@ -245,6 +245,9 @@
 	let showDataPopup = false;
 	let showSettings = false;
 	let showDataDropDown = false;
+	let showUploadModal = false;
+	let isDraggingOver = false;
+	let uploadedFiles: { name: string; type: string; status: 'pending' | 'processing' | 'done' | 'error'; error?: string }[] = [];
 	let currentConfig: ConfigStoreType;
 
 	let files: any = [];
@@ -391,8 +394,103 @@
 		};
 	}
 
-	function updateUserLoadedFiles(event) {
-		core.handleUserLoadedFiles(event);
+	function updateUserLoadedFiles(event: Event) {
+		const input = event.target as HTMLInputElement;
+		if (input.files) {
+			processFiles(Array.from(input.files));
+		}
+		input.value = ''; // reset so same file can be selected again
+	}
+
+	async function processFiles(fileList: File[]) {
+		// Add files to the upload list
+		const newFiles = fileList.map(f => ({
+			name: f.name,
+			type: getFileTypeLabel(f.name),
+			status: 'pending' as const
+		}));
+		uploadedFiles = [...uploadedFiles, ...newFiles];
+
+		// Process each file
+		for (let i = 0; i < fileList.length; i++) {
+			const file = fileList[i];
+			const fileIndex = uploadedFiles.length - fileList.length + i;
+
+			// Update status to processing
+			uploadedFiles[fileIndex].status = 'processing';
+			uploadedFiles = uploadedFiles;
+
+			try {
+				await processFile(file);
+				uploadedFiles[fileIndex].status = 'done';
+			} catch (err) {
+				uploadedFiles[fileIndex].status = 'error';
+				uploadedFiles[fileIndex].error = err instanceof Error ? err.message : 'Unknown error';
+			}
+			uploadedFiles = uploadedFiles;
+		}
+	}
+
+	async function processFile(file: File): Promise<void> {
+		return new Promise((resolve, reject) => {
+			const fileName = file.name.toLowerCase();
+			if (fileName.endsWith('.csv') || file.type === 'text/csv') {
+				core.clearTranscriptData();
+				core.loadCSVData(file);
+				resolve();
+			} else if (fileName.endsWith('.txt')) {
+				core.clearTranscriptData();
+				core.loadP5Strings(URL.createObjectURL(file));
+				resolve();
+			} else if (fileName.endsWith('.mp4') || file.type === 'video/mp4') {
+				core.prepVideoFromFile(URL.createObjectURL(file));
+				resolve();
+			} else {
+				reject(new Error('Unsupported file format'));
+			}
+		});
+	}
+
+	function getFileTypeLabel(fileName: string): string {
+		const ext = fileName.toLowerCase().split('.').pop();
+		switch (ext) {
+			case 'csv': return 'Transcript (CSV)';
+			case 'txt': return 'Transcript (TXT)';
+			case 'mp4': return 'Video (MP4)';
+			default: return 'Unknown';
+		}
+	}
+
+	function handleDrop(event: DragEvent) {
+		event.preventDefault();
+		isDraggingOver = false;
+		if (event.dataTransfer?.files) {
+			const validFiles = Array.from(event.dataTransfer.files).filter(f => {
+				const name = f.name.toLowerCase();
+				return name.endsWith('.csv') || name.endsWith('.txt') || name.endsWith('.mp4');
+			});
+			if (validFiles.length > 0) {
+				processFiles(validFiles);
+			}
+		}
+	}
+
+	function handleDragOver(event: DragEvent) {
+		event.preventDefault();
+		isDraggingOver = true;
+	}
+
+	function handleDragLeave() {
+		isDraggingOver = false;
+	}
+
+	function openFileDialog() {
+		const input = document.getElementById('file-input') as HTMLInputElement;
+		input?.click();
+	}
+
+	function clearUploadedFiles() {
+		uploadedFiles = [];
 	}
 
 	function updateExampleDataDropDown(event) {
@@ -532,25 +630,17 @@
 				<IconButton id="btn-toggle-video" icon={MdVideocamOff} tooltip={'Show Video'} on:click={toggleVideo} disabled={!isVideoLoaded} />
 			{/if}
 
-			<!-- TODO: Need to move this logic into the IconButton component eventually -->
-			<div
-				data-tip="Upload"
-				class="tooltip tooltip-bottom btn capitalize icon max-h-8 max-w-16 bg-[#ffffff] border-[#ffffff] flex items-center justify-center"
-				role="button"
-				tabindex="0"
-				on:click
-				on:keydown
-			>
-				<label for="file-input">
-					<MdCloudUpload />
-				</label>
-			</div>
+			<IconButton
+				icon={MdCloudUpload}
+				tooltip={'Upload'}
+				on:click={() => (showUploadModal = true)}
+			/>
 
 			<input
 				class="hidden"
 				id="file-input"
 				multiple
-				accept=".png, .txt, .jpg, .jpeg, .csv, .mp4"
+				accept=".csv, .txt, .mp4"
 				type="file"
 				bind:files
 				on:change={updateUserLoadedFiles}
@@ -684,6 +774,98 @@
 			<div class="modal-action">
 				<button class="btn btn-warning" on:click={() => p5Instance?.resetScalingVars()}> Reset Settings </button>
 				<button class="btn" on:click={() => (showSettings = false)}>Close</button>
+			</div>
+		</div>
+	</div>
+{/if}
+
+{#if showUploadModal}
+	<div
+		class="modal modal-open"
+		on:click|self={() => (showUploadModal = false)}
+		on:keydown={(e) => {
+			if (e.key === 'Escape') showUploadModal = false;
+		}}
+	>
+		<div class="modal-box w-11/12 max-w-lg">
+			<div class="flex justify-between mb-4">
+				<h3 class="font-bold text-lg">Upload Files</h3>
+				<button class="btn btn-circle btn-sm" on:click={() => (showUploadModal = false)}>
+					<svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+						<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+					</svg>
+				</button>
+			</div>
+
+			<!-- Drop zone -->
+			<div
+				class="border-2 border-dashed rounded-lg p-8 text-center cursor-pointer transition-colors {isDraggingOver ? 'border-primary bg-primary/10' : 'border-gray-300 hover:border-gray-400'}"
+				on:drop={handleDrop}
+				on:dragover={handleDragOver}
+				on:dragleave={handleDragLeave}
+				on:click={openFileDialog}
+				on:keydown={(e) => { if (e.key === 'Enter') openFileDialog(); }}
+				role="button"
+				tabindex="0"
+			>
+				<div class="flex flex-col items-center gap-2">
+					<div class="w-12 h-12 text-gray-400">
+						<MdCloudUpload />
+					</div>
+					<p class="font-medium">Drag & drop files here</p>
+					<p class="text-sm text-gray-500">or click to browse</p>
+				</div>
+			</div>
+
+			<!-- Supported formats -->
+			<div class="mt-4">
+				<p class="text-sm font-medium mb-2">Supported formats:</p>
+				<div class="flex flex-wrap gap-2">
+					<span class="badge badge-outline">.csv</span>
+					<span class="badge badge-outline">.txt</span>
+					<span class="badge badge-outline">.mp4</span>
+				</div>
+				<p class="text-xs text-gray-500 mt-2">
+					CSV/TXT files should contain transcript data with speaker and content columns.
+					MP4 files will be used as video overlay.
+				</p>
+			</div>
+
+			<!-- Uploaded files list -->
+			{#if uploadedFiles.length > 0}
+				<div class="mt-4">
+					<div class="flex justify-between items-center mb-2">
+						<p class="text-sm font-medium">Uploaded files:</p>
+						<button class="btn btn-xs btn-ghost" on:click={clearUploadedFiles}>Clear</button>
+					</div>
+					<div class="space-y-2 max-h-40 overflow-y-auto">
+						{#each uploadedFiles as file}
+							<div class="flex items-center justify-between p-2 bg-base-200 rounded">
+								<div class="flex items-center gap-2">
+									<span class="text-sm font-medium truncate max-w-[200px]">{file.name}</span>
+									<span class="badge badge-sm">{file.type}</span>
+								</div>
+								<div>
+									{#if file.status === 'pending'}
+										<span class="text-gray-400">Pending</span>
+									{:else if file.status === 'processing'}
+										<span class="loading loading-spinner loading-sm"></span>
+									{:else if file.status === 'done'}
+										<svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 text-success" viewBox="0 0 20 20" fill="currentColor">
+											<path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd" />
+										</svg>
+									{:else if file.status === 'error'}
+										<span class="text-error text-sm" title={file.error}>Error</span>
+									{/if}
+								</div>
+							</div>
+						{/each}
+					</div>
+				</div>
+			{/if}
+
+			<div class="modal-action">
+				<button class="btn" on:click={() => (showUploadModal = false)}>Close</button>
 			</div>
 		</div>
 	</div>
