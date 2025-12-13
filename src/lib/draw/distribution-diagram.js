@@ -389,9 +389,9 @@ export class DistributionDiagram {
 		const turnPercent = totalTurns > 0 ? Math.round((numOfTurns / totalTurns) * 100) : 0;
 
 		// Build tooltip content
-		const firstWordsLine = wordsToDisplay.join(' ');
+		const firstWordsLine = wordsToDisplay.join(', ');
 		const statsLine = `${numOfWords} total words (${wordPercent}%)\n${numOfTurns} turns (${turnPercent}%)`;
-		const tooltipContent = `<b>First word in each turn:</b>\n${firstWordsLine}\n\n${statsLine}`;
+		const tooltipContent = `<b>First word of each turn:</b>\n${firstWordsLine}\n\n${statsLine}`;
 
 		showTooltip(this.sk.mouseX, this.sk.mouseY, tooltipContent, speakerColor, this.sk.height);
 	}
