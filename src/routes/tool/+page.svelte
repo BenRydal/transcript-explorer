@@ -189,6 +189,20 @@
 		}
 	});
 
+	// Close and remove all user dropdowns when UserStore changes (e.g., when switching datasets)
+	// Dropdowns are moved to document.body when opened, so we need to remove them from there
+	let previousUserCount = 0;
+	$: {
+		const currentUserCount = $UserStore.length;
+		if (currentUserCount !== previousUserCount) {
+			// Remove all dropdowns that were moved to body
+			document.querySelectorAll('body > [id^="dropdown-"]').forEach((dropdown) => {
+				dropdown.remove();
+			});
+			previousUserCount = currentUserCount;
+		}
+	}
+
 	const techniqueToggleOptions = ['distributionDiagramToggle', 'turnChartToggle', 'contributionCloudToggle', 'dashboardToggle'] as const;
 
 	// Define which interactions apply to which visualizations

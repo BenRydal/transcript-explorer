@@ -69,15 +69,14 @@ export class DistributionDiagram {
 		this.setColor(color, 255);
 		this.sk.circle(this.xPosCurCircle, this.yPosHalfHeight, scaledTurnArea);
 
-		this.drawSpeakerText(firstElement.speaker, numOfTurns, numOfWords);
-
 		if (this.sk.overCircle(this.xPosCurCircle, this.yPosHalfHeight, scaledWordArea)) {
-			this.drawFirstWords(tempTurnArray, color);
+			this.drawSpeakerTooltip(firstElement.speaker, numOfTurns, numOfWords, tempTurnArray, color);
 		}
 	}
 
 	drawFlowerVisualization(color, metrics, tempTurnArray) {
-		const { scaledWordArea, numOfTurns } = metrics;
+		const { scaledWordArea, numOfTurns, numOfWords } = metrics;
+		const speaker = tempTurnArray[0]?.speaker || '';
 
 		const bottom = this.yPosBottom - this.sk.SPACING;
 		const top = this.yPosTop + this.maxCircleRadius;
@@ -87,7 +86,7 @@ export class DistributionDiagram {
 		this.drawStalkVisualization(scaledWordArea, this.xPosCurCircle, scaledNumOfTurns, color);
 
 		if (this.sk.overCircle(this.xPosCurCircle, scaledNumOfTurns, scaledWordArea)) {
-			this.drawFirstWords(tempTurnArray, color);
+			this.drawSpeakerTooltip(speaker, numOfTurns, numOfWords, tempTurnArray, color);
 		}
 
 		this.drawFlowerGuideLines(bottom, top);
@@ -145,16 +144,8 @@ export class DistributionDiagram {
 		this.sk.fill(color);
 	}
 
-	drawSpeakerText(speaker, numOfTurns, wordCount) {
-		this.sk.textSize(this.sk.toolTipTextSize / 2);
-		this.sk.strokeWeight(1);
-		this.sk.textAlign(this.sk.CENTER);
-		const text = speaker + '\n' + numOfTurns + ' turns' + '\n' + wordCount + ' words';
-		this.sk.text(text, this.xPosCurCircle - this.maxCircleRadius / 2, this.yPosHalfHeight + this.maxCircleRadius / 1.5, this.maxCircleRadius);
-		this.sk.textAlign(this.sk.LEFT);
-	}
-
-	drawFirstWords(turnArray, speakerColor) {
+	drawSpeakerTooltip(speaker, numOfTurns, numOfWords, turnArray, speakerColor) {
+		// Get first words from each turn
 		const firstWords = new Set();
 		const wordsToDisplay = [];
 
@@ -165,11 +156,23 @@ export class DistributionDiagram {
 				wordsToDisplay.push(element.word);
 			}
 		});
-		const combined = wordsToDisplay.join(' ');
 
-		// Use Svelte tooltip instead of p5 drawing
-		showTooltip(this.sk.mouseX, this.sk.mouseY, combined, speakerColor, this.sk.height);
+		// Calculate additional stats
+		const avgWordsPerTurn = numOfTurns > 0 ? Math.round(numOfWords / numOfTurns) : 0;
+		const transcript = get(TranscriptStore);
+		const totalWords = transcript.totalNumOfWords;
+		const totalTurns = transcript.totalConversationTurns;
+		const wordPercent = totalWords > 0 ? Math.round((numOfWords / totalWords) * 100) : 0;
+		const turnPercent = totalTurns > 0 ? Math.round((numOfTurns / totalTurns) * 100) : 0;
+
+		// Build tooltip content
+		const firstWordsLine = wordsToDisplay.join(' ');
+		const statsLine = `${numOfWords} words (${wordPercent}%)\n${numOfTurns} turns (${turnPercent}%)`;
+		const tooltipContent = `<b>First words per turn:</b>\n${firstWordsLine}\n\n${statsLine}`;
+
+		showTooltip(this.sk.mouseX, this.sk.mouseY, tooltipContent, speakerColor, this.sk.height);
 	}
+
 
 	getMaxCircleRadius(pixelWidth) {
 		return pixelWidth / (this.users.length + 1);

@@ -99,7 +99,7 @@
 {#if $TooltipStore.visible}
 	<div class="canvas-tooltip" style={tooltipStyle} bind:this={tooltipEl}>
 		<div class="tooltip-content" style="border-color: {$TooltipStore.speakerColor}">
-			<p style="color: {$TooltipStore.speakerColor}">{displayContent}</p>
+			<p style="color: {$TooltipStore.speakerColor}">{@html displayContent}</p>
 		</div>
 		<div
 			class="tooltip-arrow"
@@ -135,6 +135,7 @@
 		font-size: 22px;
 		line-height: 1.4;
 		word-wrap: break-word;
+		white-space: pre-wrap;
 	}
 
 	.tooltip-arrow {
