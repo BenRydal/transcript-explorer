@@ -295,6 +295,125 @@
 			element.scrollIntoView({ behavior: 'smooth', block: 'center' });
 		}
 	}
+
+	// Handle delete turn
+	function handleTurnDelete(event: CustomEvent<{ turnNumber: number }>) {
+		const { turnNumber } = event.detail;
+
+		TranscriptStore.update((transcript) => {
+			// Remove all words from this turn
+			const updatedWordArray = transcript.wordArray.filter((dp) => dp.turnNumber !== turnNumber);
+
+			// Renumber turns that come after the deleted one
+			const renumberedWordArray = updatedWordArray.map((dp) => {
+				if (dp.turnNumber > turnNumber) {
+					return new DataPoint(
+						dp.speaker,
+						dp.turnNumber - 1,
+						dp.word,
+						dp.order,
+						dp.startTime,
+						dp.endTime,
+						dp.useWordCountsAsFallback
+					);
+				}
+				return dp;
+			});
+
+			// Recalculate stats
+			const stats = recalculateTranscriptStats(renumberedWordArray);
+
+			return {
+				...transcript,
+				wordArray: renumberedWordArray,
+				totalNumOfWords: renumberedWordArray.length,
+				...stats
+			};
+		});
+
+		// Mark as dirty
+		EditorStore.update((state) => ({
+			...state,
+			isDirty: true
+		}));
+
+		// Refresh visualization
+		const p5Instance = get(P5Store);
+		if (p5Instance) {
+			p5Instance.fillAllData?.();
+		}
+	}
+
+	// Handle add turn after
+	function handleAddAfter(event: CustomEvent<{ turnNumber: number; speaker: string }>) {
+		const { turnNumber, speaker } = event.detail;
+
+		TranscriptStore.update((transcript) => {
+			// Get the last word of the current turn to get timing info
+			const currentTurnWords = transcript.wordArray.filter((dp) => dp.turnNumber === turnNumber);
+			const lastWord = currentTurnWords[currentTurnWords.length - 1];
+
+			// Create a new turn number
+			const newTurnNumber = turnNumber + 1;
+
+			// Renumber all turns after the insertion point
+			const renumberedWordArray = transcript.wordArray.map((dp) => {
+				if (dp.turnNumber > turnNumber) {
+					return new DataPoint(
+						dp.speaker,
+						dp.turnNumber + 1,
+						dp.word,
+						dp.order,
+						dp.startTime,
+						dp.endTime,
+						dp.useWordCountsAsFallback
+					);
+				}
+				return dp;
+			});
+
+			// Create a new DataPoint for the new turn with placeholder text
+			const newDataPoint = new DataPoint(
+				speaker,
+				newTurnNumber,
+				'[new]',
+				lastWord?.order ?? 0,
+				lastWord?.endTime ?? 0,
+				lastWord?.endTime ?? 0,
+				lastWord?.useWordCountsAsFallback ?? false
+			);
+
+			// Insert the new turn at the right position
+			const insertIndex = renumberedWordArray.findIndex((dp) => dp.turnNumber > newTurnNumber);
+			if (insertIndex === -1) {
+				renumberedWordArray.push(newDataPoint);
+			} else {
+				renumberedWordArray.splice(insertIndex, 0, newDataPoint);
+			}
+
+			// Recalculate stats
+			const stats = recalculateTranscriptStats(renumberedWordArray);
+
+			return {
+				...transcript,
+				wordArray: renumberedWordArray,
+				totalNumOfWords: renumberedWordArray.length,
+				...stats
+			};
+		});
+
+		// Mark as dirty
+		EditorStore.update((state) => ({
+			...state,
+			isDirty: true
+		}));
+
+		// Refresh visualization
+		const p5Instance = get(P5Store);
+		if (p5Instance) {
+			p5Instance.fillAllData?.();
+		}
+	}
 </script>
 
 <div class="transcript-editor" bind:this={editorContainer}>
@@ -319,6 +438,8 @@
 							{speakers}
 							on:select={handleTurnSelect}
 							on:edit={handleTurnEdit}
+							on:delete={handleTurnDelete}
+							on:addAfter={handleAddAfter}
 						/>
 					</div>
 				{/each}

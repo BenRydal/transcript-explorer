@@ -12,6 +12,8 @@
 
 	const dispatch = createEventDispatcher();
 
+	let isHovering = false;
+
 	let isEditingContent = false;
 	let isEditingSpeaker = false;
 	let isEditingTime = false;
@@ -141,6 +143,16 @@
 		dispatch('select', { turn });
 	}
 
+	// Handle delete turn
+	function handleDelete() {
+		dispatch('delete', { turnNumber: turn.turnNumber });
+	}
+
+	// Handle add turn after this one
+	function handleAddAfter() {
+		dispatch('addAfter', { turnNumber: turn.turnNumber, speaker: turn.speaker });
+	}
+
 	// Format speaker name for display
 	function formatSpeaker(name: string): string {
 		return name.charAt(0).toUpperCase() + name.slice(1).toLowerCase();
@@ -161,6 +173,8 @@
 	class:speaker-highlighted={isSpeakerHighlighted}
 	on:click={handleRowClick}
 	on:keydown={(e) => e.key === 'Enter' && handleRowClick()}
+	on:mouseenter={() => (isHovering = true)}
+	on:mouseleave={() => (isHovering = false)}
 	role="button"
 	tabindex="0"
 >
@@ -243,6 +257,30 @@
 		>
 			{getTurnContent(turn)}
 		</button>
+	{/if}
+
+	<!-- Action buttons (visible on hover) -->
+	{#if isHovering}
+		<div class="row-actions" on:click|stopPropagation>
+			<button
+				class="action-btn add-btn"
+				on:click={handleAddAfter}
+				title="Add turn after"
+			>
+				<svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" viewBox="0 0 20 20" fill="currentColor">
+					<path fill-rule="evenodd" d="M10 3a1 1 0 011 1v5h5a1 1 0 110 2h-5v5a1 1 0 11-2 0v-5H4a1 1 0 110-2h5V4a1 1 0 011-1z" clip-rule="evenodd" />
+				</svg>
+			</button>
+			<button
+				class="action-btn delete-btn"
+				on:click={handleDelete}
+				title="Delete turn"
+			>
+				<svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" viewBox="0 0 20 20" fill="currentColor">
+					<path fill-rule="evenodd" d="M9 2a1 1 0 00-.894.553L7.382 4H4a1 1 0 000 2v10a2 2 0 002 2h8a2 2 0 002-2V6a1 1 0 100-2h-3.382l-.724-1.447A1 1 0 0011 2H9zM7 8a1 1 0 012 0v6a1 1 0 11-2 0V8zm5-1a1 1 0 00-1 1v6a1 1 0 102 0V8a1 1 0 00-1-1z" clip-rule="evenodd" />
+				</svg>
+			</button>
+		</div>
 	{/if}
 </div>
 
@@ -383,5 +421,42 @@
 		font-size: 0.625rem;
 		color: #9ca3af;
 		margin-top: 0.125rem;
+	}
+
+	/* Action buttons */
+	.row-actions {
+		display: flex;
+		gap: 0.25rem;
+		align-items: center;
+		margin-left: auto;
+		flex-shrink: 0;
+	}
+
+	.action-btn {
+		display: flex;
+		align-items: center;
+		justify-content: center;
+		width: 1.5rem;
+		height: 1.5rem;
+		border: none;
+		border-radius: 0.25rem;
+		cursor: pointer;
+		transition: background-color 0.15s, color 0.15s;
+		background-color: transparent;
+		color: #9ca3af;
+	}
+
+	.action-btn:hover {
+		background-color: #e5e7eb;
+	}
+
+	.add-btn:hover {
+		color: #059669;
+		background-color: #d1fae5;
+	}
+
+	.delete-btn:hover {
+		color: #dc2626;
+		background-color: #fee2e2;
 	}
 </style>
