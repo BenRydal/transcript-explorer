@@ -17,7 +17,7 @@
 
 	import { Core } from '$lib';
 	import { igsSketch } from '$lib/p5/igsSketch';
-	import { writable } from 'svelte/store';
+	import { writable, get } from 'svelte/store';
 	import { onMount } from 'svelte';
 	import IconButton from '$lib/components/IconButton.svelte';
 	import InfoModal from '$lib/components/InfoModal.svelte';
@@ -161,9 +161,9 @@
 			const target = event.target as HTMLElement;
 
 			// Close all dropdowns when clicking outside
-			$UserStore.forEach(user => {
-				const dropdown = document.getElementById(`dropdown-${user.name}`);
-				const button = document.getElementById(`btn-${user.name}`);
+			$UserStore.forEach((user, index) => {
+				const dropdown = document.getElementById(`dropdown-${index}`);
+				const button = document.getElementById(`btn-${index}`);
 
 				if (dropdown && button &&
 					!dropdown.contains(target) &&
@@ -179,8 +179,8 @@
 		if (userContainer) {
 			userContainer.addEventListener('scroll', () => {
 				// Close all dropdowns when scrolling
-				$UserStore.forEach(user => {
-					const dropdown = document.getElementById(`dropdown-${user.name}`);
+				$UserStore.forEach((user, index) => {
+					const dropdown = document.getElementById(`dropdown-${index}`);
 					if (dropdown && !dropdown.classList.contains('hidden')) {
 						dropdown.classList.add('hidden');
 					}
@@ -802,12 +802,12 @@
 				<button
 					class="btn" style="color: {user.color};"
 					on:click={() => {
-						const dropdown = document.getElementById(`dropdown-${user.name}`);
+						const dropdown = document.getElementById(`dropdown-${index}`);
 						if (dropdown) {
 							dropdown.classList.toggle('hidden');
 
 							// Position the dropdown using Floating UI
-							const button = document.getElementById(`btn-${user.name}`);
+							const button = document.getElementById(`btn-${index}`);
 							if (button && !dropdown.classList.contains('hidden')) {
 								// Move dropdown to body to avoid clipping by overflow
 								document.body.appendChild(dropdown);
@@ -830,13 +830,13 @@
 							}
 						}
 					}}
-					id={`btn-${user.name}`}
+					id={`btn-${index}`}
 				>
 					{user.name}
 				</button>
 
 				<div
-					id={`dropdown-${user.name}`}
+					id={`dropdown-${index}`}
 					class="hidden bg-base-100 rounded-box p-2 shadow absolute"
 					style="z-index: 9999;"
 				>
@@ -844,12 +844,50 @@
 						<li class="py-2">
 							<div class="flex items-center">
 								<input
-									id="userCheckbox-{user.name}"
+									type="text"
+									class="input input-bordered input-sm w-full"
+									value={user.name}
+									on:change={(e) => {
+										const oldName = user.name;
+										const newName = e.currentTarget.value.trim();
+										if (newName && newName !== oldName) {
+											// Update all DataPoints in the transcript
+											TranscriptStore.update(t => {
+												t.wordArray.forEach(dp => {
+													if (dp.speaker === oldName) {
+														dp.speaker = newName;
+													}
+												});
+												return t;
+											});
+											// Update the user name
+											user.name = newName;
+											UserStore.update(u => u);
+											// Close the dropdown
+											const dropdown = document.getElementById(`dropdown-${index}`);
+											if (dropdown) {
+												dropdown.classList.add('hidden');
+											}
+											// Refresh visualization
+											const p5Instance = get(P5Store);
+											if (p5Instance) {
+												p5Instance.fillAllData?.();
+											}
+										}
+									}}
+									placeholder="Speaker name"
+								/>
+							</div>
+						</li>
+						<li class="py-2">
+							<div class="flex items-center">
+								<input
+									id="userCheckbox-{index}"
 									type="checkbox"
 									class="checkbox mr-2"
 									bind:checked={user.enabled}
 								/>
-								<label for="userCheckbox-{user.name}">Conversation</label>
+								<label for="userCheckbox-{index}">Visible</label>
 							</div>
 						</li>
 						<li class="py-2">
