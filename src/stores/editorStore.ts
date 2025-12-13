@@ -12,6 +12,7 @@ export interface EditorConfig {
 	orientation: 'horizontal' | 'vertical';
 	panelSizes: [number, number];
 	isCollapsed: boolean;
+	showAdvancedVideoControls: boolean;
 }
 
 export interface EditorState {
@@ -31,7 +32,8 @@ const initialState: EditorState = {
 		isVisible: false,
 		orientation: 'vertical',
 		panelSizes: [60, 40],
-		isCollapsed: false
+		isCollapsed: false,
+		showAdvancedVideoControls: false
 	},
 	isDirty: false
 };

@@ -149,6 +149,43 @@
 				});
 			}
 
+			// If time was changed, sort by start time and renumber turns
+			if (field === 'time') {
+				// Group words by turn
+				const turnGroups = new Map<number, DataPoint[]>();
+				updatedWordArray.forEach((dp) => {
+					if (!turnGroups.has(dp.turnNumber)) {
+						turnGroups.set(dp.turnNumber, []);
+					}
+					turnGroups.get(dp.turnNumber)!.push(dp);
+				});
+
+				// Sort turns by their start time (use first word's startTime)
+				const sortedTurns = Array.from(turnGroups.entries()).sort((a, b) => {
+					const aStart = a[1][0]?.startTime ?? 0;
+					const bStart = b[1][0]?.startTime ?? 0;
+					return aStart - bStart;
+				});
+
+				// Renumber turns and rebuild word array
+				updatedWordArray = [];
+				sortedTurns.forEach(([_oldTurnNumber, words], newTurnIndex) => {
+					words.forEach((dp) => {
+						updatedWordArray.push(
+							new DataPoint(
+								dp.speaker,
+								newTurnIndex, // new turn number based on sorted order
+								dp.word,
+								dp.order,
+								dp.startTime,
+								dp.endTime,
+								dp.useWordCountsAsFallback
+							)
+						);
+					});
+				});
+			}
+
 			// If speaker was changed, recalculate speaker orders based on transcript order
 			if (field === 'speaker') {
 				// Get speakers in order of first appearance in transcript

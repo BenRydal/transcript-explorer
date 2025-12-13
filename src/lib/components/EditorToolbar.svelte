@@ -2,6 +2,7 @@
 	import MdSwapVert from 'svelte-icons/md/MdSwapVert.svelte';
 	import MdSwapHoriz from 'svelte-icons/md/MdSwapHoriz.svelte';
 	import MdFileDownload from 'svelte-icons/md/MdFileDownload.svelte';
+	import MdVideoLibrary from 'svelte-icons/md/MdVideoLibrary.svelte';
 	import EditorStore from '../../stores/editorStore';
 	import { exportTranscriptToCSV } from '$lib/core/export-utils';
 
@@ -17,11 +18,22 @@
 		}));
 	}
 
+	function toggleAdvancedVideoControls() {
+		EditorStore.update((state) => ({
+			...state,
+			config: {
+				...state.config,
+				showAdvancedVideoControls: !state.config.showAdvancedVideoControls
+			}
+		}));
+	}
+
 	function handleExport() {
 		exportTranscriptToCSV();
 	}
 
 	$: isVertical = $EditorStore.config.orientation === 'vertical';
+	$: showAdvancedVideoControls = $EditorStore.config.showAdvancedVideoControls;
 </script>
 
 <div class="editor-toolbar">
@@ -33,6 +45,15 @@
 	</div>
 
 	<div class="toolbar-right">
+		<button
+			class="toolbar-btn"
+			class:active={showAdvancedVideoControls}
+			on:click={toggleAdvancedVideoControls}
+			title={showAdvancedVideoControls ? 'Hide video controls' : 'Show video controls (for transcript editing)'}
+		>
+			<MdVideoLibrary />
+		</button>
+
 		<button
 			class="toolbar-btn"
 			on:click={toggleOrientation}
@@ -112,5 +133,14 @@
 
 	.toolbar-btn:active {
 		background-color: #d1d5db;
+	}
+
+	.toolbar-btn.active {
+		background-color: #dbeafe;
+		color: #2563eb;
+	}
+
+	.toolbar-btn.active:hover {
+		background-color: #bfdbfe;
 	}
 </style>
