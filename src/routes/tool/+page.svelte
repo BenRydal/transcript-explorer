@@ -992,7 +992,7 @@
 		}}>
 		<!-- Users Dropdowns with Floating UI -->
 		{#each $UserStore as user, index}
-			<div class="relative mr-2">
+			<div class="relative flex-shrink-0 mr-2">
 				<div class="join">
 					<!-- Visibility toggle button -->
 					<button
@@ -1018,8 +1018,9 @@
 					</button>
 					<!-- Name button opens dropdown -->
 					<button
-						class="btn btn-sm join-item px-2"
+						class="btn btn-sm join-item px-2 max-w-32 truncate"
 						style="color: {user.enabled ? user.color : '#999'}; opacity: {user.enabled ? 1 : 0.5};"
+						title={user.name}
 						on:click={() => {
 							const dropdown = document.getElementById(`dropdown-${index}`);
 							if (dropdown) {
