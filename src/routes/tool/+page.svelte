@@ -386,7 +386,6 @@
 		// Clear existing data
 		if (p5Instance) {
 			p5Instance.dynamicData?.clear();
-			p5Instance.resetScalingVars?.();
 		}
 
 		// Clear users first
@@ -770,7 +769,6 @@
 			</div>
 
 			<div class="modal-action">
-				<button class="btn btn-warning" on:click={() => p5Instance?.resetScalingVars()}> Reset Settings </button>
 				<button class="btn" on:click={() => (showSettings = false)}>Close</button>
 			</div>
 		</div>

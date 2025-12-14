@@ -4,10 +4,10 @@ import UserStore from '../../stores/userStore';
 import type { User } from '../../models/user';
 import TimelineStore from '../../stores/timelineStore';
 import ConfigStore from '../../stores/configStore';
-import { initialConfig } from '../../stores/configStore';
 import VideoStore, { play as videoPlay, pause as videoPause, requestSeek } from '../../stores/videoStore';
 import type { VideoState } from '../../stores/videoStore';
 import { Draw, DynamicData } from '..';
+import { clearScalingCache } from '../draw/contribution-cloud';
 
 let users: User[] = [];
 let timeline, transcript, currConfig;
@@ -191,7 +191,6 @@ export const igsSketch = (p5: any) => {
 	};
 
 	p5.resetAnimation = () => {
-		p5.resetScalingVars();
 		p5.dynamicData.clear();
 		p5.animationCounter = 0;
 	};
@@ -203,30 +202,11 @@ export const igsSketch = (p5: any) => {
 
 	p5.fillSelectedData = () => {
 		if (!p5.dynamicData) return; // Guard against calls before setup completes
-		p5.resetScalingVars();
+		clearScalingCache(); // Clear contribution cloud scaling cache when data changes
 		p5.dynamicData.clear();
 		for (let i = 0; i < p5.animationCounter; i++) {
 			p5.dynamicData.update(transcript.wordArray[i]);
 		}
-	};
-
-	p5.resetScalingVars = () => {
-		ConfigStore.update((currConfig) => ({
-			...currConfig,
-			scalingVars: { ...initialConfig.scalingVars } // Reset to initial values
-		}));
-	};
-
-	p5.updateScalingVars = (scaleFactor = 0.9) => {
-		ConfigStore.update((currConfig) => ({
-			...currConfig,
-			scalingVars: {
-				minTextSize: currConfig.scalingVars.minTextSize * scaleFactor,
-				maxTextSize: currConfig.scalingVars.maxTextSize * scaleFactor,
-				spacing: currConfig.scalingVars.spacing * scaleFactor,
-				newSpeakerSpacing: currConfig.scalingVars.newSpeakerSpacing * scaleFactor
-			}
-		}));
 	};
 
 	/**

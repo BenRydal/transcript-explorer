@@ -338,7 +338,6 @@ export class Core {
 	clearAllData() {
 		console.log('Clearing all data');
 		this.sketch.dynamicData.clear();
-		this.sketch.resetScalingVars();
 		UserStore.set([]);
 		TranscriptStore.set(new Transcript());
 		// Reset video state
@@ -348,7 +347,6 @@ export class Core {
 	clearTranscriptData() {
 		console.log('Clearing Transcript Data');
 		this.sketch.dynamicData.clear();
-		this.sketch.resetScalingVars();
 		UserStore.set([]);
 		TranscriptStore.set(new Transcript());
 	}

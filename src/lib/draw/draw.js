@@ -80,25 +80,23 @@ export class Draw {
 
 	updateContributionCloud(pos) {
 		const contributionCloud = new ContributionCloud(this.sk, pos);
-		contributionCloud.draw(this.sk.dynamicData.getDynamicArraySortedForContributionCloud());
-		const selectedWord = contributionCloud.selectedWordFromContributionCloud;
+		const { hoveredWord } = contributionCloud.draw(this.sk.dynamicData.getDynamicArraySortedForContributionCloud());
 		ConfigStore.update((currConfig) => {
-			return { ...currConfig, selectedWordFromContributionCloud: selectedWord };
+			return { ...currConfig, selectedWordFromContributionCloud: hoveredWord };
 		});
 		// Sync to EditorStore for transcript editor highlighting
-		if (selectedWord) {
+		if (hoveredWord) {
 			EditorStore.update((state) => ({
 				...state,
 				selection: {
 					...state.selection,
-					selectedTurnNumber: selectedWord.turnNumber ?? null,
+					selectedTurnNumber: hoveredWord.turnNumber ?? null,
 					highlightedSpeaker: null,
-					selectedWordIndex: null, // Could calculate word index if needed
+					selectedWordIndex: null,
 					selectionSource: 'contributionCloud'
 				}
 			}));
 		}
-		if (contributionCloud.yPosDynamic > pos.height) this.sk.updateScalingVars();
 	}
 
 	drawDashboard() {
