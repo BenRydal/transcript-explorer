@@ -37,6 +37,13 @@ export class DistributionDiagram {
 		const searchTerm = this.config.wordToSearch?.toLowerCase();
 		this.hoveredSpeaker = null;
 
+		// Always draw guide lines first if in flower mode (so they appear even with no data)
+		if (this.config.flowersToggle) {
+			const bottom = this.yPosBottom;
+			const top = this.yPosTop + this.maxCircleRadius;
+			this.drawFlowerGuideLines(bottom, top);
+		}
+
 		for (const key in sortedAnimationWordArray) {
 			if (sortedAnimationWordArray[key].length) {
 				const user = this.users.find((user) => user.name === sortedAnimationWordArray[key][0].speaker);
@@ -114,8 +121,6 @@ export class DistributionDiagram {
 			this.hoveredSpeaker = speaker;
 			this.drawSpeakerTooltip(speaker, numOfTurns, numOfWords, tempTurnArray, color);
 		}
-
-		this.drawFlowerGuideLines(bottom, top);
 	}
 
 	drawStalkVisualization(scaledWordArea, xPos, yPos, color) {
