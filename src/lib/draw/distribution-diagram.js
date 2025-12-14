@@ -24,14 +24,13 @@ export class DistributionDiagram {
 		this.largestNumOfWordsByASpeaker = transcript.largestNumOfWordsByASpeaker;
 		this.largestNumOfTurnsByASpeaker = transcript.largestNumOfTurnsByASpeaker;
 		this.localArrayOfFirstWords = [];
-		this.pixelWidth = pos.width;
-		this.maxCircleRadius = this.getMaxCircleRadius(this.pixelWidth);
+		this.bounds = pos;
+		this.maxCircleRadius = this.getMaxCircleRadius(pos.width);
 		this.maxCircleArea = Math.PI * this.maxCircleRadius * this.maxCircleRadius;
-		this.xPosCurCircle = this.maxCircleRadius; // dynamically updated as circles drawn
-		this.xLeft = pos.x;
+		this.xPosCurCircle = pos.x + this.maxCircleRadius; // dynamically updated as circles drawn
 		this.yPosTop = pos.y;
-		this.yPosBottom = pos.height;
-		this.yPosHalfHeight = pos.y + (pos.height - pos.y) / 2;
+		this.yPosBottom = pos.y + pos.height;
+		this.yPosHalfHeight = pos.y + pos.height / 2;
 		this.isHovering = false; // Track if any circle is being hovered
 	}
 
@@ -127,15 +126,16 @@ export class DistributionDiagram {
 	}
 
 	drawFlowerGuideLines(bottom, top) {
+		const xLeft = this.bounds.x;
 		this.sk.stroke(0);
 		this.sk.strokeWeight(2);
-		this.sk.line(this.xLeft, top, this.xLeft, bottom);
-		this.sk.line(this.xLeft - this.sk.SPACING / 2, top, this.xLeft + this.sk.SPACING / 2, top);
+		this.sk.line(xLeft, top, xLeft, bottom);
+		this.sk.line(xLeft - this.sk.SPACING / 2, top, xLeft + this.sk.SPACING / 2, top);
 
 		this.sk.fill(0);
 		this.sk.noStroke();
 		this.sk.textSize(16);
-		this.sk.text(`${this.largestNumOfTurnsByASpeaker} Turns`, this.xLeft - this.sk.SPACING / 2, top - this.sk.SPACING / 2);
+		this.sk.text(`${this.largestNumOfTurnsByASpeaker} Turns`, xLeft - this.sk.SPACING / 2, top - this.sk.SPACING / 2);
 	}
 
 	drawStalk(scaleFactor, xPos, yPos) {

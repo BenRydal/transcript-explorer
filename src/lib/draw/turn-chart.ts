@@ -19,10 +19,9 @@ export class TurnChart {
 
 	constructor(sk: p5, pos: Bounds) {
 		this.sk = sk;
-		this.xPosBase = pos.x;
-		this.pixelWidth = pos.width;
+		this.bounds = pos;
 		this.getStores();
-		this.verticalLayoutSpacing = this.getVerticalLayoutSpacing(pos.height - this.sk.SPACING);
+		this.verticalLayoutSpacing = this.getVerticalLayoutSpacing(pos.height);
 		this.yPosHalfHeight = pos.y + pos.height / 2;
 		this.userSelectedTurn = { turn: '', color: '' };
 		this.yPosSeparate = this.getYPosTopSeparate();
@@ -63,7 +62,7 @@ export class TurnChart {
 	}
 
 	/** Draws the timeline axis */
-	drawTimeline(): void {
+	drawTimeline() {
 		const start = this.bounds.x;
 		const end = this.bounds.x + this.bounds.width;
 		const height = this.yPosHalfHeight;
@@ -128,7 +127,7 @@ export class TurnChart {
 		return height / this.users.length;
 	}
 
-	getPixelValueFromTime(timeValue: number): number {
+	getPixelValueFromTime(timeValue) {
 		return this.sk.map(timeValue, this.timeline.getLeftMarker(), this.timeline.getRightMarker(), this.bounds.x, this.bounds.x + this.bounds.width);
 	}
 }
