@@ -3,20 +3,10 @@ export class CoreUtils {
 		// NOTE: headers here must be lowercase as input data tables are converted to lowercase when loaded using PapaParse transformHeaders method
 		this.headersTranscriptWithTime = ['speaker', 'content', 'start', 'end'];
 		this.headersSimpleTranscript = ['speaker', 'content'];
-		this.headersSingleCodes = ['start', 'end'];
-		this.headersMultiCodes = ['code', 'start', 'end']; // MUST match singleCodeHeaders with one extra column 'code' of type string
 	}
 
 	testTranscript(results) {
 		return this.testPapaParseResults(results, this.headersSimpleTranscript, this.hasSpeakerNameAndContent);
-	}
-
-	testSingleCode(results) {
-		return this.testPapaParseResults(results, this.headersSingleCodes, this.codeRowForType);
-	}
-
-	testMulticode(results) {
-		return this.testPapaParseResults(results, this.headersMultiCodes, this.multiCodeRowForType);
 	}
 
 	/**
@@ -59,28 +49,5 @@ export class CoreUtils {
 			(typeof value === 'number' && !isNaN(value) && isFinite(value)) || // Valid numbers (not NaN, not infinite)
 			typeof value === 'boolean'
 		);
-	}
-
-	codeRowForType(curRow) {
-		return typeof curRow[this.headersSingleCodes[0]] === 'number' && typeof curRow[this.headersSingleCodes[1]] === 'number';
-	}
-
-	multiCodeRowForType(curRow) {
-		return (
-			typeof curRow[this.headersMultiCodes[0]] === 'string' &&
-			typeof curRow[this.headersMultiCodes[1]] === 'number' &&
-			typeof curRow[this.headersMultiCodes[2]] === 'number'
-		);
-	}
-
-	/**
-	 * Used to compare and add new data to core data lists from CSV file names and data
-	 * @param  {String} s
-	 */
-	cleanFileName(string) {
-		return string
-			.trim()
-			.replace(/\.[^/.]+$/, '')
-			.toLowerCase();
 	}
 }
