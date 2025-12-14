@@ -31,6 +31,8 @@ export class DistributionDiagram {
 		this.yPosTop = pos.y;
 		this.yPosBottom = pos.y + pos.height;
 		this.yPosHalfHeight = pos.y + pos.height / 2;
+		// Calculate maximum flower size for proper vertical scaling
+		this.maxFlowerRadius = this.calculateMaxFlowerRadius();
 	}
 
 	draw(sortedAnimationWordArray) {
@@ -40,7 +42,7 @@ export class DistributionDiagram {
 		// Always draw guide lines first if in flower mode (so they appear even with no data)
 		if (this.config.flowersToggle) {
 			const bottom = this.yPosBottom;
-			const top = this.yPosTop + this.maxCircleRadius;
+			const top = this.yPosTop + this.maxFlowerRadius;
 			this.drawFlowerGuideLines(bottom, top);
 		}
 
@@ -110,9 +112,10 @@ export class DistributionDiagram {
 		const speaker = tempTurnArray[0]?.speaker || '';
 
 		const bottom = this.yPosBottom;
-		const top = this.yPosTop + this.maxCircleRadius;
+		// Leave room at top for the largest flower head
+		const top = this.yPosTop + this.maxFlowerRadius;
 
-		// Map turns to Y position
+		// Map turns to Y position (flower center position)
 		const scaledNumOfTurns = this.sk.map(numOfTurns, 0, this.largestNumOfTurnsByASpeaker, bottom, top);
 
 		this.drawStalkVisualization(scaledWordArea, this.xPosCurCircle, scaledNumOfTurns, color);
@@ -423,5 +426,20 @@ export class DistributionDiagram {
 		const area = normalizedValue * this.maxCircleArea;
 		const radius = Math.sqrt(area / Math.PI);
 		return applyMinimum ? Math.max(radius, MIN_FLOWER_SIZE) : radius;
+	}
+
+	calculateMaxFlowerRadius() {
+		// Calculate the flower radius for the speaker with the most words
+		// This is used to properly scale the vertical space
+		// The max flower size is based on the max circle area (which scales with available width)
+		const normalizedValue = 1; // Max speaker = 1
+		const area = normalizedValue * this.maxCircleArea;
+		const radiusFromWidth = Math.sqrt(area / Math.PI);
+
+		// Cap the flower size to leave room for stalks to show meaningful height variation
+		// Use 20% of height so flowers can grow taller
+		const maxHeightForFlower = this.bounds.height * 0.25;
+
+		return Math.max(Math.min(radiusFromWidth, maxHeightForFlower), MIN_FLOWER_SIZE);
 	}
 }
