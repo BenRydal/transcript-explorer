@@ -18,7 +18,6 @@ export interface ConfigStoreType {
 	firstWordOfTurnSelectedInTurnChart: string;
 	arrayOfFirstWords: string[];
 	wordToSearch: string;
-	hoveredSpeakerInDistributionDiagram: string | null;
 }
 
 export const initialConfig: ConfigStoreType = {
@@ -38,8 +37,7 @@ export const initialConfig: ConfigStoreType = {
 	selectedWordFromContributionCloud: '',
 	firstWordOfTurnSelectedInTurnChart: '',
 	arrayOfFirstWords: [],
-	wordToSearch: '',
-	hoveredSpeakerInDistributionDiagram: null
+	wordToSearch: ''
 };
 
 const ConfigStore = writable<ConfigStoreType>(initialConfig);

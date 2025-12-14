@@ -387,7 +387,6 @@
 		// Clear existing data
 		if (p5Instance) {
 			p5Instance.dynamicData?.clear();
-			p5Instance.resetScalingVars?.();
 		}
 
 		// Clear users first

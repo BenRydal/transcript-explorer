@@ -4,10 +4,10 @@ import UserStore from '../../stores/userStore';
 import type { User } from '../../models/user';
 import TimelineStore from '../../stores/timelineStore';
 import ConfigStore from '../../stores/configStore';
-import { initialConfig } from '../../stores/configStore';
 import VideoStore, { play as videoPlay, pause as videoPause, requestSeek } from '../../stores/videoStore';
 import type { VideoState } from '../../stores/videoStore';
 import { Draw, DynamicData } from '..';
+import { clearScalingCache } from '../draw/contribution-cloud';
 
 let users: User[] = [];
 let timeline, transcript, currConfig;
@@ -224,7 +224,7 @@ export const igsSketch = (p5: any) => {
 
 	p5.fillSelectedData = () => {
 		if (!p5.dynamicData) return; // Guard against calls before setup completes
-		p5.resetScalingVars();
+		clearScalingCache(); // Clear contribution cloud scaling cache when data changes
 		p5.dynamicData.clear();
 		for (let i = 0; i < p5.animationCounter; i++) {
 			p5.dynamicData.update(transcript.wordArray[i]);
