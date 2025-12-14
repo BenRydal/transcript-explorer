@@ -36,24 +36,38 @@ export class Draw {
 
 	updateDistributionDiagram(pos) {
 		const distributionDiagram = new DistributionDiagram(this.sk, pos);
-		distributionDiagram.draw(this.sk.dynamicData.getDynamicArrayForDistributionDiagram());
+		const { hoveredSpeaker } = distributionDiagram.draw(this.sk.dynamicData.getDynamicArrayForDistributionDiagram());
 		ConfigStore.update((currConfig) => {
-			return { ...currConfig, arrayOfFirstWords: distributionDiagram.localArrayOfFirstWords };
+			return {
+				...currConfig,
+				arrayOfFirstWords: distributionDiagram.localArrayOfFirstWords,
+				hoveredSpeakerInDistributionDiagram: hoveredSpeaker
+			};
 		});
-		// Sync to EditorStore for transcript editor highlighting
-		const firstWords = distributionDiagram.localArrayOfFirstWords;
-		if (firstWords && firstWords.length > 0) {
-			EditorStore.update((state) => ({
+		// Sync to EditorStore for transcript editor filtering (only update hover state, not locked filter)
+		EditorStore.update((state) => {
+			// Don't override locked filter from click
+			if (state.selection.selectionSource === 'distributionDiagramClick') {
+				return {
+					...state,
+					selection: {
+						...state.selection,
+						highlightedSpeaker: hoveredSpeaker
+					}
+				};
+			}
+			return {
 				...state,
 				selection: {
 					...state.selection,
-					highlightedSpeaker: firstWords[0]?.speaker || null,
+					highlightedSpeaker: hoveredSpeaker,
+					filteredSpeaker: hoveredSpeaker,
 					selectedTurnNumber: null,
 					selectedWordIndex: null,
 					selectionSource: 'distributionDiagram'
 				}
-			}));
-		}
+			};
+		});
 	}
 
 	updateTurnChart(pos) {
@@ -63,19 +77,22 @@ export class Draw {
 		ConfigStore.update((currConfig) => {
 			return { ...currConfig, firstWordOfTurnSelectedInTurnChart: selectedTurn.turn[0] };
 		});
-		// Sync to EditorStore for transcript editor highlighting
-		if (selectedTurn && selectedTurn.turn && selectedTurn.turn.length > 0) {
-			EditorStore.update((state) => ({
+		// Sync to EditorStore for transcript editor highlighting (preserve locked filter)
+		const turnNumber = selectedTurn?.turn?.[0]?.turnNumber ?? null;
+		EditorStore.update((state) => {
+			const isLocked = state.selection.selectionSource === 'distributionDiagramClick';
+			return {
 				...state,
 				selection: {
 					...state.selection,
-					selectedTurnNumber: selectedTurn.turn[0]?.turnNumber ?? null,
+					selectedTurnNumber: turnNumber,
 					highlightedSpeaker: null,
+					filteredSpeaker: isLocked ? state.selection.filteredSpeaker : null,
 					selectedWordIndex: null,
-					selectionSource: 'turnChart'
+					selectionSource: isLocked ? state.selection.selectionSource : 'turnChart'
 				}
-			}));
-		}
+			};
+		});
 	}
 
 	updateContributionCloud(pos) {
@@ -84,19 +101,21 @@ export class Draw {
 		ConfigStore.update((currConfig) => {
 			return { ...currConfig, selectedWordFromContributionCloud: hoveredWord };
 		});
-		// Sync to EditorStore for transcript editor highlighting
-		if (hoveredWord) {
-			EditorStore.update((state) => ({
+		// Sync to EditorStore for transcript editor highlighting (preserve locked filter)
+		EditorStore.update((state) => {
+			const isLocked = state.selection.selectionSource === 'distributionDiagramClick';
+			return {
 				...state,
 				selection: {
 					...state.selection,
-					selectedTurnNumber: hoveredWord.turnNumber ?? null,
+					selectedTurnNumber: hoveredWord?.turnNumber ?? null,
 					highlightedSpeaker: null,
+					filteredSpeaker: isLocked ? state.selection.filteredSpeaker : null,
 					selectedWordIndex: null,
-					selectionSource: 'contributionCloud'
+					selectionSource: isLocked ? state.selection.selectionSource : 'contributionCloud'
 				}
-			}));
-		}
+			};
+		});
 	}
 
 	drawDashboard() {

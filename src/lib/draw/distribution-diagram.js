@@ -36,6 +36,7 @@ export class DistributionDiagram {
 
 	draw(sortedAnimationWordArray) {
 		const searchTerm = this.config.wordToSearch?.toLowerCase();
+		this.hoveredSpeaker = null;
 
 		for (const key in sortedAnimationWordArray) {
 			if (sortedAnimationWordArray[key].length) {
@@ -54,6 +55,8 @@ export class DistributionDiagram {
 			}
 			this.xPosCurCircle += this.maxCircleRadius;
 		}
+
+		return { hoveredSpeaker: this.hoveredSpeaker };
 	}
 
 	drawViz(tempTurnArray, isDrawFlower) {
@@ -91,6 +94,7 @@ export class DistributionDiagram {
 		this.sk.circle(this.xPosCurCircle, this.yPosHalfHeight, scaledTurnArea);
 
 		if (this.sk.overCircle(this.xPosCurCircle, this.yPosHalfHeight, scaledWordArea)) {
+			this.hoveredSpeaker = firstElement.speaker;
 			this.drawSpeakerTooltip(firstElement.speaker, numOfTurns, numOfWords, tempTurnArray, color);
 		}
 	}
@@ -108,6 +112,7 @@ export class DistributionDiagram {
 		this.drawStalkVisualization(scaledWordArea, this.xPosCurCircle, scaledNumOfTurns, color);
 
 		if (this.sk.overCircle(this.xPosCurCircle, scaledNumOfTurns, scaledWordArea)) {
+			this.hoveredSpeaker = speaker;
 			this.drawSpeakerTooltip(speaker, numOfTurns, numOfWords, tempTurnArray, color);
 		}
 

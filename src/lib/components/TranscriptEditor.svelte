@@ -28,6 +28,24 @@
 	// Get list of unique speakers
 	$: speakers = $UserStore.map((u) => u.name);
 
+	// Filter turns by speaker if filteredSpeaker is set
+	$: displayedTurns = $EditorStore.selection.filteredSpeaker
+		? turns.filter((turn) => turn.speaker === $EditorStore.selection.filteredSpeaker)
+		: turns;
+
+	// Clear the locked speaker filter
+	function clearSpeakerFilter() {
+		EditorStore.update((state) => ({
+			...state,
+			selection: {
+				...state.selection,
+				filteredSpeaker: null,
+				highlightedSpeaker: null,
+				selectionSource: null
+			}
+		}));
+	}
+
 	// Get user color for a speaker
 	function getSpeakerColor(speakerName: string): string {
 		const users = $UserStore;
@@ -464,8 +482,19 @@
 				</p>
 			</div>
 		{:else}
+			{#if $EditorStore.selection.filteredSpeaker}
+				<div class="filter-banner">
+					<span>
+						Showing turns by <strong>{$EditorStore.selection.filteredSpeaker}</strong>
+						<span class="filter-count">({displayedTurns.length} of {turns.length} turns)</span>
+					</span>
+					{#if $EditorStore.selection.selectionSource === 'distributionDiagramClick'}
+						<button class="clear-filter-btn" on:click={clearSpeakerFilter}>× Show all</button>
+					{/if}
+				</div>
+			{/if}
 			<div class="turns-list">
-				{#each turns as turn (turn.turnNumber)}
+				{#each displayedTurns as turn (turn.turnNumber)}
 					<div id="turn-{turn.turnNumber}">
 						<TranscriptEditorRow
 							{turn}
@@ -511,5 +540,38 @@
 		align-items: center;
 		justify-content: center;
 		height: 100%;
+	}
+
+	.filter-banner {
+		display: flex;
+		justify-content: space-between;
+		align-items: center;
+		background-color: #f0f9ff;
+		border: 1px solid #bae6fd;
+		border-radius: 6px;
+		padding: 0.5rem 0.75rem;
+		margin-bottom: 0.5rem;
+		font-size: 0.875rem;
+		color: #0369a1;
+	}
+
+	.filter-count {
+		opacity: 0.7;
+		margin-left: 0.25rem;
+	}
+
+	.clear-filter-btn {
+		background: none;
+		border: 1px solid #0369a1;
+		border-radius: 4px;
+		padding: 0.25rem 0.5rem;
+		font-size: 0.75rem;
+		color: #0369a1;
+		cursor: pointer;
+		transition: background-color 0.15s;
+	}
+
+	.clear-filter-btn:hover {
+		background-color: #e0f2fe;
 	}
 </style>
