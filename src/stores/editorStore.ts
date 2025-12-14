@@ -4,7 +4,8 @@ export interface EditorSelection {
 	selectedTurnNumber: number | null;
 	selectedWordIndex: number | null;
 	highlightedSpeaker: string | null;
-	selectionSource: 'editor' | 'distributionDiagram' | 'turnChart' | 'contributionCloud' | null;
+	filteredSpeaker: string | null;
+	selectionSource: 'editor' | 'distributionDiagram' | 'distributionDiagramClick' | 'turnChart' | 'contributionCloud' | null;
 }
 
 export interface EditorConfig {
@@ -26,6 +27,7 @@ const initialState: EditorState = {
 		selectedTurnNumber: null,
 		selectedWordIndex: null,
 		highlightedSpeaker: null,
+		filteredSpeaker: null,
 		selectionSource: null
 	},
 	config: {

@@ -4,13 +4,14 @@ import UserStore from '../../stores/userStore';
 import type { User } from '../../models/user';
 import TimelineStore from '../../stores/timelineStore';
 import ConfigStore from '../../stores/configStore';
+import EditorStore from '../../stores/editorStore';
 import VideoStore, { play as videoPlay, pause as videoPause, requestSeek } from '../../stores/videoStore';
 import type { VideoState } from '../../stores/videoStore';
 import { Draw, DynamicData } from '..';
 import { clearScalingCache } from '../draw/contribution-cloud';
 
 let users: User[] = [];
-let timeline, transcript, currConfig;
+let timeline, transcript, currConfig, editorState;
 let videoState: VideoState;
 let isPlayingTurnSnippets = false;
 
@@ -32,6 +33,10 @@ TranscriptStore.subscribe((data) => {
 
 VideoStore.subscribe((data) => {
 	videoState = data;
+});
+
+EditorStore.subscribe((data) => {
+	editorState = data;
 });
 
 export const igsSketch = (p5: any) => {
@@ -147,6 +152,24 @@ export const igsSketch = (p5: any) => {
 	};
 
 	p5.mousePressed = () => {
+		// Handle distribution diagram click to lock speaker filter (only if editor is open)
+		if ((currConfig.distributionDiagramToggle || currConfig.dashboardToggle) && editorState?.config?.isVisible) {
+			const hoveredSpeaker = currConfig.hoveredSpeakerInDistributionDiagram;
+			if (hoveredSpeaker) {
+				EditorStore.update((state) => ({
+					...state,
+					selection: {
+						...state.selection,
+						filteredSpeaker: hoveredSpeaker,
+						highlightedSpeaker: hoveredSpeaker,
+						selectedTurnNumber: null,
+						selectedWordIndex: null,
+						selectionSource: 'distributionDiagramClick'
+					}
+				}));
+			}
+		}
+
 		// Video interaction is now handled by VideoContainer.svelte
 		// This mousePressed only handles canvas interactions when video is not over the click
 		if (!videoState.isLoaded || !videoState.isVisible) return;
