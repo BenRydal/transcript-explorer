@@ -370,6 +370,8 @@ export class DistributionDiagram {
 	}
 
 	drawSpeakerTooltip(speaker, numOfTurns, numOfWords, turnArray, speakerColor) {
+		const MAX_FIRST_WORDS = 50;
+
 		// Get first words from each turn
 		const firstWords = new Set();
 		const wordsToDisplay = [];
@@ -388,8 +390,15 @@ export class DistributionDiagram {
 		const wordPercent = totalWords > 0 ? Math.round((numOfWords / totalWords) * 100) : 0;
 		const turnPercent = totalTurns > 0 ? Math.round((numOfTurns / totalTurns) * 100) : 0;
 
-		// Build tooltip content
-		const firstWordsLine = wordsToDisplay.join(', ');
+		// Build tooltip content with truncation
+		let firstWordsLine;
+		if (wordsToDisplay.length <= MAX_FIRST_WORDS) {
+			firstWordsLine = wordsToDisplay.join(', ');
+		} else {
+			const remaining = wordsToDisplay.length - MAX_FIRST_WORDS;
+			firstWordsLine = wordsToDisplay.slice(0, MAX_FIRST_WORDS).join(', ') + `... (and ${remaining} more turns)`;
+		}
+
 		const statsLine = `${numOfWords} total words (${wordPercent}%)\n${numOfTurns} turns (${turnPercent}%)`;
 		const tooltipContent = `<b>First word of each turn:</b>\n${firstWordsLine}\n\n${statsLine}`;
 
