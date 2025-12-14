@@ -31,7 +31,6 @@ export class DistributionDiagram {
 		this.yPosTop = pos.y;
 		this.yPosBottom = pos.y + pos.height;
 		this.yPosHalfHeight = pos.y + pos.height / 2;
-		this.isHovering = false; // Track if any circle is being hovered
 	}
 
 	draw(sortedAnimationWordArray) {
