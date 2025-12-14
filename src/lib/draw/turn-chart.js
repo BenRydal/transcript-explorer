@@ -8,10 +8,9 @@ import { showTooltip } from '../../stores/tooltipStore';
 export class TurnChart {
 	constructor(sk, pos) {
 		this.sk = sk;
-		this.xPosBase = pos.x;
-		this.pixelWidth = pos.width;
+		this.bounds = pos;
 		this.getStores();
-		this.verticalLayoutSpacing = this.getVerticalLayoutSpacing(pos.height - this.sk.SPACING);
+		this.verticalLayoutSpacing = this.getVerticalLayoutSpacing(pos.height);
 		this.yPosHalfHeight = pos.y + pos.height / 2;
 		this.userSelectedTurn = { turn: '', color: '' };
 		this.yPosSeparate = this.getYPosTopSeparate();
@@ -60,8 +59,8 @@ export class TurnChart {
 
 	/** Draws the timeline axis */
 	drawTimeline() {
-		const start = this.xPosBase;
-		const end = this.pixelWidth;
+		const start = this.bounds.x;
+		const end = this.bounds.x + this.bounds.width;
 		const height = this.yPosHalfHeight;
 		const tickLength = this.sk.SPACING / 2;
 		this.sk.stroke(0);
@@ -124,6 +123,6 @@ export class TurnChart {
 	}
 
 	getPixelValueFromTime(timeValue) {
-		return this.sk.map(timeValue, this.timeline.getLeftMarker(), this.timeline.getRightMarker(), this.sk.SPACING, this.sk.width - this.sk.SPACING);
+		return this.sk.map(timeValue, this.timeline.getLeftMarker(), this.timeline.getRightMarker(), this.bounds.x, this.bounds.x + this.bounds.width);
 	}
 }

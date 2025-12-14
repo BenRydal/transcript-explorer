@@ -79,7 +79,7 @@ export class ContributionCloud {
 			if (this.config.separateToggle && prevSpeaker !== null && word.speaker !== prevSpeaker) {
 				x = this.bounds.x;
 				y += scaling.newSpeakerGap;
-			} else if (x + width > this.bounds.width) {
+			} else if (x + width > this.bounds.x + this.bounds.width) {
 				x = this.bounds.x;
 				y += scaling.lineHeight;
 			}
@@ -135,7 +135,7 @@ export class ContributionCloud {
 					this.sk.rect(
 						this.bounds.x - 5,
 						minY,
-						this.bounds.width - this.bounds.x + 10,
+						this.bounds.width + 10,
 						maxY - minY + 10,
 						5
 					);
@@ -248,8 +248,8 @@ export class ContributionCloud {
 			return scalingCache.scaling;
 		}
 
-		const availableWidth = this.bounds.width - this.bounds.x;
-		const availableHeight = this.bounds.height - this.bounds.y;
+		const availableWidth = this.bounds.width;
+		const availableHeight = this.bounds.height;
 
 		let scaleFactor = this.estimateScaleFactor(words, availableWidth, availableHeight);
 		let measuredHeight = this.measureHeight(words, scaleFactor, availableWidth);
