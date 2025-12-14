@@ -11,6 +11,25 @@ ConfigStore.subscribe((data) => {
 	currConfig = data;
 });
 
+// Helper to check if speaker filter is locked
+const isFilterLocked = (state) => state.selection.selectionSource === 'distributionDiagramClick';
+
+// Helper to update editor selection while preserving locked filter
+const updateEditorSelection = (updates, source) => {
+	EditorStore.update((state) => {
+		const locked = isFilterLocked(state);
+		return {
+			...state,
+			selection: {
+				...state.selection,
+				...updates,
+				filteredSpeaker: locked ? state.selection.filteredSpeaker : (updates.filteredSpeaker ?? null),
+				selectionSource: locked ? state.selection.selectionSource : source
+			}
+		};
+	});
+};
+
 export class Draw {
 	constructor(sketch) {
 		this.sk = sketch;
@@ -37,24 +56,15 @@ export class Draw {
 	updateDistributionDiagram(pos) {
 		const distributionDiagram = new DistributionDiagram(this.sk, pos);
 		const { hoveredSpeaker } = distributionDiagram.draw(this.sk.dynamicData.getDynamicArrayForDistributionDiagram());
-		ConfigStore.update((currConfig) => {
-			return {
-				...currConfig,
-				arrayOfFirstWords: distributionDiagram.localArrayOfFirstWords,
-				hoveredSpeakerInDistributionDiagram: hoveredSpeaker
-			};
-		});
-		// Sync to EditorStore for transcript editor filtering (only update hover state, not locked filter)
+		ConfigStore.update((config) => ({
+			...config,
+			arrayOfFirstWords: distributionDiagram.localArrayOfFirstWords,
+			hoveredSpeakerInDistributionDiagram: hoveredSpeaker
+		}));
+		// Sync to EditorStore - only update highlightedSpeaker if filter is locked, otherwise update both
 		EditorStore.update((state) => {
-			// Don't override locked filter from click
-			if (state.selection.selectionSource === 'distributionDiagramClick') {
-				return {
-					...state,
-					selection: {
-						...state.selection,
-						highlightedSpeaker: hoveredSpeaker
-					}
-				};
+			if (isFilterLocked(state)) {
+				return { ...state, selection: { ...state.selection, highlightedSpeaker: hoveredSpeaker } };
 			}
 			return {
 				...state,
@@ -74,67 +84,46 @@ export class Draw {
 		const turnChart = new TurnChart(this.sk, pos);
 		turnChart.draw(this.sk.dynamicData.getDynamicArrayForTurnChart());
 		const selectedTurn = turnChart.userSelectedTurn;
-		ConfigStore.update((currConfig) => {
-			return { ...currConfig, firstWordOfTurnSelectedInTurnChart: selectedTurn.turn[0] };
-		});
-		// Sync to EditorStore for transcript editor highlighting (preserve locked filter)
-		const turnNumber = selectedTurn?.turn?.[0]?.turnNumber ?? null;
-		EditorStore.update((state) => {
-			const isLocked = state.selection.selectionSource === 'distributionDiagramClick';
-			return {
-				...state,
-				selection: {
-					...state.selection,
-					selectedTurnNumber: turnNumber,
-					highlightedSpeaker: null,
-					filteredSpeaker: isLocked ? state.selection.filteredSpeaker : null,
-					selectedWordIndex: null,
-					selectionSource: isLocked ? state.selection.selectionSource : 'turnChart'
-				}
-			};
-		});
+		ConfigStore.update((config) => ({
+			...config,
+			firstWordOfTurnSelectedInTurnChart: selectedTurn.turn[0]
+		}));
+		updateEditorSelection({
+			selectedTurnNumber: selectedTurn?.turn?.[0]?.turnNumber ?? null,
+			highlightedSpeaker: null,
+			selectedWordIndex: null
+		}, 'turnChart');
 	}
 
 	updateContributionCloud(pos) {
 		const contributionCloud = new ContributionCloud(this.sk, pos);
 		const { hoveredWord } = contributionCloud.draw(this.sk.dynamicData.getDynamicArraySortedForContributionCloud());
-		ConfigStore.update((currConfig) => {
-			return { ...currConfig, selectedWordFromContributionCloud: hoveredWord };
-		});
-		// Sync to EditorStore for transcript editor highlighting (preserve locked filter)
-		EditorStore.update((state) => {
-			const isLocked = state.selection.selectionSource === 'distributionDiagramClick';
-			return {
-				...state,
-				selection: {
-					...state.selection,
-					selectedTurnNumber: hoveredWord?.turnNumber ?? null,
-					highlightedSpeaker: null,
-					filteredSpeaker: isLocked ? state.selection.filteredSpeaker : null,
-					selectedWordIndex: null,
-					selectionSource: isLocked ? state.selection.selectionSource : 'contributionCloud'
-				}
-			};
-		});
+		ConfigStore.update((config) => ({
+			...config,
+			selectedWordFromContributionCloud: hoveredWord
+		}));
+		updateEditorSelection({
+			selectedTurnNumber: hoveredWord?.turnNumber ?? null,
+			highlightedSpeaker: null,
+			selectedWordIndex: null
+		}, 'contributionCloud');
 	}
 
 	drawDashboard() {
 		const { top, bottomLeft, bottomRight } = this.getDashboardBounds();
-		this.drawDashboardDividers(top, bottomLeft, bottomRight);
+		this.drawDashboardDividers(top, bottomLeft);
 		this.updateTurnChart(top);
 		this.updateContributionCloud(bottomRight);
 		this.updateDistributionDiagram(bottomLeft); // draw last to display dd text over other visualizations
 	}
 
-	drawDashboardDividers(top, bottomLeft, bottomRight) {
+	drawDashboardDividers(top, bottomLeft) {
 		this.sk.stroke(200);
 		this.sk.strokeWeight(2);
 		const gap = this.sk.SPACING;
 		const horizontalY = top.y + top.height + gap / 2;
 		const verticalX = bottomLeft.x + bottomLeft.width + gap / 2;
-		// Horizontal divider between top and bottom (edge to edge)
 		this.sk.line(0, horizontalY, this.sk.width, horizontalY);
-		// Vertical divider between bottom left and right (from horizontal divider to bottom)
 		this.sk.line(verticalX, horizontalY, verticalX, this.sk.height);
 	}
 
