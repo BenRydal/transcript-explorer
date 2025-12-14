@@ -147,8 +147,11 @@ export const igsSketch = (p5: any) => {
 		p5.setAnimationCounter(p5.getAnimationTargetIndex()); // important if user scrubs to end quickly
 		TimelineStore.update((timeline) => {
 			timeline.setIsAnimating(false);
+			// Reset to left marker when animation completes
+			timeline.setCurrTime(timeline.getLeftMarker());
 			return timeline;
 		});
+		p5.fillSelectedData(); // Update visualization to reflect reset position
 	};
 
 	p5.mousePressed = () => {

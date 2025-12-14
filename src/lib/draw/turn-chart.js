@@ -64,6 +64,7 @@ export class TurnChart {
 		const height = this.yPosHalfHeight;
 		const tickLength = this.sk.SPACING / 2;
 		this.sk.stroke(0);
+		this.sk.strokeWeight(2);
 		this.sk.fill(0);
 		// Draw timeline and ticks
 		this.sk.line(start, height - tickLength, start, height + tickLength);
