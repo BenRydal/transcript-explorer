@@ -77,15 +77,6 @@ export class Core {
 		}
 	};
 
-	handleUserLoadedFiles = async (event: Event) => {
-		const input = event.target as HTMLInputElement;
-		for (let i = 0; i < input.files.length; i++) {
-			const file = input.files ? input.files[i] : null;
-			this.testFileTypeForProcessing(file);
-		}
-		input.value = ''; // reset input value so you can load same file(s) again in browser
-	};
-
 	testFileTypeForProcessing(file: File) {
 		const fileName = file ? file.name.toLowerCase() : '';
 		if (fileName.endsWith('.csv') || file.type === 'text/csv') {
