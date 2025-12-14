@@ -12,6 +12,7 @@ import { clearScalingCache } from '../draw/contribution-cloud';
 let users: User[] = [];
 let timeline, transcript, currConfig;
 let videoState: VideoState;
+let isPlayingTurnSnippets = false;
 
 TimelineStore.subscribe((data) => {
 	timeline = data;
@@ -150,7 +151,8 @@ export const igsSketch = (p5: any) => {
 		// This mousePressed only handles canvas interactions when video is not over the click
 		if (!videoState.isLoaded || !videoState.isVisible) return;
 
-		if (videoState.isPlaying) {
+		if (videoState.isPlaying || isPlayingTurnSnippets) {
+			p5.stopTurnSnippets();
 			videoPause();
 		} else if (p5.overRect(0, 0, p5.width, p5.height)) {
 			p5.handleVideoPlay();
@@ -158,36 +160,45 @@ export const igsSketch = (p5: any) => {
 	};
 
 	p5.handleVideoPlay = () => {
-		const { distributionDiagramToggle, turnChartToggle, contributionCloudToggle, arrayOfFirstWords, selectedWordFromContributionCloud } = currConfig;
+		const { distributionDiagramToggle, turnChartToggle, contributionCloudToggle, arrayOfFirstWords, selectedWordFromContributionCloud, firstWordOfTurnSelectedInTurnChart } = currConfig;
 
-		let seekTime: number | null = null;
-
-		if (distributionDiagramToggle) {
+		if (distributionDiagramToggle || (currConfig.dashboardToggle && arrayOfFirstWords.length && !firstWordOfTurnSelectedInTurnChart && !selectedWordFromContributionCloud)) {
+			// Distribution diagram: play first 2 seconds of each turn
 			if (arrayOfFirstWords.length) {
-				// Play first 2 seconds of each turn (simplified - just seek to first)
-				seekTime = arrayOfFirstWords[0]?.startTime;
+				p5.playTurnSnippets(arrayOfFirstWords);
 			}
-		} else if (turnChartToggle) {
-			seekTime = p5.getTimeValueFromPixel(p5.mouseX);
-		} else if (contributionCloudToggle) {
+		} else if (turnChartToggle || (currConfig.dashboardToggle && firstWordOfTurnSelectedInTurnChart)) {
+			// Turn chart: play from hovered turn
+			if (firstWordOfTurnSelectedInTurnChart) {
+				requestSeek(firstWordOfTurnSelectedInTurnChart.startTime);
+				videoPlay();
+			}
+		} else if (contributionCloudToggle || (currConfig.dashboardToggle && selectedWordFromContributionCloud)) {
+			// Contribution cloud: play from hovered word
 			if (selectedWordFromContributionCloud) {
-				seekTime = selectedWordFromContributionCloud.startTime;
+				requestSeek(selectedWordFromContributionCloud.startTime);
+				videoPlay();
 			}
-		} else {
-			// Dashboard mode - use most relevant selection
-			if (arrayOfFirstWords.length) {
-				seekTime = arrayOfFirstWords[0]?.startTime;
-			} else if (selectedWordFromContributionCloud) {
-				seekTime = selectedWordFromContributionCloud.startTime;
-			} else {
-				seekTime = p5.getTimeValueFromPixel(p5.mouseX);
-			}
+		}
+	};
+
+	p5.playTurnSnippets = async (turns: any[]) => {
+		if (isPlayingTurnSnippets) return;
+		isPlayingTurnSnippets = true;
+
+		for (const turn of turns) {
+			if (!isPlayingTurnSnippets) break;
+			requestSeek(turn.startTime);
+			videoPlay();
+			await new Promise(resolve => setTimeout(resolve, 2000));
 		}
 
-		if (seekTime !== null) {
-			requestSeek(seekTime);
-			videoPlay();
-		}
+		videoPause();
+		isPlayingTurnSnippets = false;
+	};
+
+	p5.stopTurnSnippets = () => {
+		isPlayingTurnSnippets = false;
 	};
 
 	p5.resetAnimation = () => {
