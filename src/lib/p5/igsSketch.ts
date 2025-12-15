@@ -7,7 +7,8 @@ import ConfigStore from '../../stores/configStore';
 import EditorStore from '../../stores/editorStore';
 import VideoStore, { play as videoPlay, pause as videoPause, requestSeek } from '../../stores/videoStore';
 import type { VideoState } from '../../stores/videoStore';
-import { Draw, DynamicData } from '..';
+import { Draw } from '../draw/draw';
+import { DynamicData } from '../core/dynamic-data';
 import { clearScalingCache } from '../draw/contribution-cloud';
 
 let users: User[] = [];
