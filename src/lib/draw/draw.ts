@@ -1,21 +1,37 @@
+import type p5 from 'p5';
 import { TurnChart } from './turn-chart.js';
 import { ContributionCloud } from './contribution-cloud.js';
 import { DistributionDiagram } from './distribution-diagram.js';
-import ConfigStore from '../../stores/configStore';
-import EditorStore from '../../stores/editorStore';
+import ConfigStore, { type ConfigStoreType } from '../../stores/configStore';
+import EditorStore, { type EditorState, type EditorSelection } from '../../stores/editorStore';
 import { resetTooltipFrame, finalizeTooltipFrame } from '../../stores/tooltipStore';
 
-let currConfig;
+interface Bounds {
+	x: number;
+	y: number;
+	width: number;
+	height: number;
+}
+
+interface DashboardBounds {
+	top: Bounds;
+	bottomLeft: Bounds;
+	bottomRight: Bounds;
+}
+
+type SelectionSource = EditorSelection['selectionSource'];
+
+let currConfig: ConfigStoreType;
 
 ConfigStore.subscribe((data) => {
 	currConfig = data;
 });
 
 // Helper to check if speaker filter is locked
-const isFilterLocked = (state) => state.selection.selectionSource === 'distributionDiagramClick';
+const isFilterLocked = (state: EditorState): boolean => state.selection.selectionSource === 'distributionDiagramClick';
 
 // Helper to update editor selection while preserving locked filter
-const updateEditorSelection = (updates, source) => {
+const updateEditorSelection = (updates: Partial<EditorSelection>, source: SelectionSource): void => {
 	EditorStore.update((state) => {
 		const locked = isFilterLocked(state);
 		return {
@@ -31,11 +47,13 @@ const updateEditorSelection = (updates, source) => {
 };
 
 export class Draw {
-	constructor(sketch) {
+	sk: p5;
+
+	constructor(sketch: p5) {
 		this.sk = sketch;
 	}
 
-	drawViz() {
+	drawViz(): void {
 		// Reset tooltip state at start of each frame
 		resetTooltipFrame();
 
@@ -53,7 +71,7 @@ export class Draw {
 		finalizeTooltipFrame();
 	}
 
-	updateDistributionDiagram(pos) {
+	updateDistributionDiagram(pos: Bounds): void {
 		const distributionDiagram = new DistributionDiagram(this.sk, pos);
 		const { hoveredSpeaker } = distributionDiagram.draw(this.sk.dynamicData.getDynamicArrayForDistributionDiagram());
 		ConfigStore.update((config) => ({
@@ -79,7 +97,7 @@ export class Draw {
 		});
 	}
 
-	updateTurnChart(pos) {
+	updateTurnChart(pos: Bounds): void {
 		const turnChart = new TurnChart(this.sk, pos);
 		turnChart.draw(this.sk.dynamicData.getDynamicArrayForTurnChart());
 		const selectedTurn = turnChart.userSelectedTurn;
@@ -93,7 +111,7 @@ export class Draw {
 		}, 'turnChart');
 	}
 
-	updateContributionCloud(pos) {
+	updateContributionCloud(pos: Bounds): void {
 		const contributionCloud = new ContributionCloud(this.sk, pos);
 		const { hoveredWord } = contributionCloud.draw(this.sk.dynamicData.getDynamicArraySortedForContributionCloud());
 		ConfigStore.update((config) => ({
@@ -106,7 +124,7 @@ export class Draw {
 		}, 'contributionCloud');
 	}
 
-	drawDashboard() {
+	drawDashboard(): void {
 		const { top, bottomLeft, bottomRight } = this.getDashboardBounds();
 		this.drawDashboardDividers(top, bottomLeft);
 		this.updateTurnChart(top);
@@ -114,7 +132,7 @@ export class Draw {
 		this.updateDistributionDiagram(bottomLeft); // draw last to display dd text over other visualizations
 	}
 
-	drawDashboardDividers(top, bottomLeft) {
+	drawDashboardDividers(top: Bounds, bottomLeft: Bounds): void {
 		this.sk.stroke(200);
 		this.sk.strokeWeight(2);
 		const gap = this.sk.SPACING;
@@ -128,7 +146,7 @@ export class Draw {
 	 * Get bounds for full screen visualization.
 	 * Returns { x, y, width, height } where x,y is top-left and width,height are dimensions.
 	 */
-	getFullScreenBounds() {
+	getFullScreenBounds(): Bounds {
 		const padding = this.sk.SPACING;
 		return {
 			x: padding,
@@ -142,7 +160,7 @@ export class Draw {
 	 * Get bounds for dashboard layout (3 panels).
 	 * Returns { top, bottomLeft, bottomRight } each with { x, y, width, height }.
 	 */
-	getDashboardBounds() {
+	getDashboardBounds(): DashboardBounds {
 		const padding = this.sk.SPACING / 2; // Less padding for dashboard panels
 		const gap = this.sk.SPACING;
 		const totalWidth = this.sk.width - padding * 2;
