@@ -381,9 +381,6 @@
 	}
 
 	function createNewTranscript() {
-		// Close the upload modal first
-		showUploadModal = false;
-
 		// Clear existing data
 		if (p5Instance) {
 			p5Instance.dynamicData?.clear();
@@ -635,8 +632,14 @@
 		<div class="flex items-center gap-1">
 			<IconButton
 				icon={MdCloudUpload}
-				tooltip={'Upload'}
+				tooltip={'Upload Files'}
 				on:click={() => (showUploadModal = true)}
+			/>
+
+			<IconButton
+				icon={MdNoteAdd}
+				tooltip={'Create New Transcript'}
+				on:click={createNewTranscript}
 			/>
 
 			<input
@@ -825,22 +828,6 @@
 				<p class="text-xs text-gray-500 mt-2">
 					CSV/TXT files should contain transcript data with speaker and content columns.
 					MP4 files will be used as video overlay.
-				</p>
-			</div>
-
-			<!-- Create new transcript -->
-			<div class="divider">OR</div>
-			<div class="text-center">
-				<button class="btn btn-outline btn-primary" on:click={createNewTranscript}>
-					Create New Transcript
-				</button>
-				<p class="text-xs text-gray-500 mt-2">
-					Start with a blank transcript and build it using the editor.
-					{#if isVideoLoaded}
-						<span class="text-success">Video detected - timestamps will be enabled.</span>
-					{:else}
-						<span>Load a video first to enable timestamp capture.</span>
-					{/if}
 				</p>
 			</div>
 
