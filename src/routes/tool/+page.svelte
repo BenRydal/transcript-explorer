@@ -16,7 +16,7 @@
 	import VideoStore, { toggleVisibility as toggleVideoVisibility } from '../../stores/videoStore';
 	import EditorStore from '../../stores/editorStore';
 
-	import { Core } from '$lib';
+	import { Core } from '$lib/core/core';
 	import { igsSketch } from '$lib/p5/igsSketch';
 	import { writable, get } from 'svelte/store';
 	import { onMount } from 'svelte';
