@@ -9,7 +9,7 @@ import { USER_COLORS } from '../constants/index.js';
 import UserStore from '../../stores/userStore';
 import TimelineStore from '../../stores/timelineStore';
 import TranscriptStore from '../../stores/transcriptStore.js';
-import VideoStore, { loadVideo, reset as resetVideo } from '../../stores/videoStore';
+import { loadVideo, reset as resetVideo } from '../../stores/videoStore';
 import { Transcript } from '../../models/transcript';
 import ConfigStore from '../../stores/configStore.js';
 
