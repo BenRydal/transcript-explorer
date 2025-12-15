@@ -1,7 +1,7 @@
 import type p5 from 'p5';
 import Papa from 'papaparse';
 
-import { CoreUtils } from './core-utils.js';
+import { CoreUtils } from './core-utils';
 import { DataPoint } from '../../models/dataPoint.js';
 import { User } from '../../models/user.js';
 import { USER_COLORS } from '../constants/index.js';
