@@ -9,7 +9,6 @@ import VideoStore, { play as videoPlay, pause as videoPause, requestSeek } from 
 import type { VideoState } from '../../stores/videoStore';
 import { Draw } from '../draw/draw';
 import { DynamicData } from '../core/dynamic-data';
-import { clearScalingCache } from '../draw/contribution-cloud';
 
 let users: User[] = [];
 let timeline, transcript, currConfig, editorState;
@@ -258,7 +257,6 @@ export const igsSketch = (p5: any) => {
 
 	p5.fillSelectedData = () => {
 		if (!p5.dynamicData) return; // Guard against calls before setup completes
-		clearScalingCache(); // Clear contribution cloud scaling cache when data changes
 		p5.dynamicData.clear();
 		for (let i = 0; i < p5.animationCounter; i++) {
 			p5.dynamicData.update(transcript.wordArray[i]);
