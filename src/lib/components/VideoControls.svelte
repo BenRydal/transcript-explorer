@@ -2,7 +2,8 @@
 	import { onMount, onDestroy, createEventDispatcher } from 'svelte';
 	import { browser } from '$app/environment';
 	import VideoStore, { togglePlayPause, toggleMute, setCurrentTime, requestSeek } from '../../stores/videoStore';
-	import { formatTime, getCurrentTime, seekTo, type VideoPlayer } from '../video/video-service';
+	import { getCurrentTime, seekTo, type VideoPlayer } from '../video/video-service';
+	import { TimeUtils } from '../core/time-utils';
 
 	export let player: VideoPlayer | null = null;
 	export let isFullscreen: boolean = false;
@@ -147,9 +148,9 @@
 
 		<!-- Time display -->
 		<div class="time-display">
-			<span class="current-time">{formatTime(isScrubbing ? scrubTime : currentTime)}</span>
+			<span class="current-time">{TimeUtils.formatTimeCompact(isScrubbing ? scrubTime : currentTime)}</span>
 			<span class="separator">/</span>
-			<span class="duration">{formatTime(duration)}</span>
+			<span class="duration">{TimeUtils.formatTimeCompact(duration)}</span>
 		</div>
 
 		<!-- Progress/scrub bar -->

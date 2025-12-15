@@ -264,13 +264,3 @@ export function isPlayerReady(player: VideoPlayer | null): boolean {
 		return false;
 	}
 }
-
-/**
- * Format time in seconds to MM:SS display
- */
-export function formatTime(seconds: number): string {
-	if (!seconds || isNaN(seconds)) return '0:00';
-	const mins = Math.floor(seconds / 60);
-	const secs = Math.floor(seconds % 60);
-	return `${mins}:${secs.toString().padStart(2, '0')}`;
-}
