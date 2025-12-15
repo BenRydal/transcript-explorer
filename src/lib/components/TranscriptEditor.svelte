@@ -73,7 +73,6 @@
 			selection: {
 				...state.selection,
 				selectedTurnNumber: turn.turnNumber,
-				selectedWordIndex: null,
 				highlightedSpeaker: null,
 				selectionSource: 'editor'
 			}
