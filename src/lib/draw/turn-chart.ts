@@ -1,9 +1,20 @@
+import type p5 from 'p5';
 import { get } from 'svelte/store';
 import TranscriptStore from '../../stores/transcriptStore';
 import TimelineStore from '../../stores/timelineStore';
 import UserStore from '../../stores/userStore';
-import ConfigStore from '../../stores/configStore';
+import ConfigStore, { type ConfigStoreType } from '../../stores/configStore';
 import { showTooltip } from '../../stores/tooltipStore';
+import type { DataPoint } from '../../models/dataPoint';
+import type { User } from '../../models/user';
+import type { Transcript } from '../../models/transcript';
+import type { Timeline } from '../../models/timeline';
+import type { Bounds } from './types/bounds';
+
+interface SelectedTurn {
+	turn: DataPoint[] | '';
+	color: string;
+}
 
 export class TurnChart {
 	sk: p5;
@@ -20,7 +31,10 @@ export class TurnChart {
 	constructor(sk: p5, pos: Bounds) {
 		this.sk = sk;
 		this.bounds = pos;
-		this.getStores();
+		this.config = get(ConfigStore);
+		this.transcript = get(TranscriptStore);
+		this.users = get(UserStore);
+		this.timeline = get(TimelineStore);
 		this.verticalLayoutSpacing = this.getVerticalLayoutSpacing(pos.height);
 		this.yPosHalfHeight = pos.y + pos.height / 2;
 		this.userSelectedTurn = { turn: '', color: '' };
@@ -34,7 +48,7 @@ export class TurnChart {
 	}
 
 	/** Draws the main chart */
-	draw(sortedAnimationWordArray) {
+	draw(sortedAnimationWordArray: Record<number, DataPoint[]>): void {
 		this.userSelectedTurn = { turn: '', color: '' }; // Reset each frame
 		this.drawTimeline();
 		this.sk.textSize(this.sk.toolTipTextSize);
@@ -46,7 +60,7 @@ export class TurnChart {
 			}
 		}
 		if (this.userSelectedTurn && this.userSelectedTurn.turn && this.userSelectedTurn.color) {
-			this.drawText(this.userSelectedTurn.turn, this.userSelectedTurn.color);
+			this.drawText(this.userSelectedTurn.turn as DataPoint[], this.userSelectedTurn.color);
 		}
 	}
 
@@ -62,7 +76,7 @@ export class TurnChart {
 	}
 
 	/** Draws the timeline axis */
-	drawTimeline() {
+	drawTimeline(): void {
 		const start = this.bounds.x;
 		const end = this.bounds.x + this.bounds.width;
 		const height = this.yPosHalfHeight;
@@ -127,7 +141,7 @@ export class TurnChart {
 		return height / this.users.length;
 	}
 
-	getPixelValueFromTime(timeValue) {
+	getPixelValueFromTime(timeValue: number): number {
 		return this.sk.map(timeValue, this.timeline.getLeftMarker(), this.timeline.getRightMarker(), this.bounds.x, this.bounds.x + this.bounds.width);
 	}
 }
