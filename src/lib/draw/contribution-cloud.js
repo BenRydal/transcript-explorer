@@ -2,6 +2,7 @@ import { get } from 'svelte/store';
 import UserStore from '../../stores/userStore';
 import ConfigStore from '../../stores/configStore';
 import { showTooltip } from '../../stores/tooltipStore';
+import { TimeUtils } from '../core/time-utils';
 
 // Layout constants
 const BASE_SCALING = {
@@ -195,9 +196,8 @@ export class ContributionCloud {
 		let content = `<b>${word.speaker}:</b> ${turnContext || word.word}`;
 
 		const details = [`×${totalCount}`, `Turn ${word.turnNumber}`];
-		if (!word.useWordCountsAsFallback) {
-			const time = this.formatTime(word.startTime);
-			if (time) details.push(time);
+		if (!word.useWordCountsAsFallback && word.startTime != null) {
+			details.push(TimeUtils.formatTimeCompact(word.startTime));
 		}
 
 		content += `\n<span style="font-size: 0.85em; opacity: 0.7">${details.join('  ·  ')}</span>`;
@@ -229,15 +229,6 @@ export class ContributionCloud {
 	getTotalWordCount(wordText, allPositions) {
 		const first = allPositions.find(p => p.word.word === wordText);
 		return first?.word.count || 1;
-	}
-
-	formatTime(seconds) {
-		if (seconds == null) return null;
-		const hrs = Math.floor(seconds / 3600);
-		const mins = Math.floor((seconds % 3600) / 60);
-		const secs = Math.floor(seconds % 60);
-		const pad = n => n.toString().padStart(2, '0');
-		return hrs > 0 ? `${hrs}:${pad(mins)}:${pad(secs)}` : `${mins}:${pad(secs)}`;
 	}
 
 	calculateScaling(words) {
