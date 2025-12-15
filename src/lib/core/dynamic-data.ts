@@ -1,38 +1,43 @@
-import { DataPoint } from '../../models/dataPoint.ts';
+import type p5 from 'p5';
+import { DataPoint } from '../../models/dataPoint';
 import TimelineStore from '../../stores/timelineStore';
-import ConfigStore from '../../stores/configStore';
+import ConfigStore, { type ConfigStoreType } from '../../stores/configStore';
 import { get } from 'svelte/store';
 
-let config;
+let config: ConfigStoreType;
 
 ConfigStore.subscribe((value) => {
 	config = value;
 });
 
 export class DynamicData {
-	constructor(sketch) {
+	sk: p5;
+	dynamicWordArray: DataPoint[];
+	stopWords: string[];
+
+	constructor(sketch: p5) {
 		this.sk = sketch;
 		this.dynamicWordArray = [];
 		this.stopWords = this.getStopWords();
 	}
 
 	// add this line to show repeated words in CC for selected time: && this.isInTimeRange(animationWord.startTime, animationWord.endTime)
-	update(index) {
-		const animationWord = new DataPoint(index.speaker, index.turnNumber, index.word, index.order, index.startTime, index.endTime);
+	update(index: DataPoint): void {
+		const animationWord = new DataPoint(index.speaker, index.turnNumber, index.word, index.order, index.startTime, index.endTime, index.useWordCountsAsFallback);
 		if (!config.stopWordsToggle || !this.isStopWord(animationWord.word)) {
 			this.updateWordCounts(animationWord);
 		}
 	}
 
-	isStopWord(stringWord) {
+	isStopWord(stringWord: string): boolean {
 		return this.stopWords.includes(stringWord.toLowerCase());
 	}
 
-	removeLastElement() {
+	removeLastElement(): void {
 		this.dynamicWordArray.pop();
 	}
 
-	updateWordCounts(index) {
+	updateWordCounts(index: DataPoint): void {
 		const foundWords = this.dynamicWordArray.filter((e) => e.word === index.word); // return array of all matching words
 		// This line will instead only increment counts on words spoken by SAME speaker, also would need to update hovering techniques in CC
 		// const foundWords = this.dynamicWordArray.filter(function (currentElement) {
@@ -51,8 +56,8 @@ export class DynamicData {
 		this.dynamicWordArray.push(index);
 	}
 
-	splitIntoArrays(sortedAnimationWordArray, getKey) {
-		const categorized = sortedAnimationWordArray.reduce((acc, item) => {
+	splitIntoArrays(sortedAnimationWordArray: DataPoint[], getKey: (item: DataPoint) => number): Record<number, DataPoint[]> {
+		const categorized = sortedAnimationWordArray.reduce((acc: Record<number, DataPoint[]>, item) => {
 			const key = getKey(item);
 			// Initialize the category in the accumulator if it doesn't exist
 			if (!acc[key]) {
@@ -67,36 +72,36 @@ export class DynamicData {
 		return categorized; // 'categorized' is now an object with keys as categories and values as arrays of items
 	}
 
-	isInTimeRange(startTime, endTime) {
+	isInTimeRange(startTime: number, endTime: number): boolean {
 		const timeline = get(TimelineStore);
 		return startTime >= timeline.getLeftMarker() && endTime <= timeline.getRightMarker();
 	}
 
-	getDynamicArrayForDistributionDiagram() {
+	getDynamicArrayForDistributionDiagram(): Record<number, DataPoint[]> {
 		const sortedAnimationWordArrayDeepCopy = this.getAnimationArrayDeepCopy().sort((a, b) => a.order - b.order); // always sort by order for distribution diagrams
 		return this.sk.dynamicData.splitIntoArrays(sortedAnimationWordArrayDeepCopy, (item) => item.order);
 	}
 
-	getDynamicArrayForTurnChart() {
+	getDynamicArrayForTurnChart(): Record<number, DataPoint[]> {
 		return this.splitIntoArrays(this.getAnimationArrayDeepCopy(), (item) => item.turnNumber); // split into arrays by turn number
 	}
 
-	getDynamicArraySortedForContributionCloud() {
+	getDynamicArraySortedForContributionCloud(): DataPoint[] {
 		let curAnimationArray = this.getAnimationArrayDeepCopy().filter((word) => this.isInTimeRange(word.startTime, word.endTime));
 		if (config.sortToggle) curAnimationArray.sort((a, b) => b.count - a.count); // sort descending by word count
 		if (config.separateToggle) curAnimationArray.sort((a, b) => a.order - b.order); // only sort by order if not in paragraph mode
 		return curAnimationArray;
 	}
 
-	getAnimationArrayDeepCopy() {
+	getAnimationArrayDeepCopy(): DataPoint[] {
 		return JSON.parse(JSON.stringify(this.dynamicWordArray));
 	}
 
-	clear() {
+	clear(): void {
 		this.dynamicWordArray = [];
 	}
 
-	getStopWords() {
+	getStopWords(): string[] {
 		return [
 			// Articles
 			'a',
