@@ -1,23 +1,11 @@
 import type p5 from 'p5';
-import { TurnChart } from './turn-chart.js';
+import { TurnChart } from './turn-chart';
 import { ContributionCloud } from './contribution-cloud.js';
 import { DistributionDiagram } from './distribution-diagram.js';
 import ConfigStore, { type ConfigStoreType } from '../../stores/configStore';
 import EditorStore, { type EditorState, type EditorSelection } from '../../stores/editorStore';
 import { resetTooltipFrame, finalizeTooltipFrame } from '../../stores/tooltipStore';
-
-interface Bounds {
-	x: number;
-	y: number;
-	width: number;
-	height: number;
-}
-
-interface DashboardBounds {
-	top: Bounds;
-	bottomLeft: Bounds;
-	bottomRight: Bounds;
-}
+import type { Bounds, DashboardBounds } from './types/bounds';
 
 type SelectionSource = EditorSelection['selectionSource'];
 
