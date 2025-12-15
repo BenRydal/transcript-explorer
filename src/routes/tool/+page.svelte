@@ -145,6 +145,19 @@
 	$: isVideoVisible = $VideoStore.isVisible;
 	$: hasVideoSource = $VideoStore.source.type !== null;
 
+	// When video loads, convert transcript from word-count mode to timestamp mode
+	$: if (isVideoLoaded) {
+		TranscriptStore.update((transcript) => {
+			const hasWordCountFallback = transcript.wordArray.some((dp) => dp.useWordCountsAsFallback);
+			if (hasWordCountFallback) {
+				transcript.wordArray.forEach((dp) => {
+					dp.useWordCountsAsFallback = false;
+				});
+			}
+			return transcript;
+		});
+	}
+
 	// Reactive binding for editor visibility
 	$: isEditorVisible = $EditorStore.config.isVisible;
 
