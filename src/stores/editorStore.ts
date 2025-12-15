@@ -2,7 +2,6 @@ import { writable } from 'svelte/store';
 
 export interface EditorSelection {
 	selectedTurnNumber: number | null;
-	selectedWordIndex: number | null;
 	highlightedSpeaker: string | null;
 	filteredSpeaker: string | null;
 	selectionSource: 'editor' | 'distributionDiagram' | 'distributionDiagramClick' | 'turnChart' | 'contributionCloud' | null;
@@ -25,7 +24,6 @@ export interface EditorState {
 const initialState: EditorState = {
 	selection: {
 		selectedTurnNumber: null,
-		selectedWordIndex: null,
 		highlightedSpeaker: null,
 		filteredSpeaker: null,
 		selectionSource: null

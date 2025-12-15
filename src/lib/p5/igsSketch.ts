@@ -166,7 +166,6 @@ export const igsSketch = (p5: any) => {
 						filteredSpeaker: hoveredSpeaker,
 						highlightedSpeaker: hoveredSpeaker,
 						selectedTurnNumber: null,
-						selectedWordIndex: null,
 						selectionSource: 'distributionDiagramClick'
 					}
 				}));

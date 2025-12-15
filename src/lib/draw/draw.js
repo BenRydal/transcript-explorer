@@ -73,7 +73,6 @@ export class Draw {
 					highlightedSpeaker: hoveredSpeaker,
 					filteredSpeaker: hoveredSpeaker,
 					selectedTurnNumber: null,
-					selectedWordIndex: null,
 					selectionSource: 'distributionDiagram'
 				}
 			};
@@ -90,8 +89,7 @@ export class Draw {
 		}));
 		updateEditorSelection({
 			selectedTurnNumber: selectedTurn?.turn?.[0]?.turnNumber ?? null,
-			highlightedSpeaker: null,
-			selectedWordIndex: null
+			highlightedSpeaker: null
 		}, 'turnChart');
 	}
 
@@ -104,8 +102,7 @@ export class Draw {
 		}));
 		updateEditorSelection({
 			selectedTurnNumber: hoveredWord?.turnNumber ?? null,
-			highlightedSpeaker: null,
-			selectedWordIndex: null
+			highlightedSpeaker: null
 		}, 'contributionCloud');
 	}
 
