@@ -1,6 +1,6 @@
 import type p5 from 'p5';
 import { TurnChart } from './turn-chart';
-import { ContributionCloud } from './contribution-cloud.js';
+import { ContributionCloud } from './contribution-cloud';
 import { DistributionDiagram } from './distribution-diagram.js';
 import ConfigStore, { type ConfigStoreType } from '../../stores/configStore';
 import EditorStore, { type EditorState, type EditorSelection } from '../../stores/editorStore';

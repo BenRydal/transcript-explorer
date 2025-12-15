@@ -3,6 +3,7 @@ import { DataPoint } from '../../models/dataPoint';
 import TimelineStore from '../../stores/timelineStore';
 import ConfigStore, { type ConfigStoreType } from '../../stores/configStore';
 import { get } from 'svelte/store';
+import { clearScalingCache } from '../draw/contribution-cloud';
 
 let config: ConfigStoreType;
 
@@ -99,6 +100,7 @@ export class DynamicData {
 
 	clear(): void {
 		this.dynamicWordArray = [];
+		clearScalingCache();
 	}
 
 	getStopWords(): string[] {
