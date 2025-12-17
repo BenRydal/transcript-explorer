@@ -10,7 +10,7 @@ import UserStore from '../../stores/userStore';
 import TimelineStore from '../../stores/timelineStore';
 import TranscriptStore from '../../stores/transcriptStore.js';
 import { loadVideo, reset as resetVideo } from '../../stores/videoStore';
-import { Transcript } from '../../models/transcript';
+import { Transcript, type TimingMode } from '../../models/transcript';
 import ConfigStore from '../../stores/configStore.js';
 
 import { TimeUtils } from './time-utils.js';
@@ -180,6 +180,9 @@ export class Core {
 
 			let lastValidStartTime: number | null = null;
 			let lastValidEndTime: number | null = null;
+			// Track timing mode: untimed, startOnly, or startEnd
+			let hasAnyStartTime = false;
+			let hasAnyEndTime = false;
 
 			dataArray.forEach((data, i) => {
 				let parsedData;
@@ -193,7 +196,10 @@ export class Core {
 					return;
 				}
 
-				const { speakerName, content, speakerOrder, startTime, endTime, useWordCountsAsFallback } = parsedData;
+				const { speakerName, content, startTime, endTime, hasStartTime, hasEndTime } = parsedData;
+				// Track if any row has start or end time data
+				if (hasStartTime) hasAnyStartTime = true;
+				if (hasEndTime) hasAnyEndTime = true;
 				// Update last valid timestamps for efficient CSV processing
 				lastValidStartTime = startTime;
 				lastValidEndTime = endTime;
@@ -204,7 +210,7 @@ export class Core {
 
 				// Add words to wordArray
 				content.forEach((word) => {
-					wordArray.push(new DataPoint(speakerName, turnNumber, word, speakerOrder, startTime, endTime, useWordCountsAsFallback));
+					wordArray.push(new DataPoint(speakerName, turnNumber, word, startTime, endTime));
 					updatedTranscript.totalNumOfWords++;
 				});
 
@@ -213,6 +219,14 @@ export class Core {
 
 			updatedTranscript.wordArray = wordArray;
 			updatedTranscript.totalConversationTurns = turnNumber;
+			// Determine timing mode based on what was found in the data
+			let timingMode: TimingMode = 'untimed';
+			if (hasAnyStartTime && hasAnyEndTime) {
+				timingMode = 'startEnd';
+			} else if (hasAnyStartTime) {
+				timingMode = 'startOnly';
+			}
+			updatedTranscript.timingMode = timingMode;
 			Object.assign(updatedTranscript, this.setAdditionalDataValues(wordArray));
 			return updatedTranscript;
 		});
@@ -229,10 +243,10 @@ export class Core {
 		return {
 			speakerName,
 			content,
-			speakerOrder: users.findIndex((user) => user.name === speakerName),
 			startTime: currentWordCount,
 			endTime: currentWordCount + content.length,
-			useWordCountsAsFallback: true
+			hasStartTime: false,
+			hasEndTime: false
 		};
 	}
 
@@ -245,20 +259,51 @@ export class Core {
 		if (!content.length) return null;
 		const curLineStartTime = TimeUtils.toSeconds(line[headers[2]]);
 		const curLineEndTime = TimeUtils.toSeconds(line[headers[3]]);
-		const useWordCountsAsFallback = curLineStartTime === null && curLineEndTime === null;
-		// logic to deal with missing time data
-		const startTime = curLineStartTime ?? lastValidEndTime ?? lastValidStartTime ?? currentWordCount;
+		const hasStartTime = curLineStartTime !== null;
+		const hasEndTime = curLineEndTime !== null;
+
+		// For untimed transcripts, use word positions
+		if (!hasStartTime && !hasEndTime) {
+			return {
+				speakerName,
+				content,
+				startTime: currentWordCount,
+				endTime: currentWordCount + content.length,
+				hasStartTime: false,
+				hasEndTime: false
+			};
+		}
+
+		// For timed transcripts, use actual timestamps with smart end time inference
+		const startTime = curLineStartTime ?? lastValidEndTime ?? lastValidStartTime ?? 0;
 		const nextLineStartTime = nextLine ? TimeUtils.toSeconds(nextLine[headers[2]]) : null;
-		const nextLineEndTime = nextLine ? TimeUtils.toSeconds(nextLine[headers[3]]) : null;
-		const endTime = curLineEndTime ?? (nextLineStartTime > startTime ? nextLineStartTime : null) ?? nextLineEndTime ?? startTime + content.length;
+
+		// End time inference priority:
+		// 1. Use provided end time if available
+		// 2. Use next line's start time if it's after current start
+		// 3. Estimate based on word count (~3 words/sec speaking rate, minimum 1 second)
+		const estimatedDuration = Math.max(1, content.length / 3);
+		let endTime: number;
+		if (curLineEndTime !== null) {
+			endTime = curLineEndTime;
+		} else if (nextLineStartTime !== null && nextLineStartTime > startTime) {
+			endTime = nextLineStartTime;
+		} else {
+			endTime = startTime + estimatedDuration;
+		}
+
+		// Ensure end time is always after start time (minimum 1 second)
+		if (endTime <= startTime) {
+			endTime = startTime + Math.max(1, estimatedDuration);
+		}
 
 		return {
 			speakerName,
 			content,
-			speakerOrder: users.findIndex((user) => user.name === speakerName),
 			startTime,
 			endTime,
-			useWordCountsAsFallback
+			hasStartTime,
+			hasEndTime
 		};
 	}
 

@@ -30,7 +30,7 @@ const initialState: EditorState = {
 	},
 	config: {
 		isVisible: false,
-		orientation: 'vertical',
+		orientation: 'horizontal',
 		panelSizes: [60, 40],
 		isCollapsed: false,
 		showAdvancedVideoControls: false

@@ -20,6 +20,7 @@ import type p5 from 'p5';
 import { get } from 'svelte/store';
 import UserStore from '../../stores/userStore';
 import ConfigStore, { type ConfigStoreType } from '../../stores/configStore';
+import TranscriptStore from '../../stores/transcriptStore';
 import { showTooltip } from '../../stores/tooltipStore';
 import { TimeUtils } from '../core/time-utils';
 import type { DataPoint } from '../../models/dataPoint';
@@ -205,7 +206,8 @@ export class ContributionCloud {
 		let content = `<b>${word.speaker}:</b> ${turnContext || word.word}`;
 
 		const details = [`×${totalCount}`, `Turn ${word.turnNumber}`];
-		if (!word.useWordCountsAsFallback && word.startTime != null) {
+		const transcript = get(TranscriptStore);
+		if (transcript.timingMode !== 'untimed' && word.startTime != null) {
 			details.push(TimeUtils.formatTimeCompact(word.startTime));
 		}
 
@@ -217,7 +219,7 @@ export class ContributionCloud {
 	getTurnContext(word: DataPoint, allPositions: WordPosition[]): string | null {
 		const turnWords = allPositions
 			.filter((p) => p.word.turnNumber === word.turnNumber)
-			.sort((a, b) => a.word.order - b.word.order)
+			.sort((a, b) => a.word.startTime - b.word.startTime)
 			.map((p) => p.word.word);
 
 		if (turnWords.length === 0) return null;

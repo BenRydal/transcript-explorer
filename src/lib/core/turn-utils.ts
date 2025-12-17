@@ -6,10 +6,8 @@ export interface Turn {
 	speaker: string;
 	startTime: number;
 	endTime: number;
-	order: number;
 	words: string[];
 	wordCount: number;
-	useWordCountsAsFallback: boolean;
 }
 
 /**
@@ -26,10 +24,8 @@ export function getTurnsFromWordArray(wordArray: DataPoint[]): Turn[] {
 				speaker: dp.speaker,
 				startTime: dp.startTime,
 				endTime: dp.endTime,
-				order: dp.order,
 				words: [],
-				wordCount: 0,
-				useWordCountsAsFallback: dp.useWordCountsAsFallback
+				wordCount: 0
 			});
 		}
 		const turn = turnsMap.get(dp.turnNumber)!;
@@ -42,23 +38,15 @@ export function getTurnsFromWordArray(wordArray: DataPoint[]): Turn[] {
 
 /**
  * Formats a turn's timecode for display.
- * Shows [HH:MM:SS] or [word count] depending on data type.
  */
 export function formatTurnTimecode(turn: Turn): string {
-	if (turn.useWordCountsAsFallback) {
-		return `[${turn.startTime}]`;
-	}
 	return `[${TimeUtils.formatTimeAuto(turn.startTime)}]`;
 }
 
 /**
  * Formats a turn's time range for display.
- * Shows [start - end] format.
  */
 export function formatTurnTimeRange(turn: Turn): string {
-	if (turn.useWordCountsAsFallback) {
-		return `[${turn.startTime} - ${turn.endTime}]`;
-	}
 	return `[${TimeUtils.formatTimeAuto(turn.startTime)} - ${TimeUtils.formatTimeAuto(turn.endTime)}]`;
 }
 

@@ -96,11 +96,13 @@ export class TurnChart {
 		const xStart = this.getPixelValueFromTime(turnData.startTime);
 		const xEnd = this.getPixelValueFromTime(turnData.endTime);
 		const xCenter = xStart + (xEnd - xStart) / 2;
-		const [height, yCenter] = this.getCoordinates(turnArray.length, turnData.order);
 
-		// Get speaker color
+		// Get speaker and compute index for vertical positioning
 		const user = this.users.find((u) => u.name === turnData.speaker);
+		const speakerIndex = this.users.findIndex((u) => u.name === turnData.speaker);
 		const speakerColor = user?.color || '#000';
+
+		const [height, yCenter] = this.getCoordinates(turnArray.length, speakerIndex);
 
 		// Draw bubble
 		this.setStrokes(this.sk.color(speakerColor));
@@ -113,11 +115,11 @@ export class TurnChart {
 	}
 
 	/** Determines the coordinates for turn bubbles */
-	getCoordinates(turnLength: number, order: number): [number, number] {
+	getCoordinates(turnLength: number, speakerIndex: number): [number, number] {
 		let height: number, yCenter: number;
 		if (this.config.separateToggle) {
 			height = this.sk.map(turnLength, 0, this.transcript.largestTurnLength, 0, this.verticalLayoutSpacing);
-			yCenter = this.yPosSeparate + this.verticalLayoutSpacing * order;
+			yCenter = this.yPosSeparate + this.verticalLayoutSpacing * speakerIndex;
 		} else {
 			height = this.sk.map(turnLength, 0, this.transcript.largestTurnLength, 0, this.yPosHalfHeight);
 			yCenter = this.yPosHalfHeight;

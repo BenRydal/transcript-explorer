@@ -27,23 +27,33 @@
 		? Math.max(0, currTimePercent - leftMarkerPercent)
 		: 0;
 
+	import type { TimingMode } from '../../models/transcript';
+
 	type TimeFormat = 'HHMMSS' | 'MMSS' | 'SECONDS' | 'DECIMAL' | 'WORDS';
 
 	let currentTimeFormat: TimeFormat = 'HHMMSS';
-	let useWordCounts = false;
+	let timingMode: TimingMode = 'untimed';
 
 	TranscriptStore.subscribe((data) => {
-		const hasTimeData = data.wordArray.length > 0 && data.wordArray.some((word) => word.useWordCountsAsFallback === false);
-		useWordCounts = !hasTimeData && data.wordArray.length > 0;
-		if (useWordCounts) {
-			currentTimeFormat = 'WORDS';
+		const previousTimingMode = timingMode;
+		timingMode = data.timingMode;
+
+		// Update time format when timing mode changes
+		if (data.wordArray.length > 0) {
+			if (timingMode === 'untimed') {
+				// Default to WORDS format for untimed transcripts
+				currentTimeFormat = 'WORDS';
+			} else if (previousTimingMode === 'untimed') {
+				// Switching from untimed to timed mode - use time-based format
+				currentTimeFormat = 'MMSS';
+			}
 		}
 	});
 
 	function cycleTimeFormat() {
 		let formats: TimeFormat[];
 
-		if (useWordCounts) {
+		if (timingMode === 'untimed') {
 			formats = ['WORDS'];
 		} else {
 			formats = ['HHMMSS', 'MMSS', 'SECONDS', 'DECIMAL', 'WORDS'];
@@ -67,7 +77,7 @@
 			case 'WORDS':
 				return `${Math.round(seconds)} words`;
 			default:
-				return useWordCounts ? `${Math.round(seconds)} words` : TimeUtils.formatTimeAuto(seconds);
+				return timingMode === 'untimed' ? `${Math.round(seconds)} words` : TimeUtils.formatTimeAuto(seconds);
 		}
 	}
 

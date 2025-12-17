@@ -6,6 +6,7 @@ import { TimeUtils } from './time-utils';
 
 /**
  * Exports the current transcript to a CSV file and triggers download.
+ * Columns vary by timing mode: untimed (speaker, content), startOnly (+start), startEnd (+end)
  */
 export function exportTranscriptToCSV(): void {
 	const transcript = get(TranscriptStore);
@@ -16,32 +17,26 @@ export function exportTranscriptToCSV(): void {
 	}
 
 	const turns = getTurnsFromWordArray(transcript.wordArray);
+	const { timingMode } = transcript;
+	const includeStart = timingMode !== 'untimed';
+	const includeEnd = timingMode === 'startEnd';
 
 	const csvData = turns.map((turn) => ({
 		speaker: turn.speaker,
 		content: turn.words.join(' '),
-		start: formatTimeForExport(turn.startTime, turn.useWordCountsAsFallback),
-		end: formatTimeForExport(turn.endTime, turn.useWordCountsAsFallback)
+		...(includeStart && { start: TimeUtils.formatTime(turn.startTime) }),
+		...(includeEnd && { end: TimeUtils.formatTime(turn.endTime) })
 	}));
 
-	const csv = Papa.unparse(csvData, {
-		header: true,
-		columns: ['speaker', 'content', 'start', 'end']
-	});
+	const columns = [
+		'speaker',
+		'content',
+		...(includeStart ? ['start'] : []),
+		...(includeEnd ? ['end'] : [])
+	];
 
+	const csv = Papa.unparse(csvData, { header: true, columns });
 	downloadCSV(csv, generateFilename());
-}
-
-/**
- * Formats a time value for export.
- * If using word counts as fallback, returns the raw number.
- * Otherwise returns HH:MM:SS format.
- */
-function formatTimeForExport(seconds: number, useWordCountsAsFallback: boolean): string {
-	if (useWordCountsAsFallback) {
-		return String(seconds);
-	}
-	return TimeUtils.formatTime(seconds);
 }
 
 /**

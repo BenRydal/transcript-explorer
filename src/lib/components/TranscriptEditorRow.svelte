@@ -1,9 +1,10 @@
 <script lang="ts">
 	import { createEventDispatcher, onMount } from 'svelte';
 	import type { Turn } from '$lib/core/turn-utils';
-	import { formatTurnTimecode, getTurnContent } from '$lib/core/turn-utils';
+	import { getTurnContent } from '$lib/core/turn-utils';
 	import { TimeUtils } from '$lib/core/time-utils';
 	import VideoStore from '../../stores/videoStore';
+	import type { TimingMode } from '../../models/transcript';
 
 	let rowElement: HTMLElement;
 
@@ -12,6 +13,11 @@
 	export let isSelected: boolean = false;
 	export let isSpeakerHighlighted: boolean = false;
 	export let speakers: string[] = [];
+	export let timingMode: TimingMode = 'untimed';
+
+	// Derived flags for easier template logic
+	$: showStartTime = timingMode === 'startOnly' || timingMode === 'startEnd';
+	$: showEndTime = timingMode === 'startEnd';
 
 	const dispatch = createEventDispatcher();
 
@@ -19,7 +25,8 @@
 
 	let isEditingContent = false;
 	let isEditingSpeaker = false;
-	let isEditingTime = false;
+	let isEditingStartTime = false;
+	let isEditingEndTime = false;
 
 	let editedContent = '';
 	let editedSpeaker = '';
@@ -75,41 +82,55 @@
 		editedSpeaker = '';
 	}
 
-	// Start editing time
-	function startEditingTime() {
-		if (turn.useWordCountsAsFallback) {
-			editedStartTime = String(turn.startTime);
-			editedEndTime = String(turn.endTime);
-		} else {
-			editedStartTime = TimeUtils.formatTimeAuto(turn.startTime);
-			editedEndTime = TimeUtils.formatTimeAuto(turn.endTime);
-		}
-		isEditingTime = true;
+	// Start editing start time
+	function startEditingStartTime() {
+		editedStartTime = TimeUtils.formatTimeAuto(turn.startTime);
+		isEditingStartTime = true;
 	}
 
-	// Save time changes
-	function saveTime() {
-		const newStartTime = turn.useWordCountsAsFallback
-			? parseInt(editedStartTime) || turn.startTime
-			: TimeUtils.toSeconds(editedStartTime) ?? turn.startTime;
-		const newEndTime = turn.useWordCountsAsFallback
-			? parseInt(editedEndTime) || turn.endTime
-			: TimeUtils.toSeconds(editedEndTime) ?? turn.endTime;
+	// Save start time changes
+	function saveStartTime() {
+		const newStartTime = TimeUtils.toSeconds(editedStartTime) ?? turn.startTime;
 
-		if (newStartTime !== turn.startTime || newEndTime !== turn.endTime) {
+		if (newStartTime !== turn.startTime) {
 			dispatch('edit', {
 				turnNumber: turn.turnNumber,
 				field: 'time',
-				value: { startTime: newStartTime, endTime: newEndTime }
+				value: { startTime: newStartTime, endTime: turn.endTime }
 			});
 		}
-		isEditingTime = false;
+		isEditingStartTime = false;
 	}
 
-	// Cancel time editing
-	function cancelTimeEdit() {
-		isEditingTime = false;
+	// Cancel start time editing
+	function cancelStartTimeEdit() {
+		isEditingStartTime = false;
 		editedStartTime = '';
+	}
+
+	// Start editing end time
+	function startEditingEndTime() {
+		editedEndTime = TimeUtils.formatTimeAuto(turn.endTime);
+		isEditingEndTime = true;
+	}
+
+	// Save end time changes
+	function saveEndTime() {
+		const newEndTime = TimeUtils.toSeconds(editedEndTime) ?? turn.endTime;
+
+		if (newEndTime !== turn.endTime) {
+			dispatch('edit', {
+				turnNumber: turn.turnNumber,
+				field: 'time',
+				value: { startTime: turn.startTime, endTime: newEndTime }
+			});
+		}
+		isEditingEndTime = false;
+	}
+
+	// Cancel end time editing
+	function cancelEndTimeEdit() {
+		isEditingEndTime = false;
 		editedEndTime = '';
 	}
 
@@ -132,18 +153,28 @@
 		}
 	}
 
-	function handleTimeKeydown(event: KeyboardEvent) {
+	function handleStartTimeKeydown(event: KeyboardEvent) {
 		if (event.key === 'Enter') {
 			event.preventDefault();
-			saveTime();
+			saveStartTime();
 		} else if (event.key === 'Escape') {
-			cancelTimeEdit();
+			cancelStartTimeEdit();
+		}
+	}
+
+	function handleEndTimeKeydown(event: KeyboardEvent) {
+		if (event.key === 'Enter') {
+			event.preventDefault();
+			saveEndTime();
+		} else if (event.key === 'Escape') {
+			cancelEndTimeEdit();
 		}
 	}
 
 	// Close all edit modes, saving any changes
 	function closeAllEditModes() {
-		if (isEditingTime) saveTime();
+		if (isEditingStartTime) saveStartTime();
+		if (isEditingEndTime) saveEndTime();
 		if (isEditingSpeaker) saveSpeaker();
 		if (isEditingContent) saveContent();
 	}
@@ -197,24 +228,19 @@
 		}
 	}
 
-	// Check if video is loaded and has real timestamps (not word count fallback)
-	$: canCaptureTime = $VideoStore.isLoaded && !turn.useWordCountsAsFallback;
+	// Check if video is loaded and transcript is in a timed mode
+	$: canCaptureTime = $VideoStore.isLoaded && showStartTime;
 
 	// Format speaker name for display
 	function formatSpeaker(name: string): string {
 		return name.charAt(0).toUpperCase() + name.slice(1).toLowerCase();
 	}
 
-	// Reactive time display - updates when turn.startTime changes
-	$: timeDisplay = turn.useWordCountsAsFallback
-		? `[${turn.startTime}]`
-		: `[${TimeUtils.formatTimeAuto(turn.startTime)}]`;
-
 	// Handle clicks outside this row to close edit modes
 	onMount(() => {
 		function handleDocumentClick(event: MouseEvent) {
 			// Check current edit state at click time
-			const isAnyEditActive = isEditingTime || isEditingSpeaker || isEditingContent;
+			const isAnyEditActive = isEditingStartTime || isEditingEndTime || isEditingSpeaker || isEditingContent;
 			if (isAnyEditActive && rowElement && !rowElement.contains(event.target as Node)) {
 				closeAllEditModes();
 			}
@@ -225,6 +251,10 @@
 			document.removeEventListener('click', handleDocumentClick);
 		};
 	});
+
+	// Reactive time displays
+	$: startTimeDisplay = `[${TimeUtils.formatTimeAuto(turn.startTime)}]`;
+	$: endTimeDisplay = `[${TimeUtils.formatTimeAuto(turn.endTime)}]`;
 </script>
 
 <div
@@ -239,53 +269,75 @@
 	role="button"
 	tabindex="0"
 >
-	<!-- Timecode -->
-	{#if isEditingTime}
-		<div class="time-edit-container" on:click|stopPropagation>
-			{#if canCaptureTime}
-				<button
-					class="time-capture-btn capture-start-btn"
-					on:click={captureStartTime}
-					title="Set IN point from video"
-				>
-					<span class="capture-bracket">[</span>
-				</button>
-			{/if}
-			<input
-				type="text"
-				class="time-input"
-				bind:value={editedStartTime}
-				on:keydown={handleTimeKeydown}
-				on:blur={saveTime}
-				placeholder="Start"
-			/>
-			<span class="time-separator">-</span>
-			<input
-				type="text"
-				class="time-input"
-				bind:value={editedEndTime}
-				on:keydown={handleTimeKeydown}
-				on:blur={saveTime}
-				placeholder="End"
-			/>
-			{#if canCaptureTime}
-				<button
-					class="time-capture-btn capture-end-btn"
-					on:click={captureEndTime}
-					title="Set OUT point from video"
-				>
-					<span class="capture-bracket">]</span>
-				</button>
-			{/if}
-		</div>
-	{:else}
-		<button
-			class="turn-timecode"
-			on:click|stopPropagation={startEditingTime}
-			title="Click to edit time"
-		>
-			{timeDisplay}
-		</button>
+	<!-- Start Time Column (shown in startOnly and startEnd modes) -->
+	{#if showStartTime}
+		{#if isEditingStartTime}
+			<div class="time-edit-container" on:click|stopPropagation>
+				{#if canCaptureTime}
+					<button
+						class="time-capture-btn capture-start-btn"
+						on:click={captureStartTime}
+						title="Set IN point from video"
+					>
+						<span class="capture-bracket">[</span>
+					</button>
+				{/if}
+				<input
+					type="text"
+					class="time-input"
+					bind:value={editedStartTime}
+					on:keydown={handleStartTimeKeydown}
+					on:blur={saveStartTime}
+					placeholder="Start"
+				/>
+			</div>
+		{:else}
+			<button
+				class="turn-timecode"
+				on:click|stopPropagation={startEditingStartTime}
+				title="Click to edit start time"
+			>
+				{startTimeDisplay}
+			</button>
+		{/if}
+	{/if}
+
+	<!-- Duration separator (shown only in startEnd mode) -->
+	{#if showEndTime}
+		<span class="time-separator">-</span>
+	{/if}
+
+	<!-- End Time Column (shown only in startEnd mode) -->
+	{#if showEndTime}
+		{#if isEditingEndTime}
+			<div class="time-edit-container" on:click|stopPropagation>
+				<input
+					type="text"
+					class="time-input"
+					bind:value={editedEndTime}
+					on:keydown={handleEndTimeKeydown}
+					on:blur={saveEndTime}
+					placeholder="End"
+				/>
+				{#if canCaptureTime}
+					<button
+						class="time-capture-btn capture-end-btn"
+						on:click={captureEndTime}
+						title="Set OUT point from video"
+					>
+						<span class="capture-bracket">]</span>
+					</button>
+				{/if}
+			</div>
+		{:else}
+			<button
+				class="turn-timecode"
+				on:click|stopPropagation={startEditingEndTime}
+				title="Click to edit end time"
+			>
+				{endTimeDisplay}
+			</button>
+		{/if}
 	{/if}
 
 	<!-- Speaker -->
@@ -474,7 +526,9 @@
 	}
 
 	.time-separator {
-		color: #6b7280;
+		color: #9ca3af;
+		font-size: 0.75rem;
+		user-select: none;
 	}
 
 	.time-capture-btn {

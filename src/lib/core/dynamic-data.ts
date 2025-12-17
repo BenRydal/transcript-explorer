@@ -24,7 +24,8 @@ export class DynamicData {
 
 	// add this line to show repeated words in CC for selected time: && this.isInTimeRange(animationWord.startTime, animationWord.endTime)
 	update(index: DataPoint): void {
-		const animationWord = new DataPoint(index.speaker, index.turnNumber, index.word, index.order, index.startTime, index.endTime, index.useWordCountsAsFallback);
+		if (!index) return;
+		const animationWord = new DataPoint(index.speaker, index.turnNumber, index.word, index.startTime, index.endTime);
 		if (!config.stopWordsToggle || !this.isStopWord(animationWord.word)) {
 			this.updateWordCounts(animationWord);
 		}
@@ -57,20 +58,32 @@ export class DynamicData {
 		this.dynamicWordArray.push(index);
 	}
 
-	splitIntoArrays(sortedAnimationWordArray: DataPoint[], getKey: (item: DataPoint) => number): Record<number, DataPoint[]> {
+	splitIntoArraysByNumber(sortedAnimationWordArray: DataPoint[], getKey: (item: DataPoint) => number): Record<number, DataPoint[]> {
 		const categorized = sortedAnimationWordArray.reduce((acc: Record<number, DataPoint[]>, item) => {
 			const key = getKey(item);
-			// Initialize the category in the accumulator if it doesn't exist
 			if (!acc[key]) {
 				acc[key] = [];
 			}
-			// Add the item to the appropriate category
 			if (this.isInTimeRange(item.startTime, item.endTime)) {
 				acc[key].push(item);
 			}
 			return acc;
 		}, {});
-		return categorized; // 'categorized' is now an object with keys as categories and values as arrays of items
+		return categorized;
+	}
+
+	splitIntoArraysBySpeaker(sortedAnimationWordArray: DataPoint[]): Record<string, DataPoint[]> {
+		const categorized = sortedAnimationWordArray.reduce((acc: Record<string, DataPoint[]>, item) => {
+			const key = item.speaker;
+			if (!acc[key]) {
+				acc[key] = [];
+			}
+			if (this.isInTimeRange(item.startTime, item.endTime)) {
+				acc[key].push(item);
+			}
+			return acc;
+		}, {});
+		return categorized;
 	}
 
 	isInTimeRange(startTime: number, endTime: number): boolean {
@@ -78,19 +91,19 @@ export class DynamicData {
 		return startTime >= timeline.getLeftMarker() && endTime <= timeline.getRightMarker();
 	}
 
-	getDynamicArrayForDistributionDiagram(): Record<number, DataPoint[]> {
-		const sortedAnimationWordArrayDeepCopy = this.getAnimationArrayDeepCopy().sort((a, b) => a.order - b.order); // always sort by order for distribution diagrams
-		return this.sk.dynamicData.splitIntoArrays(sortedAnimationWordArrayDeepCopy, (item) => item.order);
+	getDynamicArrayForDistributionDiagram(): Record<string, DataPoint[]> {
+		const animationArrayCopy = this.getAnimationArrayDeepCopy();
+		return this.splitIntoArraysBySpeaker(animationArrayCopy);
 	}
 
 	getDynamicArrayForTurnChart(): Record<number, DataPoint[]> {
-		return this.splitIntoArrays(this.getAnimationArrayDeepCopy(), (item) => item.turnNumber); // split into arrays by turn number
+		return this.splitIntoArraysByNumber(this.getAnimationArrayDeepCopy(), (item) => item.turnNumber);
 	}
 
 	getDynamicArraySortedForContributionCloud(): DataPoint[] {
 		let curAnimationArray = this.getAnimationArrayDeepCopy().filter((word) => this.isInTimeRange(word.startTime, word.endTime));
 		if (config.sortToggle) curAnimationArray.sort((a, b) => b.count - a.count); // sort descending by word count
-		if (config.separateToggle) curAnimationArray.sort((a, b) => a.order - b.order); // only sort by order if not in paragraph mode
+		if (config.separateToggle) curAnimationArray.sort((a, b) => a.speaker.localeCompare(b.speaker)); // group by speaker name
 		return curAnimationArray;
 	}
 
