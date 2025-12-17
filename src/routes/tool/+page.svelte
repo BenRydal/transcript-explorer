@@ -30,6 +30,8 @@
 	import TranscriptEditor from '$lib/components/TranscriptEditor.svelte';
 	import CanvasTooltip from '$lib/components/CanvasTooltip.svelte';
 	import VideoContainer from '$lib/components/VideoContainer.svelte';
+	import TranscriptionModal from '$lib/components/TranscriptionModal.svelte';
+	import type { TranscriptionResult } from '$lib/core/transcription-service';
 
 	import TimelineStore from '../../stores/timelineStore';
 	import ConfigStore from '../../stores/configStore';
@@ -136,9 +138,12 @@
 	let showDataPopup = false;
 	let showSettings = false;
 	let showUploadModal = false;
+	let showTranscriptionModal = false;
 	let isDraggingOver = false;
 	let uploadedFiles: { name: string; type: string; status: 'pending' | 'processing' | 'done' | 'error'; error?: string }[] = [];
 	let currentConfig: ConfigStoreType;
+	let pendingVideoFile: File | null = null;
+	let pendingVideoDuration: number = 0;
 
 	let files: any = [];
 	let p5Instance: p5 | null = null;
@@ -371,7 +376,13 @@
 				core.loadP5Strings(URL.createObjectURL(file));
 				resolve();
 			} else if (fileName.endsWith('.mp4') || file.type === 'video/mp4') {
+				// Store video file for potential transcription
+				pendingVideoFile = file;
 				core.prepVideoFromFile(URL.createObjectURL(file));
+				// Get video duration after a short delay to let video load
+				setTimeout(() => {
+					pendingVideoDuration = get(VideoStore).duration || 0;
+				}, 1000);
 				resolve();
 			} else {
 				reject(new Error('Unsupported file format'));
@@ -505,6 +516,94 @@
 				p5Instance.fillAllData?.();
 			}
 		});
+	}
+
+	function handleTranscriptionComplete(event: CustomEvent<TranscriptionResult>) {
+		const result = event.detail;
+
+		// Clear existing data
+		if (p5Instance) {
+			p5Instance.dynamicData?.clear();
+		}
+
+		// Set up single speaker (Whisper doesn't do speaker diarization)
+		const defaultSpeaker = 'SPEAKER 1';
+		UserStore.set([{ name: defaultSpeaker, color: '#FF6B6B', enabled: true }]);
+
+		// Convert transcription segments to DataPoints
+		const wordArray: DataPoint[] = [];
+		const turnLengths = new Map<number, number>();
+		const wordCounts = new Map<string, number>();
+		const speakerIndex = 0; // Single speaker from auto-transcription
+
+		result.segments.forEach((segment, turnIndex) => {
+			const words = segment.text.split(/\s+/).filter((w) => w.trim());
+			const wordDuration = words.length > 0 ? (segment.end - segment.start) / words.length : 0;
+			turnLengths.set(turnIndex, words.length);
+
+			words.forEach((word, wordIndex) => {
+				const wordStart = segment.start + wordIndex * wordDuration;
+				const wordEnd = segment.start + (wordIndex + 1) * wordDuration;
+				wordArray.push(new DataPoint(defaultSpeaker, turnIndex, word, speakerIndex, wordStart, wordEnd));
+				const lowerWord = word.toLowerCase();
+				wordCounts.set(lowerWord, (wordCounts.get(lowerWord) || 0) + 1);
+			});
+		});
+
+		// Find most frequent word
+		let maxWordCount = 0;
+		let mostFrequentWord = '';
+		wordCounts.forEach((count, word) => {
+			if (count > maxWordCount) {
+				maxWordCount = count;
+				mostFrequentWord = word;
+			}
+		});
+
+		// Create transcript
+		const maxTime = wordArray.length > 0 ? wordArray[wordArray.length - 1].endTime : 0;
+		const newTranscript = new Transcript();
+		newTranscript.wordArray = wordArray;
+		newTranscript.timingMode = 'startEnd';
+		newTranscript.totalNumOfWords = wordArray.length;
+		newTranscript.totalConversationTurns = result.segments.length;
+		newTranscript.totalTimeInSeconds = pendingVideoDuration || maxTime;
+		newTranscript.largestTurnLength = Math.max(...turnLengths.values(), 1);
+		newTranscript.largestNumOfWordsByASpeaker = wordArray.length;
+		newTranscript.largestNumOfTurnsByASpeaker = result.segments.length;
+		newTranscript.maxCountOfMostRepeatedWord = maxWordCount;
+		newTranscript.mostFrequentWord = mostFrequentWord;
+
+		TranscriptStore.set(newTranscript);
+
+		// Update timeline
+		const timelineEnd = pendingVideoDuration || maxTime;
+		TimelineStore.update((timeline) => {
+			timeline.setCurrTime(0);
+			timeline.setStartTime(0);
+			timeline.setEndTime(timelineEnd);
+			timeline.setLeftMarker(0);
+			timeline.setRightMarker(timelineEnd);
+			return timeline;
+		});
+
+		// Open the editor
+		EditorStore.update((state) => ({
+			...state,
+			config: { ...state.config, isVisible: true }
+		}));
+
+		// Refresh visualization
+		requestAnimationFrame(() => {
+			triggerCanvasResize();
+			if (p5Instance) {
+				p5Instance.fillAllData?.();
+			}
+		});
+
+		// Clear pending video file
+		pendingVideoFile = null;
+		pendingVideoDuration = 0;
 	}
 
 	function updateExampleDataDropDown(event) {
@@ -920,6 +1019,25 @@
 					</p>
 				</div>
 
+				<!-- Auto-transcribe option -->
+				{#if pendingVideoFile}
+					<div class="mt-4 bg-purple-50 border border-purple-200 rounded-lg p-4">
+						<p class="font-medium text-purple-800 mb-2">Auto-Transcribe Video</p>
+						<p class="text-sm text-purple-700 mb-3">
+							Generate a transcript automatically using AI. Runs entirely in your browser - no data is uploaded.
+						</p>
+						<button
+							class="btn btn-sm btn-primary"
+							on:click={() => {
+								showUploadModal = false;
+								showTranscriptionModal = true;
+							}}
+						>
+							Start Auto-Transcription
+						</button>
+					</div>
+				{/if}
+
 				<!-- Uploaded files list -->
 				{#if uploadedFiles.length > 0}
 					<div class="mt-4">
@@ -1207,6 +1325,14 @@
 <slot />
 
 <InfoModal {isModalOpen} />
+
+<TranscriptionModal
+	bind:isOpen={showTranscriptionModal}
+	videoFile={pendingVideoFile}
+	videoDuration={pendingVideoDuration}
+	on:complete={handleTranscriptionComplete}
+	on:close={() => (showTranscriptionModal = false)}
+/>
 
 <style>
 	.page-container {
