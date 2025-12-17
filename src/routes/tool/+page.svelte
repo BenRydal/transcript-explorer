@@ -753,9 +753,9 @@
 				if (e.key === 'Escape') showSettings = false;
 			}}
 		>
-			<div class="modal-box w-11/12 max-w-md">
-				<div class="flex justify-between mb-4">
-					<h3 class="font-bold text-lg">Settings</h3>
+			<div class="modal-box w-11/12 max-w-md p-8">
+				<div class="flex justify-between mb-6">
+					<h3 class="font-bold text-xl">Settings</h3>
 					<button class="btn btn-circle btn-sm" on:click={() => (showSettings = false)}>
 						<svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
 							<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
@@ -763,7 +763,7 @@
 					</button>
 				</div>
 
-				<div class="flex flex-col space-y-4">
+				<div class="flex flex-col space-y-6">
 					<!-- Animation Rate -->
 					<div class="flex flex-col">
 						<label for="animationRate" class="font-medium">Animation Rate: {currentConfig.animationRate}</label>
@@ -781,7 +781,7 @@
 
 					<!-- Text Input for Seconds (Numeric Only) -->
 					<div class="flex flex-col">
-						<label for="inputSeconds" class="font-medium">End Time (seconds)</label>
+						<label for="inputSeconds" class="font-medium">Timeline Duration (seconds)</label>
 						<input
 							id="inputSeconds"
 							type="text"
@@ -803,7 +803,7 @@
 
 					<!-- Start-Only Mode Settings -->
 					<div class="flex flex-col border-t pt-4">
-						<p class="font-medium mb-2">End Time Calculation:</p>
+						<p class="font-medium mb-2">Turn End Time Calculation:</p>
 						<p class="text-sm text-gray-600 mb-3">For transcripts with only start times</p>
 						<div class="flex flex-col gap-2">
 							<label class="flex items-center gap-2 cursor-pointer">
@@ -854,8 +854,8 @@
 					</div>
 				</div>
 
-				<div class="flex flex-col mt-4">
-					<button class="btn btn-sm ml-4" on:click={() => (showDataPopup = true)}>Data Explorer</button>
+				<div class="flex justify-center mt-6">
+					<button class="btn btn-sm" on:click={() => (showDataPopup = true)}>Data Explorer</button>
 				</div>
 
 				<div class="modal-action">
