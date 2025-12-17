@@ -4,11 +4,17 @@ import UserStore from '../../stores/userStore';
 import type { User } from '../../models/user';
 import TimelineStore from '../../stores/timelineStore';
 import ConfigStore from '../../stores/configStore';
-import { initialConfig } from '../../stores/configStore';
-import { VideoController, Draw, DynamicData } from '..';
+import EditorStore from '../../stores/editorStore';
+import VideoStore, { play as videoPlay, pause as videoPause, requestSeek } from '../../stores/videoStore';
+import type { VideoState } from '../../stores/videoStore';
+import { Draw } from '../draw/draw';
+import { DynamicData } from '../core/dynamic-data';
 
 let users: User[] = [];
-let timeline, transcript, currConfig;
+let timeline, transcript, currConfig, editorState;
+let videoState: VideoState;
+let isPlayingTurnSnippets = false;
+
 TimelineStore.subscribe((data) => {
 	timeline = data;
 });
@@ -25,6 +31,14 @@ TranscriptStore.subscribe((data) => {
 	transcript = data;
 });
 
+VideoStore.subscribe((data) => {
+	videoState = data;
+});
+
+EditorStore.subscribe((data) => {
+	editorState = data;
+});
+
 export const igsSketch = (p5: any) => {
 	P5Store.set(p5);
 
@@ -33,14 +47,24 @@ export const igsSketch = (p5: any) => {
 	};
 
 	p5.setup = () => {
-		const bottomNavHeight = (document.querySelector('.btm-nav') as HTMLElement).offsetHeight;
-		p5.createCanvas(window.innerWidth, window.innerHeight - bottomNavHeight);
+		const { width, height } = p5.getContainerSize();
+		p5.createCanvas(width, height);
 		p5.dynamicData = new DynamicData(p5);
-		p5.videoController = new VideoController(p5);
 		p5.SPACING = 25;
 		p5.toolTipTextSize = 30;
 		p5.textFont(p5.font);
 		p5.animationCounter = 0; // controls animation of data
+	};
+
+	p5.getContainerSize = () => {
+		const container = document.getElementById('p5-container');
+		if (container) {
+			const rect = container.getBoundingClientRect();
+			return { width: rect.width, height: rect.height };
+		}
+		// Fallback to window-based calculation
+		const bottomNavHeight = (document.querySelector('.btm-nav') as HTMLElement)?.offsetHeight || 80;
+		return { width: window.innerWidth, height: window.innerHeight - bottomNavHeight };
 	};
 
 	p5.draw = () => {
@@ -50,9 +74,6 @@ export const igsSketch = (p5: any) => {
 			render.drawViz();
 		}
 		if (timeline.getIsAnimating()) p5.updateAnimation();
-		if (p5.videoController.isLoaded && p5.videoController.isShowing && p5.videoController.videoPlayer.isOver) {
-			p5.videoController.updatePosition();
-		}
 	};
 
 	p5.updateAnimation = () => {
@@ -110,8 +131,9 @@ export const igsSketch = (p5: any) => {
 
 	p5.continueTimelineAnimation = () => {
 		let timeToSet = 0;
-		if (p5.videoController.isLoadedAndIsPlaying()) {
-			timeToSet = p5.videoController.getVideoPlayerCurTime();
+		if (videoState.isLoaded && videoState.isPlaying) {
+			// Get time from video via VideoStore's currentTime
+			timeToSet = videoState.currentTime;
 		} else {
 			timeToSet = timeline.getCurrTime() + currConfig.animationRate;
 		}
@@ -125,40 +147,86 @@ export const igsSketch = (p5: any) => {
 		p5.setAnimationCounter(p5.getAnimationTargetIndex()); // important if user scrubs to end quickly
 		TimelineStore.update((timeline) => {
 			timeline.setIsAnimating(false);
+			// Reset to left marker when animation completes
+			timeline.setCurrTime(timeline.getLeftMarker());
 			return timeline;
 		});
+		p5.fillSelectedData(); // Update visualization to reflect reset position
 	};
 
 	p5.mousePressed = () => {
-		if (!p5.videoController.isLoaded || !p5.videoController.isShowing) return;
-		if (!p5.videoController.videoPlayer.isOver) {
-			if (p5.videoController.isPlaying) p5.videoController.pause();
-			else if (p5.overRect(0, 0, p5.width, p5.height)) p5.handleVideoPlay();
+		// Handle distribution diagram click to lock speaker filter (only if editor is open)
+		if ((currConfig.distributionDiagramToggle || currConfig.dashboardToggle) && editorState?.config?.isVisible) {
+			const hoveredSpeaker = currConfig.hoveredSpeakerInDistributionDiagram;
+			if (hoveredSpeaker) {
+				EditorStore.update((state) => ({
+					...state,
+					selection: {
+						...state.selection,
+						filteredSpeaker: hoveredSpeaker,
+						highlightedSpeaker: hoveredSpeaker,
+						selectedTurnNumber: null,
+						selectionSource: 'distributionDiagramClick'
+					}
+				}));
+			}
+		}
+
+		// Video interaction is now handled by VideoContainer.svelte
+		// This mousePressed only handles canvas interactions when video is not over the click
+		if (!videoState.isLoaded || !videoState.isVisible) return;
+
+		if (videoState.isPlaying || isPlayingTurnSnippets) {
+			p5.stopTurnSnippets();
+			videoPause();
+		} else if (p5.overRect(0, 0, p5.width, p5.height)) {
+			p5.handleVideoPlay();
 		}
 	};
 
 	p5.handleVideoPlay = () => {
-		const { distributionDiagramToggle, turnChartToggle, contributionCloudToggle, arrayOfFirstWords, selectedWordFromContributionCloud } = currConfig;
+		const { distributionDiagramToggle, turnChartToggle, contributionCloudToggle, arrayOfFirstWords, selectedWordFromContributionCloud, firstWordOfTurnSelectedInTurnChart } = currConfig;
 
-		if (distributionDiagramToggle) {
+		if (distributionDiagramToggle || (currConfig.dashboardToggle && arrayOfFirstWords.length && !firstWordOfTurnSelectedInTurnChart && !selectedWordFromContributionCloud)) {
+			// Distribution diagram: play first 2 seconds of each turn
 			if (arrayOfFirstWords.length) {
-				p5.videoController.playForDistributionDiagram(arrayOfFirstWords);
+				p5.playTurnSnippets(arrayOfFirstWords);
 			}
-		} else if (turnChartToggle) {
-			p5.videoController.playForTurnChart(p5.getTimeValueFromPixel(p5.mouseX));
-		} else if (contributionCloudToggle) {
+		} else if (turnChartToggle || (currConfig.dashboardToggle && firstWordOfTurnSelectedInTurnChart)) {
+			// Turn chart: play from hovered turn
+			if (firstWordOfTurnSelectedInTurnChart) {
+				requestSeek(firstWordOfTurnSelectedInTurnChart.startTime);
+				videoPlay();
+			}
+		} else if (contributionCloudToggle || (currConfig.dashboardToggle && selectedWordFromContributionCloud)) {
+			// Contribution cloud: play from hovered word
 			if (selectedWordFromContributionCloud) {
-				p5.videoController.playForContributionCloud(selectedWordFromContributionCloud.startTime);
+				requestSeek(selectedWordFromContributionCloud.startTime);
+				videoPlay();
 			}
-		} else {
-			if (arrayOfFirstWords.length) p5.videoController.playForDistributionDiagram(arrayOfFirstWords);
-			else if (selectedWordFromContributionCloud) p5.videoController.playForContributionCloud(selectedWordFromContributionCloud.startTime);
-			else p5.videoController.playForTurnChart(p5.getTimeValueFromPixel(p5.mouseX));
 		}
 	};
 
+	p5.playTurnSnippets = async (turns: any[]) => {
+		if (isPlayingTurnSnippets) return;
+		isPlayingTurnSnippets = true;
+
+		for (const turn of turns) {
+			if (!isPlayingTurnSnippets) break;
+			requestSeek(turn.startTime);
+			videoPlay();
+			await new Promise(resolve => setTimeout(resolve, 2000));
+		}
+
+		videoPause();
+		isPlayingTurnSnippets = false;
+	};
+
+	p5.stopTurnSnippets = () => {
+		isPlayingTurnSnippets = false;
+	};
+
 	p5.resetAnimation = () => {
-		p5.resetScalingVars();
 		p5.dynamicData.clear();
 		p5.animationCounter = 0;
 	};
@@ -169,30 +237,11 @@ export const igsSketch = (p5: any) => {
 	};
 
 	p5.fillSelectedData = () => {
-		p5.resetScalingVars();
+		if (!p5.dynamicData) return; // Guard against calls before setup completes
 		p5.dynamicData.clear();
 		for (let i = 0; i < p5.animationCounter; i++) {
 			p5.dynamicData.update(transcript.wordArray[i]);
 		}
-	};
-
-	p5.resetScalingVars = () => {
-		ConfigStore.update((currConfig) => ({
-			...currConfig,
-			scalingVars: { ...initialConfig.scalingVars } // Reset to initial values
-		}));
-	};
-
-	p5.updateScalingVars = (scaleFactor = 0.9) => {
-		ConfigStore.update((currConfig) => ({
-			...currConfig,
-			scalingVars: {
-				minTextSize: currConfig.scalingVars.minTextSize * scaleFactor,
-				maxTextSize: currConfig.scalingVars.maxTextSize * scaleFactor,
-				spacing: currConfig.scalingVars.spacing * scaleFactor,
-				newSpeakerSpacing: currConfig.scalingVars.newSpeakerSpacing * scaleFactor
-			}
-		}));
 	};
 
 	/**
@@ -230,8 +279,9 @@ export const igsSketch = (p5: any) => {
 	};
 
 	p5.windowResized = () => {
-		const bottomNavHeight = (document.querySelector('.btm-nav') as HTMLElement).offsetHeight;
-		p5.resizeCanvas(window.innerWidth, window.innerHeight - bottomNavHeight);
+		if (!p5.dynamicData) return; // Guard against calls before setup completes
+		const { width, height } = p5.getContainerSize();
+		p5.resizeCanvas(width, height);
 		p5.fillSelectedData();
 	};
 

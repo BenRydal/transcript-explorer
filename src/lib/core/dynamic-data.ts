@@ -1,38 +1,44 @@
-import { DataPoint } from '../../models/dataPoint.ts';
+import type p5 from 'p5';
+import { DataPoint } from '../../models/dataPoint';
 import TimelineStore from '../../stores/timelineStore';
-import ConfigStore from '../../stores/configStore';
+import ConfigStore, { type ConfigStoreType } from '../../stores/configStore';
 import { get } from 'svelte/store';
+import { clearScalingCache } from '../draw/contribution-cloud';
 
-let config;
+let config: ConfigStoreType;
 
 ConfigStore.subscribe((value) => {
 	config = value;
 });
 
 export class DynamicData {
-	constructor(sketch) {
+	sk: p5;
+	dynamicWordArray: DataPoint[];
+	stopWords: string[];
+
+	constructor(sketch: p5) {
 		this.sk = sketch;
 		this.dynamicWordArray = [];
 		this.stopWords = this.getStopWords();
 	}
 
 	// add this line to show repeated words in CC for selected time: && this.isInTimeRange(animationWord.startTime, animationWord.endTime)
-	update(index) {
-		const animationWord = new DataPoint(index.speaker, index.turnNumber, index.word, index.order, index.startTime, index.endTime);
+	update(index: DataPoint): void {
+		const animationWord = new DataPoint(index.speaker, index.turnNumber, index.word, index.order, index.startTime, index.endTime, index.useWordCountsAsFallback);
 		if (!config.stopWordsToggle || !this.isStopWord(animationWord.word)) {
 			this.updateWordCounts(animationWord);
 		}
 	}
 
-	isStopWord(stringWord) {
+	isStopWord(stringWord: string): boolean {
 		return this.stopWords.includes(stringWord.toLowerCase());
 	}
 
-	removeLastElement() {
+	removeLastElement(): void {
 		this.dynamicWordArray.pop();
 	}
 
-	updateWordCounts(index) {
+	updateWordCounts(index: DataPoint): void {
 		const foundWords = this.dynamicWordArray.filter((e) => e.word === index.word); // return array of all matching words
 		// This line will instead only increment counts on words spoken by SAME speaker, also would need to update hovering techniques in CC
 		// const foundWords = this.dynamicWordArray.filter(function (currentElement) {
@@ -51,8 +57,8 @@ export class DynamicData {
 		this.dynamicWordArray.push(index);
 	}
 
-	splitIntoArrays(sortedAnimationWordArray, getKey) {
-		const categorized = sortedAnimationWordArray.reduce((acc, item) => {
+	splitIntoArrays(sortedAnimationWordArray: DataPoint[], getKey: (item: DataPoint) => number): Record<number, DataPoint[]> {
+		const categorized = sortedAnimationWordArray.reduce((acc: Record<number, DataPoint[]>, item) => {
 			const key = getKey(item);
 			// Initialize the category in the accumulator if it doesn't exist
 			if (!acc[key]) {
@@ -67,65 +73,68 @@ export class DynamicData {
 		return categorized; // 'categorized' is now an object with keys as categories and values as arrays of items
 	}
 
-	isInTimeRange(startTime, endTime) {
+	isInTimeRange(startTime: number, endTime: number): boolean {
 		const timeline = get(TimelineStore);
 		return startTime >= timeline.getLeftMarker() && endTime <= timeline.getRightMarker();
 	}
 
-	getDynamicArrayForDistributionDiagram() {
+	getDynamicArrayForDistributionDiagram(): Record<number, DataPoint[]> {
 		const sortedAnimationWordArrayDeepCopy = this.getAnimationArrayDeepCopy().sort((a, b) => a.order - b.order); // always sort by order for distribution diagrams
 		return this.sk.dynamicData.splitIntoArrays(sortedAnimationWordArrayDeepCopy, (item) => item.order);
 	}
 
-	getDynamicArrayForTurnChart() {
+	getDynamicArrayForTurnChart(): Record<number, DataPoint[]> {
 		return this.splitIntoArrays(this.getAnimationArrayDeepCopy(), (item) => item.turnNumber); // split into arrays by turn number
 	}
 
-	getDynamicArraySortedForContributionCloud() {
+	getDynamicArraySortedForContributionCloud(): DataPoint[] {
 		let curAnimationArray = this.getAnimationArrayDeepCopy().filter((word) => this.isInTimeRange(word.startTime, word.endTime));
 		if (config.sortToggle) curAnimationArray.sort((a, b) => b.count - a.count); // sort descending by word count
 		if (config.separateToggle) curAnimationArray.sort((a, b) => a.order - b.order); // only sort by order if not in paragraph mode
 		return curAnimationArray;
 	}
 
-	getAnimationArrayDeepCopy() {
+	getAnimationArrayDeepCopy(): DataPoint[] {
 		return JSON.parse(JSON.stringify(this.dynamicWordArray));
 	}
 
-	clear() {
+	clear(): void {
 		this.dynamicWordArray = [];
+		clearScalingCache();
 	}
 
-	getStopWords() {
+	getStopWords(): string[] {
 		return [
+			// Articles
+			'a',
+			'an',
 			'the',
-			'of',
+
+			// Conjunctions
 			'and',
-			'is',
+			'or',
+			'but',
+			'if',
+			'then',
+			'than',
+			'because',
+			'while',
+			'until',
+			'although',
+			'though',
+
+			// Prepositions
+			'of',
 			'to',
 			'in',
-			'a',
 			'from',
 			'by',
-			'that',
 			'with',
-			'this',
 			'as',
-			'an',
-			'are',
-			'its',
 			'at',
 			'for',
 			'on',
-			'at',
-			'by',
-			'with',
-			'for',
-			'in',
-			'to',
-			'from',
 			'about',
-			'as',
 			'into',
 			'during',
 			'after',
@@ -135,14 +144,28 @@ export class DynamicData {
 			'around',
 			'between',
 			'under',
+			'out',
+			'over',
+			'through',
+			'off',
+
+			// Subject pronouns
+			'I',
+			'you',
 			'he',
 			'she',
 			'it',
-			'they',
 			'we',
-			'I',
-			'you',
+			'they',
+
+			// Object pronouns
+			'me',
+			'him',
+			'her',
+			'us',
 			'them',
+
+			// Possessive pronouns
 			'my',
 			'your',
 			'his',
@@ -150,21 +173,64 @@ export class DynamicData {
 			'its',
 			'our',
 			'their',
+
+			// Relative/interrogative pronouns
+			'that',
+			'which',
+			'who',
+			'whom',
 			'whose',
+			'what',
+
+			// Demonstratives
+			'this',
+			'these',
+			'those',
+
+			// Quantifiers
+			'all',
+			'any',
+			'some',
+			'each',
+			'every',
+			'both',
+			'either',
+			'neither',
+			'more',
+			'most',
+			'less',
+			'least',
+			'much',
+			'many',
+			'few',
+			'such',
+			'other',
+			'another',
+			'same',
+
+			// Be verbs
+			'is',
+			'are',
 			'was',
 			'were',
 			'am',
 			'be',
 			'been',
 			'being',
+
+			// Have verbs
 			'have',
 			'has',
 			'had',
 			'having',
+
+			// Do verbs
 			'do',
 			'does',
 			'did',
 			'doing',
+
+			// Modal verbs
 			'can',
 			'could',
 			'will',
@@ -174,6 +240,33 @@ export class DynamicData {
 			'must',
 			'shall',
 			'should',
+
+			// Common verbs
+			'get',
+			'got',
+			'getting',
+			'go',
+			'going',
+			'gone',
+			'went',
+			'come',
+			'coming',
+			'came',
+			'make',
+			'made',
+			'making',
+			'know',
+			'knew',
+			'known',
+			'think',
+			'thought',
+			'say',
+			'said',
+			'see',
+			'saw',
+			'seen',
+
+			// Adverbs
 			'not',
 			'no',
 			'yes',
@@ -192,7 +285,86 @@ export class DynamicData {
 			'only',
 			'now',
 			'still',
-			'also'
+			'also',
+			'too',
+			'well',
+			'really',
+			'quite',
+			'rather',
+			'always',
+			'never',
+			'often',
+			'sometimes',
+			'already',
+			'again',
+			'back',
+			'away',
+
+			// Contractions
+			"don't",
+			"doesn't",
+			"didn't",
+			"won't",
+			"can't",
+			"couldn't",
+			"wouldn't",
+			"shouldn't",
+			"isn't",
+			"aren't",
+			"wasn't",
+			"weren't",
+			"haven't",
+			"hasn't",
+			"hadn't",
+			"i'm",
+			"you're",
+			"he's",
+			"she's",
+			"it's",
+			"we're",
+			"they're",
+			"i've",
+			"you've",
+			"we've",
+			"they've",
+			"i'll",
+			"you'll",
+			"he'll",
+			"she'll",
+			"we'll",
+			"they'll",
+			"i'd",
+			"you'd",
+			"he'd",
+			"she'd",
+			"we'd",
+			"they'd",
+			"that's",
+			"there's",
+			"here's",
+			"what's",
+			"who's",
+			"let's",
+
+			// Spoken fillers (common in transcripts)
+			'uh',
+			'um',
+			'like',
+			'yeah',
+			'okay',
+			'ok',
+			'oh',
+			'ah',
+			'gonna',
+			'wanna',
+			'gotta',
+			'kinda',
+			'sorta',
+			'basically',
+			'actually',
+			'literally',
+			'right',
+			'mean'
 		];
 	}
 }

@@ -4,149 +4,41 @@
 	import type p5 from 'p5';
 	import MdHelpOutline from 'svelte-icons/md/MdHelpOutline.svelte';
 	import MdCloudUpload from 'svelte-icons/md/MdCloudUpload.svelte';
+	import MdNoteAdd from 'svelte-icons/md/MdNoteAdd.svelte';
 	import MdVideocam from 'svelte-icons/md/MdVideocam.svelte';
 	import MdVideocamOff from 'svelte-icons/md/MdVideocamOff.svelte';
 	import MdCheck from 'svelte-icons/md/MdCheck.svelte';
 	import MdSettings from 'svelte-icons/md/MdSettings.svelte';
-	import type { User } from '../../models/user';
+	import MdSubject from 'svelte-icons/md/MdSubject.svelte';
+	import MdInsertChart from 'svelte-icons/md/MdInsertChart.svelte';
+	import MdTouchApp from 'svelte-icons/md/MdTouchApp.svelte';
 	import UserStore from '../../stores/userStore';
 	import P5Store from '../../stores/p5Store';
-	import VideoStore from '../../stores/videoStore';
+	import VideoStore, { toggleVisibility as toggleVideoVisibility } from '../../stores/videoStore';
+	import EditorStore from '../../stores/editorStore';
 
-	import { Core } from '$lib';
+	import { Core } from '$lib/core/core';
 	import { igsSketch } from '$lib/p5/igsSketch';
-	import { writable } from 'svelte/store';
+	import { writable, get } from 'svelte/store';
 	import { onMount } from 'svelte';
+	import { DataPoint } from '../../models/dataPoint';
+	import { Transcript } from '../../models/transcript';
 	import IconButton from '$lib/components/IconButton.svelte';
 	import InfoModal from '$lib/components/InfoModal.svelte';
 	import TimelinePanel from '$lib/components/TimelinePanel.svelte';
-	import DataPointTable from '$lib/components/DataPointTable.svelte';
+	import SplitPane from '$lib/components/SplitPane.svelte';
+	import TranscriptEditor from '$lib/components/TranscriptEditor.svelte';
+	import CanvasTooltip from '$lib/components/CanvasTooltip.svelte';
+	import VideoContainer from '$lib/components/VideoContainer.svelte';
 
 	import TimelineStore from '../../stores/timelineStore';
 	import ConfigStore from '../../stores/configStore';
 	import type { ConfigStoreType } from '../../stores/configStore';
 	import TranscriptStore from '../../stores/transcriptStore';
-	import { computePosition, flip, shift, offset, autoUpdate } from '@floating-ui/dom';
+	import { computePosition, flip, shift, offset } from '@floating-ui/dom';
 
 	// Define ToggleKey type to fix TypeScript errors
 	type ToggleKey = string;
-
-	// Floating UI references
-	type FloatingElement = {
-		button: HTMLElement | null;
-		content: HTMLElement | null;
-		cleanup: (() => void) | null;
-		isOpen: boolean;
-	};
-
-	// Store references to floating elements
-	const floatingElements: Record<string, FloatingElement> = {};
-
-	// Function to position a floating element
-	function positionFloatingElement(reference: HTMLElement, floating: HTMLElement) {
-		return computePosition(reference, floating, {
-			placement: 'top',
-			middleware: [
-				offset(6),
-				flip(),
-				shift({ padding: 5 })
-			]
-		}).then(({ x, y }) => {
-			Object.assign(floating.style, {
-				left: `${x}px`,
-				top: `${y}px`,
-				position: 'absolute',
-				width: 'max-content',
-				zIndex: '100'
-			});
-		});
-	}
-
-	// Function to toggle a floating element
-	function toggleFloating(id: string) {
-		const element = floatingElements[id];
-		if (!element || !element.button || !element.content) return;
-
-		element.isOpen = !element.isOpen;
-
-		if (element.isOpen) {
-			// Show the floating element
-			element.content.style.display = 'block';
-			document.body.appendChild(element.content);
-
-			// Position it initially
-			positionFloatingElement(element.button, element.content);
-
-			// Set up auto-update to reposition on scroll/resize
-			element.cleanup = autoUpdate(
-				element.button,
-				element.content,
-				() => positionFloatingElement(element.button, element.content)
-			);
-
-			// Add click outside listener
-			const handleClickOutside = (event: MouseEvent) => {
-				if (
-					element.content &&
-					element.button &&
-					!element.content.contains(event.target as Node) &&
-					!element.button.contains(event.target as Node)
-				) {
-					toggleFloating(id);
-				}
-			};
-
-			document.addEventListener('click', handleClickOutside);
-
-			// Update cleanup to include removing the event listener
-			const prevCleanup = element.cleanup;
-			element.cleanup = () => {
-				prevCleanup?.();
-				document.removeEventListener('click', handleClickOutside);
-			};
-		} else {
-			// Hide the floating element
-			if (element.content) {
-				element.content.style.display = 'none';
-			}
-
-			// Clean up auto-update
-			if (element.cleanup) {
-				element.cleanup();
-				element.cleanup = null;
-			}
-		}
-	}
-
-	// Function to register a floating element
-	function registerFloating(id: string, button: HTMLElement, content: HTMLElement) {
-		floatingElements[id] = {
-			button,
-			content,
-			cleanup: null,
-			isOpen: false
-		};
-
-		// Initially hide the content
-		content.style.display = 'none';
-	}
-
-	// Action function for initializing floating elements
-	function initFloating(node: HTMLElement) {
-		const userId = node.getAttribute('data-user-id');
-		if (userId) {
-			const button = document.querySelector(`button[data-user="${userId}"]`);
-			if (button) {
-				registerFloating(`user-${userId}`, button as HTMLElement, node);
-			}
-		}
-
-		return {
-			destroy() {
-				// Cleanup if needed
-			}
-		};
-	}
 
 	// Add click outside and scroll handlers for dropdowns
 	onMount(() => {
@@ -155,9 +47,9 @@
 			const target = event.target as HTMLElement;
 
 			// Close all dropdowns when clicking outside
-			$UserStore.forEach(user => {
-				const dropdown = document.getElementById(`dropdown-${user.name}`);
-				const button = document.getElementById(`btn-${user.name}`);
+			$UserStore.forEach((user, index) => {
+				const dropdown = document.getElementById(`dropdown-${index}`);
+				const button = document.getElementById(`btn-${index}`);
 
 				if (dropdown && button &&
 					!dropdown.contains(target) &&
@@ -173,8 +65,8 @@
 		if (userContainer) {
 			userContainer.addEventListener('scroll', () => {
 				// Close all dropdowns when scrolling
-				$UserStore.forEach(user => {
-					const dropdown = document.getElementById(`dropdown-${user.name}`);
+				$UserStore.forEach((user, index) => {
+					const dropdown = document.getElementById(`dropdown-${index}`);
 					if (dropdown && !dropdown.classList.contains('hidden')) {
 						dropdown.classList.add('hidden');
 					}
@@ -183,16 +75,44 @@
 		}
 	});
 
+	// Close and remove all user dropdowns when UserStore changes (e.g., when switching datasets)
+	// Dropdowns are moved to document.body when opened, so we need to remove them from there
+	let previousUserCount = 0;
+	$: {
+		const currentUserCount = $UserStore.length;
+		if (currentUserCount !== previousUserCount) {
+			// Remove all dropdowns that were moved to body
+			document.querySelectorAll('body > [id^="dropdown-"]').forEach((dropdown) => {
+				dropdown.remove();
+			});
+			previousUserCount = currentUserCount;
+		}
+	}
+
 	const techniqueToggleOptions = ['distributionDiagramToggle', 'turnChartToggle', 'contributionCloudToggle', 'dashboardToggle'] as const;
-	const interactionsToggleOptions = [
-		'flowersToggle',
-		'separateToggle',
-		'sortToggle',
-		'lastWordToggle',
-		'echoWordsToggle',
-		'stopWordsToggle',
-		'repeatedWordsToggle'
-	] as const;
+
+	// Define which interactions apply to which visualizations
+	const distributionDiagramInteractions = ['flowersToggle'] as const;
+	const turnChartInteractions = ['separateToggle'] as const;
+	const contributionCloudInteractions = ['separateToggle', 'sortToggle', 'lastWordToggle', 'echoWordsToggle', 'stopWordsToggle', 'repeatedWordsToggle'] as const;
+	const allInteractions = [...new Set([...distributionDiagramInteractions, ...turnChartInteractions, ...contributionCloudInteractions])] as const;
+
+	// Compute visible interactions based on active visualization
+	$: visibleInteractions = (() => {
+		if ($ConfigStore.dashboardToggle) {
+			return allInteractions;
+		} else if ($ConfigStore.distributionDiagramToggle) {
+			return distributionDiagramInteractions;
+		} else if ($ConfigStore.turnChartToggle) {
+			return turnChartInteractions;
+		} else if ($ConfigStore.contributionCloudToggle) {
+			return contributionCloudInteractions;
+		}
+		return allInteractions; // fallback
+	})();
+
+	// Check if repeated words slider should show (only for contribution cloud or dashboard)
+	$: showRepeatedWordsSlider = $ConfigStore.contributionCloudToggle || $ConfigStore.dashboardToggle;
 
 	let selectedDropDownOption = '';
 	const dropdownOptions = [
@@ -210,15 +130,41 @@
 
 	let showDataPopup = false;
 	let showSettings = false;
-	let showDataDropDown = false;
+	let showUploadModal = false;
+	let isDraggingOver = false;
+	let uploadedFiles: { name: string; type: string; status: 'pending' | 'processing' | 'done' | 'error'; error?: string }[] = [];
 	let currentConfig: ConfigStoreType;
 
 	let files: any = [];
-	let users: User[] = [];
 	let p5Instance: p5 | null = null;
 	let core: Core;
-	let isVideoShowing = false;
-	let isVideoPlaying = false;
+	let videoContainerRef: VideoContainer;
+
+	// Reactive bindings to video store
+	$: isVideoLoaded = $VideoStore.isLoaded;
+	$: isVideoVisible = $VideoStore.isVisible;
+	$: hasVideoSource = $VideoStore.source.type !== null;
+
+	// When video loads, convert transcript from word-count mode to timestamp mode
+	$: if (isVideoLoaded) {
+		TranscriptStore.update((transcript) => {
+			const hasWordCountFallback = transcript.wordArray.some((dp) => dp.useWordCountsAsFallback);
+			if (hasWordCountFallback) {
+				transcript.wordArray.forEach((dp) => {
+					dp.useWordCountsAsFallback = false;
+				});
+			}
+			return transcript;
+		});
+	}
+
+	// Reactive binding for editor visibility
+	$: isEditorVisible = $EditorStore.config.isVisible;
+
+	// Get currently active visualization name
+	$: activeVisualization = techniqueToggleOptions.find(t => $ConfigStore[t]) || '';
+	$: activeVisualizationName = activeVisualization ? formatToggleName(activeVisualization) : 'Select';
+
 	let timeline;
 
 	ConfigStore.subscribe((value) => {
@@ -227,15 +173,6 @@
 
 	TimelineStore.subscribe((value) => {
 		timeline = value;
-	});
-
-	VideoStore.subscribe((value) => {
-		isVideoShowing = value.isShowing;
-		isVideoPlaying = value.isPlaying;
-	});
-
-	UserStore.subscribe((data) => {
-		users = data;
 	});
 
 	P5Store.subscribe((value) => {
@@ -266,15 +203,24 @@
 		prevConfig = { echoWordsToggle, lastWordToggle, stopWordsToggle };
 	}
 
-	function toggleVideo() {
-		if (p5Instance && p5Instance.videoController) {
-			p5Instance.videoController.toggleShowVideo();
-			VideoStore.update((value) => {
-				value.isShowing = p5Instance.videoController.isShowing;
-				value.isPlaying = p5Instance.videoController.isPlaying;
-				return value;
+	// Watch for editor layout changes (orientation, collapse) and trigger canvas resize
+	let prevEditorConfig = {
+		orientation: $EditorStore.config.orientation,
+		isCollapsed: $EditorStore.config.isCollapsed
+	};
+	$: {
+		const { orientation, isCollapsed } = $EditorStore.config;
+		if (orientation !== prevEditorConfig.orientation || isCollapsed !== prevEditorConfig.isCollapsed) {
+			// Trigger resize after DOM updates
+			requestAnimationFrame(() => {
+				triggerCanvasResize();
 			});
 		}
+		prevEditorConfig = { orientation, isCollapsed };
+	}
+
+	function toggleVideo() {
+		toggleVideoVisibility();
 	}
 
 	function capitalizeEachWord(sentence: string) {
@@ -348,8 +294,182 @@
 		};
 	}
 
-	function updateUserLoadedFiles(event) {
-		core.handleUserLoadedFiles(event);
+	function updateUserLoadedFiles(event: Event) {
+		const input = event.target as HTMLInputElement;
+		if (input.files) {
+			processFiles(Array.from(input.files));
+		}
+		input.value = ''; // reset so same file can be selected again
+	}
+
+	async function processFiles(fileList: File[]) {
+		// Add files to the upload list
+		const newFiles = fileList.map(f => ({
+			name: f.name,
+			type: getFileTypeLabel(f.name),
+			status: 'pending' as const
+		}));
+		uploadedFiles = [...uploadedFiles, ...newFiles];
+
+		// Process each file
+		for (let i = 0; i < fileList.length; i++) {
+			const file = fileList[i];
+			const fileIndex = uploadedFiles.length - fileList.length + i;
+
+			// Update status to processing
+			uploadedFiles[fileIndex].status = 'processing';
+			uploadedFiles = uploadedFiles;
+
+			try {
+				await processFile(file);
+				uploadedFiles[fileIndex].status = 'done';
+			} catch (err) {
+				uploadedFiles[fileIndex].status = 'error';
+				uploadedFiles[fileIndex].error = err instanceof Error ? err.message : 'Unknown error';
+			}
+			uploadedFiles = uploadedFiles;
+		}
+	}
+
+	async function processFile(file: File): Promise<void> {
+		return new Promise((resolve, reject) => {
+			const fileName = file.name.toLowerCase();
+			if (fileName.endsWith('.csv') || file.type === 'text/csv') {
+				core.clearTranscriptData();
+				core.loadCSVData(file);
+				resolve();
+			} else if (fileName.endsWith('.txt')) {
+				core.clearTranscriptData();
+				core.loadP5Strings(URL.createObjectURL(file));
+				resolve();
+			} else if (fileName.endsWith('.mp4') || file.type === 'video/mp4') {
+				core.prepVideoFromFile(URL.createObjectURL(file));
+				resolve();
+			} else {
+				reject(new Error('Unsupported file format'));
+			}
+		});
+	}
+
+	function getFileTypeLabel(fileName: string): string {
+		const ext = fileName.toLowerCase().split('.').pop();
+		switch (ext) {
+			case 'csv': return 'Transcript (CSV)';
+			case 'txt': return 'Transcript (TXT)';
+			case 'mp4': return 'Video (MP4)';
+			default: return 'Unknown';
+		}
+	}
+
+	function handleDrop(event: DragEvent) {
+		event.preventDefault();
+		isDraggingOver = false;
+		if (event.dataTransfer?.files) {
+			const validFiles = Array.from(event.dataTransfer.files).filter(f => {
+				const name = f.name.toLowerCase();
+				return name.endsWith('.csv') || name.endsWith('.txt') || name.endsWith('.mp4');
+			});
+			if (validFiles.length > 0) {
+				processFiles(validFiles);
+			}
+		}
+	}
+
+	function handleDragOver(event: DragEvent) {
+		event.preventDefault();
+		isDraggingOver = true;
+	}
+
+	function handleDragLeave() {
+		isDraggingOver = false;
+	}
+
+	function openFileDialog() {
+		const input = document.getElementById('file-input') as HTMLInputElement;
+		input?.click();
+	}
+
+	function clearUploadedFiles() {
+		uploadedFiles = [];
+	}
+
+	function createNewTranscript() {
+		// Clear existing data
+		if (p5Instance) {
+			p5Instance.dynamicData?.clear();
+		}
+
+		// Clear users first
+		UserStore.set([]);
+
+		// Check if video is loaded to determine if we should use timestamps or word counts
+		const videoState = get(VideoStore);
+		const hasVideo = videoState.isLoaded;
+		const useWordCountsAsFallback = !hasVideo;
+
+		// Create a default speaker
+		const defaultSpeaker = 'SPEAKER 1';
+		const defaultColor = '#FF6B6B';
+
+		// Set up users
+		UserStore.set([{ name: defaultSpeaker, color: defaultColor, enabled: true }]);
+
+		// Create one empty turn with placeholder text
+		const startTime = hasVideo ? videoState.currentTime : 0;
+		const endTime = hasVideo ? Math.max(videoState.currentTime + 1, videoState.duration) : 10;
+
+		const initialDataPoint = new DataPoint(
+			defaultSpeaker,
+			0, // turnNumber
+			'[new]', // placeholder word
+			0, // order
+			startTime,
+			startTime + 1, // endTime - just 1 second/word after start
+			useWordCountsAsFallback
+		);
+
+		// Create new transcript with all required stats populated
+		const newTranscript = new Transcript();
+		newTranscript.wordArray = [initialDataPoint];
+		newTranscript.totalNumOfWords = 1;
+		newTranscript.totalConversationTurns = 1;
+		newTranscript.totalTimeInSeconds = hasVideo ? Math.max(videoState.duration, 1) : 10;
+		newTranscript.largestTurnLength = 1;
+		newTranscript.largestNumOfWordsByASpeaker = 1;
+		newTranscript.largestNumOfTurnsByASpeaker = 1;
+		newTranscript.maxCountOfMostRepeatedWord = 1;
+		newTranscript.mostFrequentWord = '[new]';
+
+		TranscriptStore.set(newTranscript);
+
+		// Update timeline
+		const timelineEnd = hasVideo ? Math.max(videoState.duration, 1) : 10;
+		TimelineStore.update((timeline) => {
+			timeline.setCurrTime(0);
+			timeline.setStartTime(0);
+			timeline.setEndTime(timelineEnd);
+			timeline.setLeftMarker(0);
+			timeline.setRightMarker(timelineEnd);
+			return timeline;
+		});
+
+		// Open the editor if not already open
+		EditorStore.update((state) => ({
+			...state,
+			config: {
+				...state.config,
+				isVisible: true
+			}
+		}));
+
+		// Trigger canvas resize and refresh visualization after a delay
+		requestAnimationFrame(() => {
+			triggerCanvasResize();
+			// Refresh visualization after resize
+			if (p5Instance) {
+				p5Instance.fillAllData?.();
+			}
+		});
 	}
 
 	function updateExampleDataDropDown(event) {
@@ -363,99 +483,183 @@
 			wordToSearch: newWord
 		}));
 	}
+
+	// Toggle transcript editor visibility
+	function toggleEditor() {
+		EditorStore.update((state) => ({
+			...state,
+			config: {
+				...state.config,
+				isVisible: !state.config.isVisible
+			}
+		}));
+		// Trigger canvas resize after editor toggle
+		// Use requestAnimationFrame to wait for DOM to update
+		requestAnimationFrame(() => {
+			triggerCanvasResize();
+		});
+	}
+
+	// Handle split pane resize
+	function handlePanelResize(event: CustomEvent<{ sizes: [number, number] }>) {
+		EditorStore.update((state) => ({
+			...state,
+			config: {
+				...state.config,
+				panelSizes: event.detail.sizes
+			}
+		}));
+		// Trigger canvas resize
+		triggerCanvasResize();
+	}
+
+	// Safely trigger canvas resize only when container exists and has valid dimensions
+	function triggerCanvasResize() {
+		if (!p5Instance) return;
+		const container = document.getElementById('p5-container');
+		if (container) {
+			const rect = container.getBoundingClientRect();
+			// Only resize if container has valid dimensions
+			if (rect.width > 0 && rect.height > 0) {
+				p5Instance.windowResized?.();
+			}
+		}
+	}
 </script>
 
 <svelte:head>
 	<title>TRANSCRIPT EXPLORER</title>
 </svelte:head>
 
+<div class="page-container">
 <div class="navbar min-h-16 bg-[#ffffff]">
 	<div class="flex-1 px-2 lg:flex-none">
 		<a class="text-2xl text-black italic" href="/">TRANSCRIPT EXPLORER</a>
 	</div>
 
-	<div class="flex justify-end flex-1 px-2">
-		<!-- Select Dropdown -->
-		<details class="dropdown" use:clickOutside>
-			<summary class="btn btn-sm ml-4 tooltip tooltip-bottom flex items-center justify-center"> Visualizations </summary>
-			<ul class="menu dropdown-content rounded-box z-[1] w-52 p-2 shadow bg-base-100">
-				{#each techniqueToggleOptions as toggle}
-					<li>
-						<button on:click={() => toggleSelection(toggle, techniqueToggleOptions)} class="w-full text-left flex items-center">
-							<div class="w-4 h-4 mr-2">
-								{#if $ConfigStore[toggle]}
-									<MdCheck />
-								{/if}
-							</div>
-							{formatToggleName(toggle)}
-						</button>
-					</li>
-				{/each}
-			</ul>
-		</details>
+	<div class="flex justify-end flex-1 px-2 items-center gap-1">
+		<!-- Visualization Controls Group -->
+		<div class="flex items-center gap-2">
+			<!-- Visualizations Dropdown -->
+			<details class="dropdown" use:clickOutside>
+				<summary class="btn btn-sm gap-1 flex items-center">
+					<div class="w-4 h-4">
+						<MdInsertChart />
+					</div>
+					<span class="hidden sm:inline">{activeVisualizationName}</span>
+					<svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+						<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" />
+					</svg>
+				</summary>
+				<ul class="menu dropdown-content rounded-box z-[1] w-52 p-2 shadow bg-base-100">
+					{#each techniqueToggleOptions as toggle}
+						<li>
+							<button on:click={() => toggleSelection(toggle, techniqueToggleOptions)} class="w-full text-left flex items-center">
+								<div class="w-4 h-4 mr-2">
+									{#if $ConfigStore[toggle]}
+										<MdCheck />
+									{/if}
+								</div>
+								{formatToggleName(toggle)}
+							</button>
+						</li>
+					{/each}
+				</ul>
+			</details>
 
-		<!-- Talk Dropdown -->
-		<details class="dropdown" use:clickOutside>
-			<summary class="btn btn-sm ml-4 tooltip tooltip-bottom flex items-center justify-center"> Interactions </summary>
-			<ul class="menu dropdown-content rounded-box z-[1] w-52 p-2 shadow bg-base-100">
-				{#each interactionsToggleOptions as toggle}
-					<li>
-						<button on:click={() => toggleSelectionOnly(toggle, interactionsToggleOptions)} class="w-full text-left flex items-center">
-							<div class="w-4 h-4 mr-2">
-								{#if $ConfigStore[toggle]}
-									<MdCheck />
-								{/if}
-							</div>
-							{formatToggleName(toggle)}
-						</button>
-					</li>
-				{/each}
-				<li class="cursor-none">
-					<p>Repeated Word Filter: {$ConfigStore.repeatWordSliderValue}</p>
-				</li>
-				<li>
-					<label for="repeatWordRange" class="sr-only">Adjust rect width</label>
-					<input
-						id="repeatWordRange"
-						type="range"
-						min="2"
-						max="30"
-						value={$ConfigStore.repeatWordSliderValue}
-						class="range"
-						on:input={(e) => handleConfigChangeFromInput(e, 'repeatWordSliderValue')}
-					/>
-				</li>
-				<hr class="my-4 border-t border-gray-300" />
-				<input type="text" placeholder="Search conversations..." on:input={(e) => handleWordSearch(e)} class="input input-bordered w-full"/>
-			</ul>
-		</details>
+			<!-- Interactions Dropdown -->
+			<details class="dropdown" use:clickOutside>
+				<summary class="btn btn-sm gap-1 flex items-center">
+					<div class="w-4 h-4">
+						<MdTouchApp />
+					</div>
+					<span class="hidden sm:inline">Interactions</span>
+					<svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+						<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" />
+					</svg>
+				</summary>
+				<ul class="menu dropdown-content rounded-box z-[1] w-52 p-2 shadow bg-base-100">
+					{#each visibleInteractions as toggle}
+						<li>
+							<button on:click={() => toggleSelectionOnly(toggle, allInteractions)} class="w-full text-left flex items-center">
+								<div class="w-4 h-4 mr-2">
+									{#if $ConfigStore[toggle]}
+										<MdCheck />
+									{/if}
+								</div>
+								{formatToggleName(toggle)}
+							</button>
+						</li>
+					{/each}
+					{#if showRepeatedWordsSlider}
+						<li class="cursor-none">
+							<p>Repeated Word Filter: {$ConfigStore.repeatWordSliderValue}</p>
+						</li>
+						<li>
+							<label for="repeatWordRange" class="sr-only">Adjust rect width</label>
+							<input
+								id="repeatWordRange"
+								type="range"
+								min="2"
+								max="30"
+								value={$ConfigStore.repeatWordSliderValue}
+								class="range"
+								on:input={(e) => handleConfigChangeFromInput(e, 'repeatWordSliderValue')}
+							/>
+						</li>
+					{/if}
+					<hr class="my-4 border-t border-gray-300" />
+					<input type="text" placeholder="Search conversations..." on:input={(e) => handleWordSearch(e)} class="input input-bordered w-full"/>
+				</ul>
+			</details>
 
-		<div class="flex items-stretch">
-			{#if isVideoShowing}
-				<IconButton id="btn-toggle-video" icon={MdVideocam} tooltip={'Show/Hide Video'} on:click={toggleVideo} />
-			{:else}
-				<IconButton id="btn-toggle-video" icon={MdVideocamOff} tooltip={'Show/Hide Video'} on:click={toggleVideo} />
-			{/if}
-
-			<!-- TODO: Need to move this logic into the IconButton component eventually -->
-			<div
-				data-tip="Upload"
-				class="tooltip tooltip-bottom btn capitalize icon max-h-8 max-w-16 bg-[#ffffff] border-[#ffffff] flex items-center justify-center"
-				role="button"
-				tabindex="0"
-				on:click
-				on:keydown
+			<!-- Editor Toggle -->
+			<button
+				class="btn btn-sm gap-1 {isEditorVisible ? 'btn-primary' : ''}"
+				on:click={toggleEditor}
+				title={isEditorVisible ? 'Hide Editor' : 'Show Editor'}
 			>
-				<label for="file-input">
-					<MdCloudUpload />
-				</label>
-			</div>
+				<div class="w-4 h-4">
+					<MdSubject />
+				</div>
+				<span class="hidden sm:inline">Editor</span>
+			</button>
+		</div>
+
+		<!-- Divider -->
+		<div class="divider divider-horizontal mx-1 h-8"></div>
+
+		<!-- Media Controls Group -->
+		<div class="flex items-center gap-1">
+			{#if isVideoVisible}
+				<IconButton id="btn-toggle-video" icon={MdVideocam} tooltip={'Hide Video'} on:click={toggleVideo} disabled={!isVideoLoaded} />
+			{:else}
+				<IconButton id="btn-toggle-video" icon={MdVideocamOff} tooltip={'Show Video'} on:click={toggleVideo} disabled={!isVideoLoaded} />
+			{/if}
+		</div>
+
+		<!-- Divider -->
+		<div class="divider divider-horizontal mx-1 h-8"></div>
+
+		<!-- File & Settings Group -->
+		<div class="flex items-center gap-1">
+			<IconButton
+				icon={MdCloudUpload}
+				tooltip={'Upload Files'}
+				on:click={() => (showUploadModal = true)}
+			/>
+
+			<IconButton
+				icon={MdNoteAdd}
+				tooltip={'Create New Transcript'}
+				on:click={createNewTranscript}
+			/>
 
 			<input
 				class="hidden"
 				id="file-input"
 				multiple
-				accept=".png, .txt, .jpg, .jpeg, .csv, .mp4"
+				accept=".csv, .txt, .mp4"
 				type="file"
 				bind:files
 				on:change={updateUserLoadedFiles}
@@ -464,48 +668,60 @@
 			<IconButton icon={MdHelpOutline} tooltip={'Help'} on:click={() => ($isModalOpen = !$isModalOpen)} />
 
 			<IconButton icon={MdSettings} tooltip={'Settings'} on:click={() => (showSettings = true)} />
-
-			<div class="relative inline-block text-left">
-				<button
-					on:click={() => (showDataDropDown = !showDataDropDown)}
-					class="flex justify-between w-full rounded border border-gray-300 p-2 bg-white text-sm font-medium text-gray-700 hover:bg-gray-50 focus:outline-none focus:ring focus:ring-indigo-500"
-				>
-					{selectedDropDownOption || '-- Select an Example --'}
-					<div class={`ml-2 transition-transform duration-300 ${showDataDropDown ? 'rotate-0' : 'rotate-180'}`}>
-						<span class="block w-3 h-3 border-l border-t border-gray-700 transform rotate-45"></span>
-					</div>
-				</button>
-
-				{#if showDataDropDown}
-					<div class="absolute z-10 mt-2 w-full rounded-md bg-white shadow-lg max-h-[75vh] overflow-y-auto">
-						<ul class="py-1" role="menu" aria-orientation="vertical">
-							{#each dropdownOptions as group}
-								<li class="px-4 py-2 font-semibold text-gray-600">{group.label}</li>
-								{#each group.items as item}
-									<li>
-										<button
-											on:click={() => {
-												updateExampleDataDropDown({ target: { value: item.value } });
-												showDataDropDown = false;
-												selectedDropDownOption = item.label;
-											}}
-											class="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 w-full text-left"
-										>
-											{item.label}
-										</button>
-									</li>
-								{/each}
-							{/each}
-						</ul>
-					</div>
-				{/if}
-			</div>
 		</div>
+
+		<!-- Divider -->
+		<div class="divider divider-horizontal mx-1 h-8"></div>
+
+		<!-- Example Data Dropdown -->
+		<details class="dropdown dropdown-end" use:clickOutside>
+			<summary class="flex justify-between items-center min-w-[180px] rounded border border-gray-300 px-3 py-1.5 bg-white text-sm font-medium text-gray-700 hover:bg-gray-50 cursor-pointer">
+				<span class="truncate">{selectedDropDownOption || 'Select an Example'}</span>
+				<svg class="w-3 h-3 ml-2 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+					<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" />
+				</svg>
+			</summary>
+			<ul class="menu dropdown-content rounded-box z-[1] w-56 p-2 shadow bg-base-100 max-h-[60vh] overflow-y-auto">
+				{#each dropdownOptions as group}
+					<li class="menu-title text-xs uppercase tracking-wider text-gray-500 pt-2">{group.label}</li>
+					{#each group.items as item}
+						<li>
+							<button
+								on:click={() => {
+									updateExampleDataDropDown({ target: { value: item.value } });
+									selectedDropDownOption = item.label;
+								}}
+								class="text-sm {selectedDropDownOption === item.label ? 'active' : ''}"
+							>
+								{item.label}
+							</button>
+						</li>
+					{/each}
+				{/each}
+			</ul>
+		</details>
 	</div>
 </div>
 
-<div class="h-10">
-	<P5 {sketch} />
+<div class="main-content">
+	<SplitPane
+		orientation={$EditorStore.config.orientation}
+		sizes={$EditorStore.config.panelSizes}
+		collapsed={!$EditorStore.config.isVisible}
+		collapsedPanel="second"
+		on:resize={handlePanelResize}
+	>
+		<div slot="first" class="h-full relative" id="p5-container">
+			<P5 {sketch} />
+			<CanvasTooltip />
+			{#if hasVideoSource}
+				<VideoContainer bind:this={videoContainerRef} />
+			{/if}
+		</div>
+		<div slot="second" class="h-full">
+			<TranscriptEditor />
+		</div>
+	</SplitPane>
 </div>
 
 {#if showSettings}
@@ -570,8 +786,99 @@
 			</div>
 
 			<div class="modal-action">
-				<button class="btn btn-warning" on:click={() => p5Instance?.resetScalingVars()}> Reset Settings </button>
 				<button class="btn" on:click={() => (showSettings = false)}>Close</button>
+			</div>
+		</div>
+	</div>
+{/if}
+
+{#if showUploadModal}
+	<div
+		class="modal modal-open"
+		on:click|self={() => (showUploadModal = false)}
+		on:keydown={(e) => {
+			if (e.key === 'Escape') showUploadModal = false;
+		}}
+	>
+		<div class="modal-box w-11/12 max-w-lg">
+			<div class="flex justify-between mb-4">
+				<h3 class="font-bold text-lg">Upload Files</h3>
+				<button class="btn btn-circle btn-sm" on:click={() => (showUploadModal = false)}>
+					<svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+						<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+					</svg>
+				</button>
+			</div>
+
+			<!-- Drop zone -->
+			<div
+				class="border-2 border-dashed rounded-lg p-8 text-center cursor-pointer transition-colors {isDraggingOver ? 'border-primary bg-primary/10' : 'border-gray-300 hover:border-gray-400'}"
+				on:drop={handleDrop}
+				on:dragover={handleDragOver}
+				on:dragleave={handleDragLeave}
+				on:click={openFileDialog}
+				on:keydown={(e) => { if (e.key === 'Enter') openFileDialog(); }}
+				role="button"
+				tabindex="0"
+			>
+				<div class="flex flex-col items-center gap-2">
+					<div class="w-12 h-12 text-gray-400">
+						<MdCloudUpload />
+					</div>
+					<p class="font-medium">Drag & drop files here</p>
+					<p class="text-sm text-gray-500">or click to browse</p>
+				</div>
+			</div>
+
+			<!-- Supported formats -->
+			<div class="mt-4">
+				<p class="text-sm font-medium mb-2">Supported formats:</p>
+				<div class="flex flex-wrap gap-2">
+					<span class="badge badge-outline">.csv</span>
+					<span class="badge badge-outline">.txt</span>
+					<span class="badge badge-outline">.mp4</span>
+				</div>
+				<p class="text-xs text-gray-500 mt-2">
+					CSV/TXT files should contain transcript data with speaker and content columns.
+					MP4 files will be used as video overlay.
+				</p>
+			</div>
+
+			<!-- Uploaded files list -->
+			{#if uploadedFiles.length > 0}
+				<div class="mt-4">
+					<div class="flex justify-between items-center mb-2">
+						<p class="text-sm font-medium">Uploaded files:</p>
+						<button class="btn btn-xs btn-ghost" on:click={clearUploadedFiles}>Clear</button>
+					</div>
+					<div class="space-y-2 max-h-40 overflow-y-auto">
+						{#each uploadedFiles as file}
+							<div class="flex items-center justify-between p-2 bg-base-200 rounded">
+								<div class="flex items-center gap-2">
+									<span class="text-sm font-medium truncate max-w-[200px]">{file.name}</span>
+									<span class="badge badge-sm">{file.type}</span>
+								</div>
+								<div>
+									{#if file.status === 'pending'}
+										<span class="text-gray-400">Pending</span>
+									{:else if file.status === 'processing'}
+										<span class="loading loading-spinner loading-sm"></span>
+									{:else if file.status === 'done'}
+										<svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 text-success" viewBox="0 0 20 20" fill="currentColor">
+											<path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd" />
+										</svg>
+									{:else if file.status === 'error'}
+										<span class="text-error text-sm" title={file.error}>Error</span>
+									{/if}
+								</div>
+							</div>
+						{/each}
+					</div>
+				</div>
+			{/if}
+
+			<div class="modal-action">
+				<button class="btn" on:click={() => (showUploadModal = false)}>Close</button>
 			</div>
 		</div>
 	</div>
@@ -676,7 +983,7 @@
 	</div>
 {/if}
 
-<div class="btm-nav flex justify-between min-h-20">
+<div class="btm-nav flex justify-between min-h-20" style="position: relative;">
 	<div class="flex flex-1 flex-row justify-start items-center bg-[#f6f5f3] items-start px-8 overflow-x-auto"
 		on:wheel={(e) => {
 			if (e.deltaY !== 0) {
@@ -686,45 +993,72 @@
 		}}>
 		<!-- Users Dropdowns with Floating UI -->
 		{#each $UserStore as user, index}
-			<div class="relative mr-2">
-				<button
-					class="btn" style="color: {user.color};"
-					on:click={() => {
-						const dropdown = document.getElementById(`dropdown-${user.name}`);
-						if (dropdown) {
-							dropdown.classList.toggle('hidden');
+			<div class="relative flex-shrink-0 mr-2">
+				<div class="join">
+					<!-- Visibility toggle button -->
+					<button
+						class="btn btn-sm join-item px-1"
+						style="color: {user.enabled ? user.color : '#999'}; opacity: {user.enabled ? 1 : 0.5};"
+						on:click={() => {
+							user.enabled = !user.enabled;
+							UserStore.update(u => u);
+						}}
+						title={user.enabled ? 'Hide speaker' : 'Show speaker'}
+					>
+						{#if user.enabled}
+							<svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" viewBox="0 0 20 20" fill="currentColor">
+								<path d="M10 12a2 2 0 100-4 2 2 0 000 4z" />
+								<path fill-rule="evenodd" d="M.458 10C1.732 5.943 5.522 3 10 3s8.268 2.943 9.542 7c-1.274 4.057-5.064 7-9.542 7S1.732 14.057.458 10zM14 10a4 4 0 11-8 0 4 4 0 018 0z" clip-rule="evenodd" />
+							</svg>
+						{:else}
+							<svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" viewBox="0 0 20 20" fill="currentColor">
+								<path fill-rule="evenodd" d="M3.707 2.293a1 1 0 00-1.414 1.414l14 14a1 1 0 001.414-1.414l-1.473-1.473A10.014 10.014 0 0019.542 10C18.268 5.943 14.478 3 10 3a9.958 9.958 0 00-4.512 1.074l-1.78-1.781zm4.261 4.26l1.514 1.515a2.003 2.003 0 012.45 2.45l1.514 1.514a4 4 0 00-5.478-5.478z" clip-rule="evenodd" />
+								<path d="M12.454 16.697L9.75 13.992a4 4 0 01-3.742-3.741L2.335 6.578A9.98 9.98 0 00.458 10c1.274 4.057 5.065 7 9.542 7 .847 0 1.669-.105 2.454-.303z" />
+							</svg>
+						{/if}
+					</button>
+					<!-- Name button opens dropdown -->
+					<button
+						class="btn btn-sm join-item px-2 max-w-32 truncate"
+						style="color: {user.enabled ? user.color : '#999'}; opacity: {user.enabled ? 1 : 0.5};"
+						title={user.name}
+						on:click={() => {
+							const dropdown = document.getElementById(`dropdown-${index}`);
+							if (dropdown) {
+								dropdown.classList.toggle('hidden');
 
-							// Position the dropdown using Floating UI
-							const button = document.getElementById(`btn-${user.name}`);
-							if (button && !dropdown.classList.contains('hidden')) {
-								// Move dropdown to body to avoid clipping by overflow
-								document.body.appendChild(dropdown);
+								// Position the dropdown using Floating UI
+								const button = document.getElementById(`btn-${index}`);
+								if (button && !dropdown.classList.contains('hidden')) {
+									// Move dropdown to body to avoid clipping by overflow
+									document.body.appendChild(dropdown);
 
-								computePosition(button, dropdown, {
-									placement: 'top',
-									middleware: [
-										offset(6),
-										flip(),
-										shift({ padding: 5 })
-									]
-								}).then(({x, y}) => {
-									Object.assign(dropdown.style, {
-										left: `${x}px`,
-										top: `${y}px`,
-										position: 'absolute',
-										zIndex: '9999' // Higher z-index to ensure it's above canvas
+									computePosition(button, dropdown, {
+										placement: 'top',
+										middleware: [
+											offset(6),
+											flip(),
+											shift({ padding: 5 })
+										]
+									}).then(({x, y}) => {
+										Object.assign(dropdown.style, {
+											left: `${x}px`,
+											top: `${y}px`,
+											position: 'absolute',
+											zIndex: '9999' // Higher z-index to ensure it's above canvas
+										});
 									});
-								});
+								}
 							}
-						}
-					}}
-					id={`btn-${user.name}`}
-				>
-					{user.name}
-				</button>
+						}}
+						id={`btn-${index}`}
+					>
+						{user.name}
+					</button>
+				</div>
 
 				<div
-					id={`dropdown-${user.name}`}
+					id={`dropdown-${index}`}
 					class="hidden bg-base-100 rounded-box p-2 shadow absolute"
 					style="z-index: 9999;"
 				>
@@ -732,12 +1066,39 @@
 						<li class="py-2">
 							<div class="flex items-center">
 								<input
-									id="userCheckbox-{user.name}"
-									type="checkbox"
-									class="checkbox mr-2"
-									bind:checked={user.enabled}
+									type="text"
+									class="input input-bordered input-sm w-full"
+									value={user.name}
+									on:change={(e) => {
+										const oldName = user.name;
+										const newName = e.currentTarget.value.trim();
+										if (newName && newName !== oldName) {
+											// Update all DataPoints in the transcript
+											TranscriptStore.update(t => {
+												t.wordArray.forEach(dp => {
+													if (dp.speaker === oldName) {
+														dp.speaker = newName;
+													}
+												});
+												return t;
+											});
+											// Update the user name
+											user.name = newName;
+											UserStore.update(u => u);
+											// Close the dropdown
+											const dropdown = document.getElementById(`dropdown-${index}`);
+											if (dropdown) {
+												dropdown.classList.add('hidden');
+											}
+											// Refresh visualization
+											const p5Instance = get(P5Store);
+											if (p5Instance) {
+												p5Instance.fillAllData?.();
+											}
+										}
+									}}
+									placeholder="Speaker name"
 								/>
-								<label for="userCheckbox-{user.name}">Conversation</label>
 							</div>
 						</li>
 						<li class="py-2">
@@ -761,17 +1122,31 @@
 		<TimelinePanel />
 	</div>
 </div>
+</div>
 
 <slot />
 
 <InfoModal {isModalOpen} />
 
 <style>
+	.page-container {
+		display: flex;
+		flex-direction: column;
+		height: 100vh;
+		overflow: hidden;
+	}
+
 	.color-picker {
 		width: 30px;
 		height: 30px;
 		border: none;
 		border-radius: 50%;
 		cursor: pointer;
+	}
+
+	.main-content {
+		flex: 1;
+		min-height: 0;
+		overflow: hidden;
 	}
 </style>

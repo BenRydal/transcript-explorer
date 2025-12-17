@@ -63,6 +63,16 @@ export class TimeUtils {
 	}
 
 	/**
+	 * Formats seconds into compact display format for video player (m:ss or h:mm:ss)
+	 * No leading zeros on hours/minutes, handles edge cases
+	 */
+	static formatTimeCompact(seconds: number): string {
+		if (!seconds || isNaN(seconds)) return '0:00';
+		const duration = Duration.fromObject({ seconds: Math.floor(seconds) });
+		return seconds < 3600 ? duration.toFormat('m:ss') : duration.toFormat('h:mm:ss');
+	}
+
+	/**
 	 * Formats word count with appropriate units
 	 */
 	static formatWordCount(count: number): string {

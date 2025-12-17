@@ -18,12 +18,7 @@ export interface ConfigStoreType {
 	firstWordOfTurnSelectedInTurnChart: string;
 	arrayOfFirstWords: string[];
 	wordToSearch: string;
-	scalingVars: {
-		minTextSize: number;
-		maxTextSize: number;
-		spacing: number;
-		newSpeakerSpacing: number;
-	};
+	hoveredSpeakerInDistributionDiagram: string | null;
 }
 
 export const initialConfig: ConfigStoreType = {
@@ -31,7 +26,7 @@ export const initialConfig: ConfigStoreType = {
 	turnChartToggle: false,
 	contributionCloudToggle: false,
 	dashboardToggle: false,
-	flowersToggle: false,
+	flowersToggle: true,
 	separateToggle: false,
 	sortToggle: false,
 	lastWordToggle: false,
@@ -44,12 +39,7 @@ export const initialConfig: ConfigStoreType = {
 	firstWordOfTurnSelectedInTurnChart: '',
 	arrayOfFirstWords: [],
 	wordToSearch: '',
-	scalingVars: {
-		minTextSize: 20,
-		maxTextSize: 50,
-		spacing: 50,
-		newSpeakerSpacing: 75
-	}
+	hoveredSpeakerInDistributionDiagram: null
 };
 
 const ConfigStore = writable<ConfigStoreType>(initialConfig);
