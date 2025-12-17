@@ -4,14 +4,12 @@ export class DataPoint {
 	startTime: number;
 	endTime: number;
 	word: string;
-	order: number;
 	count: number;
 
 	constructor(
 		speaker: string,
 		turnNumber: number,
 		word: string,
-		order: number,
 		startTime: number,
 		endTime: number
 	) {
@@ -20,7 +18,6 @@ export class DataPoint {
 		this.startTime = startTime;
 		this.endTime = endTime;
 		this.word = word;
-		this.order = order;
 		this.count = 1;
 	}
 }

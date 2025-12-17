@@ -132,7 +132,6 @@
 							firstDp.speaker,
 							turnNumber,
 							word,
-							firstDp.order,
 							firstDp.startTime,
 							firstDp.endTime
 						)
@@ -143,7 +142,7 @@
 				const wordsAfter = transcript.wordArray.filter((dp) => dp.turnNumber > turnNumber);
 				updatedWordArray = [...wordsBefore, ...newDataPoints, ...wordsAfter];
 			} else if (field === 'speaker') {
-				// Handle speaker edit - update speaker name (order will be recalculated below)
+				// Handle speaker edit - update speaker name
 				updatedWordArray = transcript.wordArray.map((dp) => {
 					if (dp.turnNumber !== turnNumber) return dp;
 
@@ -151,7 +150,6 @@
 						newSpeakerName!,
 						dp.turnNumber,
 						dp.word,
-						dp.order, // Will be recalculated below
 						dp.startTime,
 						dp.endTime
 					);
@@ -165,7 +163,6 @@
 						dp.speaker,
 						dp.turnNumber,
 						dp.word,
-						dp.order,
 						field === 'time' ? value.startTime : dp.startTime,
 						field === 'time' ? value.endTime : dp.endTime
 					);
@@ -199,7 +196,6 @@
 								dp.speaker,
 								newTurnIndex, // new turn number based on sorted order
 								dp.word,
-								dp.order,
 								dp.startTime,
 								dp.endTime
 							)
@@ -208,7 +204,7 @@
 				});
 			}
 
-			// If speaker was changed, recalculate speaker orders based on transcript order
+			// If speaker was changed, update UserStore
 			if (field === 'speaker') {
 				// Get speakers in order of first appearance in transcript
 				const speakerOrder: string[] = [];
@@ -216,28 +212,6 @@
 					if (!speakerOrder.includes(dp.speaker)) {
 						speakerOrder.push(dp.speaker);
 					}
-				});
-
-				// Create speaker to order mapping
-				const speakerToOrder = new Map<string, number>();
-				speakerOrder.forEach((speaker, index) => {
-					speakerToOrder.set(speaker, index);
-				});
-
-				// Update order field in all DataPoints
-				updatedWordArray = updatedWordArray.map((dp) => {
-					const newOrder = speakerToOrder.get(dp.speaker) ?? dp.order;
-					if (newOrder !== dp.order) {
-						return new DataPoint(
-							dp.speaker,
-							dp.turnNumber,
-							dp.word,
-							newOrder,
-							dp.startTime,
-							dp.endTime
-						);
-					}
-					return dp;
 				});
 
 				// Update UserStore to match the new speaker order
@@ -384,7 +358,6 @@
 						dp.speaker,
 						dp.turnNumber - 1,
 						dp.word,
-						dp.order,
 						dp.startTime,
 						dp.endTime
 					);
@@ -430,7 +403,6 @@
 						dp.speaker,
 						dp.turnNumber + 1,
 						dp.word,
-						dp.order,
 						dp.startTime,
 						dp.endTime
 					);
@@ -443,7 +415,6 @@
 				speaker,
 				newTurnNumber,
 				'[new]',
-				lastWord?.order ?? 0,
 				lastWord?.endTime ?? 0,
 				lastWord?.endTime ?? 0
 			);

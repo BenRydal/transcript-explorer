@@ -6,7 +6,6 @@ export interface Turn {
 	speaker: string;
 	startTime: number;
 	endTime: number;
-	order: number;
 	words: string[];
 	wordCount: number;
 }
@@ -25,7 +24,6 @@ export function getTurnsFromWordArray(wordArray: DataPoint[]): Turn[] {
 				speaker: dp.speaker,
 				startTime: dp.startTime,
 				endTime: dp.endTime,
-				order: dp.order,
 				words: [],
 				wordCount: 0
 			});

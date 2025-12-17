@@ -196,7 +196,7 @@ export class Core {
 					return;
 				}
 
-				const { speakerName, content, speakerOrder, startTime, endTime, hasStartTime, hasEndTime } = parsedData;
+				const { speakerName, content, startTime, endTime, hasStartTime, hasEndTime } = parsedData;
 				// Track if any row has start or end time data
 				if (hasStartTime) hasAnyStartTime = true;
 				if (hasEndTime) hasAnyEndTime = true;
@@ -210,7 +210,7 @@ export class Core {
 
 				// Add words to wordArray
 				content.forEach((word) => {
-					wordArray.push(new DataPoint(speakerName, turnNumber, word, speakerOrder, startTime, endTime));
+					wordArray.push(new DataPoint(speakerName, turnNumber, word, startTime, endTime));
 					updatedTranscript.totalNumOfWords++;
 				});
 
@@ -243,7 +243,6 @@ export class Core {
 		return {
 			speakerName,
 			content,
-			speakerOrder: users.findIndex((user) => user.name === speakerName),
 			startTime: currentWordCount,
 			endTime: currentWordCount + content.length,
 			hasStartTime: false,
@@ -268,7 +267,6 @@ export class Core {
 			return {
 				speakerName,
 				content,
-				speakerOrder: users.findIndex((user) => user.name === speakerName),
 				startTime: currentWordCount,
 				endTime: currentWordCount + content.length,
 				hasStartTime: false,
@@ -302,7 +300,6 @@ export class Core {
 		return {
 			speakerName,
 			content,
-			speakerOrder: users.findIndex((user) => user.name === speakerName),
 			startTime,
 			endTime,
 			hasStartTime,

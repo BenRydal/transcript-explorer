@@ -64,7 +64,7 @@ export class DistributionDiagram {
 		this.hoveredSpeaker = null;
 	}
 
-	draw(sortedAnimationWordArray: Record<number, DataPoint[]>): { hoveredSpeaker: string | null } {
+	draw(sortedAnimationWordArray: Record<string, DataPoint[]>): { hoveredSpeaker: string | null } {
 		const searchTerm = this.config.wordToSearch?.toLowerCase();
 		this.hoveredSpeaker = null;
 

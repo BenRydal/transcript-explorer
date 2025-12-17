@@ -219,7 +219,7 @@ export class ContributionCloud {
 	getTurnContext(word: DataPoint, allPositions: WordPosition[]): string | null {
 		const turnWords = allPositions
 			.filter((p) => p.word.turnNumber === word.turnNumber)
-			.sort((a, b) => a.word.order - b.word.order)
+			.sort((a, b) => a.word.startTime - b.word.startTime)
 			.map((p) => p.word.word);
 
 		if (turnWords.length === 0) return null;

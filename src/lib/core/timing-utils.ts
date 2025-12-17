@@ -28,7 +28,7 @@ export function recalculateWordCountTimes(wordArray: DataPoint[]): DataPoint[] {
 	// Second pass: apply calculated times to all words
 	return wordArray.map((dp) => {
 		const times = turnTimes.get(dp.turnNumber)!;
-		return new DataPoint(dp.speaker, dp.turnNumber, dp.word, dp.order, times.start, times.end);
+		return new DataPoint(dp.speaker, dp.turnNumber, dp.word, times.start, times.end);
 	});
 }
 
@@ -80,7 +80,7 @@ export function recalculateEndTimesFromStarts(wordArray: DataPoint[]): DataPoint
 	// Update all words with calculated end times
 	return wordArray.map((dp) => {
 		const newEndTime = turnEndTimes.get(dp.turnNumber) ?? dp.endTime;
-		return new DataPoint(dp.speaker, dp.turnNumber, dp.word, dp.order, dp.startTime, newEndTime);
+		return new DataPoint(dp.speaker, dp.turnNumber, dp.word, dp.startTime, newEndTime);
 	});
 }
 

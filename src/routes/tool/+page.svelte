@@ -466,7 +466,6 @@
 			defaultSpeaker,
 			0, // turnNumber
 			'[new]', // placeholder word
-			0, // order
 			initialStartTime,
 			initialEndTime
 		);
@@ -534,7 +533,6 @@
 		const wordArray: DataPoint[] = [];
 		const turnLengths = new Map<number, number>();
 		const wordCounts = new Map<string, number>();
-		const speakerIndex = 0; // Single speaker from auto-transcription
 
 		result.segments.forEach((segment, turnIndex) => {
 			const words = segment.text.split(/\s+/).filter((w) => w.trim());
@@ -544,7 +542,7 @@
 			words.forEach((word, wordIndex) => {
 				const wordStart = segment.start + wordIndex * wordDuration;
 				const wordEnd = segment.start + (wordIndex + 1) * wordDuration;
-				wordArray.push(new DataPoint(defaultSpeaker, turnIndex, word, speakerIndex, wordStart, wordEnd));
+				wordArray.push(new DataPoint(defaultSpeaker, turnIndex, word, wordStart, wordEnd));
 				const lowerWord = word.toLowerCase();
 				wordCounts.set(lowerWord, (wordCounts.get(lowerWord) || 0) + 1);
 			});
