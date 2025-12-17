@@ -7,14 +7,22 @@
 	import ConfigStore from '../../stores/configStore';
 	import P5Store from '../../stores/p5Store';
 	import { getTurnsFromWordArray } from '$lib/core/turn-utils';
+	import {
+		applyTimingModeToWordArray,
+		updateTimelineFromData,
+		getMaxTime
+	} from '$lib/core/timing-utils';
 	import type { Turn } from '$lib/core/turn-utils';
 	import { DataPoint } from '../../models/dataPoint';
 	import EditorToolbar from './EditorToolbar.svelte';
 	import TranscriptEditorRow from './TranscriptEditorRow.svelte';
 
+	import type { TimingMode } from '../../models/transcript';
+
 	let turns: Turn[] = [];
 	let speakers: string[] = [];
 	let editorContainer: HTMLElement;
+	let timingMode: TimingMode = 'untimed';
 
 	// Subscribe to transcript changes
 	TranscriptStore.subscribe((transcript) => {
@@ -23,6 +31,7 @@
 		} else {
 			turns = [];
 		}
+		timingMode = transcript.timingMode;
 	});
 
 	// Get list of unique speakers
@@ -125,8 +134,7 @@
 							word,
 							firstDp.order,
 							firstDp.startTime,
-							firstDp.endTime,
-							firstDp.useWordCountsAsFallback
+							firstDp.endTime
 						)
 				);
 
@@ -145,8 +153,7 @@
 						dp.word,
 						dp.order, // Will be recalculated below
 						dp.startTime,
-						dp.endTime,
-						dp.useWordCountsAsFallback
+						dp.endTime
 					);
 				});
 			} else {
@@ -160,8 +167,7 @@
 						dp.word,
 						dp.order,
 						field === 'time' ? value.startTime : dp.startTime,
-						field === 'time' ? value.endTime : dp.endTime,
-						dp.useWordCountsAsFallback
+						field === 'time' ? value.endTime : dp.endTime
 					);
 				});
 			}
@@ -195,8 +201,7 @@
 								dp.word,
 								dp.order,
 								dp.startTime,
-								dp.endTime,
-								dp.useWordCountsAsFallback
+								dp.endTime
 							)
 						);
 					});
@@ -229,8 +234,7 @@
 							dp.word,
 							newOrder,
 							dp.startTime,
-							dp.endTime,
-							dp.useWordCountsAsFallback
+							dp.endTime
 						);
 					}
 					return dp;
@@ -263,28 +267,19 @@
 				});
 			}
 
-			// Recalculate all transcript stats
-			const stats = recalculateTranscriptStats(updatedWordArray);
+			// Apply timing mode recalculations and finalize
+			const result = finalizeWordArrayEdit(updatedWordArray, transcript.timingMode);
 
 			return {
 				...transcript,
-				wordArray: updatedWordArray,
-				totalNumOfWords: updatedWordArray.length,
-				...stats
+				wordArray: result.wordArray,
+				totalNumOfWords: result.wordArray.length,
+				totalTimeInSeconds: result.maxTime,
+				...result.stats
 			};
 		});
 
-		// Mark as dirty
-		EditorStore.update((state) => ({
-			...state,
-			isDirty: true
-		}));
-
-		// Refresh visualization - use fillAllData to show all words including newly added ones
-		const p5Instance = get(P5Store);
-		if (p5Instance) {
-			p5Instance.fillAllData?.();
-		}
+		markDirtyAndRefresh();
 	}
 
 	// Recalculate transcript statistics after edits
@@ -335,6 +330,30 @@
 		};
 	}
 
+	// Helper: finalize word array after edit (apply timing mode, update timeline, calc stats)
+	function finalizeWordArrayEdit(
+		wordArray: DataPoint[],
+		timingMode: TimingMode
+	): { wordArray: DataPoint[]; stats: ReturnType<typeof recalculateTranscriptStats>; maxTime: number } {
+		const processedWordArray = applyTimingModeToWordArray(wordArray, timingMode);
+		updateTimelineFromData(processedWordArray);
+		const stats = recalculateTranscriptStats(processedWordArray);
+		const maxTime = getMaxTime(processedWordArray);
+		return { wordArray: processedWordArray, stats, maxTime };
+	}
+
+	// Helper: mark editor dirty and refresh visualization
+	function markDirtyAndRefresh() {
+		EditorStore.update((state) => ({
+			...state,
+			isDirty: true
+		}));
+		const p5Instance = get(P5Store);
+		if (p5Instance) {
+			p5Instance.fillAllData?.();
+		}
+	}
+
 	// Auto-scroll to selected turn when selection changes from visualization
 	$: if (
 		$EditorStore.selection.selectedTurnNumber !== null &&
@@ -359,7 +378,7 @@
 			const updatedWordArray = transcript.wordArray.filter((dp) => dp.turnNumber !== turnNumber);
 
 			// Renumber turns that come after the deleted one
-			const renumberedWordArray = updatedWordArray.map((dp) => {
+			let renumberedWordArray = updatedWordArray.map((dp) => {
 				if (dp.turnNumber > turnNumber) {
 					return new DataPoint(
 						dp.speaker,
@@ -367,35 +386,25 @@
 						dp.word,
 						dp.order,
 						dp.startTime,
-						dp.endTime,
-						dp.useWordCountsAsFallback
+						dp.endTime
 					);
 				}
 				return dp;
 			});
 
-			// Recalculate stats
-			const stats = recalculateTranscriptStats(renumberedWordArray);
+			// Apply timing mode recalculations and finalize
+			const result = finalizeWordArrayEdit(renumberedWordArray, transcript.timingMode);
 
 			return {
 				...transcript,
-				wordArray: renumberedWordArray,
-				totalNumOfWords: renumberedWordArray.length,
-				...stats
+				wordArray: result.wordArray,
+				totalNumOfWords: result.wordArray.length,
+				totalTimeInSeconds: result.maxTime,
+				...result.stats
 			};
 		});
 
-		// Mark as dirty
-		EditorStore.update((state) => ({
-			...state,
-			isDirty: true
-		}));
-
-		// Refresh visualization
-		const p5Instance = get(P5Store);
-		if (p5Instance) {
-			p5Instance.fillAllData?.();
-		}
+		markDirtyAndRefresh();
 	}
 
 	// Handle add turn after
@@ -419,8 +428,7 @@
 						dp.word,
 						dp.order,
 						dp.startTime,
-						dp.endTime,
-						dp.useWordCountsAsFallback
+						dp.endTime
 					);
 				}
 				return dp;
@@ -433,8 +441,7 @@
 				'[new]',
 				lastWord?.order ?? 0,
 				lastWord?.endTime ?? 0,
-				lastWord?.endTime ?? 0,
-				lastWord?.useWordCountsAsFallback ?? false
+				lastWord?.endTime ?? 0
 			);
 
 			// Insert the new turn at the right position
@@ -445,28 +452,19 @@
 				renumberedWordArray.splice(insertIndex, 0, newDataPoint);
 			}
 
-			// Recalculate stats
-			const stats = recalculateTranscriptStats(renumberedWordArray);
+			// Apply timing mode recalculations and finalize
+			const result = finalizeWordArrayEdit(renumberedWordArray, transcript.timingMode);
 
 			return {
 				...transcript,
-				wordArray: renumberedWordArray,
-				totalNumOfWords: renumberedWordArray.length,
-				...stats
+				wordArray: result.wordArray,
+				totalNumOfWords: result.wordArray.length,
+				totalTimeInSeconds: result.maxTime,
+				...result.stats
 			};
 		});
 
-		// Mark as dirty
-		EditorStore.update((state) => ({
-			...state,
-			isDirty: true
-		}));
-
-		// Refresh visualization
-		const p5Instance = get(P5Store);
-		if (p5Instance) {
-			p5Instance.fillAllData?.();
-		}
+		markDirtyAndRefresh();
 	}
 </script>
 
@@ -501,6 +499,7 @@
 							isSelected={isTurnSelected(turn)}
 							isSpeakerHighlighted={isSpeakerHighlighted(turn)}
 							{speakers}
+							{timingMode}
 							on:select={handleTurnSelect}
 							on:edit={handleTurnEdit}
 							on:delete={handleTurnDelete}

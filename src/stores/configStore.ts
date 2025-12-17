@@ -19,6 +19,9 @@ export interface ConfigStoreType {
 	arrayOfFirstWords: string[];
 	wordToSearch: string;
 	hoveredSpeakerInDistributionDiagram: string | null;
+	// Start-only mode settings
+	preserveGapsBetweenTurns: boolean;
+	speechRateWordsPerSecond: number;
 }
 
 export const initialConfig: ConfigStoreType = {
@@ -39,7 +42,10 @@ export const initialConfig: ConfigStoreType = {
 	firstWordOfTurnSelectedInTurnChart: '',
 	arrayOfFirstWords: [],
 	wordToSearch: '',
-	hoveredSpeakerInDistributionDiagram: null
+	hoveredSpeakerInDistributionDiagram: null,
+	// Start-only mode settings (default: fill to next turn)
+	preserveGapsBetweenTurns: false,
+	speechRateWordsPerSecond: 3
 };
 
 const ConfigStore = writable<ConfigStoreType>(initialConfig);

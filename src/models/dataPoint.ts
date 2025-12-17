@@ -6,7 +6,6 @@ export class DataPoint {
 	word: string;
 	order: number;
 	count: number;
-	useWordCountsAsFallback: boolean = false;
 
 	constructor(
 		speaker: string,
@@ -14,8 +13,7 @@ export class DataPoint {
 		word: string,
 		order: number,
 		startTime: number,
-		endTime: number,
-		useWordCountsAsFallback: boolean
+		endTime: number
 	) {
 		this.speaker = speaker;
 		this.turnNumber = turnNumber;
@@ -24,6 +22,5 @@ export class DataPoint {
 		this.word = word;
 		this.order = order;
 		this.count = 1;
-		this.useWordCountsAsFallback = useWordCountsAsFallback;
 	}
 }

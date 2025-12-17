@@ -3,17 +3,20 @@
 	import MdSwapHoriz from 'svelte-icons/md/MdSwapHoriz.svelte';
 	import MdFileDownload from 'svelte-icons/md/MdFileDownload.svelte';
 	import MdVideoLibrary from 'svelte-icons/md/MdVideoLibrary.svelte';
+	import { get } from 'svelte/store';
 	import EditorStore from '../../stores/editorStore';
+	import TranscriptStore from '../../stores/transcriptStore';
+	import P5Store from '../../stores/p5Store';
 	import { exportTranscriptToCSV } from '$lib/core/export-utils';
+	import { applyTimingModeToWordArray, updateTimelineFromData } from '$lib/core/timing-utils';
+	import type { TimingMode } from '../../models/transcript';
 
 	function toggleOrientation() {
 		EditorStore.update((state) => ({
 			...state,
 			config: {
 				...state.config,
-				orientation: state.config.orientation === 'vertical' ? 'horizontal' : 'vertical',
-				// Swap panel sizes when changing orientation
-				panelSizes: [state.config.panelSizes[0], state.config.panelSizes[1]]
+				orientation: state.config.orientation === 'vertical' ? 'horizontal' : 'vertical'
 			}
 		}));
 	}
@@ -28,12 +31,41 @@
 		}));
 	}
 
+	function setTimingMode(mode: TimingMode) {
+		TranscriptStore.update((transcript) => {
+			const updatedWordArray = applyTimingModeToWordArray(transcript.wordArray, mode);
+			return {
+				...transcript,
+				wordArray: updatedWordArray,
+				timingMode: mode
+			};
+		});
+
+		// Update timeline to match data range (don't expand-only, set to actual range)
+		const updatedTranscript = get(TranscriptStore);
+		updateTimelineFromData(updatedTranscript.wordArray, false);
+
+		// Mark as dirty
+		EditorStore.update((state) => ({
+			...state,
+			isDirty: true
+		}));
+
+		// Refresh visualization
+		const p5Instance = get(P5Store);
+		if (p5Instance) {
+			p5Instance.fillAllData?.();
+		}
+	}
+
 	function handleExport() {
 		exportTranscriptToCSV();
 	}
 
 	$: isVertical = $EditorStore.config.orientation === 'vertical';
 	$: showAdvancedVideoControls = $EditorStore.config.showAdvancedVideoControls;
+	$: timingMode = $TranscriptStore.timingMode;
+	$: hasTranscript = $TranscriptStore.wordArray.length > 0;
 </script>
 
 <div class="editor-toolbar">
@@ -45,6 +77,35 @@
 	</div>
 
 	<div class="toolbar-right">
+		{#if hasTranscript}
+			<div class="timing-mode-group">
+				<button
+					class="timing-mode-btn"
+					class:active={timingMode === 'untimed'}
+					on:click={() => setTimingMode('untimed')}
+					title="No timestamps"
+				>
+					Untimed
+				</button>
+				<button
+					class="timing-mode-btn"
+					class:active={timingMode === 'startOnly'}
+					on:click={() => setTimingMode('startOnly')}
+					title="Start times only"
+				>
+					Start
+				</button>
+				<button
+					class="timing-mode-btn"
+					class:active={timingMode === 'startEnd'}
+					on:click={() => setTimingMode('startEnd')}
+					title="Start and end times"
+				>
+					Start/End
+				</button>
+			</div>
+		{/if}
+
 		<button
 			class="toolbar-btn"
 			class:active={showAdvancedVideoControls}
@@ -141,6 +202,45 @@
 	}
 
 	.toolbar-btn.active:hover {
+		background-color: #bfdbfe;
+	}
+
+	.timing-mode-group {
+		display: flex;
+		border: 1px solid #d1d5db;
+		border-radius: 0.25rem;
+		overflow: hidden;
+		margin-right: 0.25rem;
+	}
+
+	.timing-mode-btn {
+		padding: 0.25rem 0.5rem;
+		border: none;
+		border-right: 1px solid #d1d5db;
+		background-color: transparent;
+		color: #6b7280;
+		font-size: 0.7rem;
+		font-weight: 500;
+		cursor: pointer;
+		transition: background-color 0.15s, color 0.15s;
+		white-space: nowrap;
+	}
+
+	.timing-mode-btn:last-child {
+		border-right: none;
+	}
+
+	.timing-mode-btn:hover {
+		background-color: #e5e7eb;
+		color: #374151;
+	}
+
+	.timing-mode-btn.active {
+		background-color: #dbeafe;
+		color: #2563eb;
+	}
+
+	.timing-mode-btn.active:hover {
 		background-color: #bfdbfe;
 	}
 </style>

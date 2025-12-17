@@ -1,5 +1,7 @@
 import type { DataPoint } from './dataPoint';
 
+export type TimingMode = 'untimed' | 'startOnly' | 'startEnd';
+
 export class Transcript {
 	wordArray: DataPoint[];
 	totalTimeInSeconds: number;
@@ -10,6 +12,7 @@ export class Transcript {
 	largestNumOfTurnsByASpeaker: number;
 	maxCountOfMostRepeatedWord: number;
 	mostFrequentWord: string;
+	timingMode: TimingMode;
 
 	constructor() {
 		this.wordArray = [];
@@ -21,5 +24,6 @@ export class Transcript {
 		this.largestNumOfTurnsByASpeaker = 0;
 		this.maxCountOfMostRepeatedWord = 0;
 		this.mostFrequentWord = '';
+		this.timingMode = 'untimed';
 	}
 }
