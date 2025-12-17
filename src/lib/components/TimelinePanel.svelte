@@ -35,10 +35,18 @@
 	let timingMode: TimingMode = 'untimed';
 
 	TranscriptStore.subscribe((data) => {
+		const previousTimingMode = timingMode;
 		timingMode = data.timingMode;
-		// Default to WORDS format for untimed transcripts
-		if (timingMode === 'untimed' && data.wordArray.length > 0) {
-			currentTimeFormat = 'WORDS';
+
+		// Update time format when timing mode changes
+		if (data.wordArray.length > 0) {
+			if (timingMode === 'untimed') {
+				// Default to WORDS format for untimed transcripts
+				currentTimeFormat = 'WORDS';
+			} else if (previousTimingMode === 'untimed') {
+				// Switching from untimed to timed mode - use time-based format
+				currentTimeFormat = 'MMSS';
+			}
 		}
 	});
 
