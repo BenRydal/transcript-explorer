@@ -395,6 +395,10 @@
 			// Apply timing mode recalculations and finalize
 			const result = finalizeWordArrayEdit(renumberedWordArray, transcript.timingMode);
 
+			// Remove speakers from UserStore who no longer have any turns
+			const remainingSpeakers = new Set(renumberedWordArray.map((dp) => dp.speaker));
+			UserStore.update((users) => users.filter((user) => remainingSpeakers.has(user.name)));
+
 			return {
 				...transcript,
 				wordArray: result.wordArray,
