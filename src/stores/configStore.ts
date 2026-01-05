@@ -36,7 +36,7 @@ export const initialConfig: ConfigStoreType = {
 	echoWordsToggle: false,
 	stopWordsToggle: false,
 	repeatedWordsToggle: false,
-	animationRate: 0.05,
+	animationRate: 3,
 	repeatWordSliderValue: 5,
 	selectedWordFromContributionCloud: '',
 	firstWordOfTurnSelectedInTurnChart: '',

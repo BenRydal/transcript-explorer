@@ -165,25 +165,23 @@
 		});
 	};
 
-	// Speed presets for animation
-	const SPEED_PRESETS = [0.25, 0.5, 1, 2, 4];
-	$: speedLabel = config.animationRate < 1
-		? `${config.animationRate}x`
-		: `${Math.round(config.animationRate)}x`;
+	// Speed presets for animation (multiplier of real-time)
+	const SPEED_PRESETS = [
+		{ value: 1, label: '1x' },
+		{ value: 3, label: '3x' },
+		{ value: 6, label: '6x' },
+		{ value: 15, label: '15x' },
+		{ value: 30, label: '30x' }
+	];
 
-	const increaseSpeed = () => {
-		ConfigStore.update((currentConfig) => {
-			const currentIndex = SPEED_PRESETS.findIndex(s => s >= currentConfig.animationRate);
-			const nextIndex = Math.min(currentIndex + 1, SPEED_PRESETS.length - 1);
-			return { ...currentConfig, animationRate: SPEED_PRESETS[nextIndex] };
-		});
-	};
+	$: currentPresetIndex = SPEED_PRESETS.findIndex(p => p.value === config.animationRate);
+	$: speedLabel = currentPresetIndex >= 0 ? SPEED_PRESETS[currentPresetIndex].label : '3x';
 
-	const decreaseSpeed = () => {
+	const cycleSpeed = () => {
 		ConfigStore.update((currentConfig) => {
-			const currentIndex = SPEED_PRESETS.findIndex(s => s >= currentConfig.animationRate);
-			const prevIndex = Math.max(currentIndex - 1, 0);
-			return { ...currentConfig, animationRate: SPEED_PRESETS[prevIndex] };
+			const currentIndex = SPEED_PRESETS.findIndex(p => p.value === currentConfig.animationRate);
+			const nextIndex = (currentIndex + 1) % SPEED_PRESETS.length;
+			return { ...currentConfig, animationRate: SPEED_PRESETS[nextIndex].value };
 		});
 	};
 
@@ -283,25 +281,14 @@
 					</button>
 				</div>
 
-				<div class="speed-controls">
-					<button
-						class="speed-adjust"
-						on:click={decreaseSpeed}
-						title="Slower"
-						aria-label="Decrease speed"
-					>
-						−
-					</button>
-					<span class="speed-display">{speedLabel}</span>
-					<button
-						class="speed-adjust"
-						on:click={increaseSpeed}
-						title="Faster"
-						aria-label="Increase speed"
-					>
-						+
-					</button>
-				</div>
+				<button
+					class="speed-btn"
+					on:click={cycleSpeed}
+					title="Click to change speed"
+					aria-label="Animation speed: {speedLabel}"
+				>
+					{speedLabel}
+				</button>
 			</div>
 
 			<!-- Center: Current time display -->
@@ -442,43 +429,23 @@
 		color: #ffffff;
 	}
 
-	.speed-controls {
-		display: flex;
-		align-items: center;
-		border: 1px solid #e5e7eb;
-		border-radius: 4px;
-		overflow: hidden;
-	}
-
-	.speed-adjust {
-		display: flex;
-		align-items: center;
-		justify-content: center;
-		width: 24px;
-		height: 24px;
-		border: none;
-		background-color: #ffffff;
-		color: #6b7280;
-		cursor: pointer;
-		transition: background-color 0.15s, color 0.15s;
-		font-size: 1rem;
-		font-weight: 500;
-	}
-
-	.speed-adjust:hover {
-		background-color: #f3f4f6;
-		color: #374151;
-	}
-
-	.speed-display {
+	.speed-btn {
 		font-family: monospace;
 		font-size: 0.8rem;
 		font-weight: 600;
-		padding: 0.125rem 0.375rem;
+		padding: 0.25rem 0.5rem;
 		color: #374151;
+		background-color: #ffffff;
+		border: 1px solid #e5e7eb;
+		border-radius: 4px;
+		cursor: pointer;
+		transition: background-color 0.15s, border-color 0.15s;
 		min-width: 2.5rem;
 		text-align: center;
-		border-left: 1px solid #e5e7eb;
-		border-right: 1px solid #e5e7eb;
+	}
+
+	.speed-btn:hover {
+		background-color: #f3f4f6;
+		border-color: #d1d5db;
 	}
 </style>

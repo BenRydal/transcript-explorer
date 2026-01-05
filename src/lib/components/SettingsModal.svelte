@@ -54,21 +54,6 @@
 			</div>
 
 			<div class="flex flex-col space-y-6">
-				<!-- Animation Rate -->
-				<div class="flex flex-col">
-					<label for="animationRate" class="font-medium">Animation Rate: {$ConfigStore.animationRate}</label>
-					<input
-						id="animationRate"
-						type="range"
-						min="0.01"
-						max="1"
-						step="0.01"
-						value={$ConfigStore.animationRate}
-						on:input={(e) => handleConfigChange('animationRate', parseFloat(e.target.value))}
-						class="range range-primary"
-					/>
-				</div>
-
 				<!-- Timeline Duration -->
 				<div class="flex flex-col">
 					<label for="inputSeconds" class="font-medium">Timeline Duration (seconds)</label>
