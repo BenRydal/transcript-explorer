@@ -12,6 +12,8 @@
 	import MdSubject from 'svelte-icons/md/MdSubject.svelte';
 	import MdInsertChart from 'svelte-icons/md/MdInsertChart.svelte';
 	import MdTouchApp from 'svelte-icons/md/MdTouchApp.svelte';
+	import MdMenu from 'svelte-icons/md/MdMenu.svelte';
+	import MdClose from 'svelte-icons/md/MdClose.svelte';
 	import UserStore from '../../stores/userStore';
 	import P5Store from '../../stores/p5Store';
 	import VideoStore, { toggleVisibility as toggleVideoVisibility } from '../../stores/videoStore';
@@ -94,6 +96,7 @@
 	let showDataPopup = false;
 	let showSettings = false;
 	let showUploadModal = false;
+	let mobileMenuOpen = false;
 	let showTranscriptionModal = false;
 	let isDraggingOver = false;
 	let uploadedFiles: { name: string; type: string; status: 'pending' | 'processing' | 'done' | 'error'; error?: string }[] = [];
@@ -604,7 +607,23 @@
 			<a class="text-2xl text-black italic" href="/">TRANSCRIPT EXPLORER</a>
 		</div>
 
-		<div class="flex justify-end flex-1 px-2 items-center gap-1">
+		<!-- Mobile hamburger button -->
+		<button
+			class="btn btn-ghost md:hidden"
+			on:click={() => (mobileMenuOpen = !mobileMenuOpen)}
+			aria-label="Toggle menu"
+		>
+			<div class="w-6 h-6">
+				{#if mobileMenuOpen}
+					<MdClose />
+				{:else}
+					<MdMenu />
+				{/if}
+			</div>
+		</button>
+
+		<!-- Desktop navigation -->
+		<div class="hidden md:flex justify-end flex-1 px-2 items-center gap-1">
 			<!-- Example Data Dropdown -->
 			<details class="dropdown" use:clickOutside data-tour="examples">
 				<summary
@@ -643,7 +662,7 @@
 						<div class="w-4 h-4">
 							<MdInsertChart />
 						</div>
-						<span class="hidden sm:inline">{activeVisualizationName}</span>
+						{activeVisualizationName}
 						<svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
 							<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" />
 						</svg>
@@ -671,7 +690,7 @@
 							<div class="w-4 h-4">
 								<MdTouchApp />
 							</div>
-							<span class="hidden sm:inline">Interactions</span>
+							Interactions
 							<svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
 								<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" />
 							</svg>
@@ -720,13 +739,12 @@
 						<div class="w-4 h-4">
 							<MdSubject />
 						</div>
-						<span class="hidden sm:inline">Editor</span>
+						Editor
 					</button>
 				</div>
 
 				<!-- Video Toggle -->
 				<IconButton
-					id="btn-toggle-video"
 					icon={isVideoVisible ? MdVideocam : MdVideocamOff}
 					tooltip={isVideoVisible ? 'Hide Video' : 'Show Video'}
 					on:click={toggleVideo}
@@ -747,6 +765,161 @@
 			</div>
 		</div>
 	</div>
+
+	<!-- Mobile menu dropdown -->
+	{#if mobileMenuOpen}
+		<div class="md:hidden bg-white border-b border-gray-200 shadow-lg">
+			<div class="p-4 space-y-4">
+				<!-- Example Data Section -->
+				<div>
+					<p class="text-xs uppercase tracking-wider text-gray-500 mb-2">Example Data</p>
+					<select
+						class="select select-bordered w-full"
+						on:change={(e) => {
+							loadExample(e.currentTarget.value);
+							mobileMenuOpen = false;
+						}}
+					>
+						<option value="" disabled selected={!selectedDropDownOption}>Select an Example</option>
+						{#each dropdownOptions as group}
+							<optgroup label={group.label}>
+								{#each group.items as item}
+									<option value={item.value} selected={selectedDropDownOption === item.label}>{item.label}</option>
+								{/each}
+							</optgroup>
+						{/each}
+					</select>
+				</div>
+
+				<!-- Visualization Mode -->
+				<div>
+					<p class="text-xs uppercase tracking-wider text-gray-500 mb-2">Visualization</p>
+					<div class="flex flex-wrap gap-2">
+						{#each techniqueToggleOptions as toggle}
+							<button
+								class="btn btn-sm {$ConfigStore[toggle] ? 'btn-primary' : 'btn-ghost'}"
+								on:click={() => {
+									toggleSelection(toggle, techniqueToggleOptions);
+									mobileMenuOpen = false;
+								}}
+							>
+								{formatToggleName(toggle)}
+							</button>
+						{/each}
+					</div>
+				</div>
+
+				<!-- Interactions -->
+				<div>
+					<p class="text-xs uppercase tracking-wider text-gray-500 mb-2">Interactions</p>
+					<div class="flex flex-wrap gap-2">
+						{#each visibleInteractions as toggle}
+							<button
+								class="btn btn-sm {$ConfigStore[toggle] ? 'btn-primary' : 'btn-ghost'}"
+								on:click={() => toggleSelectionOnly(toggle, allInteractions)}
+							>
+								{formatToggleName(toggle)}
+							</button>
+						{/each}
+					</div>
+					{#if showRepeatedWordsSlider}
+						<div class="mt-2">
+							<label for="repeatWordRangeMobile" class="text-sm">Repeated Word Filter: {$ConfigStore.repeatWordSliderValue}</label>
+							<input
+								id="repeatWordRangeMobile"
+								type="range"
+								min="2"
+								max="30"
+								value={$ConfigStore.repeatWordSliderValue}
+								class="range range-sm w-full"
+								on:input={(e) => handleConfigChangeFromInput(e, 'repeatWordSliderValue')}
+							/>
+						</div>
+					{/if}
+					<input
+						type="text"
+						placeholder="Search conversations..."
+						on:input={(e) => handleWordSearch(e)}
+						class="input input-bordered input-sm w-full mt-2"
+					/>
+				</div>
+
+				<!-- Quick Actions -->
+				<div>
+					<p class="text-xs uppercase tracking-wider text-gray-500 mb-2">Actions</p>
+					<div class="flex flex-wrap gap-2">
+						<button
+							class="btn btn-sm {isEditorVisible ? 'btn-primary' : 'btn-ghost'}"
+							on:click={() => {
+								toggleEditor();
+								mobileMenuOpen = false;
+							}}
+						>
+							<div class="w-4 h-4 mr-1"><MdSubject /></div>
+							Editor
+						</button>
+						<button
+							class="btn btn-sm btn-ghost"
+							on:click={() => {
+								toggleVideo();
+								mobileMenuOpen = false;
+							}}
+							disabled={!isVideoLoaded}
+						>
+							<div class="w-4 h-4 mr-1">
+								{#if isVideoVisible}
+									<MdVideocam />
+								{:else}
+									<MdVideocamOff />
+								{/if}
+							</div>
+							Video
+						</button>
+						<button
+							class="btn btn-sm btn-ghost"
+							on:click={() => {
+								showUploadModal = true;
+								mobileMenuOpen = false;
+							}}
+						>
+							<div class="w-4 h-4 mr-1"><MdCloudUpload /></div>
+							Upload
+						</button>
+						<button
+							class="btn btn-sm btn-ghost"
+							on:click={() => {
+								createNewTranscript();
+								mobileMenuOpen = false;
+							}}
+						>
+							<div class="w-4 h-4 mr-1"><MdNoteAdd /></div>
+							New
+						</button>
+						<button
+							class="btn btn-sm btn-ghost"
+							on:click={() => {
+								$isModalOpen = true;
+								mobileMenuOpen = false;
+							}}
+						>
+							<div class="w-4 h-4 mr-1"><MdHelpOutline /></div>
+							Help
+						</button>
+						<button
+							class="btn btn-sm btn-ghost"
+							on:click={() => {
+								showSettings = true;
+								mobileMenuOpen = false;
+							}}
+						>
+							<div class="w-4 h-4 mr-1"><MdSettings /></div>
+							Settings
+						</button>
+					</div>
+				</div>
+			</div>
+		</div>
+	{/if}
 
 	<div class="main-content">
 		<SplitPane
