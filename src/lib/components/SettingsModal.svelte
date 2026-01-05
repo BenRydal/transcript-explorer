@@ -5,6 +5,7 @@
 	import TimelineStore from '../../stores/timelineStore';
 	import TranscriptStore from '../../stores/transcriptStore';
 	import { applyTimingModeToWordArray, updateTimelineFromData } from '$lib/core/timing-utils';
+	import { TimeUtils } from '$lib/core/time-utils';
 	import P5Store from '../../stores/p5Store';
 
 	export let isOpen = false;
@@ -56,21 +57,28 @@
 			<div class="flex flex-col space-y-6">
 				<!-- Timeline Duration -->
 				<div class="flex flex-col">
-					<label for="inputSeconds" class="font-medium">Timeline Duration (seconds)</label>
+					<label for="inputDuration" class="font-medium">Timeline Duration</label>
+					<p class="text-sm text-gray-500 mb-1">Enter as seconds, MM:SS, or HH:MM:SS</p>
 					<input
-						id="inputSeconds"
+						id="inputDuration"
 						type="text"
-						value={$TimelineStore.endTime}
-						on:input={(e) => {
-							let value = parseInt(e.target.value.replace(/\D/g, '')) || 0;
-							TimelineStore.update((timeline) => {
-								timeline.setCurrTime(0);
-								timeline.setStartTime(0);
-								timeline.setEndTime(value);
-								timeline.setLeftMarker(0);
-								timeline.setRightMarker(value);
-								return timeline;
-							});
+						value={TimeUtils.formatTimeAuto($TimelineStore.endTime)}
+						placeholder="e.g. 90, 1:30, or 0:01:30"
+						on:change={(e) => {
+							const input = e.target;
+							const seconds = TimeUtils.toSeconds(input.value);
+							if (seconds !== null && seconds > 0) {
+								TimelineStore.update((timeline) => {
+									timeline.setCurrTime(0);
+									timeline.setStartTime(0);
+									timeline.setEndTime(seconds);
+									timeline.setLeftMarker(0);
+									timeline.setRightMarker(seconds);
+									return timeline;
+								});
+							}
+							// Always reset to formatted value (normalizes valid input, reverts invalid)
+							input.value = TimeUtils.formatTimeAuto($TimelineStore.endTime);
 						}}
 						class="input input-bordered"
 					/>
