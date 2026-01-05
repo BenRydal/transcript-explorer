@@ -17,8 +17,9 @@
 	import UserStore from '../stores/userStore';
 	import P5Store from '../stores/p5Store';
 	import VideoStore, { toggleVisibility as toggleVideoVisibility } from '../stores/videoStore';
-	import EditorStore from '../stores/editorStore';
+	import EditorStore, { editorLayoutKey } from '../stores/editorStore';
 
+	import { browser } from '$app/environment';
 	import { Core } from '$lib/core/core';
 	import { igsSketch } from '$lib/p5/igsSketch';
 	import { writable, get } from 'svelte/store';
@@ -40,7 +41,7 @@
 	import type { TranscriptionResult } from '$lib/core/transcription-service';
 
 	import TimelineStore from '../stores/timelineStore';
-	import ConfigStore from '../stores/configStore';
+	import ConfigStore, { filterToggleKey } from '../stores/configStore';
 	import type { ConfigStoreType } from '../stores/configStore';
 	import TranscriptStore from '../stores/transcriptStore';
 
@@ -159,39 +160,11 @@
 
 	let isModalOpen = writable(true);
 
-	// TODO: this deals with reactive state not updating correctly when values switch from true to false
-	let prevConfig = {
-		echoWordsToggle: currentConfig.echoWordsToggle,
-		lastWordToggle: currentConfig.lastWordToggle,
-		stopWordsToggle: currentConfig.stopWordsToggle
-	};
-	$: {
-		const { lastWordToggle, stopWordsToggle, echoWordsToggle } = currentConfig;
-		if (
-			echoWordsToggle !== prevConfig.echoWordsToggle ||
-			lastWordToggle !== prevConfig.lastWordToggle ||
-			stopWordsToggle !== prevConfig.stopWordsToggle
-		) {
-			p5Instance?.fillSelectedData();
-		}
-		prevConfig = { echoWordsToggle, lastWordToggle, stopWordsToggle };
-	}
+	// Refresh data when filter toggles change
+	$: $filterToggleKey, browser && p5Instance?.fillSelectedData();
 
-	// Watch for editor layout changes (orientation, collapse) and trigger canvas resize
-	let prevEditorConfig = {
-		orientation: $EditorStore.config.orientation,
-		isCollapsed: $EditorStore.config.isCollapsed
-	};
-	$: {
-		const { orientation, isCollapsed } = $EditorStore.config;
-		if (orientation !== prevEditorConfig.orientation || isCollapsed !== prevEditorConfig.isCollapsed) {
-			// Trigger resize after DOM updates
-			requestAnimationFrame(() => {
-				triggerCanvasResize();
-			});
-		}
-		prevEditorConfig = { orientation, isCollapsed };
-	}
+	// Resize canvas when editor layout changes
+	$: $editorLayoutKey, browser && requestAnimationFrame(() => triggerCanvasResize());
 
 	function toggleVideo() {
 		toggleVideoVisibility();
