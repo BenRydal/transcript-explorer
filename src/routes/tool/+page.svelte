@@ -20,7 +20,6 @@
 	import { Core } from '$lib/core/core';
 	import { igsSketch } from '$lib/p5/igsSketch';
 	import { writable, get } from 'svelte/store';
-	import { onMount } from 'svelte';
 	import { DataPoint } from '../../models/dataPoint';
 	import { Transcript } from '../../models/transcript';
 	import IconButton from '$lib/components/IconButton.svelte';
@@ -31,63 +30,20 @@
 	import CanvasTooltip from '$lib/components/CanvasTooltip.svelte';
 	import VideoContainer from '$lib/components/VideoContainer.svelte';
 	import TranscriptionModal from '$lib/components/TranscriptionModal.svelte';
+	import SettingsModal from '$lib/components/SettingsModal.svelte';
+	import UploadModal from '$lib/components/UploadModal.svelte';
+	import DataExplorerModal from '$lib/components/DataExplorerModal.svelte';
+	import TourOverlay from '$lib/components/TourOverlay.svelte';
+	import SpeakerControls from '$lib/components/SpeakerControls.svelte';
 	import type { TranscriptionResult } from '$lib/core/transcription-service';
 
 	import TimelineStore from '../../stores/timelineStore';
 	import ConfigStore from '../../stores/configStore';
 	import type { ConfigStoreType } from '../../stores/configStore';
 	import TranscriptStore from '../../stores/transcriptStore';
-	import { computePosition, flip, shift, offset } from '@floating-ui/dom';
-	import { applyTimingModeToWordArray, updateTimelineFromData } from '$lib/core/timing-utils';
 
 	// Define ToggleKey type to fix TypeScript errors
 	type ToggleKey = string;
-
-	// Add click outside and scroll handlers for dropdowns
-	onMount(() => {
-		// Add global click handler to close dropdowns when clicking outside
-		document.addEventListener('click', (event) => {
-			const target = event.target as HTMLElement;
-
-			// Close all dropdowns when clicking outside
-			$UserStore.forEach((user, index) => {
-				const dropdown = document.getElementById(`dropdown-${index}`);
-				const button = document.getElementById(`btn-${index}`);
-
-				if (dropdown && button && !dropdown.contains(target) && !button.contains(target) && !dropdown.classList.contains('hidden')) {
-					dropdown.classList.add('hidden');
-				}
-			});
-		});
-
-		// Add scroll handler to close dropdowns when scrolling
-		const userContainer = document.querySelector('.btm-nav .overflow-x-auto');
-		if (userContainer) {
-			userContainer.addEventListener('scroll', () => {
-				// Close all dropdowns when scrolling
-				$UserStore.forEach((user, index) => {
-					const dropdown = document.getElementById(`dropdown-${index}`);
-					if (dropdown && !dropdown.classList.contains('hidden')) {
-						dropdown.classList.add('hidden');
-					}
-				});
-			});
-		}
-	});
-
-	// Close and remove all user dropdowns when UserStore changes (e.g., when switching datasets)
-	// Dropdowns are moved to document.body when opened, so we need to remove them from there
-	let previousUserCount = 0;
-	$: {
-		const currentUserCount = $UserStore.length;
-		if (currentUserCount !== previousUserCount) {
-			// Remove all dropdowns that were moved to body
-			document.querySelectorAll('body > [id^="dropdown-"]').forEach((dropdown) => {
-				dropdown.remove();
-			});
-			previousUserCount = currentUserCount;
-		}
-	}
 
 	const techniqueToggleOptions = ['distributionDiagramToggle', 'turnChartToggle', 'contributionCloudToggle', 'dashboardToggle'] as const;
 
@@ -175,18 +131,6 @@
 		prevVideoLoaded = isVideoLoaded;
 	}
 
-	// Recalculate end times when start-only mode settings change
-	function recalculateStartOnlyEndTimes() {
-		if ($TranscriptStore.timingMode !== 'startOnly' || $TranscriptStore.wordArray.length === 0) return;
-
-		TranscriptStore.update((transcript) => ({
-			...transcript,
-			wordArray: applyTimingModeToWordArray(transcript.wordArray, 'startOnly')
-		}));
-		updateTimelineFromData(get(TranscriptStore).wordArray, false);
-		p5Instance?.fillAllData?.();
-	}
-
 	// Reactive binding for editor visibility
 	$: isEditorVisible = $EditorStore.config.isVisible;
 
@@ -194,14 +138,8 @@
 	$: activeVisualization = techniqueToggleOptions.find((t) => $ConfigStore[t]) || '';
 	$: activeVisualizationName = activeVisualization ? formatToggleName(activeVisualization) : 'Select';
 
-	let timeline;
-
 	ConfigStore.subscribe((value) => {
 		currentConfig = value;
-	});
-
-	TimelineStore.subscribe((value) => {
-		timeline = value;
 	});
 
 	P5Store.subscribe((value) => {
@@ -256,13 +194,6 @@
 		toggleVideoVisibility();
 	}
 
-	function capitalizeEachWord(sentence: string) {
-		return sentence
-			.split(' ')
-			.map((word) => word.charAt(0).toUpperCase() + word.slice(1).toLowerCase())
-			.join(' ');
-	}
-
 	function formatToggleName(toggle) {
 		return toggle
 			.replace('Toggle', '') // Remove 'Toggle'
@@ -276,13 +207,6 @@
 		ConfigStore.update((value) => ({
 			...value,
 			[key]: parseFloat(target.value)
-		}));
-	}
-
-	function handleConfigChange(key: keyof ConfigStoreType, value: any) {
-		ConfigStore.update((store) => ({
-			...store,
-			[key]: value
 		}));
 	}
 
@@ -606,86 +530,17 @@
 
 	function loadExample(exampleId: string) {
 		core?.loadExample(exampleId);
-	}
-
-	// Tour state
-	let showTour = false;
-	let tourStep = 0;
-	const tourSteps = [
-		{
-			target: '[data-tour="examples"]',
-			title: 'Example Datasets',
-			content: 'Load example transcripts to explore the tool. Choose from classroom discussions, museum visits, or debates.'
-		},
-		{
-			target: '[data-tour="viz-modes"]',
-			title: 'Visualization Modes',
-			content: 'Switch between Distribution Diagram, Turn Chart, Contribution Cloud, and Dashboard views.'
-		},
-		{
-			target: '[data-tour="interactions"]',
-			title: 'Interactions & Editor',
-			content: 'Toggle visualization options like speaker separation and search transcripts. Open the transcript editor to view and edit text.'
-		},
-		{
-			target: '[data-tour="visualization"]',
-			title: 'Visualization Canvas',
-			content: 'Your transcript visualization appears here. Click elements to play video from that point.'
-		},
-		{
-			target: '[data-tour="speakers"]',
-			title: 'Speaker Controls',
-			content: 'Toggle speaker visibility with the eye icon. Click names to change colors or rename speakers.'
-		},
-		{
-			target: '[data-tour="timeline"]',
-			title: 'Timeline Controls',
-			content: 'Animate through the conversation. Drag markers to set the playback range.'
-		}
-	];
-
-	function startTour() {
-		showTour = true;
-		tourStep = 0;
-	}
-
-	function nextTourStep() {
-		if (tourStep < tourSteps.length - 1) {
-			tourStep++;
-		} else {
-			showTour = false;
-		}
-	}
-
-	function prevTourStep() {
-		if (tourStep > 0) {
-			tourStep--;
-		}
-	}
-
-	function endTour() {
-		showTour = false;
-	}
-
-	function handleTourKeydown(e: KeyboardEvent) {
-		if (!showTour) return;
-		switch (e.key) {
-			case 'ArrowRight':
-			case 'ArrowDown':
-				e.preventDefault();
-				nextTourStep();
+		// Update dropdown to show selected example
+		for (const group of dropdownOptions) {
+			const item = group.items.find((i) => i.value === exampleId);
+			if (item) {
+				selectedDropDownOption = item.label;
 				break;
-			case 'ArrowLeft':
-			case 'ArrowUp':
-				e.preventDefault();
-				prevTourStep();
-				break;
-			case 'Escape':
-				e.preventDefault();
-				endTour();
-				break;
+			}
 		}
 	}
+
+	let tourOverlay: TourOverlay;
 
 	function handleWordSearch(event) {
 		const newWord = event.target.value.trim();
@@ -742,7 +597,6 @@
 	<title>TRANSCRIPT EXPLORER</title>
 </svelte:head>
 
-<svelte:window on:keydown={handleTourKeydown} />
 
 <div class="page-container">
 	<div class="navbar min-h-16 bg-[#ffffff]">
@@ -925,479 +779,25 @@
 		</SplitPane>
 	</div>
 
-	{#if showSettings}
-		<div
-			class="modal modal-open"
-			on:click|self={() => (showSettings = false)}
-			on:keydown={(e) => {
-				if (e.key === 'Escape') showSettings = false;
-			}}
-		>
-			<div class="modal-box w-11/12 max-w-md p-8">
-				<div class="flex justify-between mb-6">
-					<h3 class="font-bold text-xl">Settings</h3>
-					<button class="btn btn-circle btn-sm" on:click={() => (showSettings = false)}>
-						<svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-							<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
-						</svg>
-					</button>
-				</div>
+	<SettingsModal bind:isOpen={showSettings} on:openDataExplorer={() => (showDataPopup = true)} />
 
-				<div class="flex flex-col space-y-6">
-					<!-- Animation Rate -->
-					<div class="flex flex-col">
-						<label for="animationRate" class="font-medium">Animation Rate: {currentConfig.animationRate}</label>
-						<input
-							id="animationRate"
-							type="range"
-							min="0.01"
-							max="1"
-							step="0.01"
-							bind:value={currentConfig.animationRate}
-							on:input={(e) => handleConfigChange('animationRate', parseFloat(e.target.value))}
-							class="range range-primary"
-						/>
-					</div>
+	<UploadModal
+		bind:isOpen={showUploadModal}
+		{isDraggingOver}
+		{pendingVideoFile}
+		{uploadedFiles}
+		on:drop={(e) => handleDrop(e.detail)}
+		on:dragover={(e) => handleDragOver(e.detail)}
+		on:dragleave={handleDragLeave}
+		on:openFileDialog={openFileDialog}
+		on:clearFiles={clearUploadedFiles}
+		on:startTranscription={() => (showTranscriptionModal = true)}
+	/>
 
-					<!-- Text Input for Seconds (Numeric Only) -->
-					<div class="flex flex-col">
-						<label for="inputSeconds" class="font-medium">Timeline Duration (seconds)</label>
-						<input
-							id="inputSeconds"
-							type="text"
-							bind:value={timeline.endTime}
-							on:input={(e) => {
-								let value = parseInt(e.target.value.replace(/\D/g, '')) || 0;
-								TimelineStore.update((timeline) => {
-									timeline.setCurrTime(0);
-									timeline.setStartTime(0);
-									timeline.setEndTime(value);
-									timeline.setLeftMarker(0);
-									timeline.setRightMarker(value);
-									return timeline;
-								});
-							}}
-							class="input input-bordered"
-						/>
-					</div>
-
-					<!-- Start-Only Mode Settings -->
-					<div class="flex flex-col border-t pt-4">
-						<p class="font-medium mb-2">Turn End Time Calculation:</p>
-						<p class="text-sm text-gray-600 mb-3">For transcripts with only start times</p>
-						<div class="flex flex-col gap-2">
-							<label class="flex items-center gap-2 cursor-pointer">
-								<input
-									type="radio"
-									name="endTimeCalculation"
-									class="radio radio-sm"
-									checked={!currentConfig.preserveGapsBetweenTurns}
-									on:change={() => {
-										handleConfigChange('preserveGapsBetweenTurns', false);
-										recalculateStartOnlyEndTimes();
-									}}
-								/>
-								<span class="text-sm">Fill to next turn <span class="text-gray-500">(no gaps between speakers)</span></span>
-							</label>
-							<label class="flex items-center gap-2 cursor-pointer">
-								<input
-									type="radio"
-									name="endTimeCalculation"
-									class="radio radio-sm"
-									checked={currentConfig.preserveGapsBetweenTurns}
-									on:change={() => {
-										handleConfigChange('preserveGapsBetweenTurns', true);
-										recalculateStartOnlyEndTimes();
-									}}
-								/>
-								<span class="text-sm">Estimate from speech rate <span class="text-gray-500">(preserves silence/gaps)</span></span>
-							</label>
-						</div>
-						<div class="flex flex-col mt-3">
-							<label for="speechRate" class="text-sm">
-								Speech rate: {currentConfig.speechRateWordsPerSecond} words/sec
-							</label>
-							<input
-								id="speechRate"
-								type="range"
-								min="1"
-								max="6"
-								step="0.5"
-								bind:value={currentConfig.speechRateWordsPerSecond}
-								on:input={(e) => {
-									handleConfigChange('speechRateWordsPerSecond', parseFloat(e.target.value));
-									recalculateStartOnlyEndTimes();
-								}}
-								class="range range-sm"
-							/>
-						</div>
-					</div>
-				</div>
-
-				<div class="flex justify-center mt-6">
-					<button class="btn btn-sm" on:click={() => (showDataPopup = true)}>Data Explorer</button>
-				</div>
-
-				<div class="modal-action">
-					<button class="btn" on:click={() => (showSettings = false)}>Close</button>
-				</div>
-			</div>
-		</div>
-	{/if}
-
-	{#if showUploadModal}
-		<div
-			class="modal modal-open"
-			on:click|self={() => (showUploadModal = false)}
-			on:keydown={(e) => {
-				if (e.key === 'Escape') showUploadModal = false;
-			}}
-		>
-			<div class="modal-box w-11/12 max-w-lg">
-				<div class="flex justify-between mb-4">
-					<h3 class="font-bold text-lg">Upload Files</h3>
-					<button class="btn btn-circle btn-sm" on:click={() => (showUploadModal = false)}>
-						<svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-							<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
-						</svg>
-					</button>
-				</div>
-
-				<!-- Drop zone -->
-				<div
-					class="border-2 border-dashed rounded-lg p-8 text-center cursor-pointer transition-colors {isDraggingOver
-						? 'border-primary bg-primary/10'
-						: 'border-gray-300 hover:border-gray-400'}"
-					on:drop={handleDrop}
-					on:dragover={handleDragOver}
-					on:dragleave={handleDragLeave}
-					on:click={openFileDialog}
-					on:keydown={(e) => {
-						if (e.key === 'Enter') openFileDialog();
-					}}
-					role="button"
-					tabindex="0"
-				>
-					<div class="flex flex-col items-center gap-2">
-						<div class="w-12 h-12 text-gray-400">
-							<MdCloudUpload />
-						</div>
-						<p class="font-medium">Drag & drop files here</p>
-						<p class="text-sm text-gray-500">or click to browse</p>
-					</div>
-				</div>
-
-				<!-- Supported formats -->
-				<div class="mt-4">
-					<p class="text-sm font-medium mb-2">Supported formats:</p>
-					<div class="flex flex-wrap gap-2">
-						<span class="badge badge-outline">.csv</span>
-						<span class="badge badge-outline">.txt</span>
-						<span class="badge badge-outline">.mp4</span>
-					</div>
-					<p class="text-xs text-gray-500 mt-2">
-						CSV/TXT files should contain transcript data with speaker and content columns. MP4 files will be used as video overlay.
-					</p>
-				</div>
-
-				<!-- Auto-transcribe option -->
-				{#if pendingVideoFile}
-					<div class="mt-4 bg-purple-50 border border-purple-200 rounded-lg p-4">
-						<p class="font-medium text-purple-800 mb-2">Auto-Transcribe Video</p>
-						<p class="text-sm text-purple-700 mb-3">
-							Generate a transcript automatically using AI. Runs entirely in your browser - no data is uploaded.
-						</p>
-						<button
-							class="btn btn-sm btn-primary"
-							on:click={() => {
-								showUploadModal = false;
-								showTranscriptionModal = true;
-							}}
-						>
-							Start Auto-Transcription
-						</button>
-					</div>
-				{/if}
-
-				<!-- Uploaded files list -->
-				{#if uploadedFiles.length > 0}
-					<div class="mt-4">
-						<div class="flex justify-between items-center mb-2">
-							<p class="text-sm font-medium">Uploaded files:</p>
-							<button class="btn btn-xs btn-ghost" on:click={clearUploadedFiles}>Clear</button>
-						</div>
-						<div class="space-y-2 max-h-40 overflow-y-auto">
-							{#each uploadedFiles as file}
-								<div class="flex items-center justify-between p-2 bg-base-200 rounded">
-									<div class="flex items-center gap-2">
-										<span class="text-sm font-medium truncate max-w-[200px]">{file.name}</span>
-										<span class="badge badge-sm">{file.type}</span>
-									</div>
-									<div>
-										{#if file.status === 'pending'}
-											<span class="text-gray-400">Pending</span>
-										{:else if file.status === 'processing'}
-											<span class="loading loading-spinner loading-sm"></span>
-										{:else if file.status === 'done'}
-											<svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 text-success" viewBox="0 0 20 20" fill="currentColor">
-												<path
-													fill-rule="evenodd"
-													d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z"
-													clip-rule="evenodd"
-												/>
-											</svg>
-										{:else if file.status === 'error'}
-											<span class="text-error text-sm" title={file.error}>Error</span>
-										{/if}
-									</div>
-								</div>
-							{/each}
-						</div>
-					</div>
-				{/if}
-
-				<div class="modal-action">
-					<button class="btn" on:click={() => (showUploadModal = false)}>Close</button>
-				</div>
-			</div>
-		</div>
-	{/if}
-
-	{#if showDataPopup}
-		<div
-			class="modal modal-open"
-			on:click|self={() => (showDataPopup = false)}
-			on:keydown={(e) => {
-				if (e.key === 'Escape') showDataPopup = false;
-			}}
-		>
-			<div class="modal-box w-11/12 max-w-5xl">
-				<div class="flex justify-between">
-					<div class="flex flex-col">
-						<h3 class="font-bold text-lg">Data Explorer</h3>
-						<p>Here you will find detailed information on the data that you have uploaded.</p>
-					</div>
-
-					<button class="btn btn-circle btn-sm" on:click={() => (showDataPopup = false)}>
-						<svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-							<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
-						</svg>
-					</button>
-				</div>
-
-				<div class="overflow-x-auto">
-					<div class="flex flex-col">
-						<div class="flex-col my-4">
-							<h4 class="font-bold my-2">Transcript Statistics:</h4>
-							<div class="grid grid-cols-2 gap-4 p-4 bg-gray-50 rounded-lg">
-								<div>
-									<p><span class="font-semibold">Total Words:</span> {$TranscriptStore.totalNumOfWords}</p>
-									<p><span class="font-semibold">Total Turns:</span> {$TranscriptStore.totalConversationTurns}</p>
-									<p><span class="font-semibold">Total Time:</span> {$TranscriptStore.totalTimeInSeconds.toFixed(2)}s</p>
-								</div>
-								<div>
-									<p><span class="font-semibold">Largest Turn Length:</span> {$TranscriptStore.largestTurnLength} words</p>
-									<p>
-										<span class="font-semibold">Most Frequent Word:</span> "{$TranscriptStore.mostFrequentWord}" ({$TranscriptStore.maxCountOfMostRepeatedWord}
-										times)
-									</p>
-								</div>
-							</div>
-						</div>
-
-						<h4 class="font-bold">Users:</h4>
-						{#each $UserStore as user}
-							<div class="my-4">
-								<div tabindex="0" class="text-primary-content bg-[#e6e4df] collapse" aria-controls="collapse-content-{user.name}" role="button">
-									<input type="checkbox" class="peer" />
-									<div class="collapse-title font-semibold flex items-center">
-										<div class="w-4 h-4 rounded-full mr-2" style="background-color: {user.color}"></div>
-										{capitalizeEachWord(user.name)}
-									</div>
-
-									<div class="collapse-content">
-										<div class="grid grid-cols-2 gap-4 p-4">
-											<div>
-												<p>
-													<span class="font-medium">Status:</span>
-													<span class={user.enabled ? 'text-green-600' : 'text-red-600'}>
-														{user.enabled ? 'Active' : 'Inactive'}
-													</span>
-												</p>
-												<p><span class="font-medium">Color:</span> {user.color}</p>
-											</div>
-											<div>
-												{#if $TranscriptStore.wordArray.length > 0}
-													{@const userWords = $TranscriptStore.wordArray.filter((dp) => dp.speaker === user.name)}
-													{@const userTurns = new Set(userWords.map((dp) => dp.turnNumber))}
-													<p><span class="font-medium">Total Words:</span> {userWords.length}</p>
-													<p><span class="font-medium">Total Turns:</span> {userTurns.size}</p>
-												{/if}
-											</div>
-										</div>
-
-										{#if $TranscriptStore.wordArray.length > 0}
-											<div class="mt-4">
-												<h2 class="font-medium mb-2">Recent Speech Samples:</h2>
-												<div class="space-y-2">
-													{#each $TranscriptStore.wordArray.filter((dp) => dp.speaker === user.name).slice(-3) as dataPoint}
-														<div class="p-2 bg-white rounded">
-															<p class="text-sm">"{dataPoint.word}"</p>
-															<p class="text-xs text-gray-500">Time: {dataPoint.startTime.toFixed(2)}s - {dataPoint.endTime.toFixed(2)}s</p>
-														</div>
-													{/each}
-												</div>
-											</div>
-										{/if}
-									</div>
-								</div>
-							</div>
-						{/each}
-					</div>
-				</div>
-				<div class="modal-action">
-					<button class="btn" on:click={() => (showDataPopup = false)}>Close</button>
-				</div>
-			</div>
-		</div>
-	{/if}
+	<DataExplorerModal bind:isOpen={showDataPopup} />
 
 	<div class="btm-nav flex justify-between min-h-20" style="position: relative;">
-		<div
-			class="flex flex-1 flex-row justify-start items-center bg-[#f6f5f3] items-start px-8 overflow-x-auto"
-			data-tour="speakers"
-			on:wheel={(e) => {
-				if (e.deltaY !== 0) {
-					e.preventDefault();
-					e.currentTarget.scrollLeft += e.deltaY;
-				}
-			}}
-		>
-			<!-- Users Dropdowns with Floating UI -->
-			{#each $UserStore as user, index}
-				<div class="relative flex-shrink-0 mr-2">
-					<div class="join">
-						<!-- Visibility toggle button -->
-						<button
-							class="btn btn-sm join-item px-1"
-							style="color: {user.enabled ? user.color : '#999'}; opacity: {user.enabled ? 1 : 0.5};"
-							on:click={() => {
-								user.enabled = !user.enabled;
-								UserStore.update((u) => u);
-							}}
-							title={user.enabled ? 'Hide speaker' : 'Show speaker'}
-						>
-							{#if user.enabled}
-								<svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" viewBox="0 0 20 20" fill="currentColor">
-									<path d="M10 12a2 2 0 100-4 2 2 0 000 4z" />
-									<path
-										fill-rule="evenodd"
-										d="M.458 10C1.732 5.943 5.522 3 10 3s8.268 2.943 9.542 7c-1.274 4.057-5.064 7-9.542 7S1.732 14.057.458 10zM14 10a4 4 0 11-8 0 4 4 0 018 0z"
-										clip-rule="evenodd"
-									/>
-								</svg>
-							{:else}
-								<svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" viewBox="0 0 20 20" fill="currentColor">
-									<path
-										fill-rule="evenodd"
-										d="M3.707 2.293a1 1 0 00-1.414 1.414l14 14a1 1 0 001.414-1.414l-1.473-1.473A10.014 10.014 0 0019.542 10C18.268 5.943 14.478 3 10 3a9.958 9.958 0 00-4.512 1.074l-1.78-1.781zm4.261 4.26l1.514 1.515a2.003 2.003 0 012.45 2.45l1.514 1.514a4 4 0 00-5.478-5.478z"
-										clip-rule="evenodd"
-									/>
-									<path
-										d="M12.454 16.697L9.75 13.992a4 4 0 01-3.742-3.741L2.335 6.578A9.98 9.98 0 00.458 10c1.274 4.057 5.065 7 9.542 7 .847 0 1.669-.105 2.454-.303z"
-									/>
-								</svg>
-							{/if}
-						</button>
-						<!-- Name button opens dropdown -->
-						<button
-							class="btn btn-sm join-item px-2 max-w-32 truncate"
-							style="color: {user.enabled ? user.color : '#999'}; opacity: {user.enabled ? 1 : 0.5};"
-							title={user.name}
-							on:click={() => {
-								const dropdown = document.getElementById(`dropdown-${index}`);
-								if (dropdown) {
-									dropdown.classList.toggle('hidden');
-
-									// Position the dropdown using Floating UI
-									const button = document.getElementById(`btn-${index}`);
-									if (button && !dropdown.classList.contains('hidden')) {
-										// Move dropdown to body to avoid clipping by overflow
-										document.body.appendChild(dropdown);
-
-										computePosition(button, dropdown, {
-											placement: 'top',
-											middleware: [offset(6), flip(), shift({ padding: 5 })]
-										}).then(({ x, y }) => {
-											Object.assign(dropdown.style, {
-												left: `${x}px`,
-												top: `${y}px`,
-												position: 'absolute',
-												zIndex: '9999' // Higher z-index to ensure it's above canvas
-											});
-										});
-									}
-								}
-							}}
-							id={`btn-${index}`}
-						>
-							{user.name}
-						</button>
-					</div>
-
-					<div id={`dropdown-${index}`} class="hidden bg-base-100 rounded-box p-2 shadow absolute" style="z-index: 9999;">
-						<ul class="w-52">
-							<li class="py-2">
-								<div class="flex items-center">
-									<input
-										type="text"
-										class="input input-bordered input-sm w-full"
-										value={user.name}
-										on:change={(e) => {
-											const oldName = user.name;
-											const newName = e.currentTarget.value.trim();
-											if (newName && newName !== oldName) {
-												// Update all DataPoints in the transcript
-												TranscriptStore.update((t) => {
-													t.wordArray.forEach((dp) => {
-														if (dp.speaker === oldName) {
-															dp.speaker = newName;
-														}
-													});
-													return t;
-												});
-												// Update the user name
-												user.name = newName;
-												UserStore.update((u) => u);
-												// Close the dropdown
-												const dropdown = document.getElementById(`dropdown-${index}`);
-												if (dropdown) {
-													dropdown.classList.add('hidden');
-												}
-												// Refresh visualization
-												const p5Instance = get(P5Store);
-												if (p5Instance) {
-													p5Instance.fillAllData?.();
-												}
-											}
-										}}
-										placeholder="Speaker name"
-									/>
-								</div>
-							</li>
-							<li class="py-2">
-								<div class="flex items-center">
-									<input type="color" class="color-picker max-w-[24px] max-h-[28px] mr-2" bind:value={user.color} />
-									<span>Color</span>
-								</div>
-							</li>
-						</ul>
-					</div>
-				</div>
-			{/each}
-		</div>
-
-		<!-- Right Side: Timeline -->
+		<SpeakerControls />
 		<div class="flex-1 bg-[#f6f5f3]" data-tour="timeline">
 			<TimelinePanel />
 		</div>
@@ -1410,7 +810,7 @@
 	{isModalOpen}
 	onLoadExample={loadExample}
 	onOpenUpload={() => (showUploadModal = true)}
-	onStartTour={startTour}
+	onStartTour={() => tourOverlay.start()}
 />
 
 <TranscriptionModal
@@ -1421,57 +821,7 @@
 	on:close={() => (showTranscriptionModal = false)}
 />
 
-<!-- Interactive Tour Overlay -->
-{#if showTour}
-	{@const step = tourSteps[tourStep]}
-	{@const rect = document.querySelector(step.target)?.getBoundingClientRect()}
-	{@const isLarge = rect && rect.height > window.innerHeight * 0.5}
-	{@const tooltipTop = rect
-		? isLarge
-			? rect.top + 40
-			: window.innerHeight - rect.bottom > 180
-				? rect.bottom + 12
-				: rect.top > 180
-					? rect.top - 172
-					: rect.top + 40
-		: window.innerHeight / 2 - 80}
-	{@const tooltipLeft = rect
-		? Math.max(16, Math.min(rect.left + rect.width / 2 - 160, window.innerWidth - 336))
-		: window.innerWidth / 2 - 160}
-
-	<div class="fixed inset-0 z-[9999] pointer-events-none">
-		<button class="absolute inset-0 bg-black/50 pointer-events-auto cursor-default" on:click={endTour}></button>
-
-		{#if rect}
-			<div
-				class="absolute border-2 border-blue-500 rounded-lg pointer-events-none"
-				style="top: {rect.top - 4}px; left: {rect.left - 4}px; width: {rect.width + 8}px; height: {rect.height + 8}px; box-shadow: 0 0 0 9999px rgba(0,0,0,0.5);"
-			></div>
-		{/if}
-
-		<div
-			class="absolute bg-white rounded-lg shadow-xl p-4 pointer-events-auto w-80"
-			style="top: {tooltipTop}px; left: {tooltipLeft}px;"
-		>
-			<div class="flex justify-between items-start mb-2">
-				<h3 class="font-bold text-gray-800">{step.title}</h3>
-				<span class="text-xs text-gray-400">{tourStep + 1}/{tourSteps.length}</span>
-			</div>
-			<p class="text-sm text-gray-600 mb-4">{step.content}</p>
-			<div class="flex justify-between items-center">
-				<button class="text-sm text-gray-500 hover:text-gray-700" on:click={endTour}>Skip</button>
-				<div class="flex gap-2">
-					{#if tourStep > 0}
-						<button class="btn btn-sm btn-ghost" on:click={prevTourStep}>Back</button>
-					{/if}
-					<button class="btn btn-sm btn-primary" on:click={nextTourStep}>
-						{tourStep === tourSteps.length - 1 ? 'Finish' : 'Next'}
-					</button>
-				</div>
-			</div>
-		</div>
-	</div>
-{/if}
+<TourOverlay bind:this={tourOverlay} />
 
 <style>
 	.page-container {
@@ -1479,14 +829,6 @@
 		flex-direction: column;
 		height: 100vh;
 		overflow: hidden;
-	}
-
-	.color-picker {
-		width: 30px;
-		height: 30px;
-		border: none;
-		border-radius: 50%;
-		cursor: pointer;
 	}
 
 	.main-content {
