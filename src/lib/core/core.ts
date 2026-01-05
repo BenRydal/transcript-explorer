@@ -99,7 +99,6 @@ export class Core {
 					notifications.error('The text file is empty or could not be read.');
 					return;
 				}
-				console.log('Text File Loaded:', stringArray.length, 'lines');
 				this.processData(stringArray, 'txt');
 				this.updateAllDataValues();
 			},
@@ -119,7 +118,6 @@ export class Core {
 				return h.trim().toLowerCase();
 			},
 			complete: (results: any, file: any) => {
-				console.log('Parsing complete:', results, file);
 				if (this.coreUtils.testTranscript(results)) {
 					this.processData(results.data, 'csv');
 					this.updateAllDataValues();
@@ -131,7 +129,7 @@ export class Core {
 			},
 			error: (error, file) => {
 				notifications.error('CSV parsing error. Please check the file format.');
-				console.log(error, file);
+				console.error('CSV parsing error:', error, file);
 			}
 		});
 	};
@@ -156,7 +154,7 @@ export class Core {
 			this.loadCSVData(file);
 		} catch (error) {
 			notifications.error('Error loading example file. Please check your internet connection.');
-			console.log(error);
+			console.error('Example file load error:', error);
 		}
 	}
 
@@ -372,7 +370,6 @@ export class Core {
 	};
 
 	clearAllData() {
-		console.log('Clearing all data');
 		this.sketch.dynamicData.clear();
 		UserStore.set([]);
 		TranscriptStore.set(new Transcript());
@@ -381,7 +378,6 @@ export class Core {
 	}
 
 	clearTranscriptData() {
-		console.log('Clearing Transcript Data');
 		this.sketch.dynamicData.clear();
 		UserStore.set([]);
 		TranscriptStore.set(new Transcript());
