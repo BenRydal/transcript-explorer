@@ -605,6 +605,36 @@
 		</div>
 
 		<div class="flex justify-end flex-1 px-2 items-center gap-1">
+			<!-- Example Data Dropdown -->
+			<details class="dropdown" use:clickOutside data-tour="examples">
+				<summary
+					class="flex justify-between items-center min-w-[180px] rounded border border-gray-300 px-3 py-1.5 bg-white text-sm font-medium text-gray-700 hover:bg-gray-50 cursor-pointer"
+				>
+					<span class="truncate">{selectedDropDownOption || 'Select an Example'}</span>
+					<svg class="w-3 h-3 ml-2 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+						<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" />
+					</svg>
+				</summary>
+				<ul class="menu dropdown-content rounded-box z-[1] w-56 p-2 shadow bg-base-100 max-h-[60vh] overflow-y-auto">
+					{#each dropdownOptions as group}
+						<li class="menu-title text-xs uppercase tracking-wider text-gray-500 pt-2">{group.label}</li>
+						{#each group.items as item}
+							<li>
+								<button
+									on:click={() => loadExample(item.value)}
+									class="text-sm {selectedDropDownOption === item.label ? 'active' : ''}"
+								>
+									{item.label}
+								</button>
+							</li>
+						{/each}
+					{/each}
+				</ul>
+			</details>
+
+			<!-- Divider -->
+			<div class="divider divider-horizontal mx-1 h-8"></div>
+
 			<!-- Visualization Controls Group -->
 			<div class="flex items-center gap-2">
 				<!-- Visualizations Dropdown -->
@@ -660,11 +690,11 @@
 								</li>
 							{/each}
 							{#if showRepeatedWordsSlider}
-								<li class="cursor-none">
+								<li class="cursor-default">
 									<p>Repeated Word Filter: {$ConfigStore.repeatWordSliderValue}</p>
 								</li>
 								<li>
-									<label for="repeatWordRange" class="sr-only">Adjust rect width</label>
+									<label for="repeatWordRange" class="sr-only">Repeated word filter</label>
 									<input
 										id="repeatWordRange"
 										type="range"
@@ -693,18 +723,15 @@
 						<span class="hidden sm:inline">Editor</span>
 					</button>
 				</div>
-			</div>
 
-			<!-- Divider -->
-			<div class="divider divider-horizontal mx-1 h-8"></div>
-
-			<!-- Media Controls Group -->
-			<div class="flex items-center gap-1">
-				{#if isVideoVisible}
-					<IconButton id="btn-toggle-video" icon={MdVideocam} tooltip={'Hide Video'} on:click={toggleVideo} disabled={!isVideoLoaded} />
-				{:else}
-					<IconButton id="btn-toggle-video" icon={MdVideocamOff} tooltip={'Show Video'} on:click={toggleVideo} disabled={!isVideoLoaded} />
-				{/if}
+				<!-- Video Toggle -->
+				<IconButton
+					id="btn-toggle-video"
+					icon={isVideoVisible ? MdVideocam : MdVideocamOff}
+					tooltip={isVideoVisible ? 'Hide Video' : 'Show Video'}
+					on:click={toggleVideo}
+					disabled={!isVideoLoaded}
+				/>
 			</div>
 
 			<!-- Divider -->
@@ -713,48 +740,11 @@
 			<!-- File & Settings Group -->
 			<div class="flex items-center gap-1">
 				<IconButton icon={MdCloudUpload} tooltip={'Upload Files'} on:click={() => (showUploadModal = true)} />
-
 				<IconButton icon={MdNoteAdd} tooltip={'Create New Transcript'} on:click={createNewTranscript} />
-
 				<input class="hidden" id="file-input" multiple accept=".csv, .txt, .mp4" type="file" bind:files on:change={updateUserLoadedFiles} />
-
 				<IconButton icon={MdHelpOutline} tooltip={'Help'} on:click={() => ($isModalOpen = !$isModalOpen)} />
-
 				<IconButton icon={MdSettings} tooltip={'Settings'} on:click={() => (showSettings = true)} />
 			</div>
-
-			<!-- Divider -->
-			<div class="divider divider-horizontal mx-1 h-8"></div>
-
-			<!-- Example Data Dropdown -->
-			<details class="dropdown dropdown-end" use:clickOutside data-tour="examples">
-				<summary
-					class="flex justify-between items-center min-w-[180px] rounded border border-gray-300 px-3 py-1.5 bg-white text-sm font-medium text-gray-700 hover:bg-gray-50 cursor-pointer"
-				>
-					<span class="truncate">{selectedDropDownOption || 'Select an Example'}</span>
-					<svg class="w-3 h-3 ml-2 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-						<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" />
-					</svg>
-				</summary>
-				<ul class="menu dropdown-content rounded-box z-[1] w-56 p-2 shadow bg-base-100 max-h-[60vh] overflow-y-auto">
-					{#each dropdownOptions as group}
-						<li class="menu-title text-xs uppercase tracking-wider text-gray-500 pt-2">{group.label}</li>
-						{#each group.items as item}
-							<li>
-								<button
-									on:click={() => {
-										loadExample(item.value);
-										selectedDropDownOption = item.label;
-									}}
-									class="text-sm {selectedDropDownOption === item.label ? 'active' : ''}"
-								>
-									{item.label}
-								</button>
-							</li>
-						{/each}
-					{/each}
-				</ul>
-			</details>
 		</div>
 	</div>
 
