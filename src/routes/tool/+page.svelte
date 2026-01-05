@@ -604,8 +604,87 @@
 		pendingVideoDuration = 0;
 	}
 
-	function updateExampleDataDropDown(event) {
-		core.handleExampleDropdown(event);
+	function loadExample(exampleId: string) {
+		core?.loadExample(exampleId);
+	}
+
+	// Tour state
+	let showTour = false;
+	let tourStep = 0;
+	const tourSteps = [
+		{
+			target: '[data-tour="examples"]',
+			title: 'Example Datasets',
+			content: 'Load example transcripts to explore the tool. Choose from classroom discussions, museum visits, or debates.'
+		},
+		{
+			target: '[data-tour="viz-modes"]',
+			title: 'Visualization Modes',
+			content: 'Switch between Distribution Diagram, Turn Chart, Contribution Cloud, and Dashboard views.'
+		},
+		{
+			target: '[data-tour="interactions"]',
+			title: 'Interactions & Editor',
+			content: 'Toggle visualization options like speaker separation and search transcripts. Open the transcript editor to view and edit text.'
+		},
+		{
+			target: '[data-tour="visualization"]',
+			title: 'Visualization Canvas',
+			content: 'Your transcript visualization appears here. Click elements to play video from that point.'
+		},
+		{
+			target: '[data-tour="speakers"]',
+			title: 'Speaker Controls',
+			content: 'Toggle speaker visibility with the eye icon. Click names to change colors or rename speakers.'
+		},
+		{
+			target: '[data-tour="timeline"]',
+			title: 'Timeline Controls',
+			content: 'Animate through the conversation. Drag markers to set the playback range.'
+		}
+	];
+
+	function startTour() {
+		showTour = true;
+		tourStep = 0;
+	}
+
+	function nextTourStep() {
+		if (tourStep < tourSteps.length - 1) {
+			tourStep++;
+		} else {
+			showTour = false;
+		}
+	}
+
+	function prevTourStep() {
+		if (tourStep > 0) {
+			tourStep--;
+		}
+	}
+
+	function endTour() {
+		showTour = false;
+	}
+
+	function handleTourKeydown(e: KeyboardEvent) {
+		if (!showTour) return;
+		switch (e.key) {
+			case 'ArrowRight':
+			case 'ArrowDown':
+				e.preventDefault();
+				nextTourStep();
+				break;
+			case 'ArrowLeft':
+			case 'ArrowUp':
+				e.preventDefault();
+				prevTourStep();
+				break;
+			case 'Escape':
+				e.preventDefault();
+				endTour();
+				break;
+		}
 	}
 
 	function handleWordSearch(event) {
@@ -663,6 +742,8 @@
 	<title>TRANSCRIPT EXPLORER</title>
 </svelte:head>
 
+<svelte:window on:keydown={handleTourKeydown} />
+
 <div class="page-container">
 	<div class="navbar min-h-16 bg-[#ffffff]">
 		<div class="flex-1 px-2 lg:flex-none">
@@ -673,7 +754,7 @@
 			<!-- Visualization Controls Group -->
 			<div class="flex items-center gap-2">
 				<!-- Visualizations Dropdown -->
-				<details class="dropdown" use:clickOutside>
+				<details class="dropdown" use:clickOutside data-tour="viz-modes">
 					<summary class="btn btn-sm gap-1 flex items-center">
 						<div class="w-4 h-4">
 							<MdInsertChart />
@@ -699,63 +780,65 @@
 					</ul>
 				</details>
 
-				<!-- Interactions Dropdown -->
-				<details class="dropdown" use:clickOutside>
-					<summary class="btn btn-sm gap-1 flex items-center">
-						<div class="w-4 h-4">
-							<MdTouchApp />
-						</div>
-						<span class="hidden sm:inline">Interactions</span>
-						<svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-							<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" />
-						</svg>
-					</summary>
-					<ul class="menu dropdown-content rounded-box z-[1] w-52 p-2 shadow bg-base-100">
-						{#each visibleInteractions as toggle}
-							<li>
-								<button on:click={() => toggleSelectionOnly(toggle, allInteractions)} class="w-full text-left flex items-center">
-									<div class="w-4 h-4 mr-2">
-										{#if $ConfigStore[toggle]}
-											<MdCheck />
-										{/if}
-									</div>
-									{formatToggleName(toggle)}
-								</button>
-							</li>
-						{/each}
-						{#if showRepeatedWordsSlider}
-							<li class="cursor-none">
-								<p>Repeated Word Filter: {$ConfigStore.repeatWordSliderValue}</p>
-							</li>
-							<li>
-								<label for="repeatWordRange" class="sr-only">Adjust rect width</label>
-								<input
-									id="repeatWordRange"
-									type="range"
-									min="2"
-									max="30"
-									value={$ConfigStore.repeatWordSliderValue}
-									class="range"
-									on:input={(e) => handleConfigChangeFromInput(e, 'repeatWordSliderValue')}
-								/>
-							</li>
-						{/if}
-						<hr class="my-4 border-t border-gray-300" />
-						<input type="text" placeholder="Search conversations..." on:input={(e) => handleWordSearch(e)} class="input input-bordered w-full" />
-					</ul>
-				</details>
+				<!-- Interactions & Editor -->
+				<div class="flex items-center gap-2" data-tour="interactions">
+					<details class="dropdown" use:clickOutside>
+						<summary class="btn btn-sm gap-1 flex items-center">
+							<div class="w-4 h-4">
+								<MdTouchApp />
+							</div>
+							<span class="hidden sm:inline">Interactions</span>
+							<svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+								<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" />
+							</svg>
+						</summary>
+						<ul class="menu dropdown-content rounded-box z-[1] w-52 p-2 shadow bg-base-100">
+							{#each visibleInteractions as toggle}
+								<li>
+									<button on:click={() => toggleSelectionOnly(toggle, allInteractions)} class="w-full text-left flex items-center">
+										<div class="w-4 h-4 mr-2">
+											{#if $ConfigStore[toggle]}
+												<MdCheck />
+											{/if}
+										</div>
+										{formatToggleName(toggle)}
+									</button>
+								</li>
+							{/each}
+							{#if showRepeatedWordsSlider}
+								<li class="cursor-none">
+									<p>Repeated Word Filter: {$ConfigStore.repeatWordSliderValue}</p>
+								</li>
+								<li>
+									<label for="repeatWordRange" class="sr-only">Adjust rect width</label>
+									<input
+										id="repeatWordRange"
+										type="range"
+										min="2"
+										max="30"
+										value={$ConfigStore.repeatWordSliderValue}
+										class="range"
+										on:input={(e) => handleConfigChangeFromInput(e, 'repeatWordSliderValue')}
+									/>
+								</li>
+							{/if}
+							<hr class="my-4 border-t border-gray-300" />
+							<input type="text" placeholder="Search conversations..." on:input={(e) => handleWordSearch(e)} class="input input-bordered w-full" />
+						</ul>
+					</details>
 
-				<!-- Editor Toggle -->
-				<button
-					class="btn btn-sm gap-1 {isEditorVisible ? 'btn-primary' : ''}"
-					on:click={toggleEditor}
-					title={isEditorVisible ? 'Hide Editor' : 'Show Editor'}
-				>
-					<div class="w-4 h-4">
-						<MdSubject />
-					</div>
-					<span class="hidden sm:inline">Editor</span>
-				</button>
+					<!-- Editor Toggle -->
+					<button
+						class="btn btn-sm gap-1 {isEditorVisible ? 'btn-primary' : ''}"
+						on:click={toggleEditor}
+						title={isEditorVisible ? 'Hide Editor' : 'Show Editor'}
+					>
+						<div class="w-4 h-4">
+							<MdSubject />
+						</div>
+						<span class="hidden sm:inline">Editor</span>
+					</button>
+				</div>
 			</div>
 
 			<!-- Divider -->
@@ -790,7 +873,7 @@
 			<div class="divider divider-horizontal mx-1 h-8"></div>
 
 			<!-- Example Data Dropdown -->
-			<details class="dropdown dropdown-end" use:clickOutside>
+			<details class="dropdown dropdown-end" use:clickOutside data-tour="examples">
 				<summary
 					class="flex justify-between items-center min-w-[180px] rounded border border-gray-300 px-3 py-1.5 bg-white text-sm font-medium text-gray-700 hover:bg-gray-50 cursor-pointer"
 				>
@@ -806,7 +889,7 @@
 							<li>
 								<button
 									on:click={() => {
-										updateExampleDataDropDown({ target: { value: item.value } });
+										loadExample(item.value);
 										selectedDropDownOption = item.label;
 									}}
 									class="text-sm {selectedDropDownOption === item.label ? 'active' : ''}"
@@ -829,7 +912,7 @@
 			collapsedPanel="second"
 			on:resize={handlePanelResize}
 		>
-			<div slot="first" class="h-full relative" id="p5-container">
+			<div slot="first" class="h-full relative" id="p5-container" data-tour="visualization">
 				<P5 {sketch} />
 				<CanvasTooltip />
 				{#if hasVideoSource}
@@ -1182,6 +1265,7 @@
 	<div class="btm-nav flex justify-between min-h-20" style="position: relative;">
 		<div
 			class="flex flex-1 flex-row justify-start items-center bg-[#f6f5f3] items-start px-8 overflow-x-auto"
+			data-tour="speakers"
 			on:wheel={(e) => {
 				if (e.deltaY !== 0) {
 					e.preventDefault();
@@ -1314,7 +1398,7 @@
 		</div>
 
 		<!-- Right Side: Timeline -->
-		<div class="flex-1 bg-[#f6f5f3]">
+		<div class="flex-1 bg-[#f6f5f3]" data-tour="timeline">
 			<TimelinePanel />
 		</div>
 	</div>
@@ -1322,7 +1406,12 @@
 
 <slot />
 
-<InfoModal {isModalOpen} />
+<InfoModal
+	{isModalOpen}
+	onLoadExample={loadExample}
+	onOpenUpload={() => (showUploadModal = true)}
+	onStartTour={startTour}
+/>
 
 <TranscriptionModal
 	bind:isOpen={showTranscriptionModal}
@@ -1331,6 +1420,58 @@
 	on:complete={handleTranscriptionComplete}
 	on:close={() => (showTranscriptionModal = false)}
 />
+
+<!-- Interactive Tour Overlay -->
+{#if showTour}
+	{@const step = tourSteps[tourStep]}
+	{@const rect = document.querySelector(step.target)?.getBoundingClientRect()}
+	{@const isLarge = rect && rect.height > window.innerHeight * 0.5}
+	{@const tooltipTop = rect
+		? isLarge
+			? rect.top + 40
+			: window.innerHeight - rect.bottom > 180
+				? rect.bottom + 12
+				: rect.top > 180
+					? rect.top - 172
+					: rect.top + 40
+		: window.innerHeight / 2 - 80}
+	{@const tooltipLeft = rect
+		? Math.max(16, Math.min(rect.left + rect.width / 2 - 160, window.innerWidth - 336))
+		: window.innerWidth / 2 - 160}
+
+	<div class="fixed inset-0 z-[9999] pointer-events-none">
+		<button class="absolute inset-0 bg-black/50 pointer-events-auto cursor-default" on:click={endTour}></button>
+
+		{#if rect}
+			<div
+				class="absolute border-2 border-blue-500 rounded-lg pointer-events-none"
+				style="top: {rect.top - 4}px; left: {rect.left - 4}px; width: {rect.width + 8}px; height: {rect.height + 8}px; box-shadow: 0 0 0 9999px rgba(0,0,0,0.5);"
+			></div>
+		{/if}
+
+		<div
+			class="absolute bg-white rounded-lg shadow-xl p-4 pointer-events-auto w-80"
+			style="top: {tooltipTop}px; left: {tooltipLeft}px;"
+		>
+			<div class="flex justify-between items-start mb-2">
+				<h3 class="font-bold text-gray-800">{step.title}</h3>
+				<span class="text-xs text-gray-400">{tourStep + 1}/{tourSteps.length}</span>
+			</div>
+			<p class="text-sm text-gray-600 mb-4">{step.content}</p>
+			<div class="flex justify-between items-center">
+				<button class="text-sm text-gray-500 hover:text-gray-700" on:click={endTour}>Skip</button>
+				<div class="flex gap-2">
+					{#if tourStep > 0}
+						<button class="btn btn-sm btn-ghost" on:click={prevTourStep}>Back</button>
+					{/if}
+					<button class="btn btn-sm btn-primary" on:click={nextTourStep}>
+						{tourStep === tourSteps.length - 1 ? 'Finish' : 'Next'}
+					</button>
+				</div>
+			</div>
+		</div>
+	</div>
+{/if}
 
 <style>
 	.page-container {

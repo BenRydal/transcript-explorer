@@ -62,14 +62,13 @@ export class Core {
 		this.coreUtils = new CoreUtils();
 	}
 
-	handleExampleDropdown = async (event: any) => {
+	loadExample = async (exampleId: string) => {
 		this.clearAllData();
-		const selectedValue = event.target.value;
-		const selectedExample = examples[selectedValue];
+		const selectedExample = examples[exampleId];
 		if (selectedExample) {
 			const { files, videoId } = selectedExample;
 			for (const file of files) {
-				await this.loadLocalExampleDataFile(`/data/${selectedValue}/`, file);
+				await this.loadLocalExampleDataFile(`/data/${exampleId}/`, file);
 			}
 			if (videoId) {
 				loadVideo({ type: 'youtube', videoId });
