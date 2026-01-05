@@ -12,6 +12,7 @@ import TranscriptStore from '../../stores/transcriptStore.js';
 import { loadVideo, reset as resetVideo } from '../../stores/videoStore';
 import { Transcript, type TimingMode } from '../../models/transcript';
 import ConfigStore from '../../stores/configStore.js';
+import { notifications } from '../../stores/notificationStore.js';
 
 import { TimeUtils } from './time-utils.js';
 let transcript: Transcript = new Transcript();
@@ -62,14 +63,13 @@ export class Core {
 		this.coreUtils = new CoreUtils();
 	}
 
-	handleExampleDropdown = async (event: any) => {
+	loadExample = async (exampleId: string) => {
 		this.clearAllData();
-		const selectedValue = event.target.value;
-		const selectedExample = examples[selectedValue];
+		const selectedExample = examples[exampleId];
 		if (selectedExample) {
 			const { files, videoId } = selectedExample;
 			for (const file of files) {
-				await this.loadLocalExampleDataFile(`/data/${selectedValue}/`, file);
+				await this.loadLocalExampleDataFile(`/data/${exampleId}/`, file);
 			}
 			if (videoId) {
 				loadVideo({ type: 'youtube', videoId });
@@ -88,7 +88,7 @@ export class Core {
 		} else if (fileName.endsWith('.mp4') || file.type === 'video/mp4') {
 			resetVideo();
 			this.prepVideoFromFile(URL.createObjectURL(file));
-		} else alert('Error loading file. Please make sure your file is an accepted format'); // this should not be possible due to HTML5 accept for file inputs, but in case
+		} else notifications.error('Unsupported file format. Please use CSV, TXT, or MP4 files.');
 	}
 
 	loadP5Strings(filePath) {
@@ -96,15 +96,14 @@ export class Core {
 			filePath,
 			(stringArray) => {
 				if (!stringArray || stringArray.length === 0) {
-					alert('The text file is empty or could not be read.');
+					notifications.error('The text file is empty or could not be read.');
 					return;
 				}
-				console.log('Text File Loaded:', stringArray.length, 'lines');
 				this.processData(stringArray, 'txt');
 				this.updateAllDataValues();
 			},
 			(error) => {
-				alert('Error loading text file. Please make sure it is correctly formatted.');
+				notifications.error('Error loading text file. Please check the file format.');
 				console.error('File Load Error:', error);
 			}
 		);
@@ -119,19 +118,18 @@ export class Core {
 				return h.trim().toLowerCase();
 			},
 			complete: (results: any, file: any) => {
-				console.log('Parsing complete:', results, file);
 				if (this.coreUtils.testTranscript(results)) {
 					this.processData(results.data, 'csv');
 					this.updateAllDataValues();
 				} else {
-					alert(
-						'Error loading CSV file. Please make sure your file is a CSV file formatted with correct column headers labeled "speaker" and "content". You can also include column headers for start and end times labeled "start" and  "end"'
+					notifications.error(
+						'Invalid CSV format. Required columns: "speaker" and "content". Optional: "start" and "end" for timing.'
 					);
 				}
 			},
 			error: (error, file) => {
-				alert('Parsing error with one of your CSV file. Please make sure your file is formatted correctly as a .CSV');
-				console.log(error, file);
+				notifications.error('CSV parsing error. Please check the file format.');
+				console.error('CSV parsing error:', error, file);
 			}
 		});
 	};
@@ -155,8 +153,8 @@ export class Core {
 			});
 			this.loadCSVData(file);
 		} catch (error) {
-			alert('Error loading CSV file. Please make sure you have a good internet connection');
-			console.log(error);
+			notifications.error('Error loading example file. Please check your internet connection.');
+			console.error('Example file load error:', error);
 		}
 	}
 
@@ -372,7 +370,6 @@ export class Core {
 	};
 
 	clearAllData() {
-		console.log('Clearing all data');
 		this.sketch.dynamicData.clear();
 		UserStore.set([]);
 		TranscriptStore.set(new Transcript());
@@ -381,7 +378,6 @@ export class Core {
 	}
 
 	clearTranscriptData() {
-		console.log('Clearing Transcript Data');
 		this.sketch.dynamicData.clear();
 		UserStore.set([]);
 		TranscriptStore.set(new Transcript());

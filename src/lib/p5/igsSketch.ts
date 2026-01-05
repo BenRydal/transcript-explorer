@@ -135,7 +135,9 @@ export const igsSketch = (p5: any) => {
 			// Get time from video via VideoStore's currentTime
 			timeToSet = videoState.currentTime;
 		} else {
-			timeToSet = timeline.getCurrTime() + currConfig.animationRate;
+			// Cap deltaTime to 100ms to prevent huge jumps when tab is backgrounded
+			const cappedDeltaTime = Math.min(p5.deltaTime, 100);
+			timeToSet = timeline.getCurrTime() + (currConfig.animationRate * cappedDeltaTime / 1000);
 		}
 		TimelineStore.update((timeline) => {
 			timeline.setCurrTime(timeToSet);

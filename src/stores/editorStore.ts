@@ -1,4 +1,4 @@
-import { writable } from 'svelte/store';
+import { writable, derived } from 'svelte/store';
 
 export interface EditorSelection {
 	selectedTurnNumber: number | null;
@@ -39,5 +39,13 @@ const initialState: EditorState = {
 };
 
 const EditorStore = writable<EditorState>(initialState);
+
+/**
+ * Derived store that emits a stable key when editor layout changes.
+ * Used to trigger canvas resize when orientation or collapse state changes.
+ */
+export const editorLayoutKey = derived(EditorStore, ($editor) =>
+	`${$editor.config.orientation}-${$editor.config.isCollapsed}`
+);
 
 export default EditorStore;

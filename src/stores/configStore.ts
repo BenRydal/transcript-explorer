@@ -1,4 +1,4 @@
-import { writable } from 'svelte/store';
+import { writable, derived } from 'svelte/store';
 
 export interface ConfigStoreType {
 	distributionDiagramToggle: boolean;
@@ -36,7 +36,7 @@ export const initialConfig: ConfigStoreType = {
 	echoWordsToggle: false,
 	stopWordsToggle: false,
 	repeatedWordsToggle: false,
-	animationRate: 0.05,
+	animationRate: 3,
 	repeatWordSliderValue: 5,
 	selectedWordFromContributionCloud: '',
 	firstWordOfTurnSelectedInTurnChart: '',
@@ -49,5 +49,14 @@ export const initialConfig: ConfigStoreType = {
 };
 
 const ConfigStore = writable<ConfigStoreType>(initialConfig);
+
+/**
+ * Derived store that emits a stable key when filter toggles change.
+ * Using a string key ensures Svelte's reactivity properly detects changes
+ * even when boolean values switch from true to false.
+ */
+export const filterToggleKey = derived(ConfigStore, ($config) =>
+	`${$config.echoWordsToggle}-${$config.lastWordToggle}-${$config.stopWordsToggle}`
+);
 
 export default ConfigStore;
