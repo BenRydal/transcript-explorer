@@ -12,6 +12,7 @@ import TranscriptStore from '../../stores/transcriptStore.js';
 import { loadVideo, reset as resetVideo } from '../../stores/videoStore';
 import { Transcript, type TimingMode } from '../../models/transcript';
 import ConfigStore from '../../stores/configStore.js';
+import { notifications } from '../../stores/notificationStore.js';
 
 import { TimeUtils } from './time-utils.js';
 let transcript: Transcript = new Transcript();
@@ -87,7 +88,7 @@ export class Core {
 		} else if (fileName.endsWith('.mp4') || file.type === 'video/mp4') {
 			resetVideo();
 			this.prepVideoFromFile(URL.createObjectURL(file));
-		} else alert('Error loading file. Please make sure your file is an accepted format'); // this should not be possible due to HTML5 accept for file inputs, but in case
+		} else notifications.error('Unsupported file format. Please use CSV, TXT, or MP4 files.');
 	}
 
 	loadP5Strings(filePath) {
@@ -95,7 +96,7 @@ export class Core {
 			filePath,
 			(stringArray) => {
 				if (!stringArray || stringArray.length === 0) {
-					alert('The text file is empty or could not be read.');
+					notifications.error('The text file is empty or could not be read.');
 					return;
 				}
 				console.log('Text File Loaded:', stringArray.length, 'lines');
@@ -103,7 +104,7 @@ export class Core {
 				this.updateAllDataValues();
 			},
 			(error) => {
-				alert('Error loading text file. Please make sure it is correctly formatted.');
+				notifications.error('Error loading text file. Please check the file format.');
 				console.error('File Load Error:', error);
 			}
 		);
@@ -123,13 +124,13 @@ export class Core {
 					this.processData(results.data, 'csv');
 					this.updateAllDataValues();
 				} else {
-					alert(
-						'Error loading CSV file. Please make sure your file is a CSV file formatted with correct column headers labeled "speaker" and "content". You can also include column headers for start and end times labeled "start" and  "end"'
+					notifications.error(
+						'Invalid CSV format. Required columns: "speaker" and "content". Optional: "start" and "end" for timing.'
 					);
 				}
 			},
 			error: (error, file) => {
-				alert('Parsing error with one of your CSV file. Please make sure your file is formatted correctly as a .CSV');
+				notifications.error('CSV parsing error. Please check the file format.');
 				console.log(error, file);
 			}
 		});
@@ -154,7 +155,7 @@ export class Core {
 			});
 			this.loadCSVData(file);
 		} catch (error) {
-			alert('Error loading CSV file. Please make sure you have a good internet connection');
+			notifications.error('Error loading example file. Please check your internet connection.');
 			console.log(error);
 		}
 	}

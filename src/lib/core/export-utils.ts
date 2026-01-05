@@ -3,6 +3,7 @@ import { get } from 'svelte/store';
 import TranscriptStore from '../../stores/transcriptStore';
 import { getTurnsFromWordArray } from './turn-utils';
 import { TimeUtils } from './time-utils';
+import { notifications } from '../../stores/notificationStore';
 
 /**
  * Exports the current transcript to a CSV file and triggers download.
@@ -12,7 +13,7 @@ export function exportTranscriptToCSV(): void {
 	const transcript = get(TranscriptStore);
 
 	if (!transcript.wordArray || transcript.wordArray.length === 0) {
-		alert('No transcript data to export.');
+		notifications.warning('No transcript data to export.');
 		return;
 	}
 
@@ -36,7 +37,9 @@ export function exportTranscriptToCSV(): void {
 	];
 
 	const csv = Papa.unparse(csvData, { header: true, columns });
-	downloadCSV(csv, generateFilename());
+	const filename = generateFilename();
+	downloadCSV(csv, filename);
+	notifications.success('Transcript exported successfully.');
 }
 
 /**
