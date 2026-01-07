@@ -61,8 +61,9 @@ export class TimeUtils {
 
 	/** Formats seconds compactly for video player: m:ss or h:mm:ss (no leading zeros) */
 	static formatTimeCompact(seconds: number): string {
-		if (!seconds || !Number.isFinite(seconds)) return '0:00';
-		const duration = Duration.fromObject({ seconds: Math.floor(seconds) });
-		return seconds < 3600 ? duration.toFormat('m:ss') : duration.toFormat('h:mm:ss');
+		if (!Number.isFinite(seconds) || seconds < 0) return '0:00';
+		const rounded = Math.round(seconds);
+		const duration = Duration.fromObject({ seconds: rounded });
+		return rounded < 3600 ? duration.toFormat('m:ss') : duration.toFormat('h:mm:ss');
 	}
 }
