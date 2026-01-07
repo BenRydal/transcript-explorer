@@ -2,7 +2,7 @@ import Papa from 'papaparse';
 import { get } from 'svelte/store';
 import TranscriptStore from '../../stores/transcriptStore';
 import { getTurnsFromWordArray } from './turn-utils';
-import { TimeUtils } from './time-utils';
+import { formatTime } from './time-utils';
 import { notifications } from '../../stores/notificationStore';
 
 /**
@@ -25,8 +25,8 @@ export function exportTranscriptToCSV(): void {
 	const csvData = turns.map((turn) => ({
 		speaker: turn.speaker,
 		content: turn.words.join(' '),
-		...(includeStart && { start: TimeUtils.formatTime(turn.startTime) }),
-		...(includeEnd && { end: TimeUtils.formatTime(turn.endTime) })
+		...(includeStart && { start: formatTime(turn.startTime) }),
+		...(includeEnd && { end: formatTime(turn.endTime) })
 	}));
 
 	const columns = [

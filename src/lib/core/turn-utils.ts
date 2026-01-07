@@ -1,5 +1,5 @@
 import type { DataPoint } from '../../models/dataPoint';
-import { TimeUtils } from './time-utils';
+import { formatTimeAuto } from './time-utils';
 
 export interface Turn {
 	turnNumber: number;
@@ -40,14 +40,14 @@ export function getTurnsFromWordArray(wordArray: DataPoint[]): Turn[] {
  * Formats a turn's timecode for display.
  */
 export function formatTurnTimecode(turn: Turn): string {
-	return `[${TimeUtils.formatTimeAuto(turn.startTime)}]`;
+	return `[${formatTimeAuto(turn.startTime)}]`;
 }
 
 /**
  * Formats a turn's time range for display.
  */
 export function formatTurnTimeRange(turn: Turn): string {
-	return `[${TimeUtils.formatTimeAuto(turn.startTime)} - ${TimeUtils.formatTimeAuto(turn.endTime)}]`;
+	return `[${formatTimeAuto(turn.startTime)} - ${formatTimeAuto(turn.endTime)}]`;
 }
 
 /**

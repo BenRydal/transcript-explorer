@@ -1,72 +1,70 @@
 import { Duration } from 'luxon';
 
-export class TimeUtils {
-	/**
-	 * Converts various time formats to seconds.
-	 * Supported: HH:MM:SS, MM:SS, numeric seconds (with optional decimals, "." or "," separator)
-	 * Returns null for empty/invalid input.
-	 */
-	static toSeconds(time: string | number | null | undefined): number | null {
-		if (time == null || time === '') return null;
+/**
+ * Converts various time formats to seconds.
+ * Supported: HH:MM:SS, MM:SS, numeric seconds (with optional decimals, "." or "," separator)
+ * Returns null for empty/invalid input.
+ */
+export function toSeconds(time: string | number | null | undefined): number | null {
+	if (time == null || time === '') return null;
 
-		// Numbers: validate and return
-		if (typeof time === 'number') {
-			return Number.isFinite(time) && time >= 0 ? time : null;
-		}
-
-		// Normalize: trim whitespace, convert comma to period for European decimals
-		const normalized = time.trim().replace(',', '.');
-		if (normalized === '') return null;
-
-		// Try parsing as plain number (e.g., "90" or "90.5")
-		const asNumber = Number(normalized);
-		if (!isNaN(asNumber)) {
-			return asNumber >= 0 ? asNumber : null;
-		}
-
-		// Try parsing as HH:MM:SS or MM:SS
-		const parts = normalized.split(':');
-		if (parts.length < 2 || parts.length > 3) return null;
-
-		const nums = parts.map((p) => {
-			const trimmed = p.trim();
-			if (trimmed === '') return NaN;
-			const n = Number(trimmed);
-			return Number.isFinite(n) && n >= 0 ? n : NaN;
-		});
-
-		if (nums.some(isNaN)) return null;
-
-		if (nums.length === 3) {
-			const [hours, minutes, seconds] = nums;
-			if (minutes >= 60 || seconds >= 60) return null;
-			return hours * 3600 + minutes * 60 + seconds;
-		} else {
-			const [minutes, seconds] = nums;
-			if (seconds >= 60) return null;
-			return minutes * 60 + seconds;
-		}
+	// Numbers: validate and return
+	if (typeof time === 'number') {
+		return Number.isFinite(time) && time >= 0 ? time : null;
 	}
 
-	/** Formats seconds as HH:MM:SS */
-	static formatTime(seconds: number): string {
-		if (!Number.isFinite(seconds) || seconds < 0) return '00:00:00';
-		return Duration.fromObject({ seconds: Math.round(seconds) }).toFormat('hh:mm:ss');
+	// Normalize: trim whitespace, convert comma to period for European decimals
+	const normalized = time.trim().replace(',', '.');
+	if (normalized === '') return null;
+
+	// Try parsing as plain number (e.g., "90" or "90.5")
+	const asNumber = Number(normalized);
+	if (!isNaN(asNumber)) {
+		return asNumber >= 0 ? asNumber : null;
 	}
 
-	/** Formats seconds as MM:SS (or HH:MM:SS if >= 1 hour) */
-	static formatTimeAuto(seconds: number): string {
-		if (!Number.isFinite(seconds) || seconds < 0) return '00:00';
-		const rounded = Math.round(seconds);
-		const duration = Duration.fromObject({ seconds: rounded });
-		return rounded < 3600 ? duration.toFormat('mm:ss') : duration.toFormat('hh:mm:ss');
-	}
+	// Try parsing as HH:MM:SS or MM:SS
+	const parts = normalized.split(':');
+	if (parts.length < 2 || parts.length > 3) return null;
 
-	/** Formats seconds compactly for video player: m:ss or h:mm:ss (no leading zeros) */
-	static formatTimeCompact(seconds: number): string {
-		if (!Number.isFinite(seconds) || seconds < 0) return '0:00';
-		const rounded = Math.round(seconds);
-		const duration = Duration.fromObject({ seconds: rounded });
-		return rounded < 3600 ? duration.toFormat('m:ss') : duration.toFormat('h:mm:ss');
+	const nums = parts.map((p) => {
+		const trimmed = p.trim();
+		if (trimmed === '') return NaN;
+		const n = Number(trimmed);
+		return Number.isFinite(n) && n >= 0 ? n : NaN;
+	});
+
+	if (nums.some(isNaN)) return null;
+
+	if (nums.length === 3) {
+		const [hours, minutes, seconds] = nums;
+		if (minutes >= 60 || seconds >= 60) return null;
+		return hours * 3600 + minutes * 60 + seconds;
+	} else {
+		const [minutes, seconds] = nums;
+		if (seconds >= 60) return null;
+		return minutes * 60 + seconds;
 	}
+}
+
+/** Formats seconds as HH:MM:SS */
+export function formatTime(seconds: number): string {
+	if (!Number.isFinite(seconds) || seconds < 0) return '00:00:00';
+	return Duration.fromObject({ seconds: Math.round(seconds) }).toFormat('hh:mm:ss');
+}
+
+/** Formats seconds as MM:SS (or HH:MM:SS if >= 1 hour) */
+export function formatTimeAuto(seconds: number): string {
+	if (!Number.isFinite(seconds) || seconds < 0) return '00:00';
+	const rounded = Math.round(seconds);
+	const duration = Duration.fromObject({ seconds: rounded });
+	return rounded < 3600 ? duration.toFormat('mm:ss') : duration.toFormat('hh:mm:ss');
+}
+
+/** Formats seconds compactly for video player: m:ss or h:mm:ss (no leading zeros) */
+export function formatTimeCompact(seconds: number): string {
+	if (!Number.isFinite(seconds) || seconds < 0) return '0:00';
+	const rounded = Math.round(seconds);
+	const duration = Duration.fromObject({ seconds: rounded });
+	return rounded < 3600 ? duration.toFormat('m:ss') : duration.toFormat('h:mm:ss');
 }

@@ -2,7 +2,7 @@
 	import { createEventDispatcher, onMount } from 'svelte';
 	import type { Turn } from '$lib/core/turn-utils';
 	import { getTurnContent } from '$lib/core/turn-utils';
-	import { TimeUtils } from '$lib/core/time-utils';
+	import { toSeconds, formatTimeAuto } from '$lib/core/time-utils';
 	import VideoStore from '../../stores/videoStore';
 	import type { TimingMode } from '../../models/transcript';
 
@@ -84,13 +84,13 @@
 
 	// Start editing start time
 	function startEditingStartTime() {
-		editedStartTime = TimeUtils.formatTimeAuto(turn.startTime);
+		editedStartTime = formatTimeAuto(turn.startTime);
 		isEditingStartTime = true;
 	}
 
 	// Save start time changes
 	function saveStartTime() {
-		const newStartTime = TimeUtils.toSeconds(editedStartTime) ?? turn.startTime;
+		const newStartTime = toSeconds(editedStartTime) ?? turn.startTime;
 
 		if (newStartTime !== turn.startTime) {
 			dispatch('edit', {
@@ -110,13 +110,13 @@
 
 	// Start editing end time
 	function startEditingEndTime() {
-		editedEndTime = TimeUtils.formatTimeAuto(turn.endTime);
+		editedEndTime = formatTimeAuto(turn.endTime);
 		isEditingEndTime = true;
 	}
 
 	// Save end time changes
 	function saveEndTime() {
-		const newEndTime = TimeUtils.toSeconds(editedEndTime) ?? turn.endTime;
+		const newEndTime = toSeconds(editedEndTime) ?? turn.endTime;
 
 		if (newEndTime !== turn.endTime) {
 			dispatch('edit', {
@@ -200,7 +200,7 @@
 	function captureStartTime() {
 		const videoState = $VideoStore;
 		if (videoState.isLoaded) {
-			const formattedTime = TimeUtils.formatTimeAuto(videoState.currentTime);
+			const formattedTime = formatTimeAuto(videoState.currentTime);
 			// Update the local input value
 			editedStartTime = formattedTime;
 			// Also dispatch the edit to save immediately
@@ -216,7 +216,7 @@
 	function captureEndTime() {
 		const videoState = $VideoStore;
 		if (videoState.isLoaded) {
-			const formattedTime = TimeUtils.formatTimeAuto(videoState.currentTime);
+			const formattedTime = formatTimeAuto(videoState.currentTime);
 			// Update the local input value
 			editedEndTime = formattedTime;
 			// Also dispatch the edit to save immediately
@@ -253,8 +253,8 @@
 	});
 
 	// Reactive time displays
-	$: startTimeDisplay = `[${TimeUtils.formatTimeAuto(turn.startTime)}]`;
-	$: endTimeDisplay = `[${TimeUtils.formatTimeAuto(turn.endTime)}]`;
+	$: startTimeDisplay = `[${formatTimeAuto(turn.startTime)}]`;
+	$: endTimeDisplay = `[${formatTimeAuto(turn.endTime)}]`;
 </script>
 
 <div

@@ -5,7 +5,7 @@
 	import TimelineStore from '../../stores/timelineStore';
 	import TranscriptStore from '../../stores/transcriptStore';
 	import { applyTimingModeToWordArray, updateTimelineFromData } from '$lib/core/timing-utils';
-	import { TimeUtils } from '$lib/core/time-utils';
+	import { toSeconds, formatTimeAuto } from '$lib/core/time-utils';
 	import P5Store from '../../stores/p5Store';
 
 	export let isOpen = false;
@@ -62,11 +62,11 @@
 					<input
 						id="inputDuration"
 						type="text"
-						value={TimeUtils.formatTimeAuto($TimelineStore.endTime)}
+						value={formatTimeAuto($TimelineStore.endTime)}
 						placeholder="e.g. 90, 1:30, or 0:01:30"
 						on:change={(e) => {
 							const input = e.target;
-							const seconds = TimeUtils.toSeconds(input.value);
+							const seconds = toSeconds(input.value);
 							if (seconds !== null && seconds > 0) {
 								TimelineStore.update((timeline) => {
 									timeline.setCurrTime(0);
@@ -78,7 +78,7 @@
 								});
 							}
 							// Always reset to formatted value (normalizes valid input, reverts invalid)
-							input.value = TimeUtils.formatTimeAuto($TimelineStore.endTime);
+							input.value = formatTimeAuto($TimelineStore.endTime);
 						}}
 						class="input input-bordered"
 					/>

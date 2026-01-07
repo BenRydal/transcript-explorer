@@ -22,7 +22,7 @@ import UserStore from '../../stores/userStore';
 import ConfigStore, { type ConfigStoreType } from '../../stores/configStore';
 import TranscriptStore from '../../stores/transcriptStore';
 import { showTooltip } from '../../stores/tooltipStore';
-import { TimeUtils } from '../core/time-utils';
+import { formatTimeCompact } from '../core/time-utils';
 import type { DataPoint } from '../../models/dataPoint';
 import type { User } from '../../models/user';
 import type { Bounds } from './types/bounds';
@@ -208,7 +208,7 @@ export class ContributionCloud {
 		const details = [`×${totalCount}`, `Turn ${word.turnNumber}`];
 		const transcript = get(TranscriptStore);
 		if (transcript.timingMode !== 'untimed' && word.startTime != null) {
-			details.push(TimeUtils.formatTimeCompact(word.startTime));
+			details.push(formatTimeCompact(word.startTime));
 		}
 
 		content += `\n<span style="font-size: 0.85em; opacity: 0.7">${details.join('  ·  ')}</span>`;

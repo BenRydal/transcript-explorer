@@ -2,7 +2,7 @@ import type p5 from 'p5';
 import Papa from 'papaparse';
 import { get } from 'svelte/store';
 
-import { CoreUtils } from './core-utils';
+import { testTranscript, hasSpeakerNameAndContent, HEADERS_TRANSCRIPT_WITH_TIME } from './core-utils';
 import { DataPoint } from '../../models/dataPoint.js';
 import { User } from '../../models/user.js';
 import { USER_COLORS } from '../constants/index.js';
@@ -15,17 +15,13 @@ import { Transcript, type TimingMode } from '../../models/transcript';
 import ConfigStore from '../../stores/configStore.js';
 import { notifications } from '../../stores/notificationStore.js';
 
-import { TimeUtils } from './time-utils.js';
+import { toSeconds } from './time-utils.js';
 import { estimateDuration } from './timing-utils.js';
+
 let transcript: Transcript = new Transcript();
-let users: User[] = [];
 
 TranscriptStore.subscribe((data) => {
 	transcript = data;
-});
-
-UserStore.subscribe((data) => {
-	users = data;
 });
 
 const examples = {
@@ -58,11 +54,9 @@ const examples = {
 
 export class Core {
 	sketch: p5;
-	coreUtils: CoreUtils;
 
 	constructor(sketch: p5) {
 		this.sketch = sketch;
-		this.coreUtils = new CoreUtils();
 	}
 
 	loadExample = async (exampleId: string) => {
@@ -120,7 +114,7 @@ export class Core {
 				return h.trim().toLowerCase();
 			},
 			complete: (results: any, file: any) => {
-				if (this.coreUtils.testTranscript(results)) {
+				if (testTranscript(results)) {
 					this.processData(results.data, 'csv');
 					this.updateAllDataValues();
 				} else {
@@ -267,20 +261,20 @@ export class Core {
 	/** Get start time from next row if it's valid (has speaker and content) */
 	private getNextValidStartTime(nextLine: unknown): number | null {
 		const record = nextLine as Record<string, unknown> | null;
-		if (!record || !this.coreUtils.hasSpeakerNameAndContent(record)) return null;
-		const startHeader = this.coreUtils.headersTranscriptWithTime[2];
-		return TimeUtils.toSeconds(record[startHeader] as string | number | null);
+		if (!record || !hasSpeakerNameAndContent(record)) return null;
+		const startHeader = HEADERS_TRANSCRIPT_WITH_TIME[2];
+		return toSeconds(record[startHeader] as string | number | null);
 	}
 
 	parseDataRowCSV(line: unknown, nextLine: unknown, currentWordCount: number, lastValidStartTime: number | null, lastValidEndTime: number | null) {
-		if (!this.coreUtils.hasSpeakerNameAndContent(line)) return null;
-		const headers = this.coreUtils.headersTranscriptWithTime;
+		if (!hasSpeakerNameAndContent(line)) return null;
+		const headers = HEADERS_TRANSCRIPT_WITH_TIME;
 		const speakerName = String(line[headers[0]]).trim().toUpperCase();
 		this.updateUsers(speakerName);
 		const content: string[] = this.createTurnContentArray(String(line[headers[1]]).trim());
 		if (!content.length) return null;
-		const curLineStartTime = TimeUtils.toSeconds(line[headers[2]]);
-		const curLineEndTime = TimeUtils.toSeconds(line[headers[3]]);
+		const curLineStartTime = toSeconds(line[headers[2]]);
+		const curLineEndTime = toSeconds(line[headers[3]]);
 		const hasStartTime = curLineStartTime !== null;
 		const hasEndTime = curLineEndTime !== null;
 
