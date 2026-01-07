@@ -16,6 +16,7 @@ import ConfigStore from '../../stores/configStore.js';
 import { notifications } from '../../stores/notificationStore.js';
 
 import { TimeUtils } from './time-utils.js';
+import { estimateDuration } from './timing-utils.js';
 let transcript: Transcript = new Transcript();
 let users: User[] = [];
 
@@ -220,7 +221,7 @@ export class Core {
 			updatedTranscript.totalConversationTurns = turnNumber;
 			// Determine timing mode based on majority of rows
 			let timingMode: TimingMode = 'untimed';
-			if (rowsWithEndTime > turnNumber * 0.5) {
+			if (rowsWithEndTime >= turnNumber * 0.5) {
 				timingMode = 'startEnd';
 			} else if (rowsWithStartTime > 0) {
 				timingMode = 'startOnly';
@@ -304,19 +305,19 @@ export class Core {
 		// 1. Use provided end time if available
 		// 2. Use next line's start time if it's after current start
 		// 3. Estimate based on word count and speech rate setting
-		const estimatedDuration = Math.max(1, content.length / get(ConfigStore).speechRateWordsPerSecond);
+		const duration = estimateDuration(content.length, get(ConfigStore).speechRateWordsPerSecond);
 		let endTime: number;
 		if (curLineEndTime !== null) {
 			endTime = curLineEndTime;
 		} else if (nextLineStartTime !== null && nextLineStartTime > startTime) {
 			endTime = nextLineStartTime;
 		} else {
-			endTime = startTime + estimatedDuration;
+			endTime = startTime + duration;
 		}
 
 		// Ensure end time is always after start time
 		if (endTime <= startTime) {
-			endTime = startTime + estimatedDuration;
+			endTime = startTime + duration;
 		}
 
 		return {

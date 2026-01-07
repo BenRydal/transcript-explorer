@@ -142,6 +142,8 @@ export class Timeline {
 
 	// Implementation of Helper function from P5 library to map a value from one range to another
 	map(value, start1, stop1, start2, stop2, withinBounds = false) {
+		// Avoid division by zero when source range is zero
+		if (stop1 === start1) return start2;
 		// Perform the mapping
 		let newval = ((value - start1) / (stop1 - start1)) * (stop2 - start2) + start2;
 		if (withinBounds) {

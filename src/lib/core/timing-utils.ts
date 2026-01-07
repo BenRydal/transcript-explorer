@@ -5,6 +5,15 @@ import ConfigStore from '../../stores/configStore';
 import type { TimingMode } from '../../models/transcript';
 
 /**
+ * Estimate duration for a turn based on word count and speech rate.
+ * Returns at least 1 second to ensure turns have visible duration.
+ */
+export function estimateDuration(wordCount: number, speechRate: number): number {
+	const safeSpeechRate = Math.max(speechRate, 0.1); // Guard against zero/negative
+	return Math.max(1, wordCount / safeSpeechRate);
+}
+
+/**
  * Recalculate word-count-based times for untimed transcripts.
  * All words in a turn get the same start/end times (matching file load behavior).
  * - startTime = cumulative word count at start of turn
@@ -64,12 +73,12 @@ export function recalculateEndTimesFromStarts(wordArray: DataPoint[]): DataPoint
 	const turnEndTimes = new Map<number, number>();
 	sortedTurnNumbers.forEach((turnNum, index) => {
 		const wordCount = turnWordCounts.get(turnNum) || 1;
-		const estimatedDuration = Math.max(1, wordCount / speechRate);
+		const duration = estimateDuration(wordCount, speechRate);
 		const isLastTurn = index === sortedTurnNumbers.length - 1;
 
 		if (isLastTurn || preserveGaps) {
 			// Use speech rate estimation
-			turnEndTimes.set(turnNum, turnStartTimes.get(turnNum)! + estimatedDuration);
+			turnEndTimes.set(turnNum, turnStartTimes.get(turnNum)! + duration);
 		} else {
 			// Fill to next turn's start time
 			const nextTurnNum = sortedTurnNumbers[index + 1];
@@ -89,9 +98,7 @@ export function recalculateEndTimesFromStarts(wordArray: DataPoint[]): DataPoint
  */
 export function getMaxTime(wordArray: DataPoint[]): number {
 	if (wordArray.length === 0) return 1;
-	const maxStart = Math.max(...wordArray.map((dp) => dp.startTime));
-	const maxEnd = Math.max(...wordArray.map((dp) => dp.endTime));
-	return Math.max(maxStart, maxEnd, 1);
+	return wordArray.reduce((max, dp) => Math.max(max, dp.startTime, dp.endTime), 1);
 }
 
 /**
