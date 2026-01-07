@@ -3,7 +3,7 @@
 	import { browser } from '$app/environment';
 	import VideoStore, { togglePlayPause, toggleMute, setCurrentTime, requestSeek } from '../../stores/videoStore';
 	import { getCurrentTime, seekTo, type VideoPlayer } from '../video/video-service';
-	import { TimeUtils } from '../core/time-utils';
+	import { formatTimeCompact } from '../core/time-utils';
 
 	export let player: VideoPlayer | null = null;
 	export let isFullscreen: boolean = false;
@@ -148,9 +148,9 @@
 
 		<!-- Time display -->
 		<div class="time-display">
-			<span class="current-time">{TimeUtils.formatTimeCompact(isScrubbing ? scrubTime : currentTime)}</span>
+			<span class="current-time">{formatTimeCompact(isScrubbing ? scrubTime : currentTime)}</span>
 			<span class="separator">/</span>
-			<span class="duration">{TimeUtils.formatTimeCompact(duration)}</span>
+			<span class="duration">{formatTimeCompact(duration)}</span>
 		</div>
 
 		<!-- Progress/scrub bar -->

@@ -88,7 +88,7 @@ export class DynamicData {
 
 	isInTimeRange(startTime: number, endTime: number): boolean {
 		const timeline = get(TimelineStore);
-		return startTime >= timeline.getLeftMarker() && endTime <= timeline.getRightMarker();
+		return startTime >= timeline.leftMarker && endTime <= timeline.rightMarker;
 	}
 
 	getDynamicArrayForDistributionDiagram(): Record<string, DataPoint[]> {
