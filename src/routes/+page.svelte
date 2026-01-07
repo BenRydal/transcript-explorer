@@ -124,9 +124,9 @@
 				const videoDuration = $VideoStore.duration;
 				TimelineStore.update((timeline) => {
 					// Only expand, never shrink
-					if (videoDuration > timeline.getRightMarker()) {
-						timeline.setEndTime(videoDuration);
-						timeline.setRightMarker(videoDuration);
+					if (videoDuration > timeline.rightMarker) {
+						timeline.endTime = videoDuration;
+						timeline.rightMarker = videoDuration;
 					}
 					return timeline;
 				});
@@ -390,11 +390,11 @@
 		// Update timeline - for untimed, use word count as timeline range
 		const timelineEnd = hasVideo ? Math.max(videoState.duration, 1) : 1;
 		TimelineStore.update((timeline) => {
-			timeline.setCurrTime(0);
-			timeline.setStartTime(0);
-			timeline.setEndTime(timelineEnd);
-			timeline.setLeftMarker(0);
-			timeline.setRightMarker(timelineEnd);
+			timeline.currTime = 0;
+			timeline.startTime = 0;
+			timeline.endTime = timelineEnd;
+			timeline.leftMarker = 0;
+			timeline.rightMarker = timelineEnd;
 			return timeline;
 		});
 
@@ -477,11 +477,11 @@
 		// Update timeline
 		const timelineEnd = pendingVideoDuration || maxTime;
 		TimelineStore.update((timeline) => {
-			timeline.setCurrTime(0);
-			timeline.setStartTime(0);
-			timeline.setEndTime(timelineEnd);
-			timeline.setLeftMarker(0);
-			timeline.setRightMarker(timelineEnd);
+			timeline.currTime = 0;
+			timeline.startTime = 0;
+			timeline.endTime = timelineEnd;
+			timeline.leftMarker = 0;
+			timeline.rightMarker = timelineEnd;
 			return timeline;
 		});
 

@@ -109,9 +109,9 @@ export function getMaxTime(wordArray: DataPoint[]): number {
 export function updateTimelineFromData(wordArray: DataPoint[], expandOnly = true): void {
 	const maxTime = getMaxTime(wordArray);
 	TimelineStore.update((timeline) => {
-		if (!expandOnly || maxTime > timeline.getRightMarker()) {
-			timeline.setEndTime(maxTime);
-			timeline.setRightMarker(maxTime);
+		if (!expandOnly || maxTime > timeline.rightMarker) {
+			timeline.endTime = maxTime;
+			timeline.rightMarker = maxTime;
 		}
 		return timeline;
 	});

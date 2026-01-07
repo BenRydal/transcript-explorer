@@ -73,11 +73,11 @@ export const igsSketch = (p5: any) => {
 			const render = new Draw(p5);
 			render.drawViz();
 		}
-		if (timeline.getIsAnimating()) p5.updateAnimation();
+		if (timeline.isAnimating) p5.updateAnimation();
 	};
 
 	p5.updateAnimation = () => {
-		const mappedTime = Math.ceil(p5.map(timeline.getCurrTime(), 0, timeline.getEndTime(), 0, transcript.totalNumOfWords));
+		const mappedTime = Math.ceil(p5.map(timeline.currTime, 0, timeline.endTime, 0, transcript.totalNumOfWords));
 		p5.syncAnimationCounter(mappedTime);
 		p5.handleTimelineAnimationState();
 	};
@@ -110,7 +110,7 @@ export const igsSketch = (p5: any) => {
 	};
 
 	p5.getAnimationTargetIndex = () => {
-		const currTime = timeline.getCurrTime();
+		const currTime = timeline.currTime;
 		let targetIndex = transcript.wordArray.findIndex((word) => word.startTime > currTime);
 		if (targetIndex < 0) targetIndex = transcript.wordArray.length;
 		return targetIndex;
@@ -122,7 +122,7 @@ export const igsSketch = (p5: any) => {
 	};
 
 	p5.handleTimelineAnimationState = () => {
-		if (timeline.getCurrTime() < timeline.getRightMarker()) {
+		if (timeline.currTime < timeline.rightMarker) {
 			p5.continueTimelineAnimation();
 		} else {
 			p5.endTimelineAnimation();
@@ -137,10 +137,10 @@ export const igsSketch = (p5: any) => {
 		} else {
 			// Cap deltaTime to 100ms to prevent huge jumps when tab is backgrounded
 			const cappedDeltaTime = Math.min(p5.deltaTime, 100);
-			timeToSet = timeline.getCurrTime() + (currConfig.animationRate * cappedDeltaTime / 1000);
+			timeToSet = timeline.currTime + (currConfig.animationRate * cappedDeltaTime / 1000);
 		}
 		TimelineStore.update((timeline) => {
-			timeline.setCurrTime(timeToSet);
+			timeline.currTime = timeToSet;
 			return timeline;
 		});
 	};
@@ -148,9 +148,9 @@ export const igsSketch = (p5: any) => {
 	p5.endTimelineAnimation = () => {
 		p5.setAnimationCounter(p5.getAnimationTargetIndex()); // important if user scrubs to end quickly
 		TimelineStore.update((timeline) => {
-			timeline.setIsAnimating(false);
+			timeline.isAnimating = false;
 			// Reset to left marker when animation completes
-			timeline.setCurrTime(timeline.getLeftMarker());
+			timeline.currTime = timeline.leftMarker;
 			return timeline;
 		});
 		p5.fillSelectedData(); // Update visualization to reflect reset position
@@ -292,7 +292,7 @@ export const igsSketch = (p5: any) => {
 	};
 
 	p5.getTimeValueFromPixel = (pixelValue: number) => {
-		return Math.floor(p5.map(pixelValue, p5.SPACING, p5.width - p5.SPACING, timeline.getLeftMarker(), timeline.getRightMarker()));
+		return Math.floor(p5.map(pixelValue, p5.SPACING, p5.width - p5.SPACING, timeline.leftMarker, timeline.rightMarker));
 	};
 
 	p5.overRect = (x: number, y: number, boxWidth: number, boxHeight: number) => {

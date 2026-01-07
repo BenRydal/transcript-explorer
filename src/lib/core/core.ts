@@ -379,11 +379,11 @@ export class Core {
 
 	updateTimelineValues = (endTime: number) => {
 		TimelineStore.update((timeline) => {
-			timeline.setCurrTime(0);
-			timeline.setStartTime(0);
-			timeline.setEndTime(endTime);
-			timeline.setLeftMarker(0);
-			timeline.setRightMarker(endTime);
+			timeline.currTime = 0;
+			timeline.startTime = 0;
+			timeline.endTime = endTime;
+			timeline.leftMarker = 0;
+			timeline.rightMarker = endTime;
 			return timeline;
 		});
 	};

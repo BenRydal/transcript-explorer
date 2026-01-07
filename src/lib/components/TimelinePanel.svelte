@@ -8,12 +8,12 @@
 	import type p5 from 'p5';
 	import TranscriptStore from '../../stores/transcriptStore';
 
-	$: timelineLeft = $TimelineStore.getLeftMarker();
-	$: timelineRight = $TimelineStore.getRightMarker();
-	$: timelineCurr = $TimelineStore.getCurrTime();
-	$: startTime = $TimelineStore.getStartTime();
-	$: endTime = $TimelineStore.getEndTime();
-	$: isAnimating = $TimelineStore.getIsAnimating();
+	$: timelineLeft = $TimelineStore.leftMarker;
+	$: timelineRight = $TimelineStore.rightMarker;
+	$: timelineCurr = $TimelineStore.currTime;
+	$: startTime = $TimelineStore.startTime;
+	$: endTime = $TimelineStore.endTime;
+	$: isAnimating = $TimelineStore.isAnimating;
 
 	// Formatted time displays (reactive to both time values and format changes)
 	$: formattedLeft = formatTimeDisplay(timelineLeft, currentTimeFormat);
@@ -98,7 +98,7 @@
 
 	const toggleAnimation = () => {
 		TimelineStore.update((timeline) => {
-			timeline.setIsAnimating(!timeline.getIsAnimating());
+			timeline.isAnimating = !timeline.isAnimating;
 			return timeline;
 		});
 
@@ -124,7 +124,8 @@
 		const rightX = rect.right;
 
 		TimelineStore.update((timeline) => {
-			timeline.updateXPositions({ leftX, rightX });
+			timeline.leftX = leftX;
+			timeline.rightX = rightX;
 			return timeline;
 		});
 
@@ -144,7 +145,7 @@
 			return;
 		}
 		const timeline = $TimelineStore;
-		if (!timeline.getIsAnimating()) {
+		if (!timeline.isAnimating) {
 			clearTimeout(debounceTimeout);
 			debounceTimeout = setTimeout(() => {
 				p5Instance.fillSelectedData();
@@ -152,14 +153,14 @@
 		}
 
 		TimelineStore.update((timeline) => {
-			timeline.setLeftMarker(value1);
+			timeline.leftMarker = value1;
 			// Keep currTime within bounds
-			if (timeline.getCurrTime() < value1) {
-				timeline.setCurrTime(value1);
-			} else if (timeline.getCurrTime() > value2) {
-				timeline.setCurrTime(value2);
+			if (timeline.currTime < value1) {
+				timeline.currTime = value1;
+			} else if (timeline.currTime > value2) {
+				timeline.currTime = value2;
 			}
-			timeline.setRightMarker(value2);
+			timeline.rightMarker = value2;
 			updateXPositions();
 			return timeline;
 		});
@@ -187,7 +188,7 @@
 
 	const resetToStart = () => {
 		TimelineStore.update((timeline) => {
-			timeline.setCurrTime(timeline.getLeftMarker());
+			timeline.currTime = timeline.leftMarker;
 			return timeline;
 		});
 

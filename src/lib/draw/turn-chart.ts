@@ -144,6 +144,6 @@ export class TurnChart {
 	}
 
 	getPixelValueFromTime(timeValue: number): number {
-		return this.sk.map(timeValue, this.timeline.getLeftMarker(), this.timeline.getRightMarker(), this.bounds.x, this.bounds.x + this.bounds.width);
+		return this.sk.map(timeValue, this.timeline.leftMarker, this.timeline.rightMarker, this.bounds.x, this.bounds.x + this.bounds.width);
 	}
 }

@@ -69,11 +69,11 @@
 							const seconds = toSeconds(input.value);
 							if (seconds !== null && seconds > 0) {
 								TimelineStore.update((timeline) => {
-									timeline.setCurrTime(0);
-									timeline.setStartTime(0);
-									timeline.setEndTime(seconds);
-									timeline.setLeftMarker(0);
-									timeline.setRightMarker(seconds);
+									timeline.currTime = 0;
+									timeline.startTime = 0;
+									timeline.endTime = seconds;
+									timeline.leftMarker = 0;
+									timeline.rightMarker = seconds;
 									return timeline;
 								});
 							}
