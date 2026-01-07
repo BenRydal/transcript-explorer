@@ -234,9 +234,23 @@ export class Core {
 	// Parses a single line from a TXT file
 	parseDataLineTxt(line: unknown, currentWordCount: number) {
 		if (typeof line !== 'string' || !line.trim()) return null;
-		const content = this.createTurnContentArray(line.trim());
-		if (!content.length) return null;
-		const speakerName = content.shift()?.trim()?.toUpperCase() || '';
+
+		const trimmedLine = line.trim();
+		const colonIndex = trimmedLine.indexOf(':');
+
+		let speakerName: string;
+		let content: string[];
+
+		if (colonIndex > 0) {
+			// "SPEAKER 1: Hello world" → speaker="SPEAKER 1", content="Hello world"
+			speakerName = trimmedLine.slice(0, colonIndex).trim().toUpperCase();
+			content = this.createTurnContentArray(trimmedLine.slice(colonIndex + 1));
+		} else {
+			// Fallback: first word is speaker (original behavior)
+			content = this.createTurnContentArray(trimmedLine);
+			speakerName = content.shift()?.toUpperCase() || '';
+		}
+
 		if (!speakerName || !content.length) return null;
 		this.updateUsers(speakerName);
 		return {
