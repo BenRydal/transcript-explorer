@@ -1,5 +1,6 @@
 import type p5 from 'p5';
 import Papa from 'papaparse';
+import { get } from 'svelte/store';
 
 import { CoreUtils } from './core-utils';
 import { DataPoint } from '../../models/dataPoint.js';
@@ -179,8 +180,8 @@ export class Core {
 			let lastValidStartTime: number | null = null;
 			let lastValidEndTime: number | null = null;
 			// Track timing mode: untimed, startOnly, or startEnd
-			let hasAnyStartTime = false;
-			let hasAnyEndTime = false;
+			let rowsWithStartTime = 0;
+			let rowsWithEndTime = 0;
 
 			dataArray.forEach((data, i) => {
 				let parsedData;
@@ -195,9 +196,9 @@ export class Core {
 				}
 
 				const { speakerName, content, startTime, endTime, hasStartTime, hasEndTime } = parsedData;
-				// Track if any row has start or end time data
-				if (hasStartTime) hasAnyStartTime = true;
-				if (hasEndTime) hasAnyEndTime = true;
+				// Count rows with start/end time data for timing mode detection
+				if (hasStartTime) rowsWithStartTime++;
+				if (hasEndTime) rowsWithEndTime++;
 				// Update last valid timestamps for efficient CSV processing
 				lastValidStartTime = startTime;
 				lastValidEndTime = endTime;
@@ -217,11 +218,11 @@ export class Core {
 
 			updatedTranscript.wordArray = wordArray;
 			updatedTranscript.totalConversationTurns = turnNumber;
-			// Determine timing mode based on what was found in the data
+			// Determine timing mode based on majority of rows
 			let timingMode: TimingMode = 'untimed';
-			if (hasAnyStartTime && hasAnyEndTime) {
+			if (rowsWithEndTime > turnNumber * 0.5) {
 				timingMode = 'startEnd';
-			} else if (hasAnyStartTime) {
+			} else if (rowsWithStartTime > 0) {
 				timingMode = 'startOnly';
 			}
 			updatedTranscript.timingMode = timingMode;
@@ -260,8 +261,9 @@ export class Core {
 		const hasStartTime = curLineStartTime !== null;
 		const hasEndTime = curLineEndTime !== null;
 
-		// For untimed transcripts, use word positions
-		if (!hasStartTime && !hasEndTime) {
+		// Only use word positions if no timed rows have been seen yet
+		// Otherwise, infer times from previous rows (fall through to timed logic)
+		if (!hasStartTime && !hasEndTime && lastValidStartTime === null && lastValidEndTime === null) {
 			return {
 				speakerName,
 				content,
@@ -279,8 +281,8 @@ export class Core {
 		// End time inference priority:
 		// 1. Use provided end time if available
 		// 2. Use next line's start time if it's after current start
-		// 3. Estimate based on word count (~3 words/sec speaking rate, minimum 1 second)
-		const estimatedDuration = Math.max(1, content.length / 3);
+		// 3. Estimate based on word count and speech rate setting
+		const estimatedDuration = Math.max(1, content.length / get(ConfigStore).speechRateWordsPerSecond);
 		let endTime: number;
 		if (curLineEndTime !== null) {
 			endTime = curLineEndTime;
@@ -290,9 +292,9 @@ export class Core {
 			endTime = startTime + estimatedDuration;
 		}
 
-		// Ensure end time is always after start time (minimum 1 second)
+		// Ensure end time is always after start time
 		if (endTime <= startTime) {
-			endTime = startTime + Math.max(1, estimatedDuration);
+			endTime = startTime + estimatedDuration;
 		}
 
 		return {
