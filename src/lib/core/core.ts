@@ -249,6 +249,14 @@ export class Core {
 		};
 	}
 
+	/** Get start time from next row if it's valid (has speaker and content) */
+	private getNextValidStartTime(nextLine: unknown): number | null {
+		const record = nextLine as Record<string, unknown> | null;
+		if (!record || !this.coreUtils.hasSpeakerNameAndContent(record)) return null;
+		const startHeader = this.coreUtils.headersTranscriptWithTime[2];
+		return TimeUtils.toSeconds(record[startHeader] as string | number | null);
+	}
+
 	parseDataRowCSV(line: unknown, nextLine: unknown, currentWordCount: number, lastValidStartTime: number | null, lastValidEndTime: number | null) {
 		if (!this.coreUtils.hasSpeakerNameAndContent(line)) return null;
 		const headers = this.coreUtils.headersTranscriptWithTime;
@@ -276,7 +284,7 @@ export class Core {
 
 		// For timed transcripts, use actual timestamps with smart end time inference
 		const startTime = curLineStartTime ?? lastValidEndTime ?? lastValidStartTime ?? 0;
-		const nextLineStartTime = nextLine ? TimeUtils.toSeconds(nextLine[headers[2]]) : null;
+		const nextLineStartTime = this.getNextValidStartTime(nextLine);
 
 		// End time inference priority:
 		// 1. Use provided end time if available
