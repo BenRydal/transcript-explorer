@@ -50,13 +50,16 @@ export class TimeUtils {
 
 	/** Formats seconds as HH:MM:SS */
 	static formatTime(seconds: number): string {
+		if (!Number.isFinite(seconds) || seconds < 0) return '00:00:00';
 		return Duration.fromObject({ seconds: Math.round(seconds) }).toFormat('hh:mm:ss');
 	}
 
 	/** Formats seconds as MM:SS (or HH:MM:SS if >= 1 hour) */
 	static formatTimeAuto(seconds: number): string {
-		const duration = Duration.fromObject({ seconds: Math.round(seconds) });
-		return seconds < 3600 ? duration.toFormat('mm:ss') : duration.toFormat('hh:mm:ss');
+		if (!Number.isFinite(seconds) || seconds < 0) return '00:00';
+		const rounded = Math.round(seconds);
+		const duration = Duration.fromObject({ seconds: rounded });
+		return rounded < 3600 ? duration.toFormat('mm:ss') : duration.toFormat('hh:mm:ss');
 	}
 
 	/** Formats seconds compactly for video player: m:ss or h:mm:ss (no leading zeros) */
