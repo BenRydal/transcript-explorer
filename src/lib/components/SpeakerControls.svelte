@@ -5,6 +5,7 @@
 	import UserStore from '../../stores/userStore';
 	import TranscriptStore from '../../stores/transcriptStore';
 	import P5Store from '../../stores/p5Store';
+	import UserButtonGroup from './UserButtonGroup.svelte';
 
 	function closeAllDropdowns() {
 		$UserStore.forEach((_, index) => {
@@ -21,9 +22,12 @@
 			const target = event.target as HTMLElement;
 			$UserStore.forEach((_, index) => {
 				const dropdown = document.getElementById(`dropdown-${index}`);
-				const button = document.getElementById(`btn-${index}`);
-				if (dropdown && button && !dropdown.contains(target) && !button.contains(target) && !dropdown.classList.contains('hidden')) {
-					dropdown.classList.add('hidden');
+				if (dropdown && !dropdown.contains(target) && !dropdown.classList.contains('hidden')) {
+					// Check if click was on a user button or settings button
+					const isUserButtonClick = target.closest('.user-button-container');
+					if (!isUserButtonClick) {
+						dropdown.classList.add('hidden');
+					}
 				}
 			});
 		};
@@ -51,18 +55,24 @@
 		}
 	}
 
-	function toggleUserVisibility(user: any) {
-		user.enabled = !user.enabled;
-		UserStore.update((u) => u);
+	function toggleUserVisibility(index: number) {
+		const user = $UserStore[index];
+		if (user) {
+			user.enabled = !user.enabled;
+			UserStore.update((u) => u);
+		}
 	}
 
-	function openDropdown(index: number) {
+	function openDropdown(index: number, event: MouseEvent) {
+		closeAllDropdowns();
+
 		const dropdown = document.getElementById(`dropdown-${index}`);
 		if (dropdown) {
-			dropdown.classList.toggle('hidden');
+			dropdown.classList.remove('hidden');
 
-			const button = document.getElementById(`btn-${index}`);
-			if (button && !dropdown.classList.contains('hidden')) {
+			// Find the settings button that was clicked (event.currentTarget is null after dispatch)
+			const button = (event.target as HTMLElement)?.closest('.settings-button') as HTMLElement;
+			if (button) {
 				document.body.appendChild(dropdown);
 
 				computePosition(button, dropdown, {
@@ -104,6 +114,14 @@
 			p5Instance?.fillAllData?.();
 		}
 	}
+
+	function handleToggleVisibility(event: CustomEvent<{ index: number }>) {
+		toggleUserVisibility(event.detail.index);
+	}
+
+	function handleOpenDropdown(event: CustomEvent<{ index: number; event: MouseEvent }>) {
+		openDropdown(event.detail.index, event.detail.event);
+	}
 </script>
 
 <div
@@ -111,71 +129,33 @@
 	data-tour="speakers"
 	on:wheel={handleWheelScroll}
 >
-	{#each $UserStore as user, index}
-		<div class="relative flex-shrink-0 mr-2">
-			<div class="join">
-				<!-- Visibility toggle button -->
-				<button
-					class="btn btn-sm join-item px-1"
-					style="color: {user.enabled ? user.color : '#999'}; opacity: {user.enabled ? 1 : 0.5};"
-					on:click={() => toggleUserVisibility(user)}
-					title={user.enabled ? 'Hide speaker' : 'Show speaker'}
-				>
-					{#if user.enabled}
-						<svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" viewBox="0 0 20 20" fill="currentColor">
-							<path d="M10 12a2 2 0 100-4 2 2 0 000 4z" />
-							<path
-								fill-rule="evenodd"
-								d="M.458 10C1.732 5.943 5.522 3 10 3s8.268 2.943 9.542 7c-1.274 4.057-5.064 7-9.542 7S1.732 14.057.458 10zM14 10a4 4 0 11-8 0 4 4 0 018 0z"
-								clip-rule="evenodd"
-							/>
-						</svg>
-					{:else}
-						<svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" viewBox="0 0 20 20" fill="currentColor">
-							<path
-								fill-rule="evenodd"
-								d="M3.707 2.293a1 1 0 00-1.414 1.414l14 14a1 1 0 001.414-1.414l-1.473-1.473A10.014 10.014 0 0019.542 10C18.268 5.943 14.478 3 10 3a9.958 9.958 0 00-4.512 1.074l-1.78-1.781zm4.261 4.26l1.514 1.515a2.003 2.003 0 012.45 2.45l1.514 1.514a4 4 0 00-5.478-5.478z"
-								clip-rule="evenodd"
-							/>
-							<path
-								d="M12.454 16.697L9.75 13.992a4 4 0 01-3.742-3.741L2.335 6.578A9.98 9.98 0 00.458 10c1.274 4.057 5.065 7 9.542 7 .847 0 1.669-.105 2.454-.303z"
-							/>
-						</svg>
-					{/if}
-				</button>
-				<!-- Name button opens dropdown -->
-				<button
-					class="btn btn-sm join-item px-2 max-w-32 truncate"
-					style="color: {user.enabled ? user.color : '#999'}; opacity: {user.enabled ? 1 : 0.5};"
-					title={user.name}
-					on:click={() => openDropdown(index)}
-					id={`btn-${index}`}
-				>
-					{user.name}
-				</button>
-			</div>
+	<UserButtonGroup
+		users={$UserStore}
+		on:toggleVisibility={handleToggleVisibility}
+		on:openDropdown={handleOpenDropdown}
+	/>
 
-			<div id={`dropdown-${index}`} class="hidden bg-base-100 rounded-box p-2 shadow absolute" style="z-index: 9999;">
-				<ul class="w-52">
-					<li class="py-2">
-						<div class="flex items-center">
-							<input
-								type="text"
-								class="input input-bordered input-sm w-full"
-								value={user.name}
-								on:change={(e) => handleNameChange(e, user, index)}
-								placeholder="Speaker name"
-							/>
-						</div>
-					</li>
-					<li class="py-2">
-						<div class="flex items-center">
-							<input type="color" class="color-picker max-w-[24px] max-h-[28px] mr-2" bind:value={user.color} />
-							<span>Color</span>
-						</div>
-					</li>
-				</ul>
-			</div>
+	{#each $UserStore as user, index}
+		<div id={`dropdown-${index}`} class="hidden bg-base-100 rounded-box p-2 shadow absolute" style="z-index: 9999;">
+			<ul class="w-52">
+				<li class="py-2">
+					<div class="flex items-center">
+						<input
+							type="text"
+							class="input input-bordered input-sm w-full"
+							value={user.name}
+							on:change={(e) => handleNameChange(e, user, index)}
+							placeholder="Speaker name"
+						/>
+					</div>
+				</li>
+				<li class="py-2">
+					<div class="flex items-center">
+						<input type="color" class="color-picker max-w-[24px] max-h-[28px] mr-2" bind:value={user.color} />
+						<span>Color</span>
+					</div>
+				</li>
+			</ul>
 		</div>
 	{/each}
 </div>

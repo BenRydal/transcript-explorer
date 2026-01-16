@@ -228,25 +228,6 @@ export const igsSketch = (p5: any) => {
 		isPlayingTurnSnippets = false;
 	};
 
-	p5.playTurnSnippets = async (turns: any[]) => {
-		if (isPlayingTurnSnippets) return;
-		isPlayingTurnSnippets = true;
-
-		for (const turn of turns) {
-			if (!isPlayingTurnSnippets) break;
-			requestSeek(turn.startTime);
-			videoPlay();
-			await new Promise(resolve => setTimeout(resolve, 2000));
-		}
-
-		videoPause();
-		isPlayingTurnSnippets = false;
-	};
-
-	p5.stopTurnSnippets = () => {
-		isPlayingTurnSnippets = false;
-	};
-
 	p5.resetAnimation = () => {
 		p5.dynamicData.clear();
 		p5.animationCounter = 0;
