@@ -1,11 +1,14 @@
 <script lang="ts">
-	import { onMount, onDestroy, tick } from 'svelte';
+	import { onMount, onDestroy } from 'svelte';
 	import { formatTime, formatTimeAuto } from '../core/time-utils';
 	import TimelineStore from '../../stores/timelineStore';
 	import P5Store from '../../stores/p5Store';
 	import ConfigStore from '../../stores/configStore';
 	import TranscriptStore from '../../stores/transcriptStore';
 	import MdSkipPrevious from 'svelte-icons/md/MdSkipPrevious.svelte';
+	import MdPlayArrow from 'svelte-icons/md/MdPlayArrow.svelte';
+	import MdPause from 'svelte-icons/md/MdPause.svelte';
+	import RangeSlider from './RangeSlider.svelte';
 	import type { TimingMode } from '../../models/transcript';
 
 	$: timelineLeft = $TimelineStore.leftMarker;
@@ -19,13 +22,6 @@
 	$: formattedCurr = formatTimeDisplay(timelineCurr, currentTimeFormat);
 	$: formattedStart = formatTimeDisplay(startTime, currentTimeFormat);
 	$: formattedEnd = formatTimeDisplay(endTime, currentTimeFormat);
-
-	// Progress fill: starts at left marker, extends to current time
-	$: leftMarkerPercent = endTime > startTime ? ((timelineLeft - startTime) / (endTime - startTime)) * 100 : 0;
-	$: currTimePercent = endTime > startTime ? ((timelineCurr - startTime) / (endTime - startTime)) * 100 : 0;
-	$: fillWidth = timelineCurr >= timelineLeft && timelineCurr <= timelineRight
-		? Math.max(0, currTimePercent - leftMarkerPercent)
-		: 0;
 
 	type TimeFormat = 'HHMMSS' | 'MMSS' | 'SECONDS' | 'DECIMAL' | 'WORDS';
 
@@ -75,7 +71,6 @@
 	}
 
 	let sliderContainer: HTMLDivElement;
-	let loaded = false;
 	let debounceTimeout: number;
 
 	const toggleAnimation = () => {
@@ -86,7 +81,7 @@
 
 		if ($P5Store) {
 			if (!isAnimating) {
-				let targetIndex = $P5Store.getAnimationTargetIndex();
+				const targetIndex = $P5Store.getAnimationTargetIndex();
 				$P5Store.setAnimationCounter(targetIndex);
 			} else {
 				$P5Store.fillAllData();
@@ -95,34 +90,18 @@
 	};
 
 	const updateXPositions = (): void => {
-		if (!sliderContainer) {
-			console.warn('Slider container not available.');
-			loaded = false;
-			return;
-		}
-
+		if (!sliderContainer) return;
 		const rect = sliderContainer.getBoundingClientRect();
 		TimelineStore.update((timeline) => {
 			timeline.leftX = rect.left;
 			timeline.rightX = rect.right;
 			return timeline;
 		});
-
-		loaded = true;
 	};
 
-	interface SliderChangeEvent extends Event {
-		detail: {
-			value1: number;
-			value2: number;
-		};
-	}
-
-	const handleChange = (event: SliderChangeEvent): void => {
-		const { value1, value2 } = event.detail;
-		if (value1 === timelineLeft && value2 === timelineRight) {
-			return;
-		}
+	const handleSliderChange = (event: CustomEvent<{ left: number; right: number }>) => {
+		const { left, right } = event.detail;
+		if (left === timelineLeft && right === timelineRight) return;
 
 		if (!$TimelineStore.isAnimating) {
 			clearTimeout(debounceTimeout);
@@ -132,11 +111,12 @@
 		}
 
 		TimelineStore.update((t) => {
-			t.leftMarker = value1;
-			t.rightMarker = value2;
-			// Keep currTime within bounds
-			if (t.currTime < value1) t.currTime = value1;
-			else if (t.currTime > value2) t.currTime = value2;
+			const leftMoved = left !== t.leftMarker;
+			t.leftMarker = left;
+			t.rightMarker = right;
+			// Reset to left marker when left handle moves, otherwise just clamp
+			if (leftMoved) t.currTime = left;
+			else if (t.currTime > right) t.currTime = right;
 			updateXPositions();
 			return t;
 		});
@@ -172,124 +152,78 @@
 		}
 	};
 
-	onMount(async () => {
-		if (typeof window !== 'undefined') {
-			import('toolcool-range-slider').then(async () => {
-				loaded = true;
-				const slider = document.querySelector('tc-range-slider');
-				if (slider) {
-					slider.addEventListener('change', (event: Event) => {
-						handleChange(event as SliderChangeEvent);
-					});
-				}
-				await tick();
-				updateXPositions();
-			});
-
-			window.addEventListener('resize', updateXPositions);
-		}
+	onMount(() => {
+		updateXPositions();
+		window.addEventListener('resize', updateXPositions);
 	});
 
 	onDestroy(() => {
-		if (typeof window === 'undefined') return;
-		window.removeEventListener('resize', updateXPositions);
+		if (typeof window !== 'undefined') {
+			window.removeEventListener('resize', updateXPositions);
+		}
 	});
 </script>
 
-{#if loaded}
-	<div class="flex flex-col w-11/12 h-full py-3">
-		<!-- Slider with edge time labels -->
-		<div class="slider-row">
-			<span class="edge-time">{formattedStart}</span>
-			<div class="slider-container" bind:this={sliderContainer}>
-				<!-- Custom progress fill overlay - fills from left marker to current time -->
-				<div class="progress-fill" style="left: {leftMarkerPercent}%; width: {fillWidth}%;"></div>
-
-				<tc-range-slider
-					min={startTime}
-					max={endTime}
-					value1={timelineLeft}
-					value2={timelineRight}
-					round="0"
-					slider-width="100%"
-					generate-labels="false"
-					range-dragging="true"
-					slider-bg="#e5e7eb"
-					slider-bg-fill="#cbd5e1"
-					pointer1-width="6px"
-					pointer1-height="30px"
-					pointer1-radius="0"
-					pointer2-width="6px"
-					pointer2-height="30px"
-					pointer2-radius="0"
-					on:change={handleChange}
-				/>
-			</div>
-			<span class="edge-time">{formattedEnd}</span>
+<div class="flex flex-col w-11/12 h-full py-3">
+	<div class="slider-row">
+		<span class="edge-time">{formattedStart}</span>
+		<div class="slider-container" bind:this={sliderContainer}>
+			<RangeSlider
+				min={startTime}
+				max={endTime}
+				leftValue={timelineLeft}
+				rightValue={timelineRight}
+				progressValue={timelineCurr}
+				on:change={handleSliderChange}
+			/>
 		</div>
+		<span class="edge-time">{formattedEnd}</span>
+	</div>
 
-		<div class="controls-row">
-			<div class="edge-spacer"></div>
+	<div class="controls-row">
+		<span class="control-label">Animation</span>
 
-			<div class="control-wrapper">
-				<span class="control-label">Animation</span>
-				<div class="control-group">
-				<button on:click={toggleAnimation} class="control-btn play-btn" aria-label={isAnimating ? 'Pause' : 'Play'}>
-					{#if isAnimating}
-						<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor">
-							<path
-								fill-rule="evenodd"
-								d="M6.75 5.25a.75.75 0 01.75-.75H9a.75.75 0 01.75.75v13.5a.75.75 0 01-.75.75H7.5a.75.75 0 01-.75-.75V5.25zm7.5 0A.75.75 0 0115 4.5h1.5a.75.75 0 01.75.75v13.5a.75.75 0 01-.75.75H15a.75.75 0 01-.75-.75V5.25z"
-								clip-rule="evenodd"
-							/>
-						</svg>
-					{:else}
-						<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor">
-							<path
-								fill-rule="evenodd"
-								d="M4.5 5.653c0-1.426 1.529-2.33 2.779-1.643l11.54 6.348c1.295.712 1.295 2.573 0 3.285L7.28 19.991c-1.25.687-2.779-.217-2.779-1.643V5.653z"
-								clip-rule="evenodd"
-							/>
-						</svg>
-					{/if}
-				</button>
-
-				<div class="control-divider"></div>
-
-				<button
-					class="control-btn"
-					on:click={resetToStart}
-					title="Skip to start"
-					aria-label="Skip to start"
-				>
-					<MdSkipPrevious />
-				</button>
-
-				<div class="control-divider"></div>
-
-				<button
-					class="control-btn speed-btn"
-					on:click={cycleSpeed}
-					title="Click to change speed"
-					aria-label="Animation speed: {speedLabel}"
-				>
-					{speedLabel}
-				</button>
-				</div>
-			</div>
-
-			<button
-				class="current-time"
-				on:click={cycleTimeFormat}
-				title="Click to change time format"
-			>
-				{formattedCurr} <span class="format-indicator">▾</span>
+		<div class="control-group">
+			<button on:click={toggleAnimation} class="control-btn play-btn" aria-label={isAnimating ? 'Pause' : 'Play'}>
+				{#if isAnimating}
+					<MdPause />
+				{:else}
+					<MdPlayArrow />
+				{/if}
 			</button>
 
-			<div class="edge-spacer"></div>
+			<div class="control-divider"></div>
+
+			<button
+				class="control-btn"
+				on:click={resetToStart}
+				title="Skip to start"
+				aria-label="Skip to start"
+			>
+				<MdSkipPrevious />
+			</button>
+
+			<div class="control-divider"></div>
+
+			<button
+				class="control-btn speed-btn"
+				on:click={cycleSpeed}
+				title="Click to change speed"
+				aria-label="Animation speed: {speedLabel}"
+			>
+				{speedLabel}
+			</button>
 		</div>
+
+		<button
+			class="current-time"
+			on:click={cycleTimeFormat}
+			title="Click to change time format"
+		>
+			{formattedCurr} <span class="format-indicator">▾</span>
+		</button>
 	</div>
-{/if}
+</div>
 
 <style>
 	.slider-row {
@@ -311,26 +245,8 @@
 		text-align: right;
 	}
 
-	.edge-time:last-child {
-		text-align: left;
-	}
-
 	.slider-container {
-		position: relative;
 		flex: 1;
-	}
-
-	.progress-fill {
-		position: absolute;
-		top: 50%;
-		left: 0;
-		transform: translateY(-50%);
-		height: 6px;
-		background-color: #3b82f6;
-		border-radius: 3px;
-		pointer-events: none;
-		z-index: 1;
-		transition: width 0.05s linear;
 	}
 
 	.controls-row {
@@ -338,19 +254,8 @@
 		width: 100%;
 		margin-top: 0.5rem;
 		align-items: center;
-		justify-content: space-between;
+		justify-content: center;
 		gap: 0.75rem;
-	}
-
-	.edge-spacer {
-		min-width: 3.5rem;
-	}
-
-	.control-wrapper {
-		display: flex;
-		flex-direction: column;
-		align-items: flex-start;
-		gap: 0.25rem;
 	}
 
 	.control-label {
@@ -398,7 +303,6 @@
 		color: #ffffff;
 	}
 
-	.control-btn svg,
 	.control-btn :global(svg) {
 		width: 16px;
 		height: 16px;
