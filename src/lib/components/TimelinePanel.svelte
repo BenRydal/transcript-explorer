@@ -3,10 +3,10 @@
 	import { formatTime, formatTimeAuto } from '../core/time-utils';
 	import TimelineStore from '../../stores/timelineStore';
 	import P5Store from '../../stores/p5Store';
-	import ConfigStore, { type ConfigStoreType } from '../../stores/configStore';
-	import MdRefresh from 'svelte-icons/md/MdRefresh.svelte';
-	import type p5 from 'p5';
+	import ConfigStore from '../../stores/configStore';
 	import TranscriptStore from '../../stores/transcriptStore';
+	import MdSkipPrevious from 'svelte-icons/md/MdSkipPrevious.svelte';
+	import type { TimingMode } from '../../models/transcript';
 
 	$: timelineLeft = $TimelineStore.leftMarker;
 	$: timelineRight = $TimelineStore.rightMarker;
@@ -15,45 +15,40 @@
 	$: endTime = $TimelineStore.endTime;
 	$: isAnimating = $TimelineStore.isAnimating;
 
-	// Formatted time displays (reactive to both time values and format changes)
-	$: formattedLeft = formatTimeDisplay(timelineLeft, currentTimeFormat);
-	$: formattedRight = formatTimeDisplay(timelineRight, currentTimeFormat);
+	// Formatted time displays
 	$: formattedCurr = formatTimeDisplay(timelineCurr, currentTimeFormat);
+	$: formattedStart = formatTimeDisplay(startTime, currentTimeFormat);
+	$: formattedEnd = formatTimeDisplay(endTime, currentTimeFormat);
 
-	// Progress fill: starts at left marker, extends to current time (only when in range)
+	// Progress fill: starts at left marker, extends to current time
 	$: leftMarkerPercent = endTime > startTime ? ((timelineLeft - startTime) / (endTime - startTime)) * 100 : 0;
 	$: currTimePercent = endTime > startTime ? ((timelineCurr - startTime) / (endTime - startTime)) * 100 : 0;
 	$: fillWidth = timelineCurr >= timelineLeft && timelineCurr <= timelineRight
 		? Math.max(0, currTimePercent - leftMarkerPercent)
 		: 0;
 
-	import type { TimingMode } from '../../models/transcript';
-
 	type TimeFormat = 'HHMMSS' | 'MMSS' | 'SECONDS' | 'DECIMAL' | 'WORDS';
 
 	let currentTimeFormat: TimeFormat = 'HHMMSS';
-	let timingMode: TimingMode = 'untimed';
+	let previousTimingMode: TimingMode = 'untimed';
 
-	TranscriptStore.subscribe((data) => {
-		const previousTimingMode = timingMode;
-		timingMode = data.timingMode;
-
-		// Update time format when timing mode changes
-		if (data.wordArray.length > 0) {
+	// Update time format when timing mode changes
+	$: {
+		const timingMode = $TranscriptStore.timingMode;
+		if ($TranscriptStore.wordArray.length > 0) {
 			if (timingMode === 'untimed') {
-				// Default to WORDS format for untimed transcripts
 				currentTimeFormat = 'WORDS';
 			} else if (previousTimingMode === 'untimed') {
-				// Switching from untimed to timed mode - use time-based format
 				currentTimeFormat = 'MMSS';
 			}
 		}
-	});
+		previousTimingMode = timingMode;
+	}
 
 	function cycleTimeFormat() {
 		let formats: TimeFormat[];
 
-		if (timingMode === 'untimed') {
+		if ($TranscriptStore.timingMode === 'untimed') {
 			formats = ['WORDS'];
 		} else {
 			formats = ['HHMMSS', 'MMSS', 'SECONDS', 'DECIMAL', 'WORDS'];
@@ -76,25 +71,12 @@
 				return seconds.toFixed(1) + 's';
 			case 'WORDS':
 				return `${Math.round(seconds)} words`;
-			default:
-				return timingMode === 'untimed' ? `${Math.round(seconds)} words` : formatTimeAuto(seconds);
 		}
 	}
-
-	let p5Instance: p5 | null = null;
-
-	P5Store.subscribe((value) => {
-		p5Instance = value;
-	});
 
 	let sliderContainer: HTMLDivElement;
 	let loaded = false;
 	let debounceTimeout: number;
-
-	let config: ConfigStoreType;
-	ConfigStore.subscribe((value) => {
-		config = value;
-	});
 
 	const toggleAnimation = () => {
 		TimelineStore.update((timeline) => {
@@ -102,12 +84,12 @@
 			return timeline;
 		});
 
-		if (p5Instance) {
+		if ($P5Store) {
 			if (!isAnimating) {
-				let targetIndex = p5Instance.getAnimationTargetIndex();
-				p5Instance.setAnimationCounter(targetIndex);
+				let targetIndex = $P5Store.getAnimationTargetIndex();
+				$P5Store.setAnimationCounter(targetIndex);
 			} else {
-				p5Instance.fillAllData();
+				$P5Store.fillAllData();
 			}
 		}
 	};
@@ -120,12 +102,9 @@
 		}
 
 		const rect = sliderContainer.getBoundingClientRect();
-		const leftX = rect.left;
-		const rightX = rect.right;
-
 		TimelineStore.update((timeline) => {
-			timeline.leftX = leftX;
-			timeline.rightX = rightX;
+			timeline.leftX = rect.left;
+			timeline.rightX = rect.right;
 			return timeline;
 		});
 
@@ -144,25 +123,22 @@
 		if (value1 === timelineLeft && value2 === timelineRight) {
 			return;
 		}
-		const timeline = $TimelineStore;
-		if (!timeline.isAnimating) {
+
+		if (!$TimelineStore.isAnimating) {
 			clearTimeout(debounceTimeout);
 			debounceTimeout = setTimeout(() => {
-				p5Instance.fillSelectedData();
+				$P5Store.fillSelectedData();
 			}, 100);
 		}
 
-		TimelineStore.update((timeline) => {
-			timeline.leftMarker = value1;
+		TimelineStore.update((t) => {
+			t.leftMarker = value1;
+			t.rightMarker = value2;
 			// Keep currTime within bounds
-			if (timeline.currTime < value1) {
-				timeline.currTime = value1;
-			} else if (timeline.currTime > value2) {
-				timeline.currTime = value2;
-			}
-			timeline.rightMarker = value2;
+			if (t.currTime < value1) t.currTime = value1;
+			else if (t.currTime > value2) t.currTime = value2;
 			updateXPositions();
-			return timeline;
+			return t;
 		});
 	};
 
@@ -175,8 +151,7 @@
 		{ value: 30, label: '30x' }
 	];
 
-	$: currentPresetIndex = SPEED_PRESETS.findIndex(p => p.value === config.animationRate);
-	$: speedLabel = currentPresetIndex >= 0 ? SPEED_PRESETS[currentPresetIndex].label : '3x';
+	$: speedLabel = SPEED_PRESETS.find(p => p.value === $ConfigStore.animationRate)?.label ?? '3x';
 
 	const cycleSpeed = () => {
 		ConfigStore.update((currentConfig) => {
@@ -192,8 +167,8 @@
 			return timeline;
 		});
 
-		if (p5Instance && !isAnimating) {
-			p5Instance.fillSelectedData();
+		if ($P5Store && !isAnimating) {
+			$P5Store.fillSelectedData();
 		}
 	};
 
@@ -223,114 +198,231 @@
 
 {#if loaded}
 	<div class="flex flex-col w-11/12 h-full py-3">
-		<div class="slider-container" bind:this={sliderContainer}>
-			<!-- Custom progress fill overlay - fills from left marker to current time -->
-			<div class="progress-fill" style="left: {leftMarkerPercent}%; width: {fillWidth}%;"></div>
+		<!-- Slider with edge time labels -->
+		<div class="slider-row">
+			<span class="edge-time">{formattedStart}</span>
+			<div class="slider-container" bind:this={sliderContainer}>
+				<!-- Custom progress fill overlay - fills from left marker to current time -->
+				<div class="progress-fill" style="left: {leftMarkerPercent}%; width: {fillWidth}%;"></div>
 
-			<tc-range-slider
-				min={startTime}
-				max={endTime}
-				value1={timelineLeft}
-				value2={timelineRight}
-				round="0"
-				slider-width="100%"
-				generate-labels="true"
-				range-dragging="true"
-				pointer1-width="6px"
-				pointer1-height="30px"
-				pointer1-radius="0"
-				pointer2-width="6px"
-				pointer2-height="30px"
-				pointer2-radius="0"
-				on:change={handleChange}
-			/>
+				<tc-range-slider
+					min={startTime}
+					max={endTime}
+					value1={timelineLeft}
+					value2={timelineRight}
+					round="0"
+					slider-width="100%"
+					generate-labels="false"
+					range-dragging="true"
+					slider-bg="#e5e7eb"
+					slider-bg-fill="#cbd5e1"
+					pointer1-width="6px"
+					pointer1-height="30px"
+					pointer1-radius="0"
+					pointer2-width="6px"
+					pointer2-height="30px"
+					pointer2-radius="0"
+					on:change={handleChange}
+				/>
+			</div>
+			<span class="edge-time">{formattedEnd}</span>
 		</div>
 
 		<div class="controls-row">
-			<!-- Left: Animation label + play/pause + reset + speed -->
-			<div class="flex items-center gap-3">
-				<span class="section-label">Animation</span>
+			<div class="edge-spacer"></div>
 
-				<div class="flex items-center gap-1">
-					<button on:click={toggleAnimation} class="play-pause-btn" aria-label={isAnimating ? 'Pause' : 'Play'}>
-						{#if isAnimating}
-							<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor">
-								<path
-									fill-rule="evenodd"
-									d="M6.75 5.25a.75.75 0 01.75-.75H9a.75.75 0 01.75.75v13.5a.75.75 0 01-.75.75H7.5a.75.75 0 01-.75-.75V5.25zm7.5 0A.75.75 0 0115 4.5h1.5a.75.75 0 01.75.75v13.5a.75.75 0 01-.75.75H15a.75.75 0 01-.75-.75V5.25z"
-									clip-rule="evenodd"
-								/>
-							</svg>
-						{:else}
-							<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor">
-								<path
-									fill-rule="evenodd"
-									d="M4.5 5.653c0-1.426 1.529-2.33 2.779-1.643l11.54 6.348c1.295.712 1.295 2.573 0 3.285L7.28 19.991c-1.25.687-2.779-.217-2.779-1.643V5.653z"
-									clip-rule="evenodd"
-								/>
-							</svg>
-						{/if}
-					</button>
+			<div class="control-wrapper">
+				<span class="control-label">Animation</span>
+				<div class="control-group">
+				<button on:click={toggleAnimation} class="control-btn play-btn" aria-label={isAnimating ? 'Pause' : 'Play'}>
+					{#if isAnimating}
+						<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor">
+							<path
+								fill-rule="evenodd"
+								d="M6.75 5.25a.75.75 0 01.75-.75H9a.75.75 0 01.75.75v13.5a.75.75 0 01-.75.75H7.5a.75.75 0 01-.75-.75V5.25zm7.5 0A.75.75 0 0115 4.5h1.5a.75.75 0 01.75.75v13.5a.75.75 0 01-.75.75H15a.75.75 0 01-.75-.75V5.25z"
+								clip-rule="evenodd"
+							/>
+						</svg>
+					{:else}
+						<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor">
+							<path
+								fill-rule="evenodd"
+								d="M4.5 5.653c0-1.426 1.529-2.33 2.779-1.643l11.54 6.348c1.295.712 1.295 2.573 0 3.285L7.28 19.991c-1.25.687-2.779-.217-2.779-1.643V5.653z"
+								clip-rule="evenodd"
+							/>
+						</svg>
+					{/if}
+				</button>
 
-					<button
-						class="reset-btn"
-						on:click={resetToStart}
-						title="Reset to start"
-						aria-label="Reset to start"
-					>
-						<MdRefresh />
-					</button>
-				</div>
+				<div class="control-divider"></div>
 
 				<button
-					class="speed-btn"
+					class="control-btn"
+					on:click={resetToStart}
+					title="Skip to start"
+					aria-label="Skip to start"
+				>
+					<MdSkipPrevious />
+				</button>
+
+				<div class="control-divider"></div>
+
+				<button
+					class="control-btn speed-btn"
 					on:click={cycleSpeed}
 					title="Click to change speed"
 					aria-label="Animation speed: {speedLabel}"
 				>
 					{speedLabel}
 				</button>
+				</div>
 			</div>
 
-			<!-- Center: Current time display -->
 			<button
 				class="current-time"
 				on:click={cycleTimeFormat}
 				title="Click to change time format"
 			>
-				{formattedCurr}
+				{formattedCurr} <span class="format-indicator">▾</span>
 			</button>
 
-			<!-- Right: Time range -->
-			<button
-				class="time-range"
-				on:click={cycleTimeFormat}
-				title="Click to change time format"
-			>
-				<span class="font-mono text-sm text-gray-500">{formattedLeft} – {formattedRight}</span>
-			</button>
+			<div class="edge-spacer"></div>
 		</div>
 	</div>
 {/if}
 
 <style>
+	.slider-row {
+		display: flex;
+		align-items: center;
+		gap: 0.75rem;
+		width: 100%;
+	}
+
+	.edge-time {
+		font-family: monospace;
+		font-size: 0.75rem;
+		color: #6b7280;
+		white-space: nowrap;
+		min-width: 3.5rem;
+	}
+
+	.edge-time:first-child {
+		text-align: right;
+	}
+
+	.edge-time:last-child {
+		text-align: left;
+	}
+
+	.slider-container {
+		position: relative;
+		flex: 1;
+	}
+
+	.progress-fill {
+		position: absolute;
+		top: 50%;
+		left: 0;
+		transform: translateY(-50%);
+		height: 6px;
+		background-color: #3b82f6;
+		border-radius: 3px;
+		pointer-events: none;
+		z-index: 1;
+		transition: width 0.05s linear;
+	}
+
 	.controls-row {
 		display: flex;
 		width: 100%;
 		margin-top: 0.5rem;
 		align-items: center;
 		justify-content: space-between;
+		gap: 0.75rem;
 	}
 
-	.section-label {
-		font-size: 0.75rem;
+	.edge-spacer {
+		min-width: 3.5rem;
+	}
+
+	.control-wrapper {
+		display: flex;
+		flex-direction: column;
+		align-items: flex-start;
+		gap: 0.25rem;
+	}
+
+	.control-label {
+		font-size: 0.65rem;
 		font-weight: 500;
-		color: #6b7280;
+		color: #9ca3af;
 		text-transform: uppercase;
 		letter-spacing: 0.05em;
 	}
 
+	.control-group {
+		display: flex;
+		align-items: center;
+		background: #ffffff;
+		border: 1px solid #e5e7eb;
+		border-radius: 6px;
+		overflow: hidden;
+	}
+
+	.control-btn {
+		display: flex;
+		align-items: center;
+		justify-content: center;
+		width: 32px;
+		height: 32px;
+		border: none;
+		background: transparent;
+		color: #6b7280;
+		cursor: pointer;
+		transition: background-color 0.15s, color 0.15s;
+	}
+
+	.control-btn:hover {
+		background: #f3f4f6;
+		color: #374151;
+	}
+
+	.control-btn.play-btn {
+		background: #3b82f6;
+		color: #ffffff;
+	}
+
+	.control-btn.play-btn:hover {
+		background: #2563eb;
+		color: #ffffff;
+	}
+
+	.control-btn svg,
+	.control-btn :global(svg) {
+		width: 16px;
+		height: 16px;
+	}
+
+	.control-btn.speed-btn {
+		font-family: monospace;
+		font-size: 0.8rem;
+		font-weight: 600;
+		width: auto;
+		padding: 0 0.5rem;
+		min-width: 2.5rem;
+	}
+
+	.control-divider {
+		width: 1px;
+		height: 20px;
+		background: #e5e7eb;
+	}
+
 	.current-time {
+		display: flex;
+		align-items: center;
+		gap: 0.25rem;
 		font-family: monospace;
 		font-size: 1.1rem;
 		font-weight: 600;
@@ -347,106 +439,9 @@
 		background: #e5e7eb;
 	}
 
-	.reset-btn {
-		display: flex;
-		align-items: center;
-		justify-content: center;
-		width: 24px;
-		height: 24px;
-		border: none;
-		border-radius: 4px;
-		background: transparent;
-		color: #6b7280;
-		cursor: pointer;
-		transition: background-color 0.2s, color 0.2s;
-		padding: 2px;
-	}
-
-	.reset-btn:hover {
-		background: #e5e7eb;
-		color: #374151;
-	}
-
-	.reset-btn :global(svg) {
-		width: 16px;
-		height: 16px;
-	}
-
-	.time-range {
-		border: none;
-		background: none;
-		cursor: pointer;
-		padding: 0.25rem 0.5rem;
-		border-radius: 4px;
-		transition: background-color 0.2s;
-	}
-
-	.time-range:hover {
-		background: #f3f4f6;
-	}
-
-	.slider-container {
-		position: relative;
-	}
-
-	.progress-fill {
-		position: absolute;
-		top: 50%;
-		left: 0;
-		transform: translateY(-50%);
-		height: 6px;
-		background-color: #3b82f6;
-		border-radius: 3px;
-		pointer-events: none;
-		z-index: 1;
-		transition: width 0.05s linear;
-	}
-
-	:host {
-		width: 100% !important;
-	}
-
-	.play-pause-btn {
-		display: flex;
-		align-items: center;
-		justify-content: center;
-		width: 32px;
-		height: 32px;
-		border: none;
-		border-radius: 50%;
-		background-color: #3b82f6;
-		box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
-		cursor: pointer;
-		transition: background-color 0.2s;
-	}
-
-	.play-pause-btn:hover {
-		background-color: #2563eb;
-	}
-
-	.play-pause-btn svg {
-		width: 16px;
-		height: 16px;
-		color: #ffffff;
-	}
-
-	.speed-btn {
-		font-family: monospace;
-		font-size: 0.8rem;
-		font-weight: 600;
-		padding: 0.25rem 0.5rem;
-		color: #374151;
-		background-color: #ffffff;
-		border: 1px solid #e5e7eb;
-		border-radius: 4px;
-		cursor: pointer;
-		transition: background-color 0.15s, border-color 0.15s;
-		min-width: 2.5rem;
-		text-align: center;
-	}
-
-	.speed-btn:hover {
-		background-color: #f3f4f6;
-		border-color: #d1d5db;
+	.format-indicator {
+		font-size: 0.7rem;
+		color: #9ca3af;
+		margin-left: 0.125rem;
 	}
 </style>
