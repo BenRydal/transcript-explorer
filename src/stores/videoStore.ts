@@ -40,7 +40,7 @@ const initialState: VideoState = {
 	isMuted: false,
 	isVisible: false,
 	position: { x: 20, y: 20 },
-	size: { width: 320, height: 180 },
+	size: { width: 480, height: 270 },
 	aspectRatio: 16 / 9,
 	isDragging: false,
 	isResizing: false,
