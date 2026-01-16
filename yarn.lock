@@ -2646,7 +2646,6 @@ __metadata:
     svelte-icons: "npm:^2.1.0"
     svelte-preprocess: "npm:^5.1.0"
     tailwindcss: "npm:^3.3.2"
-    toolcool-range-slider: "npm:^4.0.28"
     tslib: "npm:^2.6.2"
     typescript: "npm:^5.3.0"
     vite: "npm:^5.0.3"
@@ -4806,13 +4805,6 @@ __metadata:
   dependencies:
     is-number: "npm:^7.0.0"
   checksum: 487988b0a19c654ff3e1961b87f471702e708fa8a8dd02a298ef16da7206692e8552a0250e8b3e8759270f62e9d8314616f6da274734d3b558b1fc7b7724e892
-  languageName: node
-  linkType: hard
-
-"toolcool-range-slider@npm:^4.0.28":
-  version: 4.0.28
-  resolution: "toolcool-range-slider@npm:4.0.28"
-  checksum: 7e6ce1c67aa0998c87c0c872e5ff5ad86f8015a87155ba709531a56ca734dcaf65cc31b71619351741411c0f64fab9e06707e7bad050978b6919b2450445660b
   languageName: node
   linkType: hard
 
