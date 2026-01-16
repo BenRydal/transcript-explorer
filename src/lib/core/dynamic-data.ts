@@ -108,7 +108,11 @@ export class DynamicData {
 	}
 
 	getAnimationArrayDeepCopy(): DataPoint[] {
-		return JSON.parse(JSON.stringify(this.dynamicWordArray));
+		return this.dynamicWordArray.map((dp) => {
+			const copy = new DataPoint(dp.speaker, dp.turnNumber, dp.word, dp.startTime, dp.endTime);
+			copy.count = dp.count;
+			return copy;
+		});
 	}
 
 	clear(): void {
