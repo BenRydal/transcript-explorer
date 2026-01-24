@@ -14,6 +14,7 @@ import { loadVideo, reset as resetVideo } from '../../stores/videoStore';
 import { Transcript, type TimingMode } from '../../models/transcript';
 import ConfigStore from '../../stores/configStore.js';
 import { notifications } from '../../stores/notificationStore.js';
+import HistoryStore from '../../stores/historyStore.js';
 
 import { toSeconds } from './time-utils.js';
 import { estimateDuration } from './timing-utils.js';
@@ -60,7 +61,7 @@ export class Core {
 	}
 
 	loadExample = async (exampleId: string) => {
-		this.clearAllData();
+		resetVideo(); // Clear old video; transcript clearing happens in loadCSVData
 		const selectedExample = examples[exampleId];
 		if (selectedExample) {
 			const { files, videoId } = selectedExample;
@@ -73,21 +74,8 @@ export class Core {
 		}
 	};
 
-	testFileTypeForProcessing(file: File) {
-		const fileName = file ? file.name.toLowerCase() : '';
-		if (fileName.endsWith('.csv') || file.type === 'text/csv') {
-			this.clearTranscriptData();
-			this.loadCSVData(file);
-		} else if (fileName.endsWith('.txt')) {
-			this.clearTranscriptData();
-			this.loadP5Strings(URL.createObjectURL(file));
-		} else if (fileName.endsWith('.mp4') || file.type === 'video/mp4') {
-			resetVideo();
-			this.prepVideoFromFile(URL.createObjectURL(file));
-		} else notifications.error('Unsupported file format. Please use CSV, TXT, or MP4 files.');
-	}
-
 	loadP5Strings(filePath) {
+		this.clearTranscriptData();
 		this.sketch.loadStrings(
 			filePath,
 			(stringArray) => {
@@ -106,6 +94,7 @@ export class Core {
 	}
 
 	loadCSVData = async (file: File) => {
+		this.clearTranscriptData();
 		Papa.parse(file, {
 			dynamicTyping: true,
 			skipEmptyLines: 'greedy',
@@ -388,17 +377,10 @@ export class Core {
 		});
 	};
 
-	clearAllData() {
-		this.sketch.dynamicData.clear();
-		UserStore.set([]);
-		TranscriptStore.set(new Transcript());
-		// Reset video state
-		resetVideo();
-	}
-
 	clearTranscriptData() {
 		this.sketch.dynamicData.clear();
 		UserStore.set([]);
 		TranscriptStore.set(new Transcript());
+		HistoryStore.clear();
 	}
 }

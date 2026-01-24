@@ -268,11 +268,9 @@
 		return new Promise((resolve, reject) => {
 			const fileName = file.name.toLowerCase();
 			if (fileName.endsWith('.csv') || file.type === 'text/csv') {
-				core.clearTranscriptData();
 				core.loadCSVData(file);
 				resolve();
 			} else if (fileName.endsWith('.txt')) {
-				core.clearTranscriptData();
 				core.loadP5Strings(URL.createObjectURL(file));
 				resolve();
 			} else if (fileName.endsWith('.mp4') || file.type === 'video/mp4') {
@@ -337,13 +335,8 @@
 	}
 
 	function createNewTranscript() {
-		// Clear existing data
-		if (p5Instance) {
-			p5Instance.dynamicData?.clear();
-		}
-
-		// Clear users first
-		UserStore.set([]);
+		// Clear existing transcript data (includes history)
+		core.clearTranscriptData();
 
 		// Check if video is loaded to determine if transcript should be timed
 		const videoState = get(VideoStore);
@@ -420,10 +413,8 @@
 	function handleTranscriptionComplete(event: CustomEvent<TranscriptionResult>) {
 		const result = event.detail;
 
-		// Clear existing data
-		if (p5Instance) {
-			p5Instance.dynamicData?.clear();
-		}
+		// Clear existing transcript data (includes history)
+		core.clearTranscriptData();
 
 		// Set up single speaker (Whisper doesn't do speaker diarization)
 		const defaultSpeaker = 'SPEAKER 1';
