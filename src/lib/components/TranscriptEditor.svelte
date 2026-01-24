@@ -8,6 +8,7 @@
 	import P5Store from '../../stores/p5Store';
 	import HistoryStore from '../../stores/historyStore';
 	import { getTurnsFromWordArray, getTurnContent } from '$lib/core/turn-utils';
+	import { normalizeSpeakerName } from '$lib/core/string-utils';
 	import {
 		applyTimingModeToWordArray,
 		updateTimelineFromData,
@@ -107,7 +108,7 @@
 		// Handle speaker name change - need to update UserStore and recalculate all speaker orders
 		let newSpeakerName: string | null = null;
 		if (field === 'speaker') {
-			newSpeakerName = value.trim().toUpperCase();
+			newSpeakerName = normalizeSpeakerName(value);
 		}
 
 		// Save state for undo

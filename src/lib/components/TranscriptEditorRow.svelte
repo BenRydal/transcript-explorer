@@ -3,6 +3,7 @@
 	import type { Turn } from '$lib/core/turn-utils';
 	import { getTurnContent } from '$lib/core/turn-utils';
 	import { toSeconds, formatTimeAuto } from '$lib/core/time-utils';
+	import { toTitleCase, normalizeSpeakerName } from '$lib/core/string-utils';
 	import VideoStore from '../../stores/videoStore';
 	import type { TimingMode } from '../../models/transcript';
 	import { notifications } from '../../stores/notificationStore';
@@ -62,7 +63,7 @@
 
 	// Save speaker changes
 	function saveSpeaker() {
-		const newSpeaker = editedSpeaker.trim().toUpperCase();
+		const newSpeaker = normalizeSpeakerName(editedSpeaker);
 		if (newSpeaker && newSpeaker !== turn.speaker) {
 			dispatch('edit', {
 				turnNumber: turn.turnNumber,
@@ -328,7 +329,7 @@
 			on:click|stopPropagation={startEditingSpeaker}
 			title="Click to edit speaker"
 		>
-			{turn.speaker.charAt(0).toUpperCase() + turn.speaker.slice(1).toLowerCase()}:
+			{toTitleCase(turn.speaker)}:
 		</button>
 	{/if}
 

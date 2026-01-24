@@ -18,6 +18,7 @@ import HistoryStore from '../../stores/historyStore.js';
 
 import { toSeconds } from './time-utils.js';
 import { estimateDuration } from './timing-utils.js';
+import { normalizeSpeakerName } from './string-utils.js';
 
 let transcript: Transcript = new Transcript();
 
@@ -227,12 +228,12 @@ export class Core {
 
 		if (colonIndex > 0) {
 			// "SPEAKER 1: Hello world" → speaker="SPEAKER 1", content="Hello world"
-			speakerName = trimmedLine.slice(0, colonIndex).trim().toUpperCase();
+			speakerName = normalizeSpeakerName(trimmedLine.slice(0, colonIndex));
 			content = this.createTurnContentArray(trimmedLine.slice(colonIndex + 1));
 		} else {
 			// Fallback: first word is speaker (original behavior)
 			content = this.createTurnContentArray(trimmedLine);
-			speakerName = content.shift()?.toUpperCase() || '';
+			speakerName = normalizeSpeakerName(content.shift() || '');
 		}
 
 		if (!speakerName || !content.length) return null;
@@ -258,7 +259,7 @@ export class Core {
 	parseDataRowCSV(line: unknown, nextLine: unknown, currentWordCount: number, lastValidStartTime: number | null, lastValidEndTime: number | null) {
 		if (!hasSpeakerNameAndContent(line)) return null;
 		const headers = HEADERS_TRANSCRIPT_WITH_TIME;
-		const speakerName = String(line[headers[0]]).trim().toUpperCase();
+		const speakerName = normalizeSpeakerName(String(line[headers[0]]));
 		this.updateUsers(speakerName);
 		const content: string[] = this.createTurnContentArray(String(line[headers[1]]).trim());
 		if (!content.length) return null;
