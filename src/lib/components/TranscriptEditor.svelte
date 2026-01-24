@@ -479,6 +479,12 @@
 
 	// Keyboard shortcuts for undo/redo
 	function handleKeydown(event: KeyboardEvent) {
+		// Skip if user is typing in a text input (let browser handle native undo)
+		const target = event.target as HTMLElement;
+		if (target.tagName === 'INPUT' || target.tagName === 'TEXTAREA' || target.isContentEditable) {
+			return;
+		}
+
 		// Check for Ctrl+Z (undo) or Ctrl+Shift+Z / Ctrl+Y (redo)
 		if ((event.ctrlKey || event.metaKey) && event.key === 'z') {
 			event.preventDefault();
