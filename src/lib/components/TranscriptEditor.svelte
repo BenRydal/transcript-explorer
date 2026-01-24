@@ -5,7 +5,7 @@
 	import EditorStore from '../../stores/editorStore';
 	import ConfigStore from '../../stores/configStore';
 	import P5Store from '../../stores/p5Store';
-	import { getTurnsFromWordArray } from '$lib/core/turn-utils';
+	import { getTurnsFromWordArray, getTurnContent } from '$lib/core/turn-utils';
 	import {
 		applyTimingModeToWordArray,
 		updateTimelineFromData,
@@ -19,30 +19,28 @@
 
 	import type { TimingMode } from '../../models/transcript';
 
-	let turns: Turn[] = [];
-	let timingMode: TimingMode = 'untimed';
-
-	// Subscribe to transcript changes
-	TranscriptStore.subscribe((transcript) => {
-		if (transcript.wordArray.length > 0) {
-			turns = getTurnsFromWordArray(transcript.wordArray);
-		} else {
-			turns = [];
-		}
-		timingMode = transcript.timingMode;
-	});
+	// Reactively derive turns from TranscriptStore
+	$: turns =
+		$TranscriptStore.wordArray.length > 0
+			? getTurnsFromWordArray($TranscriptStore.wordArray)
+			: [];
+	$: timingMode = $TranscriptStore.timingMode;
 
 	// Get enabled speakers from UserStore
 	$: enabledSpeakers = new Set($UserStore.filter((u) => u.enabled).map((u) => u.name));
 
-	// Filter turns by speaker visibility and optional locked filter
+	// Filter turns by speaker visibility, locked filter, and search term
 	$: displayedTurns = turns
 		.filter((turn) => enabledSpeakers.has(turn.speaker))
 		.filter(
 			(turn) =>
 				!$EditorStore.selection.filteredSpeaker ||
 				turn.speaker === $EditorStore.selection.filteredSpeaker
-		);
+		)
+		.filter((turn) => {
+			if (!$ConfigStore.wordToSearch) return true;
+			return getTurnContent(turn).toLowerCase().includes($ConfigStore.wordToSearch.toLowerCase());
+		});
 
 	// Clear the locked speaker filter
 	function clearSpeakerFilter() {
