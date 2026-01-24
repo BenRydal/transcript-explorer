@@ -32,6 +32,18 @@
 	}
 
 	function setTimingMode(mode: TimingMode) {
+		const currentMode = get(TranscriptStore).timingMode;
+		if (mode === currentMode) return;
+
+		// Confirm before changing timing mode (only warn if data loss)
+		let message: string | null = null;
+		if (mode === 'untimed') {
+			message = 'Switch to untimed mode? This will remove all timestamps.';
+		} else if (mode === 'startOnly' && currentMode === 'startEnd') {
+			message = 'Switch to start-only mode? End times will be removed.';
+		}
+		if (message && !confirm(message)) return;
+
 		TranscriptStore.update((transcript) => {
 			const updatedWordArray = applyTimingModeToWordArray(transcript.wordArray, mode);
 			return {
