@@ -37,13 +37,7 @@
 </script>
 
 {#if isOpen}
-	<div
-		class="modal modal-open"
-		on:click|self={() => (isOpen = false)}
-		on:keydown={handleKeydown}
-		role="dialog"
-		aria-modal="true"
-	>
+	<div class="modal modal-open" on:click|self={() => (isOpen = false)} on:keydown={handleKeydown} role="dialog" aria-modal="true">
 		<div class="modal-box w-11/12 max-w-md p-8">
 			<div class="flex justify-between mb-6">
 				<h3 class="font-bold text-xl">Settings</h3>

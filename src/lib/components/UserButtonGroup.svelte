@@ -12,10 +12,7 @@
 
 	// Track users with their original indices
 	$: usersWithIndices = users.map((user, index) => ({ user, index }));
-	$: visibleUsers =
-		isExpanded || users.length <= maxVisible
-			? usersWithIndices
-			: usersWithIndices.slice(0, maxVisible - 1);
+	$: visibleUsers = isExpanded || users.length <= maxVisible ? usersWithIndices : usersWithIndices.slice(0, maxVisible - 1);
 	$: hiddenCount = users.length - maxVisible + 1;
 	$: showExpandButton = users.length > maxVisible;
 </script>
@@ -30,11 +27,7 @@
 	{/each}
 
 	{#if showExpandButton}
-		<button
-			class="expand-button"
-			on:click={() => (isExpanded = !isExpanded)}
-			title={isExpanded ? 'Show fewer' : `Show ${hiddenCount} more`}
-		>
+		<button class="expand-button" on:click={() => (isExpanded = !isExpanded)} title={isExpanded ? 'Show fewer' : `Show ${hiddenCount} more`}>
 			{#if isExpanded}
 				<div class="collapse-icon">
 					<MdChevronLeft />

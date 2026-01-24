@@ -18,9 +18,8 @@
 	$: range = max - min;
 	$: leftPercent = range > 0 ? ((leftValue - min) / range) * 100 : 0;
 	$: rightPercent = range > 0 ? ((rightValue - min) / range) * 100 : 0;
-	$: progressPercent = progressValue !== null && range > 0
-		? Math.min(Math.max(((progressValue - min) / range) * 100, leftPercent), rightPercent)
-		: leftPercent;
+	$: progressPercent =
+		progressValue !== null && range > 0 ? Math.min(Math.max(((progressValue - min) / range) * 100, leftPercent), rightPercent) : leftPercent;
 
 	function clamp(value: number, lo: number, hi: number): number {
 		return Math.min(Math.max(value, lo), hi);
@@ -65,8 +64,14 @@
 			let newLeft = dragStartLeft + deltaValue;
 			let newRight = dragStartRight + deltaValue;
 
-			if (newLeft < min) { newLeft = min; newRight = min + rangeWidth; }
-			if (newRight > max) { newRight = max; newLeft = max - rangeWidth; }
+			if (newLeft < min) {
+				newLeft = min;
+				newRight = min + rangeWidth;
+			}
+			if (newRight > max) {
+				newRight = max;
+				newLeft = max - rangeWidth;
+			}
 
 			leftValue = newLeft;
 			rightValue = newRight;
@@ -224,7 +229,9 @@
 		transform: translate(-50%, -50%);
 		cursor: ew-resize;
 		box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
-		transition: border-color 0.15s, box-shadow 0.15s;
+		transition:
+			border-color 0.15s,
+			box-shadow 0.15s;
 	}
 
 	.handle:hover,

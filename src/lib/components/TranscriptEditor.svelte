@@ -8,11 +8,7 @@
 	import P5Store from '../../stores/p5Store';
 	import HistoryStore from '../../stores/historyStore';
 	import { getTurnsFromWordArray, getTurnContent } from '$lib/core/turn-utils';
-	import {
-		applyTimingModeToWordArray,
-		updateTimelineFromData,
-		getMaxTime
-	} from '$lib/core/timing-utils';
+	import { applyTimingModeToWordArray, updateTimelineFromData, getMaxTime } from '$lib/core/timing-utils';
 	import type { Turn } from '$lib/core/turn-utils';
 	import { DataPoint } from '../../models/dataPoint';
 	import { USER_COLORS } from '$lib/constants/ui';
@@ -22,10 +18,7 @@
 	import type { TimingMode } from '../../models/transcript';
 
 	// Reactively derive turns from TranscriptStore
-	$: turns =
-		$TranscriptStore.wordArray.length > 0
-			? getTurnsFromWordArray($TranscriptStore.wordArray)
-			: [];
+	$: turns = $TranscriptStore.wordArray.length > 0 ? getTurnsFromWordArray($TranscriptStore.wordArray) : [];
 	$: timingMode = $TranscriptStore.timingMode;
 
 	// Get enabled speakers from UserStore
@@ -125,16 +118,7 @@
 				const firstDp = turnDataPoints[0];
 
 				// Create new DataPoints for the new words
-				const newDataPoints = newWords.map(
-					(word: string) =>
-						new DataPoint(
-							firstDp.speaker,
-							turnNumber,
-							word,
-							firstDp.startTime,
-							firstDp.endTime
-						)
-				);
+				const newDataPoints = newWords.map((word: string) => new DataPoint(firstDp.speaker, turnNumber, word, firstDp.startTime, firstDp.endTime));
 
 				// Build new array: words before this turn + new words + words after this turn
 				const wordsBefore = transcript.wordArray.filter((dp) => dp.turnNumber < turnNumber);
@@ -145,13 +129,7 @@
 				updatedWordArray = transcript.wordArray.map((dp) => {
 					if (dp.turnNumber !== turnNumber) return dp;
 
-					return new DataPoint(
-						newSpeakerName!,
-						dp.turnNumber,
-						dp.word,
-						dp.startTime,
-						dp.endTime
-					);
+					return new DataPoint(newSpeakerName!, dp.turnNumber, dp.word, dp.startTime, dp.endTime);
 				});
 			} else {
 				// Handle time edits
@@ -224,9 +202,11 @@
 					}
 
 					// Reorder users based on transcript order
-					const reorderedUsers = speakerOrder.map((speakerName) => {
-						return updatedUsers.find((u) => u.name === speakerName)!;
-					}).filter(Boolean);
+					const reorderedUsers = speakerOrder
+						.map((speakerName) => {
+							return updatedUsers.find((u) => u.name === speakerName)!;
+						})
+						.filter(Boolean);
 
 					// Add any users that aren't in the transcript (they may have been removed from all turns)
 					updatedUsers.forEach((user) => {
@@ -323,10 +303,7 @@
 	}
 
 	// Auto-scroll to selected turn when selection changes from visualization
-	$: if (
-		$EditorStore.selection.selectedTurnNumber !== null &&
-		$EditorStore.selection.selectionSource !== 'editor'
-	) {
+	$: if ($EditorStore.selection.selectedTurnNumber !== null && $EditorStore.selection.selectionSource !== 'editor') {
 		scrollToTurn($EditorStore.selection.selectedTurnNumber);
 	}
 
@@ -355,13 +332,7 @@
 			// Renumber turns that come after the deleted one
 			let renumberedWordArray = updatedWordArray.map((dp) => {
 				if (dp.turnNumber > turnNumber) {
-					return new DataPoint(
-						dp.speaker,
-						dp.turnNumber - 1,
-						dp.word,
-						dp.startTime,
-						dp.endTime
-					);
+					return new DataPoint(dp.speaker, dp.turnNumber - 1, dp.word, dp.startTime, dp.endTime);
 				}
 				return dp;
 			});
@@ -403,25 +374,13 @@
 			// Renumber all turns after the insertion point
 			const renumberedWordArray = transcript.wordArray.map((dp) => {
 				if (dp.turnNumber > turnNumber) {
-					return new DataPoint(
-						dp.speaker,
-						dp.turnNumber + 1,
-						dp.word,
-						dp.startTime,
-						dp.endTime
-					);
+					return new DataPoint(dp.speaker, dp.turnNumber + 1, dp.word, dp.startTime, dp.endTime);
 				}
 				return dp;
 			});
 
 			// Create a new DataPoint for the new turn with placeholder text
-			const newDataPoint = new DataPoint(
-				speaker,
-				newTurnNumber,
-				'[new]',
-				lastWord?.endTime ?? 0,
-				lastWord?.endTime ?? 0
-			);
+			const newDataPoint = new DataPoint(speaker, newTurnNumber, '[new]', lastWord?.endTime ?? 0, lastWord?.endTime ?? 0);
 
 			// Insert the new turn at the right position
 			const insertIndex = renumberedWordArray.findIndex((dp) => dp.turnNumber > newTurnNumber);
@@ -510,9 +469,7 @@
 	<div class="editor-content">
 		{#if turns.length === 0}
 			<div class="empty-state">
-				<p class="text-gray-500 text-center py-8">
-					No transcript loaded. Upload a CSV or TXT file to get started.
-				</p>
+				<p class="text-gray-500 text-center py-8">No transcript loaded. Upload a CSV or TXT file to get started.</p>
 			</div>
 		{:else}
 			{#if $EditorStore.selection.filteredSpeaker}

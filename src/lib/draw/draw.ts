@@ -93,10 +93,13 @@ export class Draw {
 			...config,
 			firstWordOfTurnSelectedInTurnChart: selectedTurn.turn[0]
 		}));
-		updateEditorSelection({
-			selectedTurnNumber: selectedTurn?.turn?.[0]?.turnNumber ?? null,
-			highlightedSpeaker: null
-		}, 'turnChart');
+		updateEditorSelection(
+			{
+				selectedTurnNumber: selectedTurn?.turn?.[0]?.turnNumber ?? null,
+				highlightedSpeaker: null
+			},
+			'turnChart'
+		);
 	}
 
 	updateContributionCloud(pos: Bounds): void {
@@ -106,10 +109,13 @@ export class Draw {
 			...config,
 			selectedWordFromContributionCloud: hoveredWord
 		}));
-		updateEditorSelection({
-			selectedTurnNumber: hoveredWord?.turnNumber ?? null,
-			highlightedSpeaker: null
-		}, 'contributionCloud');
+		updateEditorSelection(
+			{
+				selectedTurnNumber: hoveredWord?.turnNumber ?? null,
+				highlightedSpeaker: null
+			},
+			'contributionCloud'
+		);
 	}
 
 	drawDashboard(): void {

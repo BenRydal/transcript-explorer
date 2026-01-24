@@ -95,9 +95,7 @@
 					? rect.top - 172
 					: rect.top + 40
 		: window.innerHeight / 2 - 80}
-	{@const tooltipLeft = rect
-		? Math.max(16, Math.min(rect.left + rect.width / 2 - 160, window.innerWidth - 336))
-		: window.innerWidth / 2 - 160}
+	{@const tooltipLeft = rect ? Math.max(16, Math.min(rect.left + rect.width / 2 - 160, window.innerWidth - 336)) : window.innerWidth / 2 - 160}
 
 	<div class="fixed inset-0 z-[9999] pointer-events-none">
 		<button class="absolute inset-0 bg-black/50 pointer-events-auto cursor-default" on:click={end}></button>
@@ -105,14 +103,12 @@
 		{#if rect}
 			<div
 				class="absolute border-2 border-blue-500 rounded-lg pointer-events-none"
-				style="top: {rect.top - 4}px; left: {rect.left - 4}px; width: {rect.width + 8}px; height: {rect.height + 8}px; box-shadow: 0 0 0 9999px rgba(0,0,0,0.5);"
+				style="top: {rect.top - 4}px; left: {rect.left - 4}px; width: {rect.width + 8}px; height: {rect.height +
+					8}px; box-shadow: 0 0 0 9999px rgba(0,0,0,0.5);"
 			></div>
 		{/if}
 
-		<div
-			class="absolute bg-white rounded-lg shadow-xl p-4 pointer-events-auto w-80"
-			style="top: {tooltipTop}px; left: {tooltipLeft}px;"
-		>
+		<div class="absolute bg-white rounded-lg shadow-xl p-4 pointer-events-auto w-80" style="top: {tooltipTop}px; left: {tooltipLeft}px;">
 			<div class="flex justify-between items-start mb-2">
 				<h3 class="font-bold text-gray-800">{step.title}</h3>
 				<span class="text-xs text-gray-400">{tourStep + 1}/{tourSteps.length}</span>

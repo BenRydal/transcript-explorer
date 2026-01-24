@@ -55,8 +55,6 @@ const ConfigStore = writable<ConfigStoreType>(initialConfig);
  * Using a string key ensures Svelte's reactivity properly detects changes
  * even when boolean values switch from true to false.
  */
-export const filterToggleKey = derived(ConfigStore, ($config) =>
-	`${$config.echoWordsToggle}-${$config.lastWordToggle}-${$config.stopWordsToggle}`
-);
+export const filterToggleKey = derived(ConfigStore, ($config) => `${$config.echoWordsToggle}-${$config.lastWordToggle}-${$config.stopWordsToggle}`);
 
 export default ConfigStore;

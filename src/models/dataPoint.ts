@@ -6,13 +6,7 @@ export class DataPoint {
 	word: string;
 	count: number;
 
-	constructor(
-		speaker: string,
-		turnNumber: number,
-		word: string,
-		startTime: number,
-		endTime: number
-	) {
+	constructor(speaker: string, turnNumber: number, word: string, startTime: number, endTime: number) {
 		this.speaker = speaker;
 		this.turnNumber = turnNumber;
 		this.startTime = startTime;

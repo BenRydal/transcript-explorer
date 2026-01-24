@@ -108,9 +108,7 @@ export class Core {
 					this.processData(results.data, 'csv');
 					this.updateAllDataValues();
 				} else {
-					notifications.error(
-						'Invalid CSV format. Required columns: "speaker" and "content". Optional: "start" and "end" for timing.'
-					);
+					notifications.error('Invalid CSV format. Required columns: "speaker" and "content". Optional: "start" and "end" for timing.');
 				}
 			},
 			error: (error, file) => {

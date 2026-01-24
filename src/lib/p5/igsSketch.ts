@@ -137,7 +137,7 @@ export const igsSketch = (p5: any) => {
 		} else {
 			// Cap deltaTime to 100ms to prevent huge jumps when tab is backgrounded
 			const cappedDeltaTime = Math.min(p5.deltaTime, 100);
-			timeToSet = timeline.currTime + (currConfig.animationRate * cappedDeltaTime / 1000);
+			timeToSet = timeline.currTime + (currConfig.animationRate * cappedDeltaTime) / 1000;
 		}
 		TimelineStore.update((timeline) => {
 			timeline.currTime = timeToSet;
@@ -187,9 +187,19 @@ export const igsSketch = (p5: any) => {
 	};
 
 	p5.handleVideoPlay = () => {
-		const { distributionDiagramToggle, turnChartToggle, contributionCloudToggle, arrayOfFirstWords, selectedWordFromContributionCloud, firstWordOfTurnSelectedInTurnChart } = currConfig;
+		const {
+			distributionDiagramToggle,
+			turnChartToggle,
+			contributionCloudToggle,
+			arrayOfFirstWords,
+			selectedWordFromContributionCloud,
+			firstWordOfTurnSelectedInTurnChart
+		} = currConfig;
 
-		if (distributionDiagramToggle || (currConfig.dashboardToggle && arrayOfFirstWords.length && !firstWordOfTurnSelectedInTurnChart && !selectedWordFromContributionCloud)) {
+		if (
+			distributionDiagramToggle ||
+			(currConfig.dashboardToggle && arrayOfFirstWords.length && !firstWordOfTurnSelectedInTurnChart && !selectedWordFromContributionCloud)
+		) {
 			// Distribution diagram: play first 2 seconds of each turn
 			if (arrayOfFirstWords.length) {
 				p5.playTurnSnippets(arrayOfFirstWords);
@@ -217,7 +227,7 @@ export const igsSketch = (p5: any) => {
 			if (!isPlayingTurnSnippets) break;
 			requestSeek(turn.startTime);
 			videoPlay();
-			await new Promise(resolve => setTimeout(resolve, 2000));
+			await new Promise((resolve) => setTimeout(resolve, 2000));
 		}
 
 		videoPause();

@@ -1,24 +1,9 @@
 <script lang="ts">
 	import { onMount, onDestroy } from 'svelte';
 	import { browser } from '$app/environment';
-	import VideoStore, {
-		updatePosition,
-		updateSize,
-		setDragging,
-		setResizing,
-		play,
-		pause,
-		clearSeekRequest
-	} from '../../stores/videoStore';
+	import VideoStore, { updatePosition, updateSize, setDragging, setResizing, play, pause, clearSeekRequest } from '../../stores/videoStore';
 	import EditorStore from '../../stores/editorStore';
-	import {
-		playVideo,
-		pauseVideo,
-		seekTo,
-		muteVideo,
-		unmuteVideo,
-		type VideoPlayer
-	} from '../video/video-service';
+	import { playVideo, pauseVideo, seekTo, muteVideo, unmuteVideo, type VideoPlayer } from '../video/video-service';
 	import VideoPlayerComponent from './VideoPlayer.svelte';
 	import VideoControls from './VideoControls.svelte';
 
@@ -216,8 +201,8 @@
 		const rect = containerEl.getBoundingClientRect();
 
 		// Available space in the container (with padding)
-		const availableWidth = rect.width - (FULLSCREEN_PADDING * 2);
-		const availableHeight = rect.height - (FULLSCREEN_PADDING * 2);
+		const availableWidth = rect.width - FULLSCREEN_PADDING * 2;
+		const availableHeight = rect.height - FULLSCREEN_PADDING * 2;
 
 		// Calculate video dimensions that fit while maintaining aspect ratio
 		let newWidth = availableWidth;
@@ -340,26 +325,10 @@
 
 	<!-- Resize handles (hidden in fullscreen) -->
 	{#if !isFullscreen}
-		<button
-			class="resize-handle nw"
-			on:mousedown={(e) => handleResizeStart(e, 'nw')}
-			aria-label="Resize from top-left corner"
-		></button>
-		<button
-			class="resize-handle ne"
-			on:mousedown={(e) => handleResizeStart(e, 'ne')}
-			aria-label="Resize from top-right corner"
-		></button>
-		<button
-			class="resize-handle sw"
-			on:mousedown={(e) => handleResizeStart(e, 'sw')}
-			aria-label="Resize from bottom-left corner"
-		></button>
-		<button
-			class="resize-handle se"
-			on:mousedown={(e) => handleResizeStart(e, 'se')}
-			aria-label="Resize from bottom-right corner"
-		></button>
+		<button class="resize-handle nw" on:mousedown={(e) => handleResizeStart(e, 'nw')} aria-label="Resize from top-left corner"></button>
+		<button class="resize-handle ne" on:mousedown={(e) => handleResizeStart(e, 'ne')} aria-label="Resize from top-right corner"></button>
+		<button class="resize-handle sw" on:mousedown={(e) => handleResizeStart(e, 'sw')} aria-label="Resize from bottom-left corner"></button>
+		<button class="resize-handle se" on:mousedown={(e) => handleResizeStart(e, 'se')} aria-label="Resize from bottom-right corner"></button>
 	{/if}
 </div>
 

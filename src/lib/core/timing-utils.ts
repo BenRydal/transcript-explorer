@@ -121,10 +121,7 @@ export function updateTimelineFromData(wordArray: DataPoint[], expandOnly = true
  * Apply timing mode recalculations to word array.
  * Call this after any edit operation to ensure times are correct for the current mode.
  */
-export function applyTimingModeToWordArray(
-	wordArray: DataPoint[],
-	timingMode: TimingMode
-): DataPoint[] {
+export function applyTimingModeToWordArray(wordArray: DataPoint[], timingMode: TimingMode): DataPoint[] {
 	if (timingMode === 'untimed') {
 		return recalculateWordCountTimes(wordArray);
 	}

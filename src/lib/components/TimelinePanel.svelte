@@ -131,11 +131,11 @@
 		{ value: 30, label: '30x' }
 	];
 
-	$: speedLabel = SPEED_PRESETS.find(p => p.value === $ConfigStore.animationRate)?.label ?? '3x';
+	$: speedLabel = SPEED_PRESETS.find((p) => p.value === $ConfigStore.animationRate)?.label ?? '3x';
 
 	const cycleSpeed = () => {
 		ConfigStore.update((currentConfig) => {
-			const currentIndex = SPEED_PRESETS.findIndex(p => p.value === currentConfig.animationRate);
+			const currentIndex = SPEED_PRESETS.findIndex((p) => p.value === currentConfig.animationRate);
 			const nextIndex = (currentIndex + 1) % SPEED_PRESETS.length;
 			return { ...currentConfig, animationRate: SPEED_PRESETS[nextIndex].value };
 		});
@@ -194,32 +194,18 @@
 
 			<div class="control-divider"></div>
 
-			<button
-				class="control-btn"
-				on:click={resetToStart}
-				title="Skip to start"
-				aria-label="Skip to start"
-			>
+			<button class="control-btn" on:click={resetToStart} title="Skip to start" aria-label="Skip to start">
 				<MdSkipPrevious />
 			</button>
 
 			<div class="control-divider"></div>
 
-			<button
-				class="control-btn speed-btn"
-				on:click={cycleSpeed}
-				title="Click to change speed"
-				aria-label="Animation speed: {speedLabel}"
-			>
+			<button class="control-btn speed-btn" on:click={cycleSpeed} title="Click to change speed" aria-label="Animation speed: {speedLabel}">
 				{speedLabel}
 			</button>
 		</div>
 
-		<button
-			class="current-time"
-			on:click={cycleTimeFormat}
-			title="Click to change time format"
-		>
+		<button class="current-time" on:click={cycleTimeFormat} title="Click to change time format">
 			{formattedCurr} <span class="format-indicator">▾</span>
 		</button>
 	</div>
@@ -285,7 +271,9 @@
 		background: transparent;
 		color: #6b7280;
 		cursor: pointer;
-		transition: background-color 0.15s, color 0.15s;
+		transition:
+			background-color 0.15s,
+			color 0.15s;
 	}
 
 	.control-btn:hover {

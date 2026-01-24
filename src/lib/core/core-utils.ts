@@ -18,16 +18,8 @@ export function testTranscript(results: PapaParseResults): boolean {
 /**
  * Tests PapaParse results for valid transcript data
  */
-export function testPapaParseResults(
-	results: PapaParseResults,
-	headers: string[],
-	callbackTypeTest: RowValidator
-): boolean {
-	return (
-		results.data.length > 0 &&
-		includesAllHeaders(results.meta.fields, headers) &&
-		hasOneCleanRow(results.data, callbackTypeTest)
-	);
+export function testPapaParseResults(results: PapaParseResults, headers: string[], callbackTypeTest: RowValidator): boolean {
+	return results.data.length > 0 && includesAllHeaders(results.meta.fields, headers) && hasOneCleanRow(results.data, callbackTypeTest);
 }
 
 // NOTE: fieldNames from parsed file are converted to lowercase on Processing with PapaParse transformHeaders method
@@ -38,10 +30,7 @@ export function includesAllHeaders(fieldNamesLowerCase: string[], headers: strin
 	return true;
 }
 
-export function hasOneCleanRow(
-	resultsDataArray: Record<string, unknown>[],
-	callbackTypeTest: RowValidator
-): boolean {
+export function hasOneCleanRow(resultsDataArray: Record<string, unknown>[], callbackTypeTest: RowValidator): boolean {
 	for (const curRow of resultsDataArray) {
 		if (callbackTypeTest(curRow)) return true;
 	}

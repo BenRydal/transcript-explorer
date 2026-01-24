@@ -564,7 +564,6 @@
 	<title>TRANSCRIPT EXPLORER</title>
 </svelte:head>
 
-
 <div class="page-container">
 	<div class="navbar min-h-16 bg-[#ffffff]">
 		<div class="flex-1 px-2 lg:flex-none">
@@ -572,11 +571,7 @@
 		</div>
 
 		<!-- Mobile hamburger button -->
-		<button
-			class="btn btn-ghost md:hidden"
-			on:click={() => (mobileMenuOpen = !mobileMenuOpen)}
-			aria-label="Toggle menu"
-		>
+		<button class="btn btn-ghost md:hidden" on:click={() => (mobileMenuOpen = !mobileMenuOpen)} aria-label="Toggle menu">
 			<div class="w-6 h-6">
 				{#if mobileMenuOpen}
 					<MdClose />
@@ -603,10 +598,7 @@
 						<li class="menu-title text-xs uppercase tracking-wider text-gray-500 pt-2">{group.label}</li>
 						{#each group.items as item}
 							<li>
-								<button
-									on:click={() => loadExample(item.value)}
-									class="text-sm {selectedDropDownOption === item.label ? 'active' : ''}"
-								>
+								<button on:click={() => loadExample(item.value)} class="text-sm {selectedDropDownOption === item.label ? 'active' : ''}">
 									{item.label}
 								</button>
 							</li>
@@ -933,12 +925,7 @@
 
 <slot />
 
-<InfoModal
-	{isModalOpen}
-	onLoadExample={loadExample}
-	onOpenUpload={() => (showUploadModal = true)}
-	onStartTour={() => tourOverlay.start()}
-/>
+<InfoModal {isModalOpen} onLoadExample={loadExample} onOpenUpload={() => (showUploadModal = true)} onStartTour={() => tourOverlay.start()} />
 
 <TranscriptionModal
 	bind:isOpen={showTranscriptionModal}

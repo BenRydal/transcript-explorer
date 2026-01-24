@@ -61,12 +61,7 @@ export function getWordWidth(sk: p5, word: string, textSize: number): number {
  * Calculates optimal scaling to fit words within bounds.
  * Results are cached based on bounds, word count, and config.
  */
-export function calculateScaling(
-	sk: p5,
-	words: DataPoint[],
-	bounds: Bounds,
-	config: ConfigStoreType
-): Scaling {
+export function calculateScaling(sk: p5, words: DataPoint[], bounds: Bounds, config: ConfigStoreType): Scaling {
 	if (words.length === 0) return { ...BASE_SCALING };
 
 	const cacheKey = getCacheKey(bounds, words.length, config);
@@ -111,12 +106,7 @@ export function calculateScaling(
 /**
  * Estimates initial scale factor based on character count and available space.
  */
-function estimateScaleFactor(
-	words: DataPoint[],
-	availableWidth: number,
-	availableHeight: number,
-	config: ConfigStoreType
-): number {
+function estimateScaleFactor(words: DataPoint[], availableWidth: number, availableHeight: number, config: ConfigStoreType): number {
 	let totalChars = 0;
 	let speakerChanges = 0;
 	let prevSpeaker: string | null = null;
@@ -131,8 +121,7 @@ function estimateScaleFactor(
 
 	const charsPerLine = availableWidth / (BASE_SCALING.maxTextSize / CHARS_PER_EM);
 	const totalLines = Math.ceil(totalChars / charsPerLine) + speakerChanges;
-	const estimatedHeight = totalLines * BASE_SCALING.lineHeight +
-		speakerChanges * (BASE_SCALING.newSpeakerGap - BASE_SCALING.lineHeight);
+	const estimatedHeight = totalLines * BASE_SCALING.lineHeight + speakerChanges * (BASE_SCALING.newSpeakerGap - BASE_SCALING.lineHeight);
 
 	if (estimatedHeight <= availableHeight) return 1.0;
 	return Math.max(MIN_SCALE, Math.sqrt(availableHeight / estimatedHeight));
@@ -141,13 +130,7 @@ function estimateScaleFactor(
 /**
  * Measures actual height needed for words at a given scale factor.
  */
-function measureHeight(
-	sk: p5,
-	words: DataPoint[],
-	scaleFactor: number,
-	availableWidth: number,
-	config: ConfigStoreType
-): number {
+function measureHeight(sk: p5, words: DataPoint[], scaleFactor: number, availableWidth: number, config: ConfigStoreType): number {
 	const lineHeight = BASE_SCALING.lineHeight * scaleFactor;
 	const newSpeakerGap = BASE_SCALING.newSpeakerGap * scaleFactor;
 	const minSize = BASE_SCALING.minTextSize * scaleFactor;

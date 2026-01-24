@@ -19,13 +19,7 @@
 </script>
 
 {#if isOpen}
-	<div
-		class="modal modal-open"
-		on:click|self={() => (isOpen = false)}
-		on:keydown={handleKeydown}
-		role="dialog"
-		aria-modal="true"
-	>
+	<div class="modal modal-open" on:click|self={() => (isOpen = false)} on:keydown={handleKeydown} role="dialog" aria-modal="true">
 		<div class="modal-box w-11/12 max-w-lg">
 			<div class="flex justify-between mb-4">
 				<h3 class="font-bold text-lg">Upload Files</h3>

@@ -99,12 +99,7 @@
 	<div class="toolbar-right">
 		{#if hasTranscript}
 			<div class="timing-mode-group">
-				<button
-					class="timing-mode-btn"
-					class:active={timingMode === 'untimed'}
-					on:click={() => setTimingMode('untimed')}
-					title="No timestamps"
-				>
+				<button class="timing-mode-btn" class:active={timingMode === 'untimed'} on:click={() => setTimingMode('untimed')} title="No timestamps">
 					Untimed
 				</button>
 				<button
@@ -126,21 +121,11 @@
 			</div>
 		{/if}
 
-		<button
-			class="toolbar-btn"
-			on:click={() => dispatch('undo')}
-			disabled={!canUndo}
-			title="Undo (Ctrl+Z)"
-		>
+		<button class="toolbar-btn" on:click={() => dispatch('undo')} disabled={!canUndo} title="Undo (Ctrl+Z)">
 			<MdUndo />
 		</button>
 
-		<button
-			class="toolbar-btn"
-			on:click={() => dispatch('redo')}
-			disabled={!canRedo}
-			title="Redo (Ctrl+Shift+Z)"
-		>
+		<button class="toolbar-btn" on:click={() => dispatch('redo')} disabled={!canRedo} title="Redo (Ctrl+Shift+Z)">
 			<MdRedo />
 		</button>
 
@@ -153,11 +138,7 @@
 			<MdVideoLibrary />
 		</button>
 
-		<button
-			class="toolbar-btn"
-			on:click={toggleOrientation}
-			title={isVertical ? 'Switch to horizontal layout' : 'Switch to vertical layout'}
-		>
+		<button class="toolbar-btn" on:click={toggleOrientation} title={isVertical ? 'Switch to horizontal layout' : 'Switch to vertical layout'}>
 			{#if isVertical}
 				<MdSwapHoriz />
 			{:else}
@@ -165,11 +146,7 @@
 			{/if}
 		</button>
 
-		<button
-			class="toolbar-btn"
-			on:click={handleExport}
-			title="Export transcript as CSV"
-		>
+		<button class="toolbar-btn" on:click={handleExport} title="Export transcript as CSV">
 			<MdFileDownload />
 		</button>
 	</div>
@@ -222,7 +199,9 @@
 		background-color: transparent;
 		color: #6b7280;
 		cursor: pointer;
-		transition: background-color 0.15s, color 0.15s;
+		transition:
+			background-color 0.15s,
+			color 0.15s;
 	}
 
 	.toolbar-btn:hover {
@@ -270,7 +249,9 @@
 		font-size: 0.7rem;
 		font-weight: 500;
 		cursor: pointer;
-		transition: background-color 0.15s, color 0.15s;
+		transition:
+			background-color 0.15s,
+			color 0.15s;
 		white-space: nowrap;
 	}
 

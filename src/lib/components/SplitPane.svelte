@@ -108,11 +108,7 @@
 	});
 </script>
 
-<div
-	class="split-pane"
-	bind:this={container}
-	style="flex-direction: {flexDirection};"
->
+<div class="split-pane" bind:this={container} style="flex-direction: {flexDirection};">
 	<div
 		class="split-pane-panel first-panel"
 		style="{orientation === 'vertical' ? 'height' : 'width'}: {collapsed && collapsedPanel === 'first' ? '0%' : collapsed ? '100%' : sizes[0] + '%'};"
@@ -141,7 +137,11 @@
 
 	<div
 		class="split-pane-panel second-panel"
-		style="{orientation === 'vertical' ? 'height' : 'width'}: {collapsed && collapsedPanel === 'second' ? '0%' : collapsed ? '100%' : sizes[1] + '%'};"
+		style="{orientation === 'vertical' ? 'height' : 'width'}: {collapsed && collapsedPanel === 'second'
+			? '0%'
+			: collapsed
+				? '100%'
+				: sizes[1] + '%'};"
 	>
 		<slot name="second" />
 	</div>
