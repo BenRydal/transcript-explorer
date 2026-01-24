@@ -13,6 +13,7 @@
 	} from '$lib/core/timing-utils';
 	import type { Turn } from '$lib/core/turn-utils';
 	import { DataPoint } from '../../models/dataPoint';
+	import { USER_COLORS } from '$lib/constants/ui';
 	import EditorToolbar from './EditorToolbar.svelte';
 	import TranscriptEditorRow from './TranscriptEditorRow.svelte';
 
@@ -213,9 +214,8 @@
 					// Add new speaker if they don't exist
 					let updatedUsers = [...users];
 					if (!updatedUsers.some((u) => u.name === newSpeakerName)) {
-						const colors = ['#FF6B6B', '#4ECDC4', '#45B7D1', '#96CEB4', '#FFEAA7', '#DDA0DD', '#98D8C8', '#F7DC6F'];
 						const usedColors = updatedUsers.map((u) => u.color);
-						const availableColor = colors.find((c) => !usedColors.includes(c)) || colors[updatedUsers.length % colors.length];
+						const availableColor = USER_COLORS.find((c) => !usedColors.includes(c)) || USER_COLORS[updatedUsers.length % USER_COLORS.length];
 						updatedUsers.push({ name: newSpeakerName!, color: availableColor, enabled: true });
 					}
 
@@ -367,7 +367,7 @@
 			const result = finalizeWordArrayEdit(renumberedWordArray, transcript.timingMode);
 
 			// Remove speakers from UserStore who no longer have any turns
-			const remainingSpeakers = new Set(renumberedWordArray.map((dp) => dp.speaker));
+			const remainingSpeakers = new Set(result.wordArray.map((dp) => dp.speaker));
 			UserStore.update((users) => users.filter((user) => remainingSpeakers.has(user.name)));
 
 			return {
