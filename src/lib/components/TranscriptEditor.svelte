@@ -19,7 +19,6 @@
 	import type { TimingMode } from '../../models/transcript';
 
 	let turns: Turn[] = [];
-	let speakers: string[] = [];
 	let timingMode: TimingMode = 'untimed';
 
 	// Subscribe to transcript changes
@@ -31,9 +30,6 @@
 		}
 		timingMode = transcript.timingMode;
 	});
-
-	// Get list of unique speakers
-	$: speakers = $UserStore.map((u) => u.name);
 
 	// Filter turns by speaker if filteredSpeaker is set
 	$: displayedTurns = $EditorStore.selection.filteredSpeaker
@@ -475,7 +471,6 @@
 							speakerColor={getSpeakerColor(turn.speaker)}
 							isSelected={isTurnSelected(turn)}
 							isSpeakerHighlighted={isSpeakerHighlighted(turn)}
-							{speakers}
 							{timingMode}
 							on:select={handleTurnSelect}
 							on:edit={handleTurnEdit}

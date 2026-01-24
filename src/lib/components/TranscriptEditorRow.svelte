@@ -13,7 +13,6 @@
 	export let speakerColor: string = '#666666';
 	export let isSelected: boolean = false;
 	export let isSpeakerHighlighted: boolean = false;
-	export let speakers: string[] = [];
 	export let timingMode: TimingMode = 'untimed';
 
 	// Derived flags for easier template logic
@@ -50,10 +49,9 @@
 		editMode = 'none';
 	}
 
-	// Cancel content editing
-	function cancelContentEdit() {
+	// Cancel any editing
+	function cancelEdit() {
 		editMode = 'none';
-		editedContent = '';
 	}
 
 	// Start editing speaker
@@ -73,12 +71,6 @@
 			});
 		}
 		editMode = 'none';
-	}
-
-	// Cancel speaker editing
-	function cancelSpeakerEdit() {
-		editMode = 'none';
-		editedSpeaker = '';
 	}
 
 	// Start editing start time
@@ -106,12 +98,6 @@
 		editMode = 'none';
 	}
 
-	// Cancel start time editing
-	function cancelStartTimeEdit() {
-		editMode = 'none';
-		editedStartTime = '';
-	}
-
 	// Start editing end time
 	function startEditingEndTime() {
 		editedEndTime = formatTimeAuto(turn.endTime);
@@ -137,19 +123,13 @@
 		editMode = 'none';
 	}
 
-	// Cancel end time editing
-	function cancelEndTimeEdit() {
-		editMode = 'none';
-		editedEndTime = '';
-	}
-
 	// Handle keyboard events for editing
 	function handleContentKeydown(event: KeyboardEvent) {
 		if (event.key === 'Enter' && !event.shiftKey) {
 			event.preventDefault();
 			saveContent();
 		} else if (event.key === 'Escape') {
-			cancelContentEdit();
+			cancelEdit();
 		}
 	}
 
@@ -158,7 +138,7 @@
 			event.preventDefault();
 			saveSpeaker();
 		} else if (event.key === 'Escape') {
-			cancelSpeakerEdit();
+			cancelEdit();
 		}
 	}
 
@@ -167,7 +147,7 @@
 			event.preventDefault();
 			saveStartTime();
 		} else if (event.key === 'Escape') {
-			cancelStartTimeEdit();
+			cancelEdit();
 		}
 	}
 
@@ -176,7 +156,7 @@
 			event.preventDefault();
 			saveEndTime();
 		} else if (event.key === 'Escape') {
-			cancelEndTimeEdit();
+			cancelEdit();
 		}
 	}
 
@@ -362,30 +342,15 @@
 
 	<!-- Speaker -->
 	{#if editMode === 'speaker'}
-		<div class="speaker-edit-container" on:click|stopPropagation>
-			<input
-				type="text"
-				class="speaker-input"
-				bind:value={editedSpeaker}
-				on:keydown={handleSpeakerKeydown}
-				on:blur={saveSpeaker}
-				placeholder="New speaker..."
-			/>
-			{#if speakers.length > 0}
-				<select
-					class="speaker-select"
-					on:change={(e) => {
-						editedSpeaker = e.currentTarget.value;
-						saveSpeaker();
-					}}
-				>
-					<option value="" disabled selected>Select</option>
-					{#each speakers as speakerOption}
-						<option value={speakerOption}>{speakerOption}</option>
-					{/each}
-				</select>
-			{/if}
-		</div>
+		<input
+			type="text"
+			class="speaker-input"
+			bind:value={editedSpeaker}
+			on:keydown={handleSpeakerKeydown}
+			on:blur={saveSpeaker}
+			on:click|stopPropagation
+			placeholder="Speaker name..."
+		/>
 	{:else}
 		<button
 			class="turn-speaker"
@@ -582,34 +547,14 @@
 		line-height: 1;
 	}
 
-	.speaker-edit-container {
-		flex-shrink: 0;
-		display: flex;
-		align-items: center;
-	}
-
 	.speaker-input {
 		width: 100px;
 		font-weight: 600;
 		padding: 0.25rem;
 		border: 1px solid #d1d5db;
-		border-radius: 0.25rem 0 0 0.25rem;
+		border-radius: 0.25rem;
 		text-transform: uppercase;
-	}
-
-	.speaker-select {
-		padding: 0.25rem 0.5rem;
-		border: 1px solid #d1d5db;
-		border-left: none;
-		border-radius: 0 0.25rem 0.25rem 0;
-		background-color: #f9fafb;
-		cursor: pointer;
-		font-size: 0.75rem;
-		height: 100%;
-	}
-
-	.speaker-select:hover {
-		background-color: #e5e7eb;
+		flex-shrink: 0;
 	}
 
 	.content-edit-container {
