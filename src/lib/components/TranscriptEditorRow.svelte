@@ -23,10 +23,8 @@
 
 	let isHovering = false;
 
-	let isEditingContent = false;
-	let isEditingSpeaker = false;
-	let isEditingStartTime = false;
-	let isEditingEndTime = false;
+	type EditMode = 'none' | 'content' | 'speaker' | 'startTime' | 'endTime';
+	let editMode: EditMode = 'none';
 
 	let editedContent = '';
 	let editedSpeaker = '';
@@ -36,7 +34,7 @@
 	// Start editing content
 	function startEditingContent() {
 		editedContent = getTurnContent(turn);
-		isEditingContent = true;
+		editMode = 'content';
 	}
 
 	// Save content changes
@@ -48,19 +46,19 @@
 				value: editedContent.trim()
 			});
 		}
-		isEditingContent = false;
+		editMode = 'none';
 	}
 
 	// Cancel content editing
 	function cancelContentEdit() {
-		isEditingContent = false;
+		editMode = 'none';
 		editedContent = '';
 	}
 
 	// Start editing speaker
 	function startEditingSpeaker() {
 		editedSpeaker = turn.speaker;
-		isEditingSpeaker = true;
+		editMode = 'speaker';
 	}
 
 	// Save speaker changes
@@ -73,19 +71,19 @@
 				value: newSpeaker
 			});
 		}
-		isEditingSpeaker = false;
+		editMode = 'none';
 	}
 
 	// Cancel speaker editing
 	function cancelSpeakerEdit() {
-		isEditingSpeaker = false;
+		editMode = 'none';
 		editedSpeaker = '';
 	}
 
 	// Start editing start time
 	function startEditingStartTime() {
 		editedStartTime = formatTimeAuto(turn.startTime);
-		isEditingStartTime = true;
+		editMode = 'startTime';
 	}
 
 	// Save start time changes
@@ -99,19 +97,19 @@
 				value: { startTime: newStartTime, endTime: turn.endTime }
 			});
 		}
-		isEditingStartTime = false;
+		editMode = 'none';
 	}
 
 	// Cancel start time editing
 	function cancelStartTimeEdit() {
-		isEditingStartTime = false;
+		editMode = 'none';
 		editedStartTime = '';
 	}
 
 	// Start editing end time
 	function startEditingEndTime() {
 		editedEndTime = formatTimeAuto(turn.endTime);
-		isEditingEndTime = true;
+		editMode = 'endTime';
 	}
 
 	// Save end time changes
@@ -125,12 +123,12 @@
 				value: { startTime: turn.startTime, endTime: newEndTime }
 			});
 		}
-		isEditingEndTime = false;
+		editMode = 'none';
 	}
 
 	// Cancel end time editing
 	function cancelEndTimeEdit() {
-		isEditingEndTime = false;
+		editMode = 'none';
 		editedEndTime = '';
 	}
 
@@ -171,18 +169,20 @@
 		}
 	}
 
-	// Close all edit modes, saving any changes
-	function closeAllEditModes() {
-		if (isEditingStartTime) saveStartTime();
-		if (isEditingEndTime) saveEndTime();
-		if (isEditingSpeaker) saveSpeaker();
-		if (isEditingContent) saveContent();
+	// Close edit mode, saving any changes
+	function closeEditMode() {
+		switch (editMode) {
+			case 'startTime': saveStartTime(); break;
+			case 'endTime': saveEndTime(); break;
+			case 'speaker': saveSpeaker(); break;
+			case 'content': saveContent(); break;
+		}
 	}
 
 	// Handle row click
 	function handleRowClick() {
-		// If any edit mode is active, close it first
-		closeAllEditModes();
+		// If edit mode is active, close it first
+		closeEditMode();
 		dispatch('select', { turn });
 	}
 
@@ -236,13 +236,11 @@
 		return name.charAt(0).toUpperCase() + name.slice(1).toLowerCase();
 	}
 
-	// Handle clicks outside this row to close edit modes
+	// Handle clicks outside this row to close edit mode
 	onMount(() => {
 		function handleDocumentClick(event: MouseEvent) {
-			// Check current edit state at click time
-			const isAnyEditActive = isEditingStartTime || isEditingEndTime || isEditingSpeaker || isEditingContent;
-			if (isAnyEditActive && rowElement && !rowElement.contains(event.target as Node)) {
-				closeAllEditModes();
+			if (editMode !== 'none' && rowElement && !rowElement.contains(event.target as Node)) {
+				closeEditMode();
 			}
 		}
 
@@ -271,7 +269,7 @@
 >
 	<!-- Start Time Column (shown in startOnly and startEnd modes) -->
 	{#if showStartTime}
-		{#if isEditingStartTime}
+		{#if editMode === 'startTime'}
 			<div class="time-edit-container" on:click|stopPropagation>
 				{#if canCaptureTime}
 					<button
@@ -309,7 +307,7 @@
 
 	<!-- End Time Column (shown only in startEnd mode) -->
 	{#if showEndTime}
-		{#if isEditingEndTime}
+		{#if editMode === 'endTime'}
 			<div class="time-edit-container" on:click|stopPropagation>
 				<input
 					type="text"
@@ -341,7 +339,7 @@
 	{/if}
 
 	<!-- Speaker -->
-	{#if isEditingSpeaker}
+	{#if editMode === 'speaker'}
 		<div class="speaker-edit-container" on:click|stopPropagation>
 			<input
 				type="text"
@@ -378,7 +376,7 @@
 	{/if}
 
 	<!-- Content -->
-	{#if isEditingContent}
+	{#if editMode === 'content'}
 		<div class="content-edit-container" on:click|stopPropagation>
 			<textarea
 				class="content-textarea"
