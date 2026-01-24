@@ -117,7 +117,17 @@ export class Draw {
 		this.drawDashboardDividers(top, bottomLeft);
 		this.updateTurnChart(top);
 		this.updateContributionCloud(bottomRight);
-		this.updateDistributionDiagram(bottomLeft); // draw last to display dd text over other visualizations
+		this.updateDistributionDiagram(bottomLeft);
+
+		// Correct EditorStore selection: prioritize turn chart/cloud over diagram
+		// (diagram runs last and overwrites, so we re-apply if needed)
+		const turnChartWord = currConfig.firstWordOfTurnSelectedInTurnChart;
+		const cloudWord = currConfig.selectedWordFromContributionCloud;
+		if (turnChartWord) {
+			updateEditorSelection({ selectedTurnNumber: turnChartWord.turnNumber, highlightedSpeaker: null }, 'turnChart');
+		} else if (cloudWord) {
+			updateEditorSelection({ selectedTurnNumber: cloudWord.turnNumber, highlightedSpeaker: null }, 'contributionCloud');
+		}
 	}
 
 	drawDashboardDividers(top: Bounds, bottomLeft: Bounds): void {
