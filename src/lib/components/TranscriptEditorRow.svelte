@@ -123,43 +123,6 @@
 		editMode = 'none';
 	}
 
-	// Handle keyboard events for editing
-	function handleContentKeydown(event: KeyboardEvent) {
-		if (event.key === 'Enter' && !event.shiftKey) {
-			event.preventDefault();
-			saveContent();
-		} else if (event.key === 'Escape') {
-			cancelEdit();
-		}
-	}
-
-	function handleSpeakerKeydown(event: KeyboardEvent) {
-		if (event.key === 'Enter') {
-			event.preventDefault();
-			saveSpeaker();
-		} else if (event.key === 'Escape') {
-			cancelEdit();
-		}
-	}
-
-	function handleStartTimeKeydown(event: KeyboardEvent) {
-		if (event.key === 'Enter') {
-			event.preventDefault();
-			saveStartTime();
-		} else if (event.key === 'Escape') {
-			cancelEdit();
-		}
-	}
-
-	function handleEndTimeKeydown(event: KeyboardEvent) {
-		if (event.key === 'Enter') {
-			event.preventDefault();
-			saveEndTime();
-		} else if (event.key === 'Escape') {
-			cancelEdit();
-		}
-	}
-
 	// Close edit mode, saving any changes
 	function closeEditMode() {
 		switch (editMode) {
@@ -167,6 +130,18 @@
 			case 'endTime': saveEndTime(); break;
 			case 'speaker': saveSpeaker(); break;
 			case 'content': saveContent(); break;
+		}
+	}
+
+	// Single keydown handler for all edit inputs: Enter saves, Escape cancels
+	function handleEditKeydown(event: KeyboardEvent) {
+		if (event.key === 'Escape') {
+			cancelEdit();
+		} else if (event.key === 'Enter') {
+			// Allow Shift+Enter for newlines in content textarea
+			if (editMode === 'content' && event.shiftKey) return;
+			event.preventDefault();
+			closeEditMode();
 		}
 	}
 
@@ -286,7 +261,7 @@
 					type="text"
 					class="time-input"
 					bind:value={editedStartTime}
-					on:keydown={handleStartTimeKeydown}
+					on:keydown={handleEditKeydown}
 					on:blur={saveStartTime}
 					placeholder="Start"
 				/>
@@ -315,7 +290,7 @@
 					type="text"
 					class="time-input"
 					bind:value={editedEndTime}
-					on:keydown={handleEndTimeKeydown}
+					on:keydown={handleEditKeydown}
 					on:blur={saveEndTime}
 					placeholder="End"
 				/>
@@ -346,7 +321,7 @@
 			type="text"
 			class="speaker-input"
 			bind:value={editedSpeaker}
-			on:keydown={handleSpeakerKeydown}
+			on:keydown={handleEditKeydown}
 			on:blur={saveSpeaker}
 			on:click|stopPropagation
 			placeholder="Speaker name..."
@@ -368,7 +343,7 @@
 			<textarea
 				class="content-textarea"
 				bind:value={editedContent}
-				on:keydown={handleContentKeydown}
+				on:keydown={handleEditKeydown}
 				on:blur={saveContent}
 				use:autoresize
 			/>
