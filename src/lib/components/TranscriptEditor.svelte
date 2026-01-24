@@ -1,5 +1,4 @@
 <script lang="ts">
-	import { onMount } from 'svelte';
 	import { get } from 'svelte/store';
 	import TranscriptStore from '../../stores/transcriptStore';
 	import UserStore from '../../stores/userStore';
@@ -21,7 +20,6 @@
 
 	let turns: Turn[] = [];
 	let speakers: string[] = [];
-	let editorContainer: HTMLElement;
 	let timingMode: TimingMode = 'untimed';
 
 	// Subscribe to transcript changes
@@ -443,7 +441,7 @@
 	}
 </script>
 
-<div class="transcript-editor" bind:this={editorContainer}>
+<div class="transcript-editor">
 	<EditorToolbar />
 
 	<div class="editor-content">
