@@ -1,9 +1,10 @@
 import type p5 from 'p5';
 import { DataPoint } from '../../models/dataPoint';
 import TimelineStore from '../../stores/timelineStore';
+import UserStore from '../../stores/userStore';
 import ConfigStore, { type ConfigStoreType } from '../../stores/configStore';
 import { get } from 'svelte/store';
-import { clearScalingCache } from '../draw/contribution-cloud';
+import { clearScalingCache, clearCloudBuffer } from '../draw/contribution-cloud';
 
 let config: ConfigStoreType;
 
@@ -102,8 +103,12 @@ export class DynamicData {
 
 	getDynamicArraySortedForContributionCloud(): DataPoint[] {
 		let curAnimationArray = this.getAnimationArrayDeepCopy().filter((word) => this.isInTimeRange(word.startTime, word.endTime));
-		if (config.sortToggle) curAnimationArray.sort((a, b) => b.count - a.count); // sort descending by word count
-		if (config.separateToggle) curAnimationArray.sort((a, b) => a.speaker.localeCompare(b.speaker)); // group by speaker name
+		if (config.sortToggle) curAnimationArray.sort((a, b) => b.count - a.count);
+		if (config.separateToggle) {
+			const users = get(UserStore);
+			const speakerOrder = new Map(users.map((u, i) => [u.name, i]));
+			curAnimationArray.sort((a, b) => (speakerOrder.get(a.speaker) ?? 999) - (speakerOrder.get(b.speaker) ?? 999));
+		}
 		return curAnimationArray;
 	}
 
@@ -118,6 +123,7 @@ export class DynamicData {
 	clear(): void {
 		this.dynamicWordArray = [];
 		clearScalingCache();
+		clearCloudBuffer();
 	}
 
 	getStopWords(): string[] {
