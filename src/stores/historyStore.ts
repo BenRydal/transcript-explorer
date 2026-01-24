@@ -15,7 +15,11 @@ function createHistoryStore() {
 	});
 
 	const snapshot = (wordArray: DataPoint[]) =>
-		wordArray.map((dp) => new DataPoint(dp.speaker, dp.turnNumber, dp.word, dp.startTime, dp.endTime));
+		wordArray.map((dp) => {
+			const copy = new DataPoint(dp.speaker, dp.turnNumber, dp.word, dp.startTime, dp.endTime);
+			copy.count = dp.count;
+			return copy;
+		});
 
 	return {
 		subscribe,
