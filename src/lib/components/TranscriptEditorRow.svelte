@@ -195,9 +195,6 @@
 		}
 	}
 
-	// Check if video is loaded and transcript is in a timed mode
-	$: canCaptureTime = $VideoStore.isLoaded && showStartTime;
-
 	// Handle clicks outside this row to close edit mode
 	onMount(() => {
 		function handleDocumentClick(event: MouseEvent) {
@@ -244,7 +241,7 @@
 	{#if showStartTime}
 		{#if editMode === 'startTime'}
 			<div class="time-edit-container" on:click|stopPropagation>
-				{#if canCaptureTime}
+				{#if $VideoStore.isLoaded}
 					<button
 						class="time-capture-btn capture-start-btn"
 						on:click={captureStartTime}
@@ -290,7 +287,7 @@
 					on:blur={saveEndTime}
 					placeholder="End"
 				/>
-				{#if canCaptureTime}
+				{#if $VideoStore.isLoaded}
 					<button
 						class="time-capture-btn capture-end-btn"
 						on:click={captureEndTime}
