@@ -345,6 +345,10 @@
 	function handleTurnDelete(event: CustomEvent<{ turnNumber: number }>) {
 		const { turnNumber } = event.detail;
 
+		if (!confirm('Delete this turn?')) {
+			return;
+		}
+
 		TranscriptStore.update((transcript) => {
 			// Remove all words from this turn
 			const updatedWordArray = transcript.wordArray.filter((dp) => dp.turnNumber !== turnNumber);

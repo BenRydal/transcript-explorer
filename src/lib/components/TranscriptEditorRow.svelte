@@ -5,6 +5,7 @@
 	import { toSeconds, formatTimeAuto } from '$lib/core/time-utils';
 	import VideoStore from '../../stores/videoStore';
 	import type { TimingMode } from '../../models/transcript';
+	import { notifications } from '../../stores/notificationStore';
 
 	let rowElement: HTMLElement;
 
@@ -88,13 +89,18 @@
 
 	// Save start time changes
 	function saveStartTime() {
-		const newStartTime = toSeconds(editedStartTime) ?? turn.startTime;
+		const parsed = toSeconds(editedStartTime);
+		if (parsed === null) {
+			notifications.warning('Invalid time format. Use HH:MM:SS, MM:SS, or seconds.');
+			editMode = 'none';
+			return;
+		}
 
-		if (newStartTime !== turn.startTime) {
+		if (parsed !== turn.startTime) {
 			dispatch('edit', {
 				turnNumber: turn.turnNumber,
 				field: 'time',
-				value: { startTime: newStartTime, endTime: turn.endTime }
+				value: { startTime: parsed, endTime: turn.endTime }
 			});
 		}
 		editMode = 'none';
@@ -114,13 +120,18 @@
 
 	// Save end time changes
 	function saveEndTime() {
-		const newEndTime = toSeconds(editedEndTime) ?? turn.endTime;
+		const parsed = toSeconds(editedEndTime);
+		if (parsed === null) {
+			notifications.warning('Invalid time format. Use HH:MM:SS, MM:SS, or seconds.');
+			editMode = 'none';
+			return;
+		}
 
-		if (newEndTime !== turn.endTime) {
+		if (parsed !== turn.endTime) {
 			dispatch('edit', {
 				turnNumber: turn.turnNumber,
 				field: 'time',
-				value: { startTime: turn.startTime, endTime: newEndTime }
+				value: { startTime: turn.startTime, endTime: parsed }
 			});
 		}
 		editMode = 'none';
