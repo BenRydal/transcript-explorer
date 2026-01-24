@@ -32,10 +32,17 @@
 		timingMode = transcript.timingMode;
 	});
 
-	// Filter turns by speaker if filteredSpeaker is set
-	$: displayedTurns = $EditorStore.selection.filteredSpeaker
-		? turns.filter((turn) => turn.speaker === $EditorStore.selection.filteredSpeaker)
-		: turns;
+	// Get enabled speakers from UserStore
+	$: enabledSpeakers = new Set($UserStore.filter((u) => u.enabled).map((u) => u.name));
+
+	// Filter turns by speaker visibility and optional locked filter
+	$: displayedTurns = turns
+		.filter((turn) => enabledSpeakers.has(turn.speaker))
+		.filter(
+			(turn) =>
+				!$EditorStore.selection.filteredSpeaker ||
+				turn.speaker === $EditorStore.selection.filteredSpeaker
+		);
 
 	// Clear the locked speaker filter
 	function clearSpeakerFilter() {
