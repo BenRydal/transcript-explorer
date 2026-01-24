@@ -8,7 +8,6 @@
 	import P5Store from '../../stores/p5Store';
 	import HistoryStore from '../../stores/historyStore';
 	import { getTurnsFromWordArray, getTurnContent } from '$lib/core/turn-utils';
-	import { normalizeSpeakerName } from '$lib/core/string-utils';
 	import {
 		applyTimingModeToWordArray,
 		updateTimelineFromData,
@@ -106,10 +105,8 @@
 		const { turnNumber, field, value } = event.detail;
 
 		// Handle speaker name change - need to update UserStore and recalculate all speaker orders
-		let newSpeakerName: string | null = null;
-		if (field === 'speaker') {
-			newSpeakerName = normalizeSpeakerName(value);
-		}
+		// Note: speaker name is already normalized by TranscriptEditorRow before dispatch
+		const newSpeakerName: string | null = field === 'speaker' ? value : null;
 
 		// Save state for undo
 		HistoryStore.pushState(get(TranscriptStore).wordArray);

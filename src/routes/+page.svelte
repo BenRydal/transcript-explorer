@@ -25,6 +25,7 @@
 	import { writable, get } from 'svelte/store';
 	import { DataPoint } from '../models/dataPoint';
 	import { Transcript } from '../models/transcript';
+	import { USER_COLORS } from '$lib/constants/ui';
 	import IconButton from '$lib/components/IconButton.svelte';
 	import InfoModal from '$lib/components/InfoModal.svelte';
 	import TimelinePanel from '$lib/components/TimelinePanel.svelte';
@@ -344,10 +345,9 @@
 
 		// Create a default speaker
 		const defaultSpeaker = 'SPEAKER 1';
-		const defaultColor = '#FF6B6B';
 
 		// Set up users
-		UserStore.set([{ name: defaultSpeaker, color: defaultColor, enabled: true }]);
+		UserStore.set([{ name: defaultSpeaker, color: USER_COLORS[0], enabled: true }]);
 
 		// Create one empty turn with placeholder text
 		const startTime = hasVideo ? videoState.currentTime : 0;
@@ -418,7 +418,7 @@
 
 		// Set up single speaker (Whisper doesn't do speaker diarization)
 		const defaultSpeaker = 'SPEAKER 1';
-		UserStore.set([{ name: defaultSpeaker, color: '#FF6B6B', enabled: true }]);
+		UserStore.set([{ name: defaultSpeaker, color: USER_COLORS[0], enabled: true }]);
 
 		// Convert transcription segments to DataPoints
 		const wordArray: DataPoint[] = [];
