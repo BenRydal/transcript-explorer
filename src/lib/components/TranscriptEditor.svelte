@@ -470,11 +470,11 @@
 		markDirtyAndRefresh();
 	}
 
-	export function undo() {
+	export function undo(): void {
 		applyHistoryState(HistoryStore.undo(get(TranscriptStore).wordArray));
 	}
 
-	export function redo() {
+	export function redo(): void {
 		applyHistoryState(HistoryStore.redo(get(TranscriptStore).wordArray));
 	}
 
