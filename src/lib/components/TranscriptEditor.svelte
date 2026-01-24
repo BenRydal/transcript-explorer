@@ -1,10 +1,12 @@
 <script lang="ts">
+	import { onMount } from 'svelte';
 	import { get } from 'svelte/store';
 	import TranscriptStore from '../../stores/transcriptStore';
 	import UserStore from '../../stores/userStore';
 	import EditorStore from '../../stores/editorStore';
 	import ConfigStore from '../../stores/configStore';
 	import P5Store from '../../stores/p5Store';
+	import HistoryStore from '../../stores/historyStore';
 	import { getTurnsFromWordArray, getTurnContent } from '$lib/core/turn-utils';
 	import {
 		applyTimingModeToWordArray,
@@ -29,18 +31,16 @@
 	// Get enabled speakers from UserStore
 	$: enabledSpeakers = new Set($UserStore.filter((u) => u.enabled).map((u) => u.name));
 
+	// Create a reactive speaker color map
+	$: speakerColorMap = new Map($UserStore.map((u) => [u.name, u.color]));
+
 	// Filter turns by speaker visibility, locked filter, and search term
-	$: displayedTurns = turns
-		.filter((turn) => enabledSpeakers.has(turn.speaker))
-		.filter(
-			(turn) =>
-				!$EditorStore.selection.filteredSpeaker ||
-				turn.speaker === $EditorStore.selection.filteredSpeaker
-		)
-		.filter((turn) => {
-			if (!$ConfigStore.wordToSearch) return true;
-			return getTurnContent(turn).toLowerCase().includes($ConfigStore.wordToSearch.toLowerCase());
-		});
+	$: displayedTurns = turns.filter((turn) => {
+		if (!enabledSpeakers.has(turn.speaker)) return false;
+		if ($EditorStore.selection.filteredSpeaker && turn.speaker !== $EditorStore.selection.filteredSpeaker) return false;
+		if ($ConfigStore.wordToSearch && !getTurnContent(turn).toLowerCase().includes($ConfigStore.wordToSearch.toLowerCase())) return false;
+		return true;
+	});
 
 	// Clear the locked speaker filter
 	function clearSpeakerFilter() {
@@ -55,11 +55,9 @@
 		}));
 	}
 
-	// Get user color for a speaker
+	// Get user color for a speaker (uses reactive map)
 	function getSpeakerColor(speakerName: string): string {
-		const users = $UserStore;
-		const user = users.find((u) => u.name === speakerName);
-		return user?.color || '#666666';
+		return speakerColorMap.get(speakerName) || '#666666';
 	}
 
 	// Check if a turn is selected
@@ -111,6 +109,9 @@
 		if (field === 'speaker') {
 			newSpeakerName = value.trim().toUpperCase();
 		}
+
+		// Save state for undo
+		HistoryStore.pushState(get(TranscriptStore).wordArray);
 
 		TranscriptStore.update((transcript) => {
 			let updatedWordArray: DataPoint[];
@@ -260,30 +261,26 @@
 		const speakerWordCounts = new Map<string, number>();
 		const speakerTurnCounts = new Map<string, Set<number>>();
 		const wordFrequency = new Map<string, number>();
+		const turnLengths = new Map<number, number>();
 		let maxWordFrequency = 0;
 		let mostFrequentWord = '';
-		const turnLengths = new Map<number, number>();
 
 		wordArray.forEach(({ speaker, turnNumber, word }) => {
-			// Track word count for each speaker
 			speakerWordCounts.set(speaker, (speakerWordCounts.get(speaker) || 0) + 1);
 
-			// Track unique turns per speaker
 			if (!speakerTurnCounts.has(speaker)) {
 				speakerTurnCounts.set(speaker, new Set());
 			}
 			speakerTurnCounts.get(speaker)?.add(turnNumber);
 
-			// Track turn lengths
 			turnLengths.set(turnNumber, (turnLengths.get(turnNumber) || 0) + 1);
 
-			// Track word frequency
 			if (word) {
 				const lowerWord = word.toLowerCase();
-				wordFrequency.set(lowerWord, (wordFrequency.get(lowerWord) || 0) + 1);
-				const currentCount = wordFrequency.get(lowerWord) || 0;
-				if (currentCount > maxWordFrequency) {
-					maxWordFrequency = currentCount;
+				const count = (wordFrequency.get(lowerWord) || 0) + 1;
+				wordFrequency.set(lowerWord, count);
+				if (count > maxWordFrequency) {
+					maxWordFrequency = count;
 					mostFrequentWord = word;
 				}
 			}
@@ -350,6 +347,9 @@
 			return;
 		}
 
+		// Save state for undo
+		HistoryStore.pushState(get(TranscriptStore).wordArray);
+
 		TranscriptStore.update((transcript) => {
 			// Remove all words from this turn
 			const updatedWordArray = transcript.wordArray.filter((dp) => dp.turnNumber !== turnNumber);
@@ -390,6 +390,9 @@
 	// Handle add turn after
 	function handleAddAfter(event: CustomEvent<{ turnNumber: number; speaker: string }>) {
 		const { turnNumber, speaker } = event.detail;
+
+		// Save state for undo
+		HistoryStore.pushState(get(TranscriptStore).wordArray);
 
 		TranscriptStore.update((transcript) => {
 			// Get the last word of the current turn to get timing info
@@ -444,10 +447,61 @@
 
 		markDirtyAndRefresh();
 	}
+
+	// Apply a restored state from history
+	function applyHistoryState(restoredState: DataPoint[] | null) {
+		if (!restoredState) return;
+		TranscriptStore.update((transcript) => {
+			const result = finalizeWordArrayEdit(restoredState, transcript.timingMode);
+
+			// Clean up orphaned speakers from UserStore
+			const activeSpeakers = new Set(result.wordArray.map((dp) => dp.speaker));
+			UserStore.update((users) => users.filter((user) => activeSpeakers.has(user.name)));
+
+			return {
+				...transcript,
+				wordArray: result.wordArray,
+				totalNumOfWords: result.wordArray.length,
+				totalTimeInSeconds: result.maxTime,
+				...result.stats
+			};
+		});
+		markDirtyAndRefresh();
+	}
+
+	export function undo() {
+		applyHistoryState(HistoryStore.undo(get(TranscriptStore).wordArray));
+	}
+
+	export function redo() {
+		applyHistoryState(HistoryStore.redo(get(TranscriptStore).wordArray));
+	}
+
+	// Keyboard shortcuts for undo/redo
+	function handleKeydown(event: KeyboardEvent) {
+		// Check for Ctrl+Z (undo) or Ctrl+Shift+Z / Ctrl+Y (redo)
+		if ((event.ctrlKey || event.metaKey) && event.key === 'z') {
+			event.preventDefault();
+			if (event.shiftKey) {
+				redo();
+			} else {
+				undo();
+			}
+		} else if ((event.ctrlKey || event.metaKey) && event.key === 'y') {
+			event.preventDefault();
+			redo();
+		}
+	}
+
+	// Set up keyboard listener
+	onMount(() => {
+		window.addEventListener('keydown', handleKeydown);
+		return () => window.removeEventListener('keydown', handleKeydown);
+	});
 </script>
 
 <div class="transcript-editor">
-	<EditorToolbar />
+	<EditorToolbar on:undo={undo} on:redo={redo} />
 
 	<div class="editor-content">
 		{#if turns.length === 0}

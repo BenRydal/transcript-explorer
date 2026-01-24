@@ -1,15 +1,21 @@
 <script lang="ts">
+	import { createEventDispatcher } from 'svelte';
 	import MdSwapVert from 'svelte-icons/md/MdSwapVert.svelte';
 	import MdSwapHoriz from 'svelte-icons/md/MdSwapHoriz.svelte';
 	import MdFileDownload from 'svelte-icons/md/MdFileDownload.svelte';
 	import MdVideoLibrary from 'svelte-icons/md/MdVideoLibrary.svelte';
+	import MdUndo from 'svelte-icons/md/MdUndo.svelte';
+	import MdRedo from 'svelte-icons/md/MdRedo.svelte';
 	import { get } from 'svelte/store';
 	import EditorStore from '../../stores/editorStore';
 	import TranscriptStore from '../../stores/transcriptStore';
 	import P5Store from '../../stores/p5Store';
+	import HistoryStore from '../../stores/historyStore';
 	import { exportTranscriptToCSV } from '$lib/core/export-utils';
 	import { applyTimingModeToWordArray, updateTimelineFromData } from '$lib/core/timing-utils';
 	import type { TimingMode } from '../../models/transcript';
+
+	const dispatch = createEventDispatcher();
 
 	function toggleOrientation() {
 		EditorStore.update((state) => ({
@@ -78,6 +84,8 @@
 	$: showAdvancedVideoControls = $EditorStore.config.showAdvancedVideoControls;
 	$: timingMode = $TranscriptStore.timingMode;
 	$: hasTranscript = $TranscriptStore.wordArray.length > 0;
+	$: canUndo = $HistoryStore.past.length > 0;
+	$: canRedo = $HistoryStore.future.length > 0;
 </script>
 
 <div class="editor-toolbar">
@@ -117,6 +125,24 @@
 				</button>
 			</div>
 		{/if}
+
+		<button
+			class="toolbar-btn"
+			on:click={() => dispatch('undo')}
+			disabled={!canUndo}
+			title="Undo (Ctrl+Z)"
+		>
+			<MdUndo />
+		</button>
+
+		<button
+			class="toolbar-btn"
+			on:click={() => dispatch('redo')}
+			disabled={!canRedo}
+			title="Redo (Ctrl+Shift+Z)"
+		>
+			<MdRedo />
+		</button>
 
 		<button
 			class="toolbar-btn"
@@ -206,6 +232,16 @@
 
 	.toolbar-btn:active {
 		background-color: #d1d5db;
+	}
+
+	.toolbar-btn:disabled {
+		opacity: 0.4;
+		cursor: not-allowed;
+	}
+
+	.toolbar-btn:disabled:hover {
+		background-color: transparent;
+		color: #6b7280;
 	}
 
 	.toolbar-btn.active {

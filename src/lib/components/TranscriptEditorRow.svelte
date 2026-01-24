@@ -197,11 +197,6 @@
 	// Check if video is loaded and transcript is in a timed mode
 	$: canCaptureTime = $VideoStore.isLoaded && showStartTime;
 
-	// Format speaker name for display
-	function formatSpeaker(name: string): string {
-		return name.charAt(0).toUpperCase() + name.slice(1).toLowerCase();
-	}
-
 	// Handle clicks outside this row to close edit mode
 	onMount(() => {
 		function handleDocumentClick(event: MouseEvent) {
@@ -333,7 +328,7 @@
 			on:click|stopPropagation={startEditingSpeaker}
 			title="Click to edit speaker"
 		>
-			{formatSpeaker(turn.speaker)}:
+			{turn.speaker.charAt(0).toUpperCase() + turn.speaker.slice(1).toLowerCase()}:
 		</button>
 	{/if}
 
