@@ -264,6 +264,17 @@
 	// Reactive time displays
 	$: startTimeDisplay = `[${formatTimeAuto(turn.startTime)}]`;
 	$: endTimeDisplay = `[${formatTimeAuto(turn.endTime)}]`;
+
+	// Auto-resize textarea action
+	function autoresize(node: HTMLTextAreaElement) {
+		function resize() {
+			node.style.height = 'auto';
+			node.style.height = node.scrollHeight + 'px';
+		}
+		resize();
+		node.addEventListener('input', resize);
+		return { destroy: () => node.removeEventListener('input', resize) };
+	}
 </script>
 
 <div
@@ -394,7 +405,7 @@
 				bind:value={editedContent}
 				on:keydown={handleContentKeydown}
 				on:blur={saveContent}
-				rows="2"
+				use:autoresize
 			/>
 			<div class="edit-hint">Enter to save, Esc to cancel</div>
 		</div>
@@ -611,9 +622,11 @@
 		padding: 0.25rem;
 		border: 1px solid #d1d5db;
 		border-radius: 0.25rem;
-		resize: vertical;
 		font-family: inherit;
 		font-size: inherit;
+		min-height: 2.5rem;
+		overflow: hidden;
+		resize: none;
 	}
 
 	.edit-hint {
