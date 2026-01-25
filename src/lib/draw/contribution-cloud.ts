@@ -41,17 +41,19 @@ let bufferCache: {
 	buffer: p5.Graphics | null;
 	positions: WordPosition[];
 	cacheKey: string | null;
+	hasOverflow: boolean;
 } = {
 	buffer: null,
 	positions: [],
-	cacheKey: null
+	cacheKey: null,
+	hasOverflow: false
 };
 
 export function clearCloudBuffer(): void {
 	if (bufferCache.buffer) {
 		bufferCache.buffer.remove();
 	}
-	bufferCache = { buffer: null, positions: [], cacheKey: null };
+	bufferCache = { buffer: null, positions: [], cacheKey: null, hasOverflow: false };
 }
 
 export class ContributionCloud {
@@ -69,7 +71,7 @@ export class ContributionCloud {
 		this.userMap = new Map(this.users.map((user) => [user.name, user]));
 	}
 
-	draw(words: DataPoint[]): { hoveredWord: DataPoint | null } {
+	draw(words: DataPoint[]): { hoveredWord: DataPoint | null; hasOverflow: boolean } {
 		const layoutWords = words.filter((w) => this.isWordVisible(w));
 		const scaling = calculateScaling(this.sk, layoutWords, this.bounds, this.config);
 		const cacheKey = this.getBufferCacheKey(layoutWords.length);
@@ -87,7 +89,7 @@ export class ContributionCloud {
 			this.showWordTooltip(hoveredWord, bufferCache.positions);
 		}
 
-		return { hoveredWord: hoveredWord?.word || null };
+		return { hoveredWord: hoveredWord?.word || null, hasOverflow: bufferCache.hasOverflow };
 	}
 
 	getBufferCacheKey(filteredWordCount: number): string {
@@ -118,6 +120,7 @@ export class ContributionCloud {
 
 		const positions = this.calculateWordPositions(words, scaling);
 		bufferCache.positions = positions;
+		bufferCache.hasOverflow = positions.length > 0 && positions[positions.length - 1].y > this.bounds.height;
 
 		if (this.config.separateToggle) {
 			this.drawSpeakerBackgrounds(buffer, positions, scaling);

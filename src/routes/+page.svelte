@@ -360,6 +360,9 @@
 			<div slot="first" class="h-full relative" id="p5-container" data-tour="visualization">
 				<P5 {sketch} />
 				<CanvasTooltip />
+				{#if $ConfigStore.cloudHasOverflow && ($ConfigStore.contributionCloudToggle || $ConfigStore.dashboardToggle)}
+					<div class="badge badge-neutral absolute bottom-3 right-3">Some content not shown</div>
+				{/if}
 				{#if hasVideoSource}
 					<VideoContainer />
 				{/if}

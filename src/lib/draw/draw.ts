@@ -104,10 +104,11 @@ export class Draw {
 
 	updateContributionCloud(pos: Bounds): void {
 		const contributionCloud = new ContributionCloud(this.sk, pos);
-		const { hoveredWord } = contributionCloud.draw(this.sk.dynamicData.getDynamicArraySortedForContributionCloud());
+		const { hoveredWord, hasOverflow } = contributionCloud.draw(this.sk.dynamicData.getDynamicArraySortedForContributionCloud());
 		ConfigStore.update((config) => ({
 			...config,
-			selectedWordFromContributionCloud: hoveredWord
+			selectedWordFromContributionCloud: hoveredWord,
+			cloudHasOverflow: hasOverflow
 		}));
 		updateEditorSelection(
 			{

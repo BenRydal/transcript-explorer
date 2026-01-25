@@ -16,6 +16,7 @@ export interface ConfigStoreType {
 	animationRate: number;
 	repeatWordSliderValue: number;
 	selectedWordFromContributionCloud: DataPoint | null;
+	cloudHasOverflow: boolean;
 	firstWordOfTurnSelectedInTurnChart: DataPoint | null;
 	arrayOfFirstWords: DataPoint[];
 	wordToSearch: string;
@@ -40,6 +41,7 @@ export const initialConfig: ConfigStoreType = {
 	animationRate: 3,
 	repeatWordSliderValue: 5,
 	selectedWordFromContributionCloud: null,
+	cloudHasOverflow: false,
 	firstWordOfTurnSelectedInTurnChart: null,
 	arrayOfFirstWords: [],
 	wordToSearch: '',
