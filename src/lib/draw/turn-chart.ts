@@ -22,6 +22,7 @@ export class TurnChart {
 	config: ConfigStoreType;
 	transcript: Transcript;
 	users: User[];
+	userMap: Map<string, { user: User; index: number }>;
 	timeline: Timeline;
 	verticalLayoutSpacing: number;
 	yPosHalfHeight: number;
@@ -34,6 +35,7 @@ export class TurnChart {
 		this.config = get(ConfigStore);
 		this.transcript = get(TranscriptStore);
 		this.users = get(UserStore);
+		this.userMap = new Map(this.users.map((user, index) => [user.name, { user, index }]));
 		this.timeline = get(TimelineStore);
 		this.verticalLayoutSpacing = this.getVerticalLayoutSpacing(pos.height);
 		this.yPosHalfHeight = pos.y + pos.height / 2;
@@ -53,10 +55,11 @@ export class TurnChart {
 		this.drawTimeline();
 		this.sk.textSize(this.sk.toolTipTextSize);
 		for (const key in sortedAnimationWordArray) {
-			if (!sortedAnimationWordArray[key].length) continue;
-			const user = this.users.find((u) => u.name === sortedAnimationWordArray[key][0].speaker);
-			if (user && this.testShouldDraw(user, sortedAnimationWordArray[key])) {
-				this.drawBubs(sortedAnimationWordArray[key]);
+			const turnArray = sortedAnimationWordArray[key];
+			if (!turnArray.length) continue;
+			const userData = this.userMap.get(turnArray[0].speaker);
+			if (userData && this.testShouldDraw(userData.user, turnArray)) {
+				this.drawBubs(turnArray, userData.user, userData.index);
 			}
 		}
 		if (this.userSelectedTurn && this.userSelectedTurn.turn && this.userSelectedTurn.color) {
@@ -91,26 +94,21 @@ export class TurnChart {
 	}
 
 	/** Draws turn bubbles */
-	drawBubs(turnArray: DataPoint[]): void {
-		const turnData = turnArray[0]; // Use meaningful variable name
+	drawBubs(turnArray: DataPoint[], user: User, speakerIndex: number): void {
+		const turnData = turnArray[0];
 		const xStart = this.getPixelValueFromTime(turnData.startTime);
 		const xEnd = this.getPixelValueFromTime(turnData.endTime);
 		const xCenter = xStart + (xEnd - xStart) / 2;
 
-		// Get speaker and compute index for vertical positioning
-		const user = this.users.find((u) => u.name === turnData.speaker);
-		const speakerIndex = this.users.findIndex((u) => u.name === turnData.speaker);
-		const speakerColor = user?.color || '#000';
-
 		const [height, yCenter] = this.getCoordinates(turnArray.length, speakerIndex);
 
 		// Draw bubble
-		this.setStrokes(this.sk.color(speakerColor));
+		this.setStrokes(this.sk.color(user.color));
 		this.sk.ellipse(xCenter, yCenter, xEnd - xStart, height);
 
 		// Handle hover interaction
 		if (this.sk.overRect(xStart, yCenter - height / 2, xEnd - xStart, height)) {
-			this.userSelectedTurn = { turn: turnArray, color: speakerColor };
+			this.userSelectedTurn = { turn: turnArray, color: user.color };
 		}
 	}
 

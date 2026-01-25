@@ -72,19 +72,16 @@ export class ContributionCloud {
 	draw(words: DataPoint[]): { hoveredWord: DataPoint | null } {
 		const layoutWords = words.filter((w) => this.isWordVisible(w));
 		const scaling = calculateScaling(this.sk, layoutWords, this.bounds, this.config);
-		const cacheKey = this.getBufferCacheKey(layoutWords);
+		const cacheKey = this.getBufferCacheKey(layoutWords.length);
 
 		if (cacheKey !== bufferCache.cacheKey || !bufferCache.buffer) {
 			this.renderToBuffer(layoutWords, scaling);
 			bufferCache.cacheKey = cacheKey;
 		}
 
-		if (bufferCache.buffer) {
-			this.sk.image(bufferCache.buffer, this.bounds.x, this.bounds.y);
-		}
+		this.sk.image(bufferCache.buffer!, this.bounds.x, this.bounds.y);
 
 		const hoveredWord = this.findHoveredWord(bufferCache.positions);
-
 		if (hoveredWord) {
 			this.drawHoverEffects(hoveredWord, bufferCache.positions);
 			this.showWordTooltip(hoveredWord, bufferCache.positions);
@@ -93,18 +90,19 @@ export class ContributionCloud {
 		return { hoveredWord: hoveredWord?.word || null };
 	}
 
-	getBufferCacheKey(words: DataPoint[]): string {
+	getBufferCacheKey(filteredWordCount: number): string {
 		const userStates = this.users.map((u) => `${u.name}:${u.color}:${u.enabled}`).join(',');
 		return [
 			this.bounds.x,
 			this.bounds.y,
 			this.bounds.width,
 			this.bounds.height,
-			words.length,
+			filteredWordCount,
 			this.config.separateToggle,
 			this.config.sortToggle,
 			this.config.repeatedWordsToggle,
 			this.config.repeatWordSliderValue,
+			this.config.dashboardToggle,
 			this.config.wordToSearch || '',
 			userStates
 		].join('|');
@@ -142,14 +140,7 @@ export class ContributionCloud {
 		let prevSpeaker: string | null = null;
 
 		for (const word of words) {
-			const textSize = this.sk.map(
-				word.count,
-				1,
-				this.config.repeatWordSliderValue,
-				scaling.minTextSize,
-				scaling.maxTextSize,
-				true
-			);
+			const textSize = this.sk.map(word.count, 1, this.config.repeatWordSliderValue, scaling.minTextSize, scaling.maxTextSize, true);
 			const width = getWordWidth(this.sk, word.word, textSize);
 			const isNewSpeaker = prevSpeaker !== null && word.speaker !== prevSpeaker;
 
@@ -216,7 +207,7 @@ export class ContributionCloud {
 				const screenY = this.bounds.y + pos.y;
 				const isHovered = pos.word === hoveredPos.word;
 				const padding = isHovered ? 3 : 2;
-				const color = pos.user?.color || 0;
+				const color = pos.user?.color || 200;
 
 				this.sk.textSize(pos.textSize);
 				this.sk.noStroke();
@@ -224,20 +215,17 @@ export class ContributionCloud {
 				this.sk.text(pos.word.word, screenX, screenY);
 
 				this.sk.noFill();
-				this.sk.stroke(color || 200);
+				this.sk.stroke(color);
 				this.sk.strokeWeight(isHovered ? HOVER_OUTLINE_WEIGHT : 1);
-				this.sk.rect(
-					screenX - padding,
-					screenY - pos.textSize - padding,
-					pos.width + padding * 2,
-					pos.textSize + padding * 2,
-					isHovered ? 4 : 3
-				);
+				this.sk.rect(screenX - padding, screenY - pos.textSize - padding, pos.width + padding * 2, pos.textSize + padding * 2, isHovered ? 4 : 3);
 			}
 		}
 	}
 
 	findHoveredWord(positions: WordPosition[]): WordPosition | null {
+		if (!this.sk.overRect(this.bounds.x, this.bounds.y, this.bounds.width, this.bounds.height)) {
+			return null;
+		}
 		for (const pos of positions) {
 			if (pos.user?.enabled) {
 				const screenX = this.bounds.x + pos.x;
