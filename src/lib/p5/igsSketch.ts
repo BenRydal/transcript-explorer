@@ -50,6 +50,7 @@ export const igsSketch = (p5: any) => {
 		const { width, height } = p5.getContainerSize();
 		p5.createCanvas(width, height);
 		p5.dynamicData = new DynamicData(p5);
+		p5.renderer = new Draw(p5);
 		p5.SPACING = 25;
 		p5.toolTipTextSize = 30;
 		p5.textFont(p5.font);
@@ -70,8 +71,7 @@ export const igsSketch = (p5: any) => {
 	p5.draw = () => {
 		if (p5.arrayIsLoaded(transcript.wordArray) && p5.arrayIsLoaded(users)) {
 			p5.background(255);
-			const render = new Draw(p5);
-			render.drawViz();
+			p5.renderer.drawViz();
 		}
 		if (timeline.isAnimating) p5.updateAnimation();
 	};
