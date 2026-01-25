@@ -1,5 +1,4 @@
 import type { DataPoint } from '../../models/dataPoint';
-import { formatTimeAuto } from './time-utils';
 
 export interface Turn {
 	turnNumber: number;
@@ -34,20 +33,6 @@ export function getTurnsFromWordArray(wordArray: DataPoint[]): Turn[] {
 	});
 
 	return Array.from(turnsMap.values()).sort((a, b) => a.turnNumber - b.turnNumber);
-}
-
-/**
- * Formats a turn's timecode for display.
- */
-export function formatTurnTimecode(turn: Turn): string {
-	return `[${formatTimeAuto(turn.startTime)}]`;
-}
-
-/**
- * Formats a turn's time range for display.
- */
-export function formatTurnTimeRange(turn: Turn): string {
-	return `[${formatTimeAuto(turn.startTime)} - ${formatTimeAuto(turn.endTime)}]`;
 }
 
 /**
