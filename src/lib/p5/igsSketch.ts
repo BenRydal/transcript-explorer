@@ -118,9 +118,20 @@ export const igsSketch = (p5: any) => {
 
 	p5.getAnimationTargetIndex = () => {
 		const currTime = timeline.currTime;
-		let targetIndex = transcript.wordArray.findIndex((word) => word.startTime > currTime);
-		if (targetIndex < 0) targetIndex = transcript.wordArray.length;
-		return targetIndex;
+		const words = transcript.wordArray;
+		let low = 0;
+		let high = words.length;
+
+		// Binary search: find first index where startTime > currTime
+		while (low < high) {
+			const mid = (low + high) >>> 1;
+			if (words[mid].startTime <= currTime) {
+				low = mid + 1;
+			} else {
+				high = mid;
+			}
+		}
+		return low;
 	};
 
 	p5.setAnimationCounter = (targetIndex: number) => {

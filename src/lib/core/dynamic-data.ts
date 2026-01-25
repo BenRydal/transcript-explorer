@@ -15,12 +15,16 @@ ConfigStore.subscribe((value) => {
 export class DynamicData {
 	sk: p5;
 	dynamicWordArray: DataPoint[];
+	wordMap: Map<string, DataPoint[]>; // O(1) lookup by word text
 	stopWords: string[];
+	stopWordsSet: Set<string>; // O(1) stop word lookup
 
 	constructor(sketch: p5) {
 		this.sk = sketch;
 		this.dynamicWordArray = [];
+		this.wordMap = new Map();
 		this.stopWords = this.getStopWords();
+		this.stopWordsSet = new Set(this.stopWords);
 	}
 
 	// add this line to show repeated words in CC for selected time: && this.isInTimeRange(animationWord.startTime, animationWord.endTime)
@@ -33,28 +37,37 @@ export class DynamicData {
 	}
 
 	isStopWord(stringWord: string): boolean {
-		return this.stopWords.includes(stringWord.toLowerCase());
+		return this.stopWordsSet.has(stringWord.toLowerCase());
 	}
 
 	removeLastElement(): void {
-		this.dynamicWordArray.pop();
+		const removed = this.dynamicWordArray.pop();
+		if (removed) {
+			const wordList = this.wordMap.get(removed.word);
+			if (wordList) {
+				wordList.pop();
+				if (wordList.length === 0) {
+					this.wordMap.delete(removed.word);
+				}
+			}
+		}
 	}
 
 	updateWordCounts(index: DataPoint): void {
-		const foundWords = this.dynamicWordArray.filter((e) => e.word === index.word); // return array of all matching words
-		// This line will instead only increment counts on words spoken by SAME speaker, also would need to update hovering techniques in CC
-		// const foundWords = this.dynamicWordArray.filter(function (currentElement) {
-		//     return currentElement.word === index.word && currentElement.speaker === index.speaker;
-		// });
-		if (foundWords.length) {
+		const wordKey = index.word;
+		const foundWords = this.wordMap.get(wordKey);
+		if (foundWords) {
 			if (config.lastWordToggle) {
-				index.count += foundWords[foundWords.length - 1].count; // Increments last word by previous last word in CC
+				index.count += foundWords[foundWords.length - 1].count;
 				if (!config.echoWordsToggle) {
-					foundWords[foundWords.length - 1].count = 1; // also add this line if you want to reset and highlight ONLY last word, not incremental echo
+					foundWords[foundWords.length - 1].count = 1;
 				}
 			} else {
-				foundWords[0].count++; // Increment first word count/makes only first word bigger in CC
+				foundWords[0].count++;
 			}
+			foundWords.push(index);
+		} else {
+			this.wordMap.set(wordKey, [index]);
 		}
 		this.dynamicWordArray.push(index);
 	}
@@ -122,6 +135,7 @@ export class DynamicData {
 
 	clear(): void {
 		this.dynamicWordArray = [];
+		this.wordMap.clear();
 		clearScalingCache();
 		clearCloudBuffer();
 	}
