@@ -16,7 +16,7 @@
 	import MdClose from 'svelte-icons/md/MdClose.svelte';
 	import UserStore from '../stores/userStore';
 	import P5Store from '../stores/p5Store';
-	import VideoStore, { toggleVisibility as toggleVideoVisibility } from '../stores/videoStore';
+	import VideoStore, { toggleVisibility as toggleVideoVisibility, reset as resetVideo } from '../stores/videoStore';
 	import EditorStore, { editorLayoutKey } from '../stores/editorStore';
 
 	import { browser } from '$app/environment';
@@ -100,6 +100,7 @@
 	let showUploadModal = false;
 	let mobileMenuOpen = false;
 	let showTranscriptionModal = false;
+	let showNewTranscriptConfirm = false;
 	let isDraggingOver = false;
 	let uploadedFiles: { name: string; type: string; status: 'pending' | 'processing' | 'done' | 'error'; error?: string }[] = [];
 	let currentConfig: ConfigStoreType;
@@ -335,61 +336,35 @@
 		uploadedFiles = [];
 	}
 
-	function createNewTranscript() {
-		// Clear existing transcript data (includes history)
+	function confirmNewTranscript() {
+		showNewTranscriptConfirm = false;
+		resetVideo();
 		core.clearTranscriptData();
 
-		// Check if video is loaded to determine if transcript should be timed
-		const videoState = get(VideoStore);
-		const hasVideo = videoState.isLoaded;
+		UserStore.set([{ name: 'SPEAKER 1', color: USER_COLORS[0], enabled: true }]);
 
-		// Create a default speaker
-		const defaultSpeaker = 'SPEAKER 1';
+		TranscriptStore.update((t) => ({
+			...t,
+			wordArray: [new DataPoint('SPEAKER 1', 0, '[new]', 0, 1)],
+			totalNumOfWords: 1,
+			totalConversationTurns: 1,
+			totalTimeInSeconds: 1,
+			largestTurnLength: 1,
+			largestNumOfWordsByASpeaker: 1,
+			largestNumOfTurnsByASpeaker: 1,
+			maxCountOfMostRepeatedWord: 1,
+			mostFrequentWord: '[new]'
+		}));
 
-		// Set up users
-		UserStore.set([{ name: defaultSpeaker, color: USER_COLORS[0], enabled: true }]);
-
-		// Create one empty turn with placeholder text
-		const startTime = hasVideo ? videoState.currentTime : 0;
-		// For untimed mode, use word count positions (0 to 1 for first word)
-		const initialStartTime = hasVideo ? startTime : 0;
-		const initialEndTime = hasVideo ? startTime + 1 : 1;
-
-		const initialDataPoint = new DataPoint(
-			defaultSpeaker,
-			0, // turnNumber
-			'[new]', // placeholder word
-			initialStartTime,
-			initialEndTime
-		);
-
-		// Create new transcript with all required stats populated
-		const newTranscript = new Transcript();
-		newTranscript.wordArray = [initialDataPoint];
-		newTranscript.totalNumOfWords = 1;
-		newTranscript.totalConversationTurns = 1;
-		// For untimed, totalTimeInSeconds represents total word count
-		newTranscript.totalTimeInSeconds = hasVideo ? Math.max(videoState.duration, 1) : 1;
-		newTranscript.largestTurnLength = 1;
-		newTranscript.largestNumOfWordsByASpeaker = 1;
-		newTranscript.largestNumOfTurnsByASpeaker = 1;
-		newTranscript.maxCountOfMostRepeatedWord = 1;
-		newTranscript.mostFrequentWord = '[new]';
-		// Start in startEnd mode if video is loaded, otherwise untimed
-		newTranscript.timingMode = hasVideo ? 'startEnd' : 'untimed';
-
-		TranscriptStore.set(newTranscript);
-
-		// Update timeline - for untimed, use word count as timeline range
-		const timelineEnd = hasVideo ? Math.max(videoState.duration, 1) : 1;
-		TimelineStore.update((timeline) => {
-			timeline.currTime = 0;
-			timeline.startTime = 0;
-			timeline.endTime = timelineEnd;
-			timeline.leftMarker = 0;
-			timeline.rightMarker = timelineEnd;
-			return timeline;
-		});
+		TimelineStore.update((t) => ({
+			...t,
+			currTime: 0,
+			startTime: 0,
+			endTime: 1,
+			leftMarker: 0,
+			rightMarker: 1,
+			isAnimating: false
+		}));
 
 		// Open the editor if not already open
 		EditorStore.update((state) => ({
@@ -714,7 +689,7 @@
 			<!-- File & Settings Group -->
 			<div class="flex items-center gap-1">
 				<IconButton icon={MdCloudUpload} tooltip={'Upload Files'} on:click={() => (showUploadModal = true)} />
-				<IconButton icon={MdNoteAdd} tooltip={'Create New Transcript'} on:click={createNewTranscript} />
+				<IconButton icon={MdNoteAdd} tooltip={'Create New Transcript'} on:click={() => (showNewTranscriptConfirm = true)} />
 				<input class="hidden" id="file-input" multiple accept=".csv, .txt, .mp4" type="file" bind:files on:change={updateUserLoadedFiles} />
 				<IconButton icon={MdHelpOutline} tooltip={'Help'} on:click={() => ($isModalOpen = !$isModalOpen)} />
 				<IconButton icon={MdSettings} tooltip={'Settings'} on:click={() => (showSettings = true)} />
@@ -844,7 +819,7 @@
 						<button
 							class="btn btn-sm btn-ghost"
 							on:click={() => {
-								createNewTranscript();
+								showNewTranscriptConfirm = true;
 								mobileMenuOpen = false;
 							}}
 						>
@@ -914,6 +889,21 @@
 	/>
 
 	<DataExplorerModal bind:isOpen={showDataPopup} />
+
+	<!-- New Transcript Confirmation Dialog -->
+	{#if showNewTranscriptConfirm}
+		<div class="modal modal-open">
+			<div class="modal-box">
+				<h3 class="font-bold text-lg">Create New Transcript?</h3>
+				<p class="py-4">This will erase all current data including transcript and video. This action cannot be undone.</p>
+				<div class="modal-action">
+					<button class="btn btn-ghost" on:click={() => (showNewTranscriptConfirm = false)}>Cancel</button>
+					<button class="btn btn-error" on:click={confirmNewTranscript}>Erase and Create New</button>
+				</div>
+			</div>
+			<div class="modal-backdrop" on:click={() => (showNewTranscriptConfirm = false)} on:keydown={() => {}}></div>
+		</div>
+	{/if}
 
 	<div class="btm-nav flex justify-between min-h-20" style="position: relative;">
 		<SpeakerControls />
