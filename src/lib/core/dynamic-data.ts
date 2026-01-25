@@ -1,5 +1,5 @@
-import type p5 from 'p5';
 import { DataPoint } from '../../models/dataPoint';
+import TranscriptStore from '../../stores/transcriptStore';
 import TimelineStore from '../../stores/timelineStore';
 import UserStore from '../../stores/userStore';
 import ConfigStore, { type ConfigStoreType } from '../../stores/configStore';
@@ -7,97 +7,47 @@ import { get } from 'svelte/store';
 import { clearScalingCache, clearCloudBuffer } from '../draw/contribution-cloud';
 
 let config: ConfigStoreType;
+let wordArray: DataPoint[] = [];
 
 ConfigStore.subscribe((value) => {
+	// Clear caches when count-related settings change
+	if (config && (
+		config.lastWordToggle !== value.lastWordToggle ||
+		config.echoWordsToggle !== value.echoWordsToggle ||
+		config.stopWordsToggle !== value.stopWordsToggle ||
+		config.sortToggle !== value.sortToggle ||
+		config.separateToggle !== value.separateToggle
+	)) {
+		clearScalingCache();
+		clearCloudBuffer();
+	}
 	config = value;
 });
 
-export class DynamicData {
-	sk: p5;
-	dynamicWordArray: DataPoint[];
-	wordMap: Map<string, DataPoint[]>; // O(1) lookup by word text
-	stopWords: string[];
-	stopWordsSet: Set<string>; // O(1) stop word lookup
+TranscriptStore.subscribe((value) => {
+	wordArray = value.wordArray || [];
+});
 
-	constructor(sketch: p5) {
-		this.sk = sketch;
-		this.dynamicWordArray = [];
-		this.wordMap = new Map();
-		this.stopWords = this.getStopWords();
-		this.stopWordsSet = new Set(this.stopWords);
+export class DynamicData {
+	endIndex: number = 0;
+	stopWordsSet: Set<string>;
+
+	constructor() {
+		this.stopWordsSet = new Set(this.getStopWords());
 	}
 
-	// add this line to show repeated words in CC for selected time: && this.isInTimeRange(animationWord.startTime, animationWord.endTime)
-	update(index: DataPoint): void {
-		if (!index) return;
-		const animationWord = new DataPoint(index.speaker, index.turnNumber, index.word, index.startTime, index.endTime);
-		if (!config.stopWordsToggle || !this.isStopWord(animationWord.word)) {
-			this.updateWordCounts(animationWord);
-		}
+	setEndIndex(index: number): void {
+		this.endIndex = index;
+	}
+
+	clear(): void {
+		this.endIndex = 0;
+		clearScalingCache();
+		clearCloudBuffer();
 	}
 
 	isStopWord(stringWord: string): boolean {
 		return this.stopWordsSet.has(stringWord.toLowerCase());
-	}
-
-	removeLastElement(): void {
-		const removed = this.dynamicWordArray.pop();
-		if (removed) {
-			const wordList = this.wordMap.get(removed.word);
-			if (wordList) {
-				wordList.pop();
-				if (wordList.length === 0) {
-					this.wordMap.delete(removed.word);
-				}
-			}
-		}
-	}
-
-	updateWordCounts(index: DataPoint): void {
-		const wordKey = index.word;
-		const foundWords = this.wordMap.get(wordKey);
-		if (foundWords) {
-			if (config.lastWordToggle) {
-				index.count += foundWords[foundWords.length - 1].count;
-				if (!config.echoWordsToggle) {
-					foundWords[foundWords.length - 1].count = 1;
-				}
-			} else {
-				foundWords[0].count++;
-			}
-			foundWords.push(index);
-		} else {
-			this.wordMap.set(wordKey, [index]);
-		}
-		this.dynamicWordArray.push(index);
-	}
-
-	splitIntoArraysByNumber(sortedAnimationWordArray: DataPoint[], getKey: (item: DataPoint) => number): Record<number, DataPoint[]> {
-		const categorized = sortedAnimationWordArray.reduce((acc: Record<number, DataPoint[]>, item) => {
-			const key = getKey(item);
-			if (!acc[key]) {
-				acc[key] = [];
-			}
-			if (this.isInTimeRange(item.startTime, item.endTime)) {
-				acc[key].push(item);
-			}
-			return acc;
-		}, {});
-		return categorized;
-	}
-
-	splitIntoArraysBySpeaker(sortedAnimationWordArray: DataPoint[]): Record<string, DataPoint[]> {
-		const categorized = sortedAnimationWordArray.reduce((acc: Record<string, DataPoint[]>, item) => {
-			const key = item.speaker;
-			if (!acc[key]) {
-				acc[key] = [];
-			}
-			if (this.isInTimeRange(item.startTime, item.endTime)) {
-				acc[key].push(item);
-			}
-			return acc;
-		}, {});
-		return categorized;
 	}
 
 	isInTimeRange(startTime: number, endTime: number): boolean {
@@ -105,39 +55,77 @@ export class DynamicData {
 		return startTime >= timeline.leftMarker && endTime <= timeline.rightMarker;
 	}
 
+	/**
+	 * Get the current slice of words based on endIndex, with counts computed.
+	 * Filters stop words and applies count logic based on config toggles.
+	 * Note: Counts are computed for ALL words first, then filtered by time range.
+	 */
+	getProcessedWords(filterByTimeRange = false): DataPoint[] {
+		const slice = wordArray.slice(0, this.endIndex);
+		const result: DataPoint[] = [];
+		const countMap = new Map<string, DataPoint[]>();
+
+		// First pass: compute counts for all words (stop words excluded)
+		for (const word of slice) {
+			if (config.stopWordsToggle && this.isStopWord(word.word)) continue;
+
+			const copy = new DataPoint(word.speaker, word.turnNumber, word.word, word.startTime, word.endTime);
+			const existing = countMap.get(word.word);
+
+			if (existing) {
+				if (config.lastWordToggle) {
+					copy.count = existing[existing.length - 1].count + 1;
+					if (!config.echoWordsToggle) {
+						existing[existing.length - 1].count = 1;
+					}
+				} else {
+					existing[0].count++;
+				}
+				existing.push(copy);
+			} else {
+				countMap.set(word.word, [copy]);
+			}
+			result.push(copy);
+		}
+
+		// Filter by time range after counts are computed
+		if (filterByTimeRange) {
+			return result.filter((word) => this.isInTimeRange(word.startTime, word.endTime));
+		}
+		return result;
+	}
+
 	getDynamicArrayForDistributionDiagram(): Record<string, DataPoint[]> {
-		const animationArrayCopy = this.getAnimationArrayDeepCopy();
-		return this.splitIntoArraysBySpeaker(animationArrayCopy);
+		const categorized: Record<string, DataPoint[]> = {};
+		for (const word of this.getProcessedWords(true)) {
+			if (!categorized[word.speaker]) categorized[word.speaker] = [];
+			categorized[word.speaker].push(word);
+		}
+		return categorized;
 	}
 
 	getDynamicArrayForTurnChart(): Record<number, DataPoint[]> {
-		return this.splitIntoArraysByNumber(this.getAnimationArrayDeepCopy(), (item) => item.turnNumber);
+		const categorized: Record<number, DataPoint[]> = {};
+		for (const word of this.getProcessedWords(true)) {
+			if (!categorized[word.turnNumber]) categorized[word.turnNumber] = [];
+			categorized[word.turnNumber].push(word);
+		}
+		return categorized;
 	}
 
 	getDynamicArraySortedForContributionCloud(): DataPoint[] {
-		let curAnimationArray = this.getAnimationArrayDeepCopy().filter((word) => this.isInTimeRange(word.startTime, word.endTime));
-		if (config.sortToggle) curAnimationArray.sort((a, b) => b.count - a.count);
+		const words = this.getProcessedWords(true);
+
+		if (config.sortToggle) {
+			words.sort((a, b) => b.count - a.count);
+		}
 		if (config.separateToggle) {
 			const users = get(UserStore);
 			const speakerOrder = new Map(users.map((u, i) => [u.name, i]));
-			curAnimationArray.sort((a, b) => (speakerOrder.get(a.speaker) ?? 999) - (speakerOrder.get(b.speaker) ?? 999));
+			words.sort((a, b) => (speakerOrder.get(a.speaker) ?? 999) - (speakerOrder.get(b.speaker) ?? 999));
 		}
-		return curAnimationArray;
-	}
 
-	getAnimationArrayDeepCopy(): DataPoint[] {
-		return this.dynamicWordArray.map((dp) => {
-			const copy = new DataPoint(dp.speaker, dp.turnNumber, dp.word, dp.startTime, dp.endTime);
-			copy.count = dp.count;
-			return copy;
-		});
-	}
-
-	clear(): void {
-		this.dynamicWordArray = [];
-		this.wordMap.clear();
-		clearScalingCache();
-		clearCloudBuffer();
+		return words;
 	}
 
 	getStopWords(): string[] {

@@ -50,7 +50,7 @@ export const igsSketch = (p5: any) => {
 	p5.setup = () => {
 		const { width, height } = p5.getContainerSize();
 		p5.createCanvas(width, height);
-		p5.dynamicData = new DynamicData(p5);
+		p5.dynamicData = new DynamicData();
 		p5.renderer = new Draw(p5);
 		p5.SPACING = 25;
 		p5.toolTipTextSize = 30;
@@ -84,36 +84,22 @@ export const igsSketch = (p5: any) => {
 	};
 
 	p5.updateAnimation = () => {
-		const mappedTime = Math.ceil(p5.map(timeline.currTime, 0, timeline.endTime, 0, transcript.totalNumOfWords));
-		p5.syncAnimationCounter(mappedTime);
+		p5.syncAnimationCounter();
 		p5.handleTimelineAnimationState();
 	};
 
 	p5.syncAnimationCounter = () => {
-		// Find the index of the first word that starts after the current time
-		let targetIndex = p5.getAnimationTargetIndex();
-		// Calculate the delta between the current animation counter and the target index
-		const delta = Math.abs(targetIndex - p5.animationCounter);
-		const fastCatchUpThreshold = 100; // for catching up when user scrubs forward or backward
+		const targetIndex = p5.getAnimationTargetIndex();
+		const delta = targetIndex - p5.animationCounter;
+		if (delta === 0) return;
 
-		if (delta > fastCatchUpThreshold) {
-			p5.setAnimationCounter(targetIndex);
+		const skipAnimationThreshold = 100;
+		if (Math.abs(delta) > skipAnimationThreshold) {
+			p5.animationCounter = targetIndex;
 		} else {
-			const maxStepsPerFrame = 1;
-			let steps = 0;
-
-			while (p5.animationCounter < targetIndex && steps < maxStepsPerFrame && p5.animationCounter < transcript.wordArray.length) {
-				p5.dynamicData.update(transcript.wordArray[p5.animationCounter]);
-				p5.animationCounter++;
-				steps++;
-			}
-
-			while (p5.animationCounter > targetIndex && steps < maxStepsPerFrame && p5.animationCounter > 0) {
-				p5.dynamicData.removeLastElement();
-				p5.animationCounter--;
-				steps++;
-			}
+			p5.animationCounter += Math.sign(delta);
 		}
+		p5.dynamicData.setEndIndex(p5.animationCounter);
 	};
 
 	p5.getAnimationTargetIndex = () => {
@@ -136,7 +122,7 @@ export const igsSketch = (p5: any) => {
 
 	p5.setAnimationCounter = (targetIndex: number) => {
 		p5.animationCounter = targetIndex;
-		p5.fillSelectedData();
+		p5.dynamicData.setEndIndex(targetIndex);
 	};
 
 	p5.handleTimelineAnimationState = () => {
@@ -262,16 +248,12 @@ export const igsSketch = (p5: any) => {
 	};
 
 	p5.fillAllData = () => {
-		p5.animationCounter = transcript.wordArray.length;
-		p5.fillSelectedData();
+		p5.setAnimationCounter(transcript.wordArray.length);
 	};
 
 	p5.fillSelectedData = () => {
 		if (!p5.dynamicData) return; // Guard against calls before setup completes
-		p5.dynamicData.clear();
-		for (let i = 0; i < p5.animationCounter; i++) {
-			p5.dynamicData.update(transcript.wordArray[i]);
-		}
+		p5.dynamicData.setEndIndex(p5.animationCounter);
 	};
 
 	/**
