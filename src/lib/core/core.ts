@@ -119,12 +119,7 @@ export class Core {
 	};
 
 	updateAllDataValues() {
-		const enableRepeatedWordsThreshold = 5000;
 		this.updateTimelineValues(transcript.totalTimeInSeconds);
-		ConfigStore.update((currentConfig) => ({
-			...currentConfig,
-			repeatedWordsToggle: transcript.totalNumOfWords > enableRepeatedWordsThreshold
-		}));
 		this.sketch.fillAllData();
 	}
 

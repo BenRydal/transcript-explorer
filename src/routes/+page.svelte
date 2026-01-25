@@ -561,7 +561,7 @@
 </script>
 
 <svelte:head>
-	<title>TRANSCRIPT EXPLORER</title>
+	<title>Transcript Explorer</title>
 </svelte:head>
 
 <div class="page-container">
