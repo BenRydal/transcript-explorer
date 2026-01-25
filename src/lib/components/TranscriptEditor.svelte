@@ -14,8 +14,11 @@
 	import { USER_COLORS } from '$lib/constants/ui';
 	import EditorToolbar from './EditorToolbar.svelte';
 	import TranscriptEditorRow from './TranscriptEditorRow.svelte';
+	import ConfirmModal from './ConfirmModal.svelte';
 
 	import type { TimingMode } from '../../models/transcript';
+
+	let deleteModal: number | null = null;
 
 	// Reactively derive turns from TranscriptStore
 	$: turns = $TranscriptStore.wordArray.length > 0 ? getTurnsFromWordArray($TranscriptStore.wordArray) : [];
@@ -314,13 +317,16 @@
 		}
 	}
 
-	// Handle delete turn
+	// Handle delete turn - show confirmation modal
 	function handleTurnDelete(event: CustomEvent<{ turnNumber: number }>) {
-		const { turnNumber } = event.detail;
+		deleteModal = event.detail.turnNumber;
+	}
 
-		if (!confirm('Delete this turn?')) {
-			return;
-		}
+	// Actually delete the turn after confirmation
+	function onDeleteConfirm() {
+		if (deleteModal === null) return;
+		const turnNumber = deleteModal;
+		deleteModal = null;
 
 		// Save state for undo
 		HistoryStore.pushState(get(TranscriptStore).wordArray);
@@ -330,7 +336,7 @@
 			const updatedWordArray = transcript.wordArray.filter((dp) => dp.turnNumber !== turnNumber);
 
 			// Renumber turns that come after the deleted one
-			let renumberedWordArray = updatedWordArray.map((dp) => {
+			const renumberedWordArray = updatedWordArray.map((dp) => {
 				if (dp.turnNumber > turnNumber) {
 					return new DataPoint(dp.speaker, dp.turnNumber - 1, dp.word, dp.startTime, dp.endTime);
 				}
@@ -503,6 +509,15 @@
 		{/if}
 	</div>
 </div>
+
+<ConfirmModal
+	isOpen={!!deleteModal}
+	title="Delete Turn?"
+	message="Are you sure you want to delete this turn? This can be undone."
+	confirmText="Delete"
+	on:confirm={onDeleteConfirm}
+	on:cancel={() => (deleteModal = null)}
+/>
 
 <style>
 	.transcript-editor {
