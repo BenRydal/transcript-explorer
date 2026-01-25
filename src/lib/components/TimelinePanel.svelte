@@ -1,5 +1,4 @@
 <script lang="ts">
-	import { onMount, onDestroy } from 'svelte';
 	import { formatTime, formatTimeAuto } from '../core/time-utils';
 	import TimelineStore from '../../stores/timelineStore';
 	import P5Store from '../../stores/p5Store';
@@ -70,7 +69,6 @@
 		}
 	}
 
-	let sliderContainer: HTMLDivElement;
 	let debounceTimeout: number;
 
 	const toggleAnimation = () => {
@@ -87,16 +85,6 @@
 				$P5Store.fillAllData();
 			}
 		}
-	};
-
-	const updateXPositions = (): void => {
-		if (!sliderContainer) return;
-		const rect = sliderContainer.getBoundingClientRect();
-		TimelineStore.update((timeline) => {
-			timeline.leftX = rect.left;
-			timeline.rightX = rect.right;
-			return timeline;
-		});
 	};
 
 	const handleSliderChange = (event: CustomEvent<{ left: number; right: number }>) => {
@@ -117,7 +105,6 @@
 			// Reset to left marker when left handle moves, otherwise just clamp
 			if (leftMoved) t.currTime = left;
 			else if (t.currTime > right) t.currTime = right;
-			updateXPositions();
 			return t;
 		});
 	};
@@ -152,22 +139,12 @@
 		}
 	};
 
-	onMount(() => {
-		updateXPositions();
-		window.addEventListener('resize', updateXPositions);
-	});
-
-	onDestroy(() => {
-		if (typeof window !== 'undefined') {
-			window.removeEventListener('resize', updateXPositions);
-		}
-	});
 </script>
 
 <div class="flex flex-col w-11/12 h-full py-3">
 	<div class="slider-row">
 		<span class="edge-time">{formattedStart}</span>
-		<div class="slider-container" bind:this={sliderContainer}>
+		<div class="slider-container">
 			<RangeSlider
 				min={startTime}
 				max={endTime}
