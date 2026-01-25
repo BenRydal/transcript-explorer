@@ -6,6 +6,46 @@ import ConfigStore, { type ConfigStoreType } from '../../stores/configStore';
 import { get } from 'svelte/store';
 import { clearScalingCache, clearCloudBuffer } from '../draw/contribution-cloud';
 
+// Module-level stop words Set (created once, shared by all instances)
+const STOP_WORDS = new Set([
+	// Articles
+	'a', 'an', 'the',
+	// Conjunctions
+	'and', 'or', 'but', 'if', 'then', 'than', 'because', 'while', 'until', 'although', 'though',
+	// Prepositions
+	'of', 'to', 'in', 'from', 'by', 'with', 'as', 'at', 'for', 'on', 'about', 'into', 'during',
+	'after', 'before', 'above', 'below', 'around', 'between', 'under', 'out', 'over', 'through', 'off',
+	// Pronouns
+	'i', 'you', 'he', 'she', 'it', 'we', 'they', 'me', 'him', 'her', 'us', 'them',
+	'my', 'your', 'his', 'its', 'our', 'their',
+	'that', 'which', 'who', 'whom', 'whose', 'what', 'this', 'these', 'those',
+	// Quantifiers
+	'all', 'any', 'some', 'each', 'every', 'both', 'either', 'neither', 'more', 'most',
+	'less', 'least', 'much', 'many', 'few', 'such', 'other', 'another', 'same',
+	// Be/Have/Do verbs
+	'is', 'are', 'was', 'were', 'am', 'be', 'been', 'being',
+	'have', 'has', 'had', 'having', 'do', 'does', 'did', 'doing',
+	// Modal verbs
+	'can', 'could', 'will', 'would', 'may', 'might', 'must', 'shall', 'should',
+	// Common verbs
+	'get', 'got', 'getting', 'go', 'going', 'gone', 'went', 'come', 'coming', 'came',
+	'make', 'made', 'making', 'know', 'knew', 'known', 'think', 'thought',
+	'say', 'said', 'see', 'saw', 'seen',
+	// Adverbs
+	'not', 'no', 'yes', 'here', 'there', 'when', 'where', 'how', 'why', 'up', 'down',
+	'even', 'very', 'just', 'so', 'only', 'now', 'still', 'also', 'too', 'well',
+	'really', 'quite', 'rather', 'always', 'never', 'often', 'sometimes', 'already', 'again', 'back', 'away',
+	// Contractions
+	"don't", "doesn't", "didn't", "won't", "can't", "couldn't", "wouldn't", "shouldn't",
+	"isn't", "aren't", "wasn't", "weren't", "haven't", "hasn't", "hadn't",
+	"i'm", "you're", "he's", "she's", "it's", "we're", "they're",
+	"i've", "you've", "we've", "they've", "i'll", "you'll", "he'll", "she'll", "we'll", "they'll",
+	"i'd", "you'd", "he'd", "she'd", "we'd", "they'd", "that's", "there's", "here's", "what's", "who's", "let's",
+	// Spoken fillers
+	'uh', 'um', 'like', 'yeah', 'okay', 'ok', 'oh', 'ah',
+	'gonna', 'wanna', 'gotta', 'kinda', 'sorta', 'basically', 'actually', 'literally', 'right', 'mean'
+]);
+
 let config: ConfigStoreType;
 let wordArray: DataPoint[] = [];
 
@@ -30,11 +70,6 @@ TranscriptStore.subscribe((value) => {
 
 export class DynamicData {
 	endIndex: number = 0;
-	stopWordsSet: Set<string>;
-
-	constructor() {
-		this.stopWordsSet = new Set(this.getStopWords());
-	}
 
 	setEndIndex(index: number): void {
 		this.endIndex = index;
@@ -47,7 +82,7 @@ export class DynamicData {
 	}
 
 	isStopWord(stringWord: string): boolean {
-		return this.stopWordsSet.has(stringWord.toLowerCase());
+		return STOP_WORDS.has(stringWord.toLowerCase());
 	}
 
 	isInTimeRange(startTime: number, endTime: number): boolean {
@@ -126,270 +161,5 @@ export class DynamicData {
 		}
 
 		return words;
-	}
-
-	getStopWords(): string[] {
-		return [
-			// Articles
-			'a',
-			'an',
-			'the',
-
-			// Conjunctions
-			'and',
-			'or',
-			'but',
-			'if',
-			'then',
-			'than',
-			'because',
-			'while',
-			'until',
-			'although',
-			'though',
-
-			// Prepositions
-			'of',
-			'to',
-			'in',
-			'from',
-			'by',
-			'with',
-			'as',
-			'at',
-			'for',
-			'on',
-			'about',
-			'into',
-			'during',
-			'after',
-			'before',
-			'above',
-			'below',
-			'around',
-			'between',
-			'under',
-			'out',
-			'over',
-			'through',
-			'off',
-
-			// Subject pronouns
-			'I',
-			'you',
-			'he',
-			'she',
-			'it',
-			'we',
-			'they',
-
-			// Object pronouns
-			'me',
-			'him',
-			'her',
-			'us',
-			'them',
-
-			// Possessive pronouns
-			'my',
-			'your',
-			'his',
-			'her',
-			'its',
-			'our',
-			'their',
-
-			// Relative/interrogative pronouns
-			'that',
-			'which',
-			'who',
-			'whom',
-			'whose',
-			'what',
-
-			// Demonstratives
-			'this',
-			'these',
-			'those',
-
-			// Quantifiers
-			'all',
-			'any',
-			'some',
-			'each',
-			'every',
-			'both',
-			'either',
-			'neither',
-			'more',
-			'most',
-			'less',
-			'least',
-			'much',
-			'many',
-			'few',
-			'such',
-			'other',
-			'another',
-			'same',
-
-			// Be verbs
-			'is',
-			'are',
-			'was',
-			'were',
-			'am',
-			'be',
-			'been',
-			'being',
-
-			// Have verbs
-			'have',
-			'has',
-			'had',
-			'having',
-
-			// Do verbs
-			'do',
-			'does',
-			'did',
-			'doing',
-
-			// Modal verbs
-			'can',
-			'could',
-			'will',
-			'would',
-			'may',
-			'might',
-			'must',
-			'shall',
-			'should',
-
-			// Common verbs
-			'get',
-			'got',
-			'getting',
-			'go',
-			'going',
-			'gone',
-			'went',
-			'come',
-			'coming',
-			'came',
-			'make',
-			'made',
-			'making',
-			'know',
-			'knew',
-			'known',
-			'think',
-			'thought',
-			'say',
-			'said',
-			'see',
-			'saw',
-			'seen',
-
-			// Adverbs
-			'not',
-			'no',
-			'yes',
-			'here',
-			'there',
-			'when',
-			'where',
-			'how',
-			'why',
-			'up',
-			'down',
-			'even',
-			'very',
-			'just',
-			'so',
-			'only',
-			'now',
-			'still',
-			'also',
-			'too',
-			'well',
-			'really',
-			'quite',
-			'rather',
-			'always',
-			'never',
-			'often',
-			'sometimes',
-			'already',
-			'again',
-			'back',
-			'away',
-
-			// Contractions
-			"don't",
-			"doesn't",
-			"didn't",
-			"won't",
-			"can't",
-			"couldn't",
-			"wouldn't",
-			"shouldn't",
-			"isn't",
-			"aren't",
-			"wasn't",
-			"weren't",
-			"haven't",
-			"hasn't",
-			"hadn't",
-			"i'm",
-			"you're",
-			"he's",
-			"she's",
-			"it's",
-			"we're",
-			"they're",
-			"i've",
-			"you've",
-			"we've",
-			"they've",
-			"i'll",
-			"you'll",
-			"he'll",
-			"she'll",
-			"we'll",
-			"they'll",
-			"i'd",
-			"you'd",
-			"he'd",
-			"she'd",
-			"we'd",
-			"they'd",
-			"that's",
-			"there's",
-			"here's",
-			"what's",
-			"who's",
-			"let's",
-
-			// Spoken fillers (common in transcripts)
-			'uh',
-			'um',
-			'like',
-			'yeah',
-			'okay',
-			'ok',
-			'oh',
-			'ah',
-			'gonna',
-			'wanna',
-			'gotta',
-			'kinda',
-			'sorta',
-			'basically',
-			'actually',
-			'literally',
-			'right',
-			'mean'
-		];
 	}
 }
