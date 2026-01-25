@@ -5,29 +5,19 @@ interface PapaParseResults {
 	};
 }
 
-type RowValidator = (row: Record<string, unknown>) => boolean;
-
-// NOTE: headers here must be lowercase as input data tables are converted to lowercase when loaded using PapaParse transformHeaders method
+// NOTE: headers must be lowercase as PapaParse transformHeaders converts them
 export const HEADERS_TRANSCRIPT_WITH_TIME = ['speaker', 'content', 'start', 'end'];
 export const HEADERS_SIMPLE_TRANSCRIPT = ['speaker', 'content'];
 
 export function testTranscript(results: PapaParseResults): boolean {
-	return testPapaParseResults(results, HEADERS_SIMPLE_TRANSCRIPT, hasSpeakerNameAndContent);
+	return (
+		results.data.length > 0 &&
+		HEADERS_SIMPLE_TRANSCRIPT.every((h) => results.meta.fields.includes(h)) &&
+		results.data.some(hasSpeakerNameAndContent)
+	);
 }
 
-function testPapaParseResults(results: PapaParseResults, headers: string[], callbackTypeTest: RowValidator): boolean {
-	return results.data.length > 0 && includesAllHeaders(results.meta.fields, headers) && hasOneCleanRow(results.data, callbackTypeTest);
-}
-
-function includesAllHeaders(fieldNamesLowerCase: string[], headers: string[]): boolean {
-	return headers.every((header) => fieldNamesLowerCase.includes(header));
-}
-
-function hasOneCleanRow(resultsDataArray: Record<string, unknown>[], callbackTypeTest: RowValidator): boolean {
-	return resultsDataArray.some(callbackTypeTest);
-}
-
-function isStringNumberOrBoolean(value: unknown): boolean {
+function isValidValue(value: unknown): boolean {
 	return (
 		(typeof value === 'string' && value.trim() !== '') ||
 		(typeof value === 'number' && !isNaN(value) && isFinite(value)) ||
@@ -35,8 +25,6 @@ function isStringNumberOrBoolean(value: unknown): boolean {
 	);
 }
 
-export function hasSpeakerNameAndContent(curRow: Record<string, unknown>): boolean {
-	const speakerName = curRow[HEADERS_SIMPLE_TRANSCRIPT[0]];
-	const content = curRow[HEADERS_SIMPLE_TRANSCRIPT[1]];
-	return isStringNumberOrBoolean(speakerName) && isStringNumberOrBoolean(content);
+export function hasSpeakerNameAndContent(row: Record<string, unknown>): boolean {
+	return isValidValue(row['speaker']) && isValidValue(row['content']);
 }
