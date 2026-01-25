@@ -11,29 +11,26 @@
 	import TranscriptStore from '../../stores/transcriptStore';
 	import P5Store from '../../stores/p5Store';
 	import HistoryStore from '../../stores/historyStore';
+	import ConfirmModal from './ConfirmModal.svelte';
 	import { exportTranscriptToCSV } from '$lib/core/export-utils';
 	import { applyTimingModeToWordArray, updateTimelineFromData } from '$lib/core/timing-utils';
 	import type { TimingMode } from '../../models/transcript';
 
 	const dispatch = createEventDispatcher();
 
+	let confirmModal: { mode: TimingMode; message: string } | null = null;
+
 	function toggleOrientation() {
 		EditorStore.update((state) => ({
 			...state,
-			config: {
-				...state.config,
-				orientation: state.config.orientation === 'vertical' ? 'horizontal' : 'vertical'
-			}
+			config: { ...state.config, orientation: state.config.orientation === 'vertical' ? 'horizontal' : 'vertical' }
 		}));
 	}
 
 	function toggleAdvancedVideoControls() {
 		EditorStore.update((state) => ({
 			...state,
-			config: {
-				...state.config,
-				showAdvancedVideoControls: !state.config.showAdvancedVideoControls
-			}
+			config: { ...state.config, showAdvancedVideoControls: !state.config.showAdvancedVideoControls }
 		}));
 	}
 
@@ -41,39 +38,29 @@
 		const currentMode = get(TranscriptStore).timingMode;
 		if (mode === currentMode) return;
 
-		// Confirm before changing timing mode (only warn if data loss)
-		let message: string | null = null;
 		if (mode === 'untimed') {
-			message = 'Switch to untimed mode? This will remove all timestamps.';
+			confirmModal = { mode, message: 'This will remove all timestamps. This cannot be undone.' };
 		} else if (mode === 'startOnly' && currentMode === 'startEnd') {
-			message = 'Switch to start-only mode? End times will be removed.';
+			confirmModal = { mode, message: 'This will remove end times. This cannot be undone.' };
+		} else {
+			applyTimingMode(mode);
 		}
-		if (message && !confirm(message)) return;
+	}
 
-		TranscriptStore.update((transcript) => {
-			const updatedWordArray = applyTimingModeToWordArray(transcript.wordArray, mode);
-			return {
-				...transcript,
-				wordArray: updatedWordArray,
-				timingMode: mode
-			};
-		});
-
-		// Update timeline to match data range (don't expand-only, set to actual range)
-		const updatedTranscript = get(TranscriptStore);
-		updateTimelineFromData(updatedTranscript.wordArray, false);
-
-		// Mark as dirty
-		EditorStore.update((state) => ({
-			...state,
-			isDirty: true
+	function applyTimingMode(mode: TimingMode) {
+		TranscriptStore.update((t) => ({
+			...t,
+			wordArray: applyTimingModeToWordArray(t.wordArray, mode),
+			timingMode: mode
 		}));
+		updateTimelineFromData(get(TranscriptStore).wordArray, false);
+		EditorStore.update((s) => ({ ...s, isDirty: true }));
+		get(P5Store)?.fillAllData?.();
+	}
 
-		// Refresh visualization
-		const p5Instance = get(P5Store);
-		if (p5Instance) {
-			p5Instance.fillAllData?.();
-		}
+	function onConfirm() {
+		if (confirmModal) applyTimingMode(confirmModal.mode);
+		confirmModal = null;
 	}
 
 	function handleExport() {
@@ -151,6 +138,14 @@
 		</button>
 	</div>
 </div>
+
+<ConfirmModal
+	isOpen={!!confirmModal}
+	title="Change Timing Mode?"
+	message={confirmModal?.message ?? ''}
+	on:confirm={onConfirm}
+	on:cancel={() => (confirmModal = null)}
+/>
 
 <style>
 	.editor-toolbar {

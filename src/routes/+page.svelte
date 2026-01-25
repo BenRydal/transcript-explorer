@@ -37,6 +37,7 @@
 	import SettingsModal from '$lib/components/SettingsModal.svelte';
 	import UploadModal from '$lib/components/UploadModal.svelte';
 	import DataExplorerModal from '$lib/components/DataExplorerModal.svelte';
+	import ConfirmModal from '$lib/components/ConfirmModal.svelte';
 	import TourOverlay from '$lib/components/TourOverlay.svelte';
 	import SpeakerControls from '$lib/components/SpeakerControls.svelte';
 	import type { TranscriptionResult } from '$lib/core/transcription-service';
@@ -337,7 +338,6 @@
 	}
 
 	function confirmNewTranscript() {
-		showNewTranscriptConfirm = false;
 		resetVideo();
 		core.clearTranscriptData();
 
@@ -890,20 +890,13 @@
 
 	<DataExplorerModal bind:isOpen={showDataPopup} />
 
-	<!-- New Transcript Confirmation Dialog -->
-	{#if showNewTranscriptConfirm}
-		<div class="modal modal-open">
-			<div class="modal-box">
-				<h3 class="font-bold text-lg">Create New Transcript?</h3>
-				<p class="py-4">This will erase all current data including transcript and video. This action cannot be undone.</p>
-				<div class="modal-action">
-					<button class="btn btn-ghost" on:click={() => (showNewTranscriptConfirm = false)}>Cancel</button>
-					<button class="btn btn-error" on:click={confirmNewTranscript}>Erase and Create New</button>
-				</div>
-			</div>
-			<div class="modal-backdrop" on:click={() => (showNewTranscriptConfirm = false)} on:keydown={() => {}}></div>
-		</div>
-	{/if}
+	<ConfirmModal
+		bind:isOpen={showNewTranscriptConfirm}
+		title="Create New Transcript?"
+		message="This will erase all current data including transcript and video. This action cannot be undone."
+		confirmText="Erase and Create New"
+		on:confirm={confirmNewTranscript}
+	/>
 
 	<div class="btm-nav flex justify-between min-h-20" style="position: relative;">
 		<SpeakerControls />
