@@ -14,6 +14,7 @@ let users: User[] = [];
 let timeline, transcript, currConfig, editorState;
 let videoState: VideoState;
 let isPlayingTurnSnippets = false;
+let canHover = true;
 
 TimelineStore.subscribe((data) => {
 	timeline = data;
@@ -55,6 +56,12 @@ export const igsSketch = (p5: any) => {
 		p5.toolTipTextSize = 30;
 		p5.textFont(p5.font);
 		p5.animationCounter = 0; // controls animation of data
+
+		// Track if mouse is over canvas (not blocked by UI elements)
+		const canvas = document.querySelector('#p5-container canvas');
+		document.addEventListener('pointermove', (e) => {
+			canHover = e.target === canvas;
+		});
 	};
 
 	p5.getContainerSize = () => {
@@ -287,6 +294,7 @@ export const igsSketch = (p5: any) => {
 	};
 
 	p5.overRect = (x: number, y: number, boxWidth: number, boxHeight: number) => {
+		if (!canHover) return false;
 		return p5.mouseX >= x && p5.mouseX <= x + boxWidth && p5.mouseY >= y && p5.mouseY <= y + boxHeight;
 	};
 
@@ -298,6 +306,7 @@ export const igsSketch = (p5: any) => {
 	};
 
 	p5.overCircle = (x: number, y: number, diameter: number) => {
+		if (!canHover) return false;
 		return p5.sqrt(p5.sq(x - p5.mouseX) + p5.sq(y - p5.mouseY)) < diameter / 2;
 	};
 
