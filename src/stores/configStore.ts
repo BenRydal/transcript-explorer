@@ -1,4 +1,5 @@
 import { writable, derived } from 'svelte/store';
+import type { DataPoint } from '../models/dataPoint';
 
 export interface ConfigStoreType {
 	distributionDiagramToggle: boolean;
@@ -14,9 +15,9 @@ export interface ConfigStoreType {
 	repeatedWordsToggle: boolean;
 	animationRate: number;
 	repeatWordSliderValue: number;
-	selectedWordFromContributionCloud: string;
-	firstWordOfTurnSelectedInTurnChart: string;
-	arrayOfFirstWords: string[];
+	selectedWordFromContributionCloud: DataPoint | null;
+	firstWordOfTurnSelectedInTurnChart: DataPoint | null;
+	arrayOfFirstWords: DataPoint[];
 	wordToSearch: string;
 	hoveredSpeakerInDistributionDiagram: string | null;
 	// Start-only mode settings
@@ -38,8 +39,8 @@ export const initialConfig: ConfigStoreType = {
 	repeatedWordsToggle: false,
 	animationRate: 3,
 	repeatWordSliderValue: 5,
-	selectedWordFromContributionCloud: '',
-	firstWordOfTurnSelectedInTurnChart: '',
+	selectedWordFromContributionCloud: null,
+	firstWordOfTurnSelectedInTurnChart: null,
 	arrayOfFirstWords: [],
 	wordToSearch: '',
 	hoveredSpeakerInDistributionDiagram: null,
