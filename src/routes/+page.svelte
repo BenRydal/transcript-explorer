@@ -7,7 +7,7 @@
 	// Stores
 	import UserStore from '../stores/userStore';
 	import P5Store from '../stores/p5Store';
-	import VideoStore, { toggleVisibility as toggleVideoVisibility, reset as resetVideo } from '../stores/videoStore';
+	import VideoStore, { toggleVisibility as toggleVideoVisibility, reset as resetVideo, loadVideo } from '../stores/videoStore';
 	import EditorStore, { editorLayoutKey } from '../stores/editorStore';
 	import TimelineStore from '../stores/timelineStore';
 	import ConfigStore, { filterToggleKey } from '../stores/configStore';
@@ -402,6 +402,7 @@
 		on:openFileDialog={openFileDialog}
 		on:clearFiles={clearUploadedFiles}
 		on:startTranscription={() => (showTranscriptionModal = true)}
+		on:youtubeUrl={(e) => loadVideo({ type: 'youtube', videoId: e.detail })}
 	/>
 
 	<DataExplorerModal bind:isOpen={showDataPopup} />
