@@ -1,5 +1,5 @@
 <script lang="ts">
-	import { onMount } from 'svelte';
+	import { onMount, createEventDispatcher } from 'svelte';
 	import { get } from 'svelte/store';
 	import TranscriptStore from '../../stores/transcriptStore';
 	import UserStore from '../../stores/userStore';
@@ -7,6 +7,7 @@
 	import ConfigStore from '../../stores/configStore';
 	import P5Store from '../../stores/p5Store';
 	import HistoryStore from '../../stores/historyStore';
+	import TranscribeModeStore from '../../stores/transcribeModeStore';
 	import { getTurnsFromWordArray, getTurnContent } from '$lib/core/turn-utils';
 	import { applyTimingModeToWordArray, updateTimelineFromData, getMaxTime } from '$lib/core/timing-utils';
 	import type { Turn } from '$lib/core/turn-utils';
@@ -17,6 +18,8 @@
 	import ConfirmModal from './ConfirmModal.svelte';
 
 	import type { TimingMode } from '../../models/transcript';
+
+	const dispatch = createEventDispatcher<{ createTranscript: void }>();
 
 	let deleteModal: number | null = null;
 
@@ -29,6 +32,9 @@
 
 	// Create a reactive speaker color map
 	$: speakerColorMap = new Map($UserStore.map((u) => [u.name, u.color]));
+
+	// Transcribe mode state for empty state UI
+	$: isInTranscribeMode = $TranscribeModeStore.isActive;
 
 	// Filter turns by speaker visibility, locked filter, and search term
 	$: displayedTurns = turns.filter((turn) => {
@@ -475,7 +481,17 @@
 	<div class="editor-content">
 		{#if turns.length === 0}
 			<div class="empty-state">
-				<p class="text-gray-500 text-center py-8">No transcript loaded. Upload a CSV or TXT file to get started.</p>
+				{#if isInTranscribeMode}
+					<div class="empty-state-content">
+						<p class="text-gray-600 mb-4">No transcript yet. Create one to start transcribing.</p>
+						<button class="create-transcript-btn" on:click={() => dispatch('createTranscript')}>
+							Create New Transcript
+						</button>
+						<p class="text-gray-400 text-sm mt-3">Or upload an existing transcript file</p>
+					</div>
+				{:else}
+					<p class="text-gray-500 text-center py-8">No transcript loaded. Upload a CSV or TXT file, or create a new transcript.</p>
+				{/if}
 			</div>
 		{:else}
 			{#if $EditorStore.selection.filteredSpeaker}
@@ -545,6 +561,30 @@
 		align-items: center;
 		justify-content: center;
 		height: 100%;
+	}
+
+	.empty-state-content {
+		display: flex;
+		flex-direction: column;
+		align-items: center;
+		text-align: center;
+		padding: 2rem;
+	}
+
+	.create-transcript-btn {
+		background-color: #3b82f6;
+		color: white;
+		font-weight: 500;
+		padding: 0.75rem 1.5rem;
+		border-radius: 8px;
+		border: none;
+		cursor: pointer;
+		font-size: 1rem;
+		transition: background-color 0.15s;
+	}
+
+	.create-transcript-btn:hover {
+		background-color: #2563eb;
 	}
 
 	.filter-banner {

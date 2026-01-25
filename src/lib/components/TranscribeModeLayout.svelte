@@ -13,6 +13,7 @@
 
 	const dispatch = createEventDispatcher<{
 		exit: void;
+		createTranscript: void;
 	}>();
 
 	let player: VideoPlayer | null = null;
@@ -156,7 +157,7 @@
 				</div>
 			</div>
 			<div slot="second" class="editor-panel">
-				<TranscriptEditor />
+				<TranscriptEditor on:createTranscript={() => dispatch('createTranscript')} />
 			</div>
 		</SplitPane>
 	</div>

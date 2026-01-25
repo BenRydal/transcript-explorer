@@ -182,11 +182,19 @@
 
 	// ============ Transcript Creation ============
 
-	function confirmNewTranscript() {
-		resetVideo();
+	// Create a new transcript (always timed - user can switch to untimed if needed)
+	function createTranscript() {
 		core.clearTranscriptData();
 
 		const { transcript, users } = createEmptyTranscript(USER_COLORS[0]);
+
+		// Use video duration if loaded, otherwise default to 60 seconds
+		const videoDuration = get(VideoStore).duration;
+		const timelineEnd = (get(VideoStore).isLoaded && videoDuration > 0) ? videoDuration : 60;
+
+		transcript.timingMode = 'startEnd';
+		transcript.totalTimeInSeconds = timelineEnd;
+
 		UserStore.set(users);
 		TranscriptStore.set(transcript);
 
@@ -194,9 +202,9 @@
 			...t,
 			currTime: 0,
 			startTime: 0,
-			endTime: 1,
+			endTime: timelineEnd,
 			leftMarker: 0,
-			rightMarker: 1,
+			rightMarker: timelineEnd,
 			isAnimating: false
 		}));
 
@@ -345,7 +353,7 @@
 </svelte:head>
 
 {#if isTranscribeModeActive}
-	<TranscribeModeLayout on:exit={exitTranscribeMode} />
+	<TranscribeModeLayout on:exit={exitTranscribeMode} on:createTranscript={createTranscript} />
 {:else}
 	<div class="page-container">
 	<AppNavbar
@@ -384,7 +392,7 @@
 				{/if}
 			</div>
 			<div slot="second" class="h-full">
-				<TranscriptEditor />
+				<TranscriptEditor on:createTranscript={createTranscript} />
 			</div>
 		</SplitPane>
 	</div>
@@ -410,9 +418,9 @@
 	<ConfirmModal
 		bind:isOpen={showNewTranscriptConfirm}
 		title="Create New Transcript?"
-		message="This will erase all current data including transcript and video. This action cannot be undone."
+		message="This will erase the current transcript. This action cannot be undone."
 		confirmText="Erase and Create New"
-		on:confirm={confirmNewTranscript}
+		on:confirm={createTranscript}
 	/>
 
 	<div class="btm-nav flex justify-between min-h-20" style="position: relative;">
