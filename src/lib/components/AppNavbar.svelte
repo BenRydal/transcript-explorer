@@ -12,6 +12,7 @@
 	import MdTouchApp from 'svelte-icons/md/MdTouchApp.svelte';
 	import MdMenu from 'svelte-icons/md/MdMenu.svelte';
 	import MdClose from 'svelte-icons/md/MdClose.svelte';
+	import MdKeyboard from 'svelte-icons/md/MdKeyboard.svelte';
 	import IconButton from './IconButton.svelte';
 	import ConfigStore from '../../stores/configStore';
 	import type { ConfigStoreType } from '../../stores/configStore';
@@ -20,6 +21,7 @@
 		loadExample: string;
 		toggleEditor: void;
 		toggleVideo: void;
+		toggleTranscribeMode: void;
 		openUpload: void;
 		openHelp: void;
 		openSettings: void;
@@ -283,6 +285,20 @@
 				on:click={() => dispatch('toggleVideo')}
 				disabled={!isVideoLoaded}
 			/>
+
+			<!-- Transcribe Mode Toggle -->
+			{#if isVideoLoaded}
+				<button
+					class="btn btn-sm gap-1"
+					on:click={() => dispatch('toggleTranscribeMode')}
+					title="Enter Transcribe Mode"
+				>
+					<div class="w-4 h-4">
+						<MdKeyboard />
+					</div>
+					Transcribe
+				</button>
+			{/if}
 		</div>
 
 		<!-- Divider -->
@@ -399,6 +415,18 @@
 						</div>
 						Video
 					</button>
+					{#if isVideoLoaded}
+						<button
+							class="btn btn-sm btn-ghost"
+							on:click={() => {
+								dispatch('toggleTranscribeMode');
+								mobileMenuOpen = false;
+							}}
+						>
+							<div class="w-4 h-4 mr-1"><MdKeyboard /></div>
+							Transcribe
+						</button>
+					{/if}
 					<button
 						class="btn btn-sm btn-ghost"
 						on:click={() => {

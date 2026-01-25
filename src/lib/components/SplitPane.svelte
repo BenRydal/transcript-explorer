@@ -31,6 +31,7 @@
 		document.addEventListener('mouseup', handleMouseUp);
 		document.body.style.cursor = cursorStyle;
 		document.body.style.userSelect = 'none';
+		dispatch('dragstart');
 	}
 
 	function handleMouseMove(event: MouseEvent) {
@@ -68,6 +69,7 @@
 		document.removeEventListener('mouseup', handleMouseUp);
 		document.body.style.cursor = '';
 		document.body.style.userSelect = '';
+		dispatch('dragend');
 	}
 
 	function handleKeyDown(event: KeyboardEvent) {

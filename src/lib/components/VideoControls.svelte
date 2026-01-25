@@ -1,8 +1,8 @@
 <script lang="ts">
 	import { onMount, onDestroy, createEventDispatcher } from 'svelte';
 	import { browser } from '$app/environment';
-	import VideoStore, { togglePlayPause, toggleMute, setCurrentTime, requestSeek } from '../../stores/videoStore';
-	import { getCurrentTime, seekTo, type VideoPlayer } from '../video/video-service';
+	import VideoStore, { togglePlayPause, toggleMute, setCurrentTime } from '../../stores/videoStore';
+	import { getCurrentTime, seekTo, setPlaybackRate, type VideoPlayer } from '../video/video-service';
 	import { formatTimeCompact } from '../core/time-utils';
 
 	export let player: VideoPlayer | null = null;
@@ -16,6 +16,9 @@
 	let scrubTime = 0;
 
 	const SKIP_SECONDS = 5;
+	const SPEED_OPTIONS = [0.5, 0.75, 1, 1.25, 1.5, 2];
+
+	let currentSpeed = 1;
 
 	$: isPlaying = $VideoStore.isPlaying;
 	$: isMuted = $VideoStore.isMuted;
@@ -57,6 +60,16 @@
 		if (player) {
 			seekTo(player, newTime);
 			setCurrentTime(newTime);
+		}
+	}
+
+	function handleSpeedChange(e: MouseEvent) {
+		e.stopPropagation();
+		const currentIndex = SPEED_OPTIONS.indexOf(currentSpeed);
+		const nextIndex = (currentIndex + 1) % SPEED_OPTIONS.length;
+		currentSpeed = SPEED_OPTIONS[nextIndex];
+		if (player) {
+			setPlaybackRate(player, currentSpeed);
 		}
 	}
 
@@ -170,6 +183,11 @@
 			</div>
 		</div>
 
+		<!-- Speed -->
+		<button class="control-btn speed" on:click={handleSpeedChange} aria-label="Playback speed" title="Speed: {currentSpeed}x">
+			<span class="speed-text">{currentSpeed}x</span>
+		</button>
+
 		<!-- Mute -->
 		<button class="control-btn mute" on:click={handleMute} aria-label={isMuted ? 'Unmute' : 'Mute'}>
 			{#if isMuted}
@@ -240,6 +258,18 @@
 	.control-btn svg {
 		width: 14px;
 		height: 14px;
+	}
+
+	.control-btn.speed {
+		width: auto;
+		min-width: 36px;
+		padding: 4px 6px;
+	}
+
+	.speed-text {
+		font-size: 10px;
+		font-weight: 500;
+		font-family: monospace;
 	}
 
 	.time-display {

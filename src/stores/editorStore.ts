@@ -4,7 +4,7 @@ export interface EditorSelection {
 	selectedTurnNumber: number | null;
 	highlightedSpeaker: string | null;
 	filteredSpeaker: string | null;
-	selectionSource: 'editor' | 'distributionDiagram' | 'distributionDiagramClick' | 'turnChart' | 'contributionCloud' | null;
+	selectionSource: 'editor' | 'distributionDiagram' | 'distributionDiagramClick' | 'turnChart' | 'contributionCloud' | 'video' | null;
 }
 
 export interface EditorConfig {

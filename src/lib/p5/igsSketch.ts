@@ -62,6 +62,11 @@ export const igsSketch = (p5: any) => {
 		document.addEventListener('pointermove', (e) => {
 			canHover = e.target === canvas;
 		});
+
+		// If transcript data already exists (e.g., after mode switch), populate it
+		if (transcript.wordArray?.length > 0) {
+			p5.fillAllData();
+		}
 	};
 
 	p5.getContainerSize = () => {

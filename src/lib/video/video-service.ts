@@ -217,6 +217,24 @@ export function unmuteVideo(player: VideoPlayer): void {
 	}
 }
 
+export function setPlaybackRate(player: VideoPlayer, rate: number): void {
+	if (!player) return;
+	try {
+		if (isYouTubePlayer(player)) {
+			if (!isYouTubePlayerReady(player)) {
+				console.warn('setPlaybackRate: YouTube player not ready');
+				return;
+			}
+			// YouTube API uses setPlaybackRate
+			(player as any).setPlaybackRate?.(rate);
+		} else {
+			player.playbackRate = rate;
+		}
+	} catch (e) {
+		console.warn('setPlaybackRate failed:', e);
+	}
+}
+
 export function destroyPlayer(player: VideoPlayer): void {
 	if (!player) return;
 	try {

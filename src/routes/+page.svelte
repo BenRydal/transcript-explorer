@@ -13,6 +13,7 @@
 	import ConfigStore, { filterToggleKey } from '../stores/configStore';
 	import type { ConfigStoreType } from '../stores/configStore';
 	import TranscriptStore from '../stores/transcriptStore';
+	import TranscribeModeStore, { toggle as toggleTranscribeMode, exit as exitTranscribeMode } from '../stores/transcribeModeStore';
 
 	// Core utilities
 	import { Core } from '$lib/core/core';
@@ -36,6 +37,7 @@
 	import ConfirmModal from '$lib/components/ConfirmModal.svelte';
 	import TourOverlay from '$lib/components/TourOverlay.svelte';
 	import SpeakerControls from '$lib/components/SpeakerControls.svelte';
+	import TranscribeModeLayout from '$lib/components/TranscribeModeLayout.svelte';
 
 	import type { TranscriptionResult } from '$lib/core/transcription-service';
 
@@ -80,6 +82,7 @@
 	$: isVideoVisible = $VideoStore.isVisible;
 	$: hasVideoSource = $VideoStore.source.type !== null;
 	$: isEditorVisible = $EditorStore.config.isVisible;
+	$: isTranscribeModeActive = $TranscribeModeStore.isActive;
 
 	// When video loads, expand timeline to accommodate video duration (only for timed transcripts)
 	let prevVideoLoaded = false;
@@ -116,6 +119,15 @@
 
 	// Resize canvas when editor layout changes
 	$: $editorLayoutKey, browser && requestAnimationFrame(() => triggerCanvasResize());
+
+	// Resize canvas when exiting transcribe mode (fillAllData is handled by igsSketch setup)
+	let prevTranscribeModeActive = false;
+	$: {
+		if (prevTranscribeModeActive && !isTranscribeModeActive) {
+			requestAnimationFrame(() => triggerCanvasResize());
+		}
+		prevTranscribeModeActive = isTranscribeModeActive;
+	}
 
 	// ============ Event Handlers ============
 
@@ -332,7 +344,10 @@
 	<title>Transcript Explorer</title>
 </svelte:head>
 
-<div class="page-container">
+{#if isTranscribeModeActive}
+	<TranscribeModeLayout on:exit={exitTranscribeMode} />
+{:else}
+	<div class="page-container">
 	<AppNavbar
 		selectedExample={selectedDropDownOption}
 		{isEditorVisible}
@@ -345,6 +360,7 @@
 		on:openHelp={() => ($isModalOpen = !$isModalOpen)}
 		on:openSettings={() => (showSettings = true)}
 		on:createNewTranscript={() => (showNewTranscriptConfirm = true)}
+		on:toggleTranscribeMode={toggleTranscribeMode}
 		on:wordSearch={handleWordSearch}
 		on:configChange={handleConfigChange}
 	/>
@@ -405,6 +421,7 @@
 		</div>
 	</div>
 </div>
+{/if}
 
 <slot />
 
