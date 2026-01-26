@@ -29,7 +29,9 @@
 - **Multiple Visualizations** — Distribution diagram, turn chart, contribution cloud, and flower mode
 - **Video Integration** — Sync transcripts with YouTube videos or local video files
 - **Auto-Transcription** — In-browser Whisper AI transcription (no data leaves your device)
-- **Interactive Editor** — Edit transcripts with inline timing controls and video sync
+- **Transcribe Mode** — Dedicated workspace with keyboard shortcuts for manual video transcription
+- **Interactive Editor** — Edit transcripts with inline timing controls, video sync, and undo/redo
+- **Auto-Save** — Work is automatically saved to prevent data loss
 - **Export Options** — Export edited transcripts as CSV
 
 ---
