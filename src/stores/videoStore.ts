@@ -66,7 +66,6 @@ let seekRequestId = 0;
 // Track which snippet we last advanced from (guards against race conditions)
 let lastAdvancedFromIndex = -1;
 
-
 function advanceSnippet(): void {
 	const state = get(VideoStore);
 	if (!state.snippetsMode) return;

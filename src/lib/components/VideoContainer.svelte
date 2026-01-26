@@ -32,6 +32,7 @@
 	$: isMuted = $VideoStore.isMuted;
 	$: seekRequest = $VideoStore.seekRequest;
 	$: isVisible = $VideoStore.isVisible;
+	$: snippetsMode = $VideoStore.snippetsMode;
 	$: showAdvancedControls = $EditorStore.config.showAdvancedVideoControls;
 
 	// Handle seek requests from p5 or other sources
@@ -308,6 +309,13 @@
 
 		<!-- Click shield for YouTube -->
 		<div class="click-shield"></div>
+
+		<!-- Snippets mode indicator -->
+		{#if snippetsMode}
+			<div class="snippets-indicator">
+				Turn {snippetsMode.currentIndex + 1} of {snippetsMode.turns.length}
+			</div>
+		{/if}
 	</div>
 
 	<!-- Controls bar at bottom -->
@@ -374,6 +382,19 @@
 		bottom: 0;
 		z-index: 1;
 		background: transparent;
+	}
+
+	.snippets-indicator {
+		position: absolute;
+		top: 8px;
+		left: 8px;
+		padding: 4px 8px;
+		background: rgba(0, 0, 0, 0.7);
+		color: white;
+		font-size: 12px;
+		font-weight: 500;
+		border-radius: 4px;
+		z-index: 2;
 	}
 
 	.controls-bar {
