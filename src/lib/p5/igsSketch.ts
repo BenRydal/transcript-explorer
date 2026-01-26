@@ -5,12 +5,9 @@ import type { User } from '../../models/user';
 import TimelineStore from '../../stores/timelineStore';
 import ConfigStore from '../../stores/configStore';
 import EditorStore from '../../stores/editorStore';
-import VideoStore, {
-	stopPlayback,
-	playFrom,
-	playSnippets
-} from '../../stores/videoStore';
+import VideoStore from '../../stores/videoStore';
 import type { VideoState } from '../../stores/videoStore';
+import { handleVisualizationClick } from '../video/video-interaction';
 import { Draw } from '../draw/draw';
 import { DynamicData } from '../core/dynamic-data';
 
@@ -195,23 +192,8 @@ export const igsSketch = (p5: any) => {
 	};
 
 	p5.handleVideoClick = () => {
-		if (!videoState.isLoaded || !videoState.isVisible) return;
 		if (!p5.overRect(0, 0, p5.width, p5.height)) return;
-
-		if (videoState.isPlaying) {
-			stopPlayback();
-			return;
-		}
-
-		const { firstWordOfTurnSelectedInTurnChart, selectedWordFromContributionCloud, arrayOfFirstWords } = currConfig;
-
-		if (firstWordOfTurnSelectedInTurnChart) {
-			playFrom(firstWordOfTurnSelectedInTurnChart);
-		} else if (selectedWordFromContributionCloud) {
-			playFrom(selectedWordFromContributionCloud);
-		} else if (arrayOfFirstWords?.length) {
-			playSnippets(arrayOfFirstWords);
-		}
+		handleVisualizationClick();
 	};
 
 	p5.fillAllData = () => {
