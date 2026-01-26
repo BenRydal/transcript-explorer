@@ -87,6 +87,22 @@ export const igsSketch = (p5: any) => {
 			p5.renderer.drawViz();
 		}
 		if (timeline.isAnimating) p5.updateAnimation();
+		p5.updateCursor();
+	};
+
+	p5.updateCursor = () => {
+		if (!videoState.isLoaded || !videoState.isVisible) {
+			p5.cursor(p5.ARROW);
+			return;
+		}
+
+		const { firstWordOfTurnSelectedInTurnChart, selectedWordFromContributionCloud, arrayOfFirstWords } = currConfig;
+		const hasPlayableHover =
+			firstWordOfTurnSelectedInTurnChart ||
+			selectedWordFromContributionCloud ||
+			arrayOfFirstWords?.length > 0;
+
+		p5.cursor(hasPlayableHover ? p5.HAND : p5.ARROW);
 	};
 
 	p5.updateAnimation = () => {
