@@ -24,6 +24,8 @@ export interface ConfigStoreType {
 	// Start-only mode settings
 	preserveGapsBetweenTurns: boolean;
 	speechRateWordsPerSecond: number;
+	// Video playback settings
+	snippetDurationSeconds: number;
 }
 
 export const initialConfig: ConfigStoreType = {
@@ -48,7 +50,9 @@ export const initialConfig: ConfigStoreType = {
 	hoveredSpeakerInDistributionDiagram: null,
 	// Start-only mode settings (default: fill to next turn)
 	preserveGapsBetweenTurns: false,
-	speechRateWordsPerSecond: 3
+	speechRateWordsPerSecond: 3,
+	// Video playback settings
+	snippetDurationSeconds: 2
 };
 
 const ConfigStore = writable<ConfigStoreType>(initialConfig);

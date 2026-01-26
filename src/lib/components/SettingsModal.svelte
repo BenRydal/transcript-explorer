@@ -129,6 +129,27 @@
 						/>
 					</div>
 				</div>
+
+				<!-- Video Playback Settings -->
+				<div class="flex flex-col border-t pt-4">
+					<p class="font-medium mb-2">Video Playback</p>
+					<div class="flex flex-col">
+						<label for="snippetDuration" class="text-sm">
+							Turn preview duration: {$ConfigStore.snippetDurationSeconds}s
+						</label>
+						<p class="text-xs text-gray-500 mb-1">When clicking a speaker in the distribution diagram, plays this duration from each of their turns</p>
+						<input
+							id="snippetDuration"
+							type="range"
+							min="1"
+							max="5"
+							step="1"
+							value={$ConfigStore.snippetDurationSeconds}
+							on:input={(e) => handleConfigChange('snippetDurationSeconds', parseInt(e.target.value))}
+							class="range range-sm"
+						/>
+					</div>
+				</div>
 			</div>
 
 			<div class="flex justify-center mt-6">

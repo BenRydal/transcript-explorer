@@ -1,5 +1,6 @@
 import { writable, get } from 'svelte/store';
 import type { DataPoint } from '../models/dataPoint';
+import ConfigStore from './configStore';
 
 export interface VideoSource {
 	type: 'youtube' | 'file' | null;
@@ -11,6 +12,7 @@ export interface VideoSource {
 export interface SnippetsMode {
 	turns: DataPoint[];
 	currentIndex: number;
+	durationPerSnippet: number;
 }
 
 export interface VideoState {
@@ -64,8 +66,6 @@ let seekRequestId = 0;
 // Track which snippet we last advanced from (guards against race conditions)
 let lastAdvancedFromIndex = -1;
 
-// Snippet duration in seconds (for time-based advancement)
-const SNIPPET_DURATION_SEC = 2;
 
 function advanceSnippet(): void {
 	const state = get(VideoStore);
@@ -93,11 +93,11 @@ function checkSnippetAdvancement(currentTime: number): void {
 	const state = get(VideoStore);
 	if (!state.isPlaying || !state.snippetsMode) return;
 
-	const { turns, currentIndex } = state.snippetsMode;
+	const { turns, currentIndex, durationPerSnippet } = state.snippetsMode;
 	if (currentIndex <= lastAdvancedFromIndex) return;
 
 	const currentTurn = turns[currentIndex];
-	const snippetEnd = currentTurn.startTime + SNIPPET_DURATION_SEC;
+	const snippetEnd = currentTurn.startTime + durationPerSnippet;
 
 	if (currentTime >= snippetEnd) {
 		lastAdvancedFromIndex = currentIndex;
@@ -182,12 +182,13 @@ export function playSnippets(turns: DataPoint[]): void {
 	lastAdvancedFromIndex = -1;
 
 	const firstTurn = turns[0];
+	const durationPerSnippet = get(ConfigStore).snippetDurationSeconds;
 	seekRequestId++;
 
 	VideoStore.update((state) => ({
 		...state,
 		isPlaying: true,
-		snippetsMode: { turns, currentIndex: 0 },
+		snippetsMode: { turns, currentIndex: 0, durationPerSnippet },
 		seekRequest: { time: firstTurn.startTime, id: seekRequestId }
 	}));
 }
