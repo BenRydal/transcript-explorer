@@ -1,17 +1,19 @@
 <script lang="ts">
 	import { writable, type Writable } from 'svelte/store';
+	import MdCloudUpload from 'svelte-icons/md/MdCloudUpload.svelte';
 
 	export let isModalOpen: Writable<boolean> = writable(false);
 	export let onLoadExample: ((exampleId: string) => void) | null = null;
 	export let onOpenUpload: (() => void) | null = null;
 	export let onStartTour: (() => void) | null = null;
 
-	let activeTab: 'try' | 'upload' | 'transcribe' = 'try';
+	let activeTab: 'try' | 'upload' | 'transcribe' | 'create' = 'try';
 
 	const tabs = [
 		{ id: 'try', label: 'Try an Example' },
 		{ id: 'upload', label: 'Upload Transcript' },
-		{ id: 'transcribe', label: 'Auto-Transcribe Video' }
+		{ id: 'transcribe', label: 'Auto-Transcribe' },
+		{ id: 'create', label: 'Create Transcript' }
 	];
 
 	const visualizations = [
@@ -282,6 +284,27 @@
 								<li>Best with clear audio and minimal background noise</li>
 							</ul>
 						</div>
+					</div>
+				{:else if activeTab === 'create'}
+					<div class="space-y-4">
+						<p class="text-gray-600">
+							A focused workspace for manually transcribing video with keyboard shortcuts for efficient transcription. Switch between transcribe mode and visualization mode anytime to see your transcript come to life.
+						</p>
+
+						<div class="bg-blue-50 border border-blue-200 rounded-lg p-4">
+							<h4 class="font-medium text-blue-800 mb-3">How to use</h4>
+							<ol class="text-sm text-blue-700 space-y-2 list-decimal list-inside">
+								<li>Upload a video file</li>
+								<li>Click the <strong>Transcribe</strong> button in the navbar to enter transcribe mode</li>
+								<li>Use keyboard shortcuts to control playback while typing</li>
+								<li>Add turns and assign speakers as you transcribe</li>
+							</ol>
+						</div>
+
+						<button class="btn btn-primary" on:click={handleUploadClick}>
+							<div class="w-5 h-5 mr-2"><MdCloudUpload /></div>
+							Upload Video
+						</button>
 					</div>
 				{/if}
 			</div>
