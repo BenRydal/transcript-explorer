@@ -15,6 +15,7 @@ let timeline, transcript, currConfig, editorState;
 let videoState: VideoState;
 let isPlayingTurnSnippets = false;
 let canHover = true;
+let mouseEventLocked = false;
 
 TimelineStore.subscribe((data) => {
 	timeline = data;
@@ -166,6 +167,11 @@ export const igsSketch = (p5: any) => {
 	};
 
 	p5.mousePressed = () => {
+		if (mouseEventLocked) return;
+		mouseEventLocked = true;
+		requestAnimationFrame(() => {
+			mouseEventLocked = false;
+		});
 		// Handle distribution diagram click to lock speaker filter (only if editor is open)
 		if ((currConfig.distributionDiagramToggle || currConfig.dashboardToggle) && editorState?.config?.isVisible) {
 			const hoveredSpeaker = currConfig.hoveredSpeakerInDistributionDiagram;
@@ -183,8 +189,6 @@ export const igsSketch = (p5: any) => {
 			}
 		}
 
-		// Video interaction is now handled by VideoContainer.svelte
-		// This mousePressed only handles canvas interactions when video is not over the click
 		if (!videoState.isLoaded || !videoState.isVisible) return;
 
 		if (videoState.isPlaying || isPlayingTurnSnippets) {
