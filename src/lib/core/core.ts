@@ -14,9 +14,11 @@ import { loadVideo, reset as resetVideo } from '../../stores/videoStore';
 import { Transcript, type TimingMode } from '../../models/transcript';
 import ConfigStore from '../../stores/configStore.js';
 import { notifications } from '../../stores/notificationStore.js';
+import HistoryStore from '../../stores/historyStore.js';
 
 import { toSeconds } from './time-utils.js';
 import { estimateDuration } from './timing-utils.js';
+import { normalizeSpeakerName } from './string-utils.js';
 
 let transcript: Transcript = new Transcript();
 
@@ -60,7 +62,7 @@ export class Core {
 	}
 
 	loadExample = async (exampleId: string) => {
-		this.clearAllData();
+		resetVideo(); // Clear old video; transcript clearing happens in loadCSVData
 		const selectedExample = examples[exampleId];
 		if (selectedExample) {
 			const { files, videoId } = selectedExample;
@@ -73,21 +75,8 @@ export class Core {
 		}
 	};
 
-	testFileTypeForProcessing(file: File) {
-		const fileName = file ? file.name.toLowerCase() : '';
-		if (fileName.endsWith('.csv') || file.type === 'text/csv') {
-			this.clearTranscriptData();
-			this.loadCSVData(file);
-		} else if (fileName.endsWith('.txt')) {
-			this.clearTranscriptData();
-			this.loadP5Strings(URL.createObjectURL(file));
-		} else if (fileName.endsWith('.mp4') || file.type === 'video/mp4') {
-			resetVideo();
-			this.prepVideoFromFile(URL.createObjectURL(file));
-		} else notifications.error('Unsupported file format. Please use CSV, TXT, or MP4 files.');
-	}
-
 	loadP5Strings(filePath) {
+		this.clearTranscriptData();
 		this.sketch.loadStrings(
 			filePath,
 			(stringArray) => {
@@ -106,6 +95,7 @@ export class Core {
 	}
 
 	loadCSVData = async (file: File) => {
+		this.clearTranscriptData();
 		Papa.parse(file, {
 			dynamicTyping: true,
 			skipEmptyLines: 'greedy',
@@ -118,9 +108,7 @@ export class Core {
 					this.processData(results.data, 'csv');
 					this.updateAllDataValues();
 				} else {
-					notifications.error(
-						'Invalid CSV format. Required columns: "speaker" and "content". Optional: "start" and "end" for timing.'
-					);
+					notifications.error('Invalid CSV format. Required columns: "speaker" and "content". Optional: "start" and "end" for timing.');
 				}
 			},
 			error: (error, file) => {
@@ -131,12 +119,7 @@ export class Core {
 	};
 
 	updateAllDataValues() {
-		const enableRepeatedWordsThreshold = 5000;
 		this.updateTimelineValues(transcript.totalTimeInSeconds);
-		ConfigStore.update((currentConfig) => ({
-			...currentConfig,
-			repeatedWordsToggle: transcript.totalNumOfWords > enableRepeatedWordsThreshold
-		}));
 		this.sketch.fillAllData();
 	}
 
@@ -238,12 +221,12 @@ export class Core {
 
 		if (colonIndex > 0) {
 			// "SPEAKER 1: Hello world" → speaker="SPEAKER 1", content="Hello world"
-			speakerName = trimmedLine.slice(0, colonIndex).trim().toUpperCase();
+			speakerName = normalizeSpeakerName(trimmedLine.slice(0, colonIndex));
 			content = this.createTurnContentArray(trimmedLine.slice(colonIndex + 1));
 		} else {
 			// Fallback: first word is speaker (original behavior)
 			content = this.createTurnContentArray(trimmedLine);
-			speakerName = content.shift()?.toUpperCase() || '';
+			speakerName = normalizeSpeakerName(content.shift() || '');
 		}
 
 		if (!speakerName || !content.length) return null;
@@ -269,7 +252,7 @@ export class Core {
 	parseDataRowCSV(line: unknown, nextLine: unknown, currentWordCount: number, lastValidStartTime: number | null, lastValidEndTime: number | null) {
 		if (!hasSpeakerNameAndContent(line)) return null;
 		const headers = HEADERS_TRANSCRIPT_WITH_TIME;
-		const speakerName = String(line[headers[0]]).trim().toUpperCase();
+		const speakerName = normalizeSpeakerName(String(line[headers[0]]));
 		this.updateUsers(speakerName);
 		const content: string[] = this.createTurnContentArray(String(line[headers[1]]).trim());
 		if (!content.length) return null;
@@ -388,17 +371,10 @@ export class Core {
 		});
 	};
 
-	clearAllData() {
-		this.sketch.dynamicData.clear();
-		UserStore.set([]);
-		TranscriptStore.set(new Transcript());
-		// Reset video state
-		resetVideo();
-	}
-
 	clearTranscriptData() {
 		this.sketch.dynamicData.clear();
 		UserStore.set([]);
 		TranscriptStore.set(new Transcript());
+		HistoryStore.clear();
 	}
 }

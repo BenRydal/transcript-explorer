@@ -29,12 +29,7 @@ export function exportTranscriptToCSV(): void {
 		...(includeEnd && { end: formatTime(turn.endTime) })
 	}));
 
-	const columns = [
-		'speaker',
-		'content',
-		...(includeStart ? ['start'] : []),
-		...(includeEnd ? ['end'] : [])
-	];
+	const columns = ['speaker', 'content', ...(includeStart ? ['start'] : []), ...(includeEnd ? ['end'] : [])];
 
 	const csv = Papa.unparse(csvData, { header: true, columns });
 	const filename = generateFilename();

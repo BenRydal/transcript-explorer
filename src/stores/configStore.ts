@@ -1,4 +1,5 @@
 import { writable, derived } from 'svelte/store';
+import type { DataPoint } from '../models/dataPoint';
 
 export interface ConfigStoreType {
 	distributionDiagramToggle: boolean;
@@ -14,14 +15,17 @@ export interface ConfigStoreType {
 	repeatedWordsToggle: boolean;
 	animationRate: number;
 	repeatWordSliderValue: number;
-	selectedWordFromContributionCloud: string;
-	firstWordOfTurnSelectedInTurnChart: string;
-	arrayOfFirstWords: string[];
+	selectedWordFromContributionCloud: DataPoint | null;
+	cloudHasOverflow: boolean;
+	firstWordOfTurnSelectedInTurnChart: DataPoint | null;
+	arrayOfFirstWords: DataPoint[];
 	wordToSearch: string;
 	hoveredSpeakerInDistributionDiagram: string | null;
 	// Start-only mode settings
 	preserveGapsBetweenTurns: boolean;
 	speechRateWordsPerSecond: number;
+	// Video playback settings
+	snippetDurationSeconds: number;
 }
 
 export const initialConfig: ConfigStoreType = {
@@ -38,14 +42,17 @@ export const initialConfig: ConfigStoreType = {
 	repeatedWordsToggle: false,
 	animationRate: 3,
 	repeatWordSliderValue: 5,
-	selectedWordFromContributionCloud: '',
-	firstWordOfTurnSelectedInTurnChart: '',
+	selectedWordFromContributionCloud: null,
+	cloudHasOverflow: false,
+	firstWordOfTurnSelectedInTurnChart: null,
 	arrayOfFirstWords: [],
 	wordToSearch: '',
 	hoveredSpeakerInDistributionDiagram: null,
 	// Start-only mode settings (default: fill to next turn)
 	preserveGapsBetweenTurns: false,
-	speechRateWordsPerSecond: 3
+	speechRateWordsPerSecond: 3,
+	// Video playback settings
+	snippetDurationSeconds: 2
 };
 
 const ConfigStore = writable<ConfigStoreType>(initialConfig);
@@ -55,8 +62,6 @@ const ConfigStore = writable<ConfigStoreType>(initialConfig);
  * Using a string key ensures Svelte's reactivity properly detects changes
  * even when boolean values switch from true to false.
  */
-export const filterToggleKey = derived(ConfigStore, ($config) =>
-	`${$config.echoWordsToggle}-${$config.lastWordToggle}-${$config.stopWordsToggle}`
-);
+export const filterToggleKey = derived(ConfigStore, ($config) => `${$config.echoWordsToggle}-${$config.lastWordToggle}-${$config.stopWordsToggle}`);
 
 export default ConfigStore;

@@ -1,89 +1,88 @@
-import type p5 from 'p5';
 import { DataPoint } from '../../models/dataPoint';
+import TranscriptStore from '../../stores/transcriptStore';
 import TimelineStore from '../../stores/timelineStore';
+import UserStore from '../../stores/userStore';
 import ConfigStore, { type ConfigStoreType } from '../../stores/configStore';
 import { get } from 'svelte/store';
-import { clearScalingCache } from '../draw/contribution-cloud';
+import { clearScalingCache, clearCloudBuffer } from '../draw/contribution-cloud';
+
+// Module-level stop words Set (created once, shared by all instances)
+const STOP_WORDS = new Set([
+	// Articles
+	'a', 'an', 'the',
+	// Conjunctions
+	'and', 'or', 'but', 'if', 'then', 'than', 'because', 'while', 'until', 'although', 'though',
+	// Prepositions
+	'of', 'to', 'in', 'from', 'by', 'with', 'as', 'at', 'for', 'on', 'about', 'into', 'during',
+	'after', 'before', 'above', 'below', 'around', 'between', 'under', 'out', 'over', 'through', 'off',
+	// Pronouns
+	'i', 'you', 'he', 'she', 'it', 'we', 'they', 'me', 'him', 'her', 'us', 'them',
+	'my', 'your', 'his', 'its', 'our', 'their',
+	'that', 'which', 'who', 'whom', 'whose', 'what', 'this', 'these', 'those',
+	// Quantifiers
+	'all', 'any', 'some', 'each', 'every', 'both', 'either', 'neither', 'more', 'most',
+	'less', 'least', 'much', 'many', 'few', 'such', 'other', 'another', 'same',
+	// Be/Have/Do verbs
+	'is', 'are', 'was', 'were', 'am', 'be', 'been', 'being',
+	'have', 'has', 'had', 'having', 'do', 'does', 'did', 'doing',
+	// Modal verbs
+	'can', 'could', 'will', 'would', 'may', 'might', 'must', 'shall', 'should',
+	// Common verbs
+	'get', 'got', 'getting', 'go', 'going', 'gone', 'went', 'come', 'coming', 'came',
+	'make', 'made', 'making', 'know', 'knew', 'known', 'think', 'thought',
+	'say', 'said', 'see', 'saw', 'seen',
+	// Adverbs
+	'not', 'no', 'yes', 'here', 'there', 'when', 'where', 'how', 'why', 'up', 'down',
+	'even', 'very', 'just', 'so', 'only', 'now', 'still', 'also', 'too', 'well',
+	'really', 'quite', 'rather', 'always', 'never', 'often', 'sometimes', 'already', 'again', 'back', 'away',
+	// Contractions
+	"don't", "doesn't", "didn't", "won't", "can't", "couldn't", "wouldn't", "shouldn't",
+	"isn't", "aren't", "wasn't", "weren't", "haven't", "hasn't", "hadn't",
+	"i'm", "you're", "he's", "she's", "it's", "we're", "they're",
+	"i've", "you've", "we've", "they've", "i'll", "you'll", "he'll", "she'll", "we'll", "they'll",
+	"i'd", "you'd", "he'd", "she'd", "we'd", "they'd", "that's", "there's", "here's", "what's", "who's", "let's",
+	// Spoken fillers
+	'uh', 'um', 'like', 'yeah', 'okay', 'ok', 'oh', 'ah',
+	'gonna', 'wanna', 'gotta', 'kinda', 'sorta', 'basically', 'actually', 'literally', 'right', 'mean'
+]);
 
 let config: ConfigStoreType;
+let wordArray: DataPoint[] = [];
 
 ConfigStore.subscribe((value) => {
+	// Clear caches when count-related settings change
+	if (config && (
+		config.lastWordToggle !== value.lastWordToggle ||
+		config.echoWordsToggle !== value.echoWordsToggle ||
+		config.stopWordsToggle !== value.stopWordsToggle ||
+		config.sortToggle !== value.sortToggle ||
+		config.separateToggle !== value.separateToggle
+	)) {
+		clearScalingCache();
+		clearCloudBuffer();
+	}
 	config = value;
 });
 
-export class DynamicData {
-	sk: p5;
-	dynamicWordArray: DataPoint[];
-	stopWords: string[];
+TranscriptStore.subscribe((value) => {
+	wordArray = value.wordArray || [];
+});
 
-	constructor(sketch: p5) {
-		this.sk = sketch;
-		this.dynamicWordArray = [];
-		this.stopWords = this.getStopWords();
+export class DynamicData {
+	endIndex: number = 0;
+
+	setEndIndex(index: number): void {
+		this.endIndex = index;
 	}
 
-	// add this line to show repeated words in CC for selected time: && this.isInTimeRange(animationWord.startTime, animationWord.endTime)
-	update(index: DataPoint): void {
-		if (!index) return;
-		const animationWord = new DataPoint(index.speaker, index.turnNumber, index.word, index.startTime, index.endTime);
-		if (!config.stopWordsToggle || !this.isStopWord(animationWord.word)) {
-			this.updateWordCounts(animationWord);
-		}
+	clear(): void {
+		this.endIndex = 0;
+		clearScalingCache();
+		clearCloudBuffer();
 	}
 
 	isStopWord(stringWord: string): boolean {
-		return this.stopWords.includes(stringWord.toLowerCase());
-	}
-
-	removeLastElement(): void {
-		this.dynamicWordArray.pop();
-	}
-
-	updateWordCounts(index: DataPoint): void {
-		const foundWords = this.dynamicWordArray.filter((e) => e.word === index.word); // return array of all matching words
-		// This line will instead only increment counts on words spoken by SAME speaker, also would need to update hovering techniques in CC
-		// const foundWords = this.dynamicWordArray.filter(function (currentElement) {
-		//     return currentElement.word === index.word && currentElement.speaker === index.speaker;
-		// });
-		if (foundWords.length) {
-			if (config.lastWordToggle) {
-				index.count += foundWords[foundWords.length - 1].count; // Increments last word by previous last word in CC
-				if (!config.echoWordsToggle) {
-					foundWords[foundWords.length - 1].count = 1; // also add this line if you want to reset and highlight ONLY last word, not incremental echo
-				}
-			} else {
-				foundWords[0].count++; // Increment first word count/makes only first word bigger in CC
-			}
-		}
-		this.dynamicWordArray.push(index);
-	}
-
-	splitIntoArraysByNumber(sortedAnimationWordArray: DataPoint[], getKey: (item: DataPoint) => number): Record<number, DataPoint[]> {
-		const categorized = sortedAnimationWordArray.reduce((acc: Record<number, DataPoint[]>, item) => {
-			const key = getKey(item);
-			if (!acc[key]) {
-				acc[key] = [];
-			}
-			if (this.isInTimeRange(item.startTime, item.endTime)) {
-				acc[key].push(item);
-			}
-			return acc;
-		}, {});
-		return categorized;
-	}
-
-	splitIntoArraysBySpeaker(sortedAnimationWordArray: DataPoint[]): Record<string, DataPoint[]> {
-		const categorized = sortedAnimationWordArray.reduce((acc: Record<string, DataPoint[]>, item) => {
-			const key = item.speaker;
-			if (!acc[key]) {
-				acc[key] = [];
-			}
-			if (this.isInTimeRange(item.startTime, item.endTime)) {
-				acc[key].push(item);
-			}
-			return acc;
-		}, {});
-		return categorized;
+		return STOP_WORDS.has(stringWord.toLowerCase());
 	}
 
 	isInTimeRange(startTime: number, endTime: number): boolean {
@@ -91,297 +90,76 @@ export class DynamicData {
 		return startTime >= timeline.leftMarker && endTime <= timeline.rightMarker;
 	}
 
+	/**
+	 * Get the current slice of words based on endIndex, with counts computed.
+	 * Filters stop words and applies count logic based on config toggles.
+	 * Note: Counts are computed for ALL words first, then filtered by time range.
+	 */
+	getProcessedWords(filterByTimeRange = false): DataPoint[] {
+		const slice = wordArray.slice(0, this.endIndex);
+		const result: DataPoint[] = [];
+		const countMap = new Map<string, DataPoint[]>();
+
+		// First pass: compute counts for all words (stop words excluded)
+		for (const word of slice) {
+			if (config.stopWordsToggle && this.isStopWord(word.word)) continue;
+
+			const copy = new DataPoint(word.speaker, word.turnNumber, word.word, word.startTime, word.endTime);
+			const existing = countMap.get(word.word);
+
+			if (existing) {
+				if (config.lastWordToggle) {
+					copy.count = existing[existing.length - 1].count + 1;
+					if (!config.echoWordsToggle) {
+						existing[existing.length - 1].count = 1;
+					}
+				} else {
+					existing[0].count++;
+				}
+				existing.push(copy);
+			} else {
+				countMap.set(word.word, [copy]);
+			}
+			result.push(copy);
+		}
+
+		// Filter by time range after counts are computed
+		if (filterByTimeRange) {
+			return result.filter((word) => this.isInTimeRange(word.startTime, word.endTime));
+		}
+		return result;
+	}
+
 	getDynamicArrayForDistributionDiagram(): Record<string, DataPoint[]> {
-		const animationArrayCopy = this.getAnimationArrayDeepCopy();
-		return this.splitIntoArraysBySpeaker(animationArrayCopy);
+		const categorized: Record<string, DataPoint[]> = {};
+		for (const word of this.getProcessedWords(true)) {
+			if (!categorized[word.speaker]) categorized[word.speaker] = [];
+			categorized[word.speaker].push(word);
+		}
+		return categorized;
 	}
 
 	getDynamicArrayForTurnChart(): Record<number, DataPoint[]> {
-		return this.splitIntoArraysByNumber(this.getAnimationArrayDeepCopy(), (item) => item.turnNumber);
+		const categorized: Record<number, DataPoint[]> = {};
+		for (const word of this.getProcessedWords(true)) {
+			if (!categorized[word.turnNumber]) categorized[word.turnNumber] = [];
+			categorized[word.turnNumber].push(word);
+		}
+		return categorized;
 	}
 
 	getDynamicArraySortedForContributionCloud(): DataPoint[] {
-		let curAnimationArray = this.getAnimationArrayDeepCopy().filter((word) => this.isInTimeRange(word.startTime, word.endTime));
-		if (config.sortToggle) curAnimationArray.sort((a, b) => b.count - a.count); // sort descending by word count
-		if (config.separateToggle) curAnimationArray.sort((a, b) => a.speaker.localeCompare(b.speaker)); // group by speaker name
-		return curAnimationArray;
-	}
+		const words = this.getProcessedWords(true);
 
-	getAnimationArrayDeepCopy(): DataPoint[] {
-		return this.dynamicWordArray.map((dp) => {
-			const copy = new DataPoint(dp.speaker, dp.turnNumber, dp.word, dp.startTime, dp.endTime);
-			copy.count = dp.count;
-			return copy;
-		});
-	}
+		if (config.sortToggle) {
+			words.sort((a, b) => b.count - a.count);
+		}
+		if (config.separateToggle) {
+			const users = get(UserStore);
+			const speakerOrder = new Map(users.map((u, i) => [u.name, i]));
+			words.sort((a, b) => (speakerOrder.get(a.speaker) ?? 999) - (speakerOrder.get(b.speaker) ?? 999));
+		}
 
-	clear(): void {
-		this.dynamicWordArray = [];
-		clearScalingCache();
-	}
-
-	getStopWords(): string[] {
-		return [
-			// Articles
-			'a',
-			'an',
-			'the',
-
-			// Conjunctions
-			'and',
-			'or',
-			'but',
-			'if',
-			'then',
-			'than',
-			'because',
-			'while',
-			'until',
-			'although',
-			'though',
-
-			// Prepositions
-			'of',
-			'to',
-			'in',
-			'from',
-			'by',
-			'with',
-			'as',
-			'at',
-			'for',
-			'on',
-			'about',
-			'into',
-			'during',
-			'after',
-			'before',
-			'above',
-			'below',
-			'around',
-			'between',
-			'under',
-			'out',
-			'over',
-			'through',
-			'off',
-
-			// Subject pronouns
-			'I',
-			'you',
-			'he',
-			'she',
-			'it',
-			'we',
-			'they',
-
-			// Object pronouns
-			'me',
-			'him',
-			'her',
-			'us',
-			'them',
-
-			// Possessive pronouns
-			'my',
-			'your',
-			'his',
-			'her',
-			'its',
-			'our',
-			'their',
-
-			// Relative/interrogative pronouns
-			'that',
-			'which',
-			'who',
-			'whom',
-			'whose',
-			'what',
-
-			// Demonstratives
-			'this',
-			'these',
-			'those',
-
-			// Quantifiers
-			'all',
-			'any',
-			'some',
-			'each',
-			'every',
-			'both',
-			'either',
-			'neither',
-			'more',
-			'most',
-			'less',
-			'least',
-			'much',
-			'many',
-			'few',
-			'such',
-			'other',
-			'another',
-			'same',
-
-			// Be verbs
-			'is',
-			'are',
-			'was',
-			'were',
-			'am',
-			'be',
-			'been',
-			'being',
-
-			// Have verbs
-			'have',
-			'has',
-			'had',
-			'having',
-
-			// Do verbs
-			'do',
-			'does',
-			'did',
-			'doing',
-
-			// Modal verbs
-			'can',
-			'could',
-			'will',
-			'would',
-			'may',
-			'might',
-			'must',
-			'shall',
-			'should',
-
-			// Common verbs
-			'get',
-			'got',
-			'getting',
-			'go',
-			'going',
-			'gone',
-			'went',
-			'come',
-			'coming',
-			'came',
-			'make',
-			'made',
-			'making',
-			'know',
-			'knew',
-			'known',
-			'think',
-			'thought',
-			'say',
-			'said',
-			'see',
-			'saw',
-			'seen',
-
-			// Adverbs
-			'not',
-			'no',
-			'yes',
-			'here',
-			'there',
-			'when',
-			'where',
-			'how',
-			'why',
-			'up',
-			'down',
-			'even',
-			'very',
-			'just',
-			'so',
-			'only',
-			'now',
-			'still',
-			'also',
-			'too',
-			'well',
-			'really',
-			'quite',
-			'rather',
-			'always',
-			'never',
-			'often',
-			'sometimes',
-			'already',
-			'again',
-			'back',
-			'away',
-
-			// Contractions
-			"don't",
-			"doesn't",
-			"didn't",
-			"won't",
-			"can't",
-			"couldn't",
-			"wouldn't",
-			"shouldn't",
-			"isn't",
-			"aren't",
-			"wasn't",
-			"weren't",
-			"haven't",
-			"hasn't",
-			"hadn't",
-			"i'm",
-			"you're",
-			"he's",
-			"she's",
-			"it's",
-			"we're",
-			"they're",
-			"i've",
-			"you've",
-			"we've",
-			"they've",
-			"i'll",
-			"you'll",
-			"he'll",
-			"she'll",
-			"we'll",
-			"they'll",
-			"i'd",
-			"you'd",
-			"he'd",
-			"she'd",
-			"we'd",
-			"they'd",
-			"that's",
-			"there's",
-			"here's",
-			"what's",
-			"who's",
-			"let's",
-
-			// Spoken fillers (common in transcripts)
-			'uh',
-			'um',
-			'like',
-			'yeah',
-			'okay',
-			'ok',
-			'oh',
-			'ah',
-			'gonna',
-			'wanna',
-			'gotta',
-			'kinda',
-			'sorta',
-			'basically',
-			'actually',
-			'literally',
-			'right',
-			'mean'
-		];
+		return words;
 	}
 }

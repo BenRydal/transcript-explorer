@@ -1,15 +1,9 @@
 <script lang="ts">
 	import TranscriptStore from '../../stores/transcriptStore';
 	import UserStore from '../../stores/userStore';
+	import { toTitleCase } from '$lib/core/string-utils';
 
 	export let isOpen = false;
-
-	function capitalizeEachWord(sentence: string) {
-		return sentence
-			.split(' ')
-			.map((word) => word.charAt(0).toUpperCase() + word.slice(1).toLowerCase())
-			.join(' ');
-	}
 
 	function handleKeydown(e: KeyboardEvent) {
 		if (e.key === 'Escape') isOpen = false;
@@ -17,13 +11,7 @@
 </script>
 
 {#if isOpen}
-	<div
-		class="modal modal-open"
-		on:click|self={() => (isOpen = false)}
-		on:keydown={handleKeydown}
-		role="dialog"
-		aria-modal="true"
-	>
+	<div class="modal modal-open" on:click|self={() => (isOpen = false)} on:keydown={handleKeydown} role="dialog" aria-modal="true">
 		<div class="modal-box w-11/12 max-w-5xl">
 			<div class="flex justify-between">
 				<div class="flex flex-col">
@@ -65,7 +53,7 @@
 								<input type="checkbox" class="peer" />
 								<div class="collapse-title font-semibold flex items-center">
 									<div class="w-4 h-4 rounded-full mr-2" style="background-color: {user.color}"></div>
-									{capitalizeEachWord(user.name)}
+									{toTitleCase(user.name)}
 								</div>
 
 								<div class="collapse-content">

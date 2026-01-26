@@ -31,6 +31,7 @@ interface SpeakerMetrics {
 export class DistributionDiagram {
 	sk: p5;
 	users: User[];
+	userMap: Map<string, User>;
 	config: ConfigStoreType;
 	largestNumOfWordsByASpeaker: number;
 	largestNumOfTurnsByASpeaker: number;
@@ -48,6 +49,7 @@ export class DistributionDiagram {
 	constructor(sk: p5, pos: Bounds) {
 		this.sk = sk;
 		this.users = get(UserStore);
+		this.userMap = new Map(this.users.map((user) => [user.name, user]));
 		this.config = get(ConfigStore);
 		const transcript = get(TranscriptStore);
 		this.largestNumOfWordsByASpeaker = transcript.largestNumOfWordsByASpeaker;
@@ -74,7 +76,7 @@ export class DistributionDiagram {
 
 		for (const key in sortedAnimationWordArray) {
 			if (sortedAnimationWordArray[key].length) {
-				const user = this.users.find((user) => user.name === sortedAnimationWordArray[key][0].speaker);
+				const user = this.userMap.get(sortedAnimationWordArray[key][0].speaker);
 				if (user?.enabled) {
 					let wordsToVisualize = sortedAnimationWordArray[key];
 					if (searchTerm) {
@@ -95,7 +97,7 @@ export class DistributionDiagram {
 	drawViz(tempTurnArray: DataPoint[], isDrawFlower: boolean): void {
 		const firstElement = tempTurnArray[0];
 		const metrics = this.calculateMetrics(tempTurnArray, isDrawFlower);
-		const user = this.users.find((user) => user.name === firstElement.speaker);
+		const user = this.userMap.get(firstElement.speaker);
 		if (!user) return;
 		const color = this.sk.color(user.color);
 

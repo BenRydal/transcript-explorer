@@ -1,6 +1,7 @@
 <script lang="ts">
 	import { createEventDispatcher } from 'svelte';
 	import MdCloudUpload from 'svelte-icons/md/MdCloudUpload.svelte';
+	import { extractYouTubeVideoId } from '$lib/core/url-utils';
 
 	export let isOpen = false;
 	export let isDraggingOver = false;
@@ -9,6 +10,9 @@
 
 	const dispatch = createEventDispatcher();
 
+	let youtubeUrl = '';
+	let youtubeError = '';
+
 	function handleKeydown(e: KeyboardEvent) {
 		if (e.key === 'Escape') isOpen = false;
 	}
@@ -16,16 +20,21 @@
 	function handleDropzoneKeydown(e: KeyboardEvent) {
 		if (e.key === 'Enter') dispatch('openFileDialog');
 	}
+
+	function handleYouTubeSubmit() {
+		const videoId = extractYouTubeVideoId(youtubeUrl);
+		if (videoId) {
+			dispatch('youtubeUrl', videoId);
+			youtubeUrl = '';
+			isOpen = false;
+		} else {
+			youtubeError = 'Invalid YouTube URL';
+		}
+	}
 </script>
 
 {#if isOpen}
-	<div
-		class="modal modal-open"
-		on:click|self={() => (isOpen = false)}
-		on:keydown={handleKeydown}
-		role="dialog"
-		aria-modal="true"
-	>
+	<div class="modal modal-open" on:click|self={() => (isOpen = false)} on:keydown={handleKeydown} role="dialog" aria-modal="true">
 		<div class="modal-box w-11/12 max-w-lg">
 			<div class="flex justify-between mb-4">
 				<h3 class="font-bold text-lg">Upload Files</h3>
@@ -69,6 +78,27 @@
 				<p class="text-xs text-gray-500 mt-2">
 					CSV/TXT files should contain transcript data with speaker and content columns. MP4 files will be used as video overlay.
 				</p>
+			</div>
+
+			<!-- YouTube URL input -->
+			<div class="mt-4">
+				<div class="divider text-sm text-gray-500">or</div>
+				<div class="flex gap-2">
+					<input
+						type="text"
+						class="input input-bordered input-sm flex-1"
+						placeholder="Paste YouTube URL"
+						bind:value={youtubeUrl}
+						on:input={() => (youtubeError = '')}
+						on:keydown={(e) => e.key === 'Enter' && handleYouTubeSubmit()}
+					/>
+					<button class="btn btn-sm btn-primary" on:click={handleYouTubeSubmit} disabled={!youtubeUrl.trim()}>
+						Load
+					</button>
+				</div>
+				{#if youtubeError}
+					<p class="text-error text-xs mt-1">{youtubeError}</p>
+				{/if}
 			</div>
 
 			<!-- Auto-transcribe option -->

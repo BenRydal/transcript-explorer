@@ -70,9 +70,7 @@
 
 			{#if !isTranscribing}
 				<div class="space-y-4">
-					<p class="text-gray-600">
-						Generate a transcript from your video using AI. Runs entirely in your browser - no data is uploaded.
-					</p>
+					<p class="text-gray-600">Generate a transcript from your video using AI. Runs entirely in your browser - no data is uploaded.</p>
 
 					{#if videoFile}
 						<div class="bg-gray-50 rounded-lg p-4 text-sm text-gray-600">
@@ -102,9 +100,7 @@
 			<div class="modal-action">
 				{#if !isTranscribing}
 					<button class="btn btn-ghost" on:click={handleClose}>Cancel</button>
-					<button class="btn btn-primary" on:click={startTranscription} disabled={!videoFile}>
-						Start Transcription
-					</button>
+					<button class="btn btn-primary" on:click={startTranscription} disabled={!videoFile}> Start Transcription </button>
 				{/if}
 			</div>
 		</div>

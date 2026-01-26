@@ -1,24 +1,9 @@
 <script lang="ts">
 	import { onMount, onDestroy } from 'svelte';
 	import { browser } from '$app/environment';
-	import VideoStore, {
-		updatePosition,
-		updateSize,
-		setDragging,
-		setResizing,
-		play,
-		pause,
-		clearSeekRequest
-	} from '../../stores/videoStore';
+	import VideoStore, { updatePosition, updateSize, setDragging, setResizing, clearSeekRequest } from '../../stores/videoStore';
 	import EditorStore from '../../stores/editorStore';
-	import {
-		playVideo,
-		pauseVideo,
-		seekTo,
-		muteVideo,
-		unmuteVideo,
-		type VideoPlayer
-	} from '../video/video-service';
+	import { playVideo, pauseVideo, seekTo, muteVideo, unmuteVideo, type VideoPlayer } from '../video/video-service';
 	import VideoPlayerComponent from './VideoPlayer.svelte';
 	import VideoControls from './VideoControls.svelte';
 
@@ -47,6 +32,7 @@
 	$: isMuted = $VideoStore.isMuted;
 	$: seekRequest = $VideoStore.seekRequest;
 	$: isVisible = $VideoStore.isVisible;
+	$: snippetsMode = $VideoStore.snippetsMode;
 	$: showAdvancedControls = $EditorStore.config.showAdvancedVideoControls;
 
 	// Handle seek requests from p5 or other sources
@@ -199,14 +185,6 @@
 		}
 	}
 
-	export function videoPlay() {
-		play();
-	}
-
-	export function videoPause() {
-		pause();
-	}
-
 	export function getPlayer(): VideoPlayer | null {
 		return player;
 	}
@@ -216,8 +194,8 @@
 		const rect = containerEl.getBoundingClientRect();
 
 		// Available space in the container (with padding)
-		const availableWidth = rect.width - (FULLSCREEN_PADDING * 2);
-		const availableHeight = rect.height - (FULLSCREEN_PADDING * 2);
+		const availableWidth = rect.width - FULLSCREEN_PADDING * 2;
+		const availableHeight = rect.height - FULLSCREEN_PADDING * 2;
 
 		// Calculate video dimensions that fit while maintaining aspect ratio
 		let newWidth = availableWidth;
@@ -331,6 +309,13 @@
 
 		<!-- Click shield for YouTube -->
 		<div class="click-shield"></div>
+
+		<!-- Snippets mode indicator -->
+		{#if snippetsMode}
+			<div class="snippets-indicator">
+				Turn {snippetsMode.currentIndex + 1} of {snippetsMode.turns.length}
+			</div>
+		{/if}
 	</div>
 
 	<!-- Controls bar at bottom -->
@@ -340,26 +325,10 @@
 
 	<!-- Resize handles (hidden in fullscreen) -->
 	{#if !isFullscreen}
-		<button
-			class="resize-handle nw"
-			on:mousedown={(e) => handleResizeStart(e, 'nw')}
-			aria-label="Resize from top-left corner"
-		></button>
-		<button
-			class="resize-handle ne"
-			on:mousedown={(e) => handleResizeStart(e, 'ne')}
-			aria-label="Resize from top-right corner"
-		></button>
-		<button
-			class="resize-handle sw"
-			on:mousedown={(e) => handleResizeStart(e, 'sw')}
-			aria-label="Resize from bottom-left corner"
-		></button>
-		<button
-			class="resize-handle se"
-			on:mousedown={(e) => handleResizeStart(e, 'se')}
-			aria-label="Resize from bottom-right corner"
-		></button>
+		<button class="resize-handle nw" on:mousedown={(e) => handleResizeStart(e, 'nw')} aria-label="Resize from top-left corner"></button>
+		<button class="resize-handle ne" on:mousedown={(e) => handleResizeStart(e, 'ne')} aria-label="Resize from top-right corner"></button>
+		<button class="resize-handle sw" on:mousedown={(e) => handleResizeStart(e, 'sw')} aria-label="Resize from bottom-left corner"></button>
+		<button class="resize-handle se" on:mousedown={(e) => handleResizeStart(e, 'se')} aria-label="Resize from bottom-right corner"></button>
 	{/if}
 </div>
 
@@ -413,6 +382,19 @@
 		bottom: 0;
 		z-index: 1;
 		background: transparent;
+	}
+
+	.snippets-indicator {
+		position: absolute;
+		top: 8px;
+		left: 8px;
+		padding: 4px 8px;
+		background: rgba(0, 0, 0, 0.7);
+		color: white;
+		font-size: 12px;
+		font-weight: 500;
+		border-radius: 4px;
+		z-index: 2;
 	}
 
 	.controls-bar {

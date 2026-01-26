@@ -5,15 +5,17 @@ import type { User } from '../../models/user';
 import TimelineStore from '../../stores/timelineStore';
 import ConfigStore from '../../stores/configStore';
 import EditorStore from '../../stores/editorStore';
-import VideoStore, { play as videoPlay, pause as videoPause, requestSeek } from '../../stores/videoStore';
+import VideoStore from '../../stores/videoStore';
 import type { VideoState } from '../../stores/videoStore';
+import { handleVisualizationClick } from '../video/video-interaction';
 import { Draw } from '../draw/draw';
 import { DynamicData } from '../core/dynamic-data';
 
 let users: User[] = [];
 let timeline, transcript, currConfig, editorState;
 let videoState: VideoState;
-let isPlayingTurnSnippets = false;
+let canHover = true;
+let mouseEventLocked = false;
 
 TimelineStore.subscribe((data) => {
 	timeline = data;
@@ -49,11 +51,23 @@ export const igsSketch = (p5: any) => {
 	p5.setup = () => {
 		const { width, height } = p5.getContainerSize();
 		p5.createCanvas(width, height);
-		p5.dynamicData = new DynamicData(p5);
+		p5.dynamicData = new DynamicData();
+		p5.renderer = new Draw(p5);
 		p5.SPACING = 25;
 		p5.toolTipTextSize = 30;
 		p5.textFont(p5.font);
 		p5.animationCounter = 0; // controls animation of data
+
+		// Track if mouse is over canvas (not blocked by UI elements)
+		const canvas = document.querySelector('#p5-container canvas');
+		document.addEventListener('pointermove', (e) => {
+			canHover = e.target === canvas;
+		});
+
+		// If transcript data already exists (e.g., after mode switch), populate it
+		if (transcript.wordArray?.length > 0) {
+			p5.fillAllData();
+		}
 	};
 
 	p5.getContainerSize = () => {
@@ -70,55 +84,67 @@ export const igsSketch = (p5: any) => {
 	p5.draw = () => {
 		if (p5.arrayIsLoaded(transcript.wordArray) && p5.arrayIsLoaded(users)) {
 			p5.background(255);
-			const render = new Draw(p5);
-			render.drawViz();
+			p5.renderer.drawViz();
 		}
 		if (timeline.isAnimating) p5.updateAnimation();
+		p5.updateCursor();
+	};
+
+	p5.updateCursor = () => {
+		if (!videoState.isLoaded || !videoState.isVisible) {
+			p5.cursor(p5.ARROW);
+			return;
+		}
+
+		const { firstWordOfTurnSelectedInTurnChart, selectedWordFromContributionCloud, arrayOfFirstWords } = currConfig;
+		const hasPlayableHover =
+			firstWordOfTurnSelectedInTurnChart ||
+			selectedWordFromContributionCloud ||
+			arrayOfFirstWords?.length > 0;
+
+		p5.cursor(hasPlayableHover ? p5.HAND : p5.ARROW);
 	};
 
 	p5.updateAnimation = () => {
-		const mappedTime = Math.ceil(p5.map(timeline.currTime, 0, timeline.endTime, 0, transcript.totalNumOfWords));
-		p5.syncAnimationCounter(mappedTime);
+		p5.syncAnimationCounter();
 		p5.handleTimelineAnimationState();
 	};
 
 	p5.syncAnimationCounter = () => {
-		// Find the index of the first word that starts after the current time
-		let targetIndex = p5.getAnimationTargetIndex();
-		// Calculate the delta between the current animation counter and the target index
-		const delta = Math.abs(targetIndex - p5.animationCounter);
-		const fastCatchUpThreshold = 100; // for catching up when user scrubs forward or backward
+		const targetIndex = p5.getAnimationTargetIndex();
+		const delta = targetIndex - p5.animationCounter;
+		if (delta === 0) return;
 
-		if (delta > fastCatchUpThreshold) {
-			p5.setAnimationCounter(targetIndex);
+		const skipAnimationThreshold = 100;
+		if (Math.abs(delta) > skipAnimationThreshold) {
+			p5.animationCounter = targetIndex;
 		} else {
-			const maxStepsPerFrame = 1;
-			let steps = 0;
-
-			while (p5.animationCounter < targetIndex && steps < maxStepsPerFrame && p5.animationCounter < transcript.wordArray.length) {
-				p5.dynamicData.update(transcript.wordArray[p5.animationCounter]);
-				p5.animationCounter++;
-				steps++;
-			}
-
-			while (p5.animationCounter > targetIndex && steps < maxStepsPerFrame && p5.animationCounter > 0) {
-				p5.dynamicData.removeLastElement();
-				p5.animationCounter--;
-				steps++;
-			}
+			p5.animationCounter += Math.sign(delta);
 		}
+		p5.dynamicData.setEndIndex(p5.animationCounter);
 	};
 
 	p5.getAnimationTargetIndex = () => {
 		const currTime = timeline.currTime;
-		let targetIndex = transcript.wordArray.findIndex((word) => word.startTime > currTime);
-		if (targetIndex < 0) targetIndex = transcript.wordArray.length;
-		return targetIndex;
+		const words = transcript.wordArray;
+		let low = 0;
+		let high = words.length;
+
+		// Binary search: find first index where startTime > currTime
+		while (low < high) {
+			const mid = (low + high) >>> 1;
+			if (words[mid].startTime <= currTime) {
+				low = mid + 1;
+			} else {
+				high = mid;
+			}
+		}
+		return low;
 	};
 
 	p5.setAnimationCounter = (targetIndex: number) => {
 		p5.animationCounter = targetIndex;
-		p5.fillSelectedData();
+		p5.dynamicData.setEndIndex(targetIndex);
 	};
 
 	p5.handleTimelineAnimationState = () => {
@@ -130,18 +156,13 @@ export const igsSketch = (p5: any) => {
 	};
 
 	p5.continueTimelineAnimation = () => {
-		let timeToSet = 0;
-		if (videoState.isLoaded && videoState.isPlaying) {
-			// Get time from video via VideoStore's currentTime
-			timeToSet = videoState.currentTime;
-		} else {
-			// Cap deltaTime to 100ms to prevent huge jumps when tab is backgrounded
-			const cappedDeltaTime = Math.min(p5.deltaTime, 100);
-			timeToSet = timeline.currTime + (currConfig.animationRate * cappedDeltaTime / 1000);
-		}
-		TimelineStore.update((timeline) => {
-			timeline.currTime = timeToSet;
-			return timeline;
+		const timeToSet = videoState.isLoaded && videoState.isPlaying
+			? videoState.currentTime
+			: timeline.currTime + (currConfig.animationRate * Math.min(p5.deltaTime, 100)) / 1000;
+
+		TimelineStore.update((t) => {
+			t.currTime = timeToSet;
+			return t;
 		});
 	};
 
@@ -157,93 +178,47 @@ export const igsSketch = (p5: any) => {
 	};
 
 	p5.mousePressed = () => {
-		// Handle distribution diagram click to lock speaker filter (only if editor is open)
-		if ((currConfig.distributionDiagramToggle || currConfig.dashboardToggle) && editorState?.config?.isVisible) {
-			const hoveredSpeaker = currConfig.hoveredSpeakerInDistributionDiagram;
-			if (hoveredSpeaker) {
-				EditorStore.update((state) => ({
-					...state,
-					selection: {
-						...state.selection,
-						filteredSpeaker: hoveredSpeaker,
-						highlightedSpeaker: hoveredSpeaker,
-						selectedTurnNumber: null,
-						selectionSource: 'distributionDiagramClick'
-					}
-				}));
-			}
-		}
+		if (mouseEventLocked) return;
+		mouseEventLocked = true;
+		requestAnimationFrame(() => {
+			mouseEventLocked = false;
+		});
 
-		// Video interaction is now handled by VideoContainer.svelte
-		// This mousePressed only handles canvas interactions when video is not over the click
-		if (!videoState.isLoaded || !videoState.isVisible) return;
-
-		if (videoState.isPlaying || isPlayingTurnSnippets) {
-			p5.stopTurnSnippets();
-			videoPause();
-		} else if (p5.overRect(0, 0, p5.width, p5.height)) {
-			p5.handleVideoPlay();
-		}
+		p5.handleSpeakerFilterClick();
+		p5.handleVideoClick();
 	};
 
-	p5.handleVideoPlay = () => {
-		const { distributionDiagramToggle, turnChartToggle, contributionCloudToggle, arrayOfFirstWords, selectedWordFromContributionCloud, firstWordOfTurnSelectedInTurnChart } = currConfig;
+	// Lock speaker filter in editor when clicking on a speaker's visualization
+	p5.handleSpeakerFilterClick = () => {
+		if (!editorState?.config?.isVisible) return;
 
-		if (distributionDiagramToggle || (currConfig.dashboardToggle && arrayOfFirstWords.length && !firstWordOfTurnSelectedInTurnChart && !selectedWordFromContributionCloud)) {
-			// Distribution diagram: play first 2 seconds of each turn
-			if (arrayOfFirstWords.length) {
-				p5.playTurnSnippets(arrayOfFirstWords);
-			}
-		} else if (turnChartToggle || (currConfig.dashboardToggle && firstWordOfTurnSelectedInTurnChart)) {
-			// Turn chart: play from hovered turn
-			if (firstWordOfTurnSelectedInTurnChart) {
-				requestSeek(firstWordOfTurnSelectedInTurnChart.startTime);
-				videoPlay();
-			}
-		} else if (contributionCloudToggle || (currConfig.dashboardToggle && selectedWordFromContributionCloud)) {
-			// Contribution cloud: play from hovered word
-			if (selectedWordFromContributionCloud) {
-				requestSeek(selectedWordFromContributionCloud.startTime);
-				videoPlay();
-			}
+		const hoveredSpeaker = currConfig.hoveredSpeakerInDistributionDiagram;
+		if (hoveredSpeaker) {
+			EditorStore.update((state) => ({
+				...state,
+				selection: {
+					...state.selection,
+					filteredSpeaker: hoveredSpeaker,
+					highlightedSpeaker: hoveredSpeaker,
+					selectedTurnNumber: null,
+					selectionSource: 'distributionDiagramClick'
+				}
+			}));
 		}
 	};
 
-	p5.playTurnSnippets = async (turns: any[]) => {
-		if (isPlayingTurnSnippets) return;
-		isPlayingTurnSnippets = true;
-
-		for (const turn of turns) {
-			if (!isPlayingTurnSnippets) break;
-			requestSeek(turn.startTime);
-			videoPlay();
-			await new Promise(resolve => setTimeout(resolve, 2000));
-		}
-
-		videoPause();
-		isPlayingTurnSnippets = false;
-	};
-
-	p5.stopTurnSnippets = () => {
-		isPlayingTurnSnippets = false;
-	};
-
-	p5.resetAnimation = () => {
-		p5.dynamicData.clear();
-		p5.animationCounter = 0;
+	p5.handleVideoClick = () => {
+		if (!p5.overRect(0, 0, p5.width, p5.height)) return;
+		handleVisualizationClick();
 	};
 
 	p5.fillAllData = () => {
-		p5.animationCounter = transcript.wordArray.length;
-		p5.fillSelectedData();
+		p5.setAnimationCounter(transcript.wordArray.length);
 	};
 
 	p5.fillSelectedData = () => {
 		if (!p5.dynamicData) return; // Guard against calls before setup completes
-		p5.dynamicData.clear();
-		for (let i = 0; i < p5.animationCounter; i++) {
-			p5.dynamicData.update(transcript.wordArray[i]);
-		}
+		p5.dynamicData.setEndIndex(p5.animationCounter);
 	};
 
 	/**
@@ -272,11 +247,8 @@ export const igsSketch = (p5: any) => {
 		return matchesComparisonProperty && matchesFirstSpeaker;
 	};
 
-	p5.getTimeValueFromPixel = (pixelValue: number) => {
-		return Math.floor(p5.map(pixelValue, p5.SPACING, p5.width - p5.SPACING, timeline.leftMarker, timeline.rightMarker));
-	};
-
 	p5.overRect = (x: number, y: number, boxWidth: number, boxHeight: number) => {
+		if (!canHover) return false;
 		return p5.mouseX >= x && p5.mouseX <= x + boxWidth && p5.mouseY >= y && p5.mouseY <= y + boxHeight;
 	};
 
@@ -288,6 +260,7 @@ export const igsSketch = (p5: any) => {
 	};
 
 	p5.overCircle = (x: number, y: number, diameter: number) => {
+		if (!canHover) return false;
 		return p5.sqrt(p5.sq(x - p5.mouseX) + p5.sq(y - p5.mouseY)) < diameter / 2;
 	};
 

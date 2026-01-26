@@ -3,11 +3,7 @@
 	import { derived } from 'svelte/store';
 	import { browser } from '$app/environment';
 	import VideoStore, { setLoaded, setAspectRatio } from '../../stores/videoStore';
-	import {
-		createYouTubePlayer,
-		type VideoPlayer,
-		destroyPlayer
-	} from '../video/video-service';
+	import { createYouTubePlayer, type VideoPlayer, destroyPlayer } from '../video/video-service';
 
 	const dispatch = createEventDispatcher<{
 		ready: { player: VideoPlayer; duration: number };
@@ -27,9 +23,7 @@
 	const sourceStore = derived(VideoStore, ($store) => {
 		const newSource = $store.source;
 		// Only return a new object if source actually changed
-		if (newSource.type !== lastSource.type ||
-			newSource.videoId !== lastSource.videoId ||
-			newSource.fileUrl !== lastSource.fileUrl) {
+		if (newSource.type !== lastSource.type || newSource.videoId !== lastSource.videoId || newSource.fileUrl !== lastSource.fileUrl) {
 			lastSource = { ...newSource };
 		}
 		return lastSource;
@@ -46,9 +40,7 @@
 
 	// Only trigger initialization when source actually changes
 	$: if (browser && source.type && containerEl) {
-		const sourceChanged = source.type !== prevSourceType ||
-			source.videoId !== prevVideoId ||
-			source.fileUrl !== prevFileUrl;
+		const sourceChanged = source.type !== prevSourceType || source.videoId !== prevVideoId || source.fileUrl !== prevFileUrl;
 
 		if (sourceChanged) {
 			prevSourceType = source.type;
@@ -146,20 +138,10 @@
 
 <div class="video-player" bind:this={containerEl}>
 	<!-- Always render both containers, hide with CSS -->
-	<div
-		bind:this={youtubeContainerEl}
-		class="youtube-container"
-		class:hidden={source.type !== 'youtube'}
-	></div>
+	<div bind:this={youtubeContainerEl} class="youtube-container" class:hidden={source.type !== 'youtube'}></div>
 
 	{#if source.type === 'file' && source.fileUrl}
-		<video
-			bind:this={videoEl}
-			src={source.fileUrl}
-			on:loadedmetadata={handleVideoLoaded}
-			on:error={handleVideoError}
-			playsinline
-		>
+		<video bind:this={videoEl} src={source.fileUrl} on:loadedmetadata={handleVideoLoaded} on:error={handleVideoError} playsinline>
 			<track kind="captions" />
 		</video>
 	{/if}

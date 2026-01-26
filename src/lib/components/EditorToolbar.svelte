@@ -1,61 +1,66 @@
 <script lang="ts">
+	import { createEventDispatcher } from 'svelte';
 	import MdSwapVert from 'svelte-icons/md/MdSwapVert.svelte';
 	import MdSwapHoriz from 'svelte-icons/md/MdSwapHoriz.svelte';
 	import MdFileDownload from 'svelte-icons/md/MdFileDownload.svelte';
 	import MdVideoLibrary from 'svelte-icons/md/MdVideoLibrary.svelte';
+	import MdUndo from 'svelte-icons/md/MdUndo.svelte';
+	import MdRedo from 'svelte-icons/md/MdRedo.svelte';
 	import { get } from 'svelte/store';
 	import EditorStore from '../../stores/editorStore';
 	import TranscriptStore from '../../stores/transcriptStore';
 	import P5Store from '../../stores/p5Store';
+	import HistoryStore from '../../stores/historyStore';
+	import ConfirmModal from './ConfirmModal.svelte';
 	import { exportTranscriptToCSV } from '$lib/core/export-utils';
 	import { applyTimingModeToWordArray, updateTimelineFromData } from '$lib/core/timing-utils';
 	import type { TimingMode } from '../../models/transcript';
 
+	const dispatch = createEventDispatcher();
+
+	let confirmModal: { mode: TimingMode; message: string } | null = null;
+
 	function toggleOrientation() {
 		EditorStore.update((state) => ({
 			...state,
-			config: {
-				...state.config,
-				orientation: state.config.orientation === 'vertical' ? 'horizontal' : 'vertical'
-			}
+			config: { ...state.config, orientation: state.config.orientation === 'vertical' ? 'horizontal' : 'vertical' }
 		}));
 	}
 
 	function toggleAdvancedVideoControls() {
 		EditorStore.update((state) => ({
 			...state,
-			config: {
-				...state.config,
-				showAdvancedVideoControls: !state.config.showAdvancedVideoControls
-			}
+			config: { ...state.config, showAdvancedVideoControls: !state.config.showAdvancedVideoControls }
 		}));
 	}
 
 	function setTimingMode(mode: TimingMode) {
-		TranscriptStore.update((transcript) => {
-			const updatedWordArray = applyTimingModeToWordArray(transcript.wordArray, mode);
-			return {
-				...transcript,
-				wordArray: updatedWordArray,
-				timingMode: mode
-			};
-		});
+		const currentMode = get(TranscriptStore).timingMode;
+		if (mode === currentMode) return;
 
-		// Update timeline to match data range (don't expand-only, set to actual range)
-		const updatedTranscript = get(TranscriptStore);
-		updateTimelineFromData(updatedTranscript.wordArray, false);
-
-		// Mark as dirty
-		EditorStore.update((state) => ({
-			...state,
-			isDirty: true
-		}));
-
-		// Refresh visualization
-		const p5Instance = get(P5Store);
-		if (p5Instance) {
-			p5Instance.fillAllData?.();
+		if (mode === 'untimed') {
+			confirmModal = { mode, message: 'This will remove all timestamps. This cannot be undone.' };
+		} else if (mode === 'startOnly' && currentMode === 'startEnd') {
+			confirmModal = { mode, message: 'This will remove end times. This cannot be undone.' };
+		} else {
+			applyTimingMode(mode);
 		}
+	}
+
+	function applyTimingMode(mode: TimingMode) {
+		TranscriptStore.update((t) => ({
+			...t,
+			wordArray: applyTimingModeToWordArray(t.wordArray, mode),
+			timingMode: mode
+		}));
+		updateTimelineFromData(get(TranscriptStore).wordArray, false);
+		EditorStore.update((s) => ({ ...s, isDirty: true }));
+		get(P5Store)?.fillAllData?.();
+	}
+
+	function onConfirm() {
+		if (confirmModal) applyTimingMode(confirmModal.mode);
+		confirmModal = null;
 	}
 
 	function handleExport() {
@@ -66,6 +71,8 @@
 	$: showAdvancedVideoControls = $EditorStore.config.showAdvancedVideoControls;
 	$: timingMode = $TranscriptStore.timingMode;
 	$: hasTranscript = $TranscriptStore.wordArray.length > 0;
+	$: canUndo = $HistoryStore.past.length > 0;
+	$: canRedo = $HistoryStore.future.length > 0;
 </script>
 
 <div class="editor-toolbar">
@@ -79,12 +86,7 @@
 	<div class="toolbar-right">
 		{#if hasTranscript}
 			<div class="timing-mode-group">
-				<button
-					class="timing-mode-btn"
-					class:active={timingMode === 'untimed'}
-					on:click={() => setTimingMode('untimed')}
-					title="No timestamps"
-				>
+				<button class="timing-mode-btn" class:active={timingMode === 'untimed'} on:click={() => setTimingMode('untimed')} title="No timestamps">
 					Untimed
 				</button>
 				<button
@@ -106,6 +108,14 @@
 			</div>
 		{/if}
 
+		<button class="toolbar-btn" on:click={() => dispatch('undo')} disabled={!canUndo} title="Undo (Ctrl+Z)">
+			<MdUndo />
+		</button>
+
+		<button class="toolbar-btn" on:click={() => dispatch('redo')} disabled={!canRedo} title="Redo (Ctrl+Shift+Z)">
+			<MdRedo />
+		</button>
+
 		<button
 			class="toolbar-btn"
 			class:active={showAdvancedVideoControls}
@@ -115,11 +125,7 @@
 			<MdVideoLibrary />
 		</button>
 
-		<button
-			class="toolbar-btn"
-			on:click={toggleOrientation}
-			title={isVertical ? 'Switch to horizontal layout' : 'Switch to vertical layout'}
-		>
+		<button class="toolbar-btn" on:click={toggleOrientation} title={isVertical ? 'Switch to horizontal layout' : 'Switch to vertical layout'}>
 			{#if isVertical}
 				<MdSwapHoriz />
 			{:else}
@@ -127,15 +133,19 @@
 			{/if}
 		</button>
 
-		<button
-			class="toolbar-btn"
-			on:click={handleExport}
-			title="Export transcript as CSV"
-		>
+		<button class="toolbar-btn" on:click={handleExport} title="Export transcript as CSV">
 			<MdFileDownload />
 		</button>
 	</div>
 </div>
+
+<ConfirmModal
+	isOpen={!!confirmModal}
+	title="Change Timing Mode?"
+	message={confirmModal?.message ?? ''}
+	on:confirm={onConfirm}
+	on:cancel={() => (confirmModal = null)}
+/>
 
 <style>
 	.editor-toolbar {
@@ -184,7 +194,9 @@
 		background-color: transparent;
 		color: #6b7280;
 		cursor: pointer;
-		transition: background-color 0.15s, color 0.15s;
+		transition:
+			background-color 0.15s,
+			color 0.15s;
 	}
 
 	.toolbar-btn:hover {
@@ -194,6 +206,16 @@
 
 	.toolbar-btn:active {
 		background-color: #d1d5db;
+	}
+
+	.toolbar-btn:disabled {
+		opacity: 0.4;
+		cursor: not-allowed;
+	}
+
+	.toolbar-btn:disabled:hover {
+		background-color: transparent;
+		color: #6b7280;
 	}
 
 	.toolbar-btn.active {
@@ -222,7 +244,9 @@
 		font-size: 0.7rem;
 		font-weight: 500;
 		cursor: pointer;
-		transition: background-color 0.15s, color 0.15s;
+		transition:
+			background-color 0.15s,
+			color 0.15s;
 		white-space: nowrap;
 	}
 

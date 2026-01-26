@@ -3,8 +3,10 @@
 	import type { Turn } from '$lib/core/turn-utils';
 	import { getTurnContent } from '$lib/core/turn-utils';
 	import { toSeconds, formatTimeAuto } from '$lib/core/time-utils';
+	import { toTitleCase, normalizeSpeakerName } from '$lib/core/string-utils';
 	import VideoStore from '../../stores/videoStore';
 	import type { TimingMode } from '../../models/transcript';
+	import { notifications } from '../../stores/notificationStore';
 
 	let rowElement: HTMLElement;
 
@@ -12,7 +14,6 @@
 	export let speakerColor: string = '#666666';
 	export let isSelected: boolean = false;
 	export let isSpeakerHighlighted: boolean = false;
-	export let speakers: string[] = [];
 	export let timingMode: TimingMode = 'untimed';
 
 	// Derived flags for easier template logic
@@ -23,10 +24,8 @@
 
 	let isHovering = false;
 
-	let isEditingContent = false;
-	let isEditingSpeaker = false;
-	let isEditingStartTime = false;
-	let isEditingEndTime = false;
+	type EditMode = 'none' | 'content' | 'speaker' | 'startTime' | 'endTime';
+	let editMode: EditMode = 'none';
 
 	let editedContent = '';
 	let editedSpeaker = '';
@@ -36,7 +35,7 @@
 	// Start editing content
 	function startEditingContent() {
 		editedContent = getTurnContent(turn);
-		isEditingContent = true;
+		editMode = 'content';
 	}
 
 	// Save content changes
@@ -48,24 +47,23 @@
 				value: editedContent.trim()
 			});
 		}
-		isEditingContent = false;
+		editMode = 'none';
 	}
 
-	// Cancel content editing
-	function cancelContentEdit() {
-		isEditingContent = false;
-		editedContent = '';
+	// Cancel any editing
+	function cancelEdit() {
+		editMode = 'none';
 	}
 
 	// Start editing speaker
 	function startEditingSpeaker() {
 		editedSpeaker = turn.speaker;
-		isEditingSpeaker = true;
+		editMode = 'speaker';
 	}
 
 	// Save speaker changes
 	function saveSpeaker() {
-		const newSpeaker = editedSpeaker.trim().toUpperCase();
+		const newSpeaker = normalizeSpeakerName(editedSpeaker);
 		if (newSpeaker && newSpeaker !== turn.speaker) {
 			dispatch('edit', {
 				turnNumber: turn.turnNumber,
@@ -73,116 +71,93 @@
 				value: newSpeaker
 			});
 		}
-		isEditingSpeaker = false;
-	}
-
-	// Cancel speaker editing
-	function cancelSpeakerEdit() {
-		isEditingSpeaker = false;
-		editedSpeaker = '';
+		editMode = 'none';
 	}
 
 	// Start editing start time
 	function startEditingStartTime() {
 		editedStartTime = formatTimeAuto(turn.startTime);
-		isEditingStartTime = true;
+		editMode = 'startTime';
 	}
 
 	// Save start time changes
 	function saveStartTime() {
-		const newStartTime = toSeconds(editedStartTime) ?? turn.startTime;
+		const parsed = toSeconds(editedStartTime);
+		if (parsed === null) {
+			notifications.warning('Invalid time format. Use HH:MM:SS, MM:SS, or seconds.');
+			editMode = 'none';
+			return;
+		}
 
-		if (newStartTime !== turn.startTime) {
+		if (parsed !== turn.startTime) {
 			dispatch('edit', {
 				turnNumber: turn.turnNumber,
 				field: 'time',
-				value: { startTime: newStartTime, endTime: turn.endTime }
+				value: { startTime: parsed, endTime: turn.endTime }
 			});
 		}
-		isEditingStartTime = false;
-	}
-
-	// Cancel start time editing
-	function cancelStartTimeEdit() {
-		isEditingStartTime = false;
-		editedStartTime = '';
+		editMode = 'none';
 	}
 
 	// Start editing end time
 	function startEditingEndTime() {
 		editedEndTime = formatTimeAuto(turn.endTime);
-		isEditingEndTime = true;
+		editMode = 'endTime';
 	}
 
 	// Save end time changes
 	function saveEndTime() {
-		const newEndTime = toSeconds(editedEndTime) ?? turn.endTime;
+		const parsed = toSeconds(editedEndTime);
+		if (parsed === null) {
+			notifications.warning('Invalid time format. Use HH:MM:SS, MM:SS, or seconds.');
+			editMode = 'none';
+			return;
+		}
 
-		if (newEndTime !== turn.endTime) {
+		if (parsed !== turn.endTime) {
 			dispatch('edit', {
 				turnNumber: turn.turnNumber,
 				field: 'time',
-				value: { startTime: turn.startTime, endTime: newEndTime }
+				value: { startTime: turn.startTime, endTime: parsed }
 			});
 		}
-		isEditingEndTime = false;
+		editMode = 'none';
 	}
 
-	// Cancel end time editing
-	function cancelEndTimeEdit() {
-		isEditingEndTime = false;
-		editedEndTime = '';
-	}
-
-	// Handle keyboard events for editing
-	function handleContentKeydown(event: KeyboardEvent) {
-		if (event.key === 'Enter' && !event.shiftKey) {
-			event.preventDefault();
-			saveContent();
-		} else if (event.key === 'Escape') {
-			cancelContentEdit();
+	// Close edit mode, saving any changes
+	function closeEditMode() {
+		switch (editMode) {
+			case 'startTime':
+				saveStartTime();
+				break;
+			case 'endTime':
+				saveEndTime();
+				break;
+			case 'speaker':
+				saveSpeaker();
+				break;
+			case 'content':
+				saveContent();
+				break;
 		}
 	}
 
-	function handleSpeakerKeydown(event: KeyboardEvent) {
-		if (event.key === 'Enter') {
+	// Single keydown handler for all edit inputs: Enter saves, Escape cancels
+	function handleEditKeydown(event: KeyboardEvent) {
+		if (event.key === 'Escape') {
+			cancelEdit();
+		} else if (event.key === 'Enter') {
+			// Allow Shift+Enter for newlines in content textarea
+			if (editMode === 'content' && event.shiftKey) return;
 			event.preventDefault();
-			saveSpeaker();
-		} else if (event.key === 'Escape') {
-			cancelSpeakerEdit();
+			closeEditMode();
 		}
-	}
-
-	function handleStartTimeKeydown(event: KeyboardEvent) {
-		if (event.key === 'Enter') {
-			event.preventDefault();
-			saveStartTime();
-		} else if (event.key === 'Escape') {
-			cancelStartTimeEdit();
-		}
-	}
-
-	function handleEndTimeKeydown(event: KeyboardEvent) {
-		if (event.key === 'Enter') {
-			event.preventDefault();
-			saveEndTime();
-		} else if (event.key === 'Escape') {
-			cancelEndTimeEdit();
-		}
-	}
-
-	// Close all edit modes, saving any changes
-	function closeAllEditModes() {
-		if (isEditingStartTime) saveStartTime();
-		if (isEditingEndTime) saveEndTime();
-		if (isEditingSpeaker) saveSpeaker();
-		if (isEditingContent) saveContent();
 	}
 
 	// Handle row click
 	function handleRowClick() {
-		// If any edit mode is active, close it first
-		closeAllEditModes();
+		// If edit mode is active, close it first
+		closeEditMode();
 		dispatch('select', { turn });
 	}
 
@@ -228,21 +203,11 @@
 		}
 	}
 
-	// Check if video is loaded and transcript is in a timed mode
-	$: canCaptureTime = $VideoStore.isLoaded && showStartTime;
-
-	// Format speaker name for display
-	function formatSpeaker(name: string): string {
-		return name.charAt(0).toUpperCase() + name.slice(1).toLowerCase();
-	}
-
-	// Handle clicks outside this row to close edit modes
+	// Handle clicks outside this row to close edit mode
 	onMount(() => {
 		function handleDocumentClick(event: MouseEvent) {
-			// Check current edit state at click time
-			const isAnyEditActive = isEditingStartTime || isEditingEndTime || isEditingSpeaker || isEditingContent;
-			if (isAnyEditActive && rowElement && !rowElement.contains(event.target as Node)) {
-				closeAllEditModes();
+			if (editMode !== 'none' && rowElement && !rowElement.contains(event.target as Node)) {
+				closeEditMode();
 			}
 		}
 
@@ -255,6 +220,17 @@
 	// Reactive time displays
 	$: startTimeDisplay = `[${formatTimeAuto(turn.startTime)}]`;
 	$: endTimeDisplay = `[${formatTimeAuto(turn.endTime)}]`;
+
+	// Auto-resize textarea action
+	function autoresize(node: HTMLTextAreaElement) {
+		function resize() {
+			node.style.height = 'auto';
+			node.style.height = node.scrollHeight + 'px';
+		}
+		resize();
+		node.addEventListener('input', resize);
+		return { destroy: () => node.removeEventListener('input', resize) };
+	}
 </script>
 
 <div
@@ -271,14 +247,10 @@
 >
 	<!-- Start Time Column (shown in startOnly and startEnd modes) -->
 	{#if showStartTime}
-		{#if isEditingStartTime}
+		{#if editMode === 'startTime'}
 			<div class="time-edit-container" on:click|stopPropagation>
-				{#if canCaptureTime}
-					<button
-						class="time-capture-btn capture-start-btn"
-						on:click={captureStartTime}
-						title="Set IN point from video"
-					>
+				{#if $VideoStore.isLoaded}
+					<button class="time-capture-btn capture-start-btn" on:click={captureStartTime} title="Set IN point from video">
 						<span class="capture-bracket">[</span>
 					</button>
 				{/if}
@@ -286,17 +258,13 @@
 					type="text"
 					class="time-input"
 					bind:value={editedStartTime}
-					on:keydown={handleStartTimeKeydown}
+					on:keydown={handleEditKeydown}
 					on:blur={saveStartTime}
 					placeholder="Start"
 				/>
 			</div>
 		{:else}
-			<button
-				class="turn-timecode"
-				on:click|stopPropagation={startEditingStartTime}
-				title="Click to edit start time"
-			>
+			<button class="turn-timecode" on:click|stopPropagation={startEditingStartTime} title="Click to edit start time">
 				{startTimeDisplay}
 			</button>
 		{/if}
@@ -309,92 +277,47 @@
 
 	<!-- End Time Column (shown only in startEnd mode) -->
 	{#if showEndTime}
-		{#if isEditingEndTime}
+		{#if editMode === 'endTime'}
 			<div class="time-edit-container" on:click|stopPropagation>
-				<input
-					type="text"
-					class="time-input"
-					bind:value={editedEndTime}
-					on:keydown={handleEndTimeKeydown}
-					on:blur={saveEndTime}
-					placeholder="End"
-				/>
-				{#if canCaptureTime}
-					<button
-						class="time-capture-btn capture-end-btn"
-						on:click={captureEndTime}
-						title="Set OUT point from video"
-					>
+				<input type="text" class="time-input" bind:value={editedEndTime} on:keydown={handleEditKeydown} on:blur={saveEndTime} placeholder="End" />
+				{#if $VideoStore.isLoaded}
+					<button class="time-capture-btn capture-end-btn" on:click={captureEndTime} title="Set OUT point from video">
 						<span class="capture-bracket">]</span>
 					</button>
 				{/if}
 			</div>
 		{:else}
-			<button
-				class="turn-timecode"
-				on:click|stopPropagation={startEditingEndTime}
-				title="Click to edit end time"
-			>
+			<button class="turn-timecode" on:click|stopPropagation={startEditingEndTime} title="Click to edit end time">
 				{endTimeDisplay}
 			</button>
 		{/if}
 	{/if}
 
 	<!-- Speaker -->
-	{#if isEditingSpeaker}
-		<div class="speaker-edit-container" on:click|stopPropagation>
-			<input
-				type="text"
-				class="speaker-input"
-				bind:value={editedSpeaker}
-				on:keydown={handleSpeakerKeydown}
-				on:blur={saveSpeaker}
-				placeholder="New speaker..."
-			/>
-			{#if speakers.length > 0}
-				<select
-					class="speaker-select"
-					on:change={(e) => {
-						editedSpeaker = e.currentTarget.value;
-						saveSpeaker();
-					}}
-				>
-					<option value="" disabled selected>Select</option>
-					{#each speakers as speakerOption}
-						<option value={speakerOption}>{speakerOption}</option>
-					{/each}
-				</select>
-			{/if}
-		</div>
+	{#if editMode === 'speaker'}
+		<input
+			type="text"
+			class="speaker-input"
+			bind:value={editedSpeaker}
+			on:keydown={handleEditKeydown}
+			on:blur={saveSpeaker}
+			on:click|stopPropagation
+			placeholder="Speaker name..."
+		/>
 	{:else}
-		<button
-			class="turn-speaker"
-			style="color: {speakerColor}"
-			on:click|stopPropagation={startEditingSpeaker}
-			title="Click to edit speaker"
-		>
-			{formatSpeaker(turn.speaker)}:
+		<button class="turn-speaker" style="color: {speakerColor}" on:click|stopPropagation={startEditingSpeaker} title="Click to edit speaker">
+			{toTitleCase(turn.speaker)}:
 		</button>
 	{/if}
 
 	<!-- Content -->
-	{#if isEditingContent}
+	{#if editMode === 'content'}
 		<div class="content-edit-container" on:click|stopPropagation>
-			<textarea
-				class="content-textarea"
-				bind:value={editedContent}
-				on:keydown={handleContentKeydown}
-				on:blur={saveContent}
-				rows="2"
-			/>
+			<textarea class="content-textarea" bind:value={editedContent} on:keydown={handleEditKeydown} on:blur={saveContent} use:autoresize />
 			<div class="edit-hint">Enter to save, Esc to cancel</div>
 		</div>
 	{:else}
-		<button
-			class="turn-content"
-			on:click|stopPropagation={startEditingContent}
-			title="Click to edit content"
-		>
+		<button class="turn-content" on:click|stopPropagation={startEditingContent} title="Click to edit content">
 			{getTurnContent(turn)}
 		</button>
 	{/if}
@@ -402,22 +325,18 @@
 	<!-- Action buttons (visible on hover) -->
 	{#if isHovering}
 		<div class="row-actions" on:click|stopPropagation>
-			<button
-				class="action-btn add-btn"
-				on:click={handleAddAfter}
-				title="Add turn after"
-			>
+			<button class="action-btn add-btn" on:click={handleAddAfter} title="Add turn after">
 				<svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" viewBox="0 0 20 20" fill="currentColor">
 					<path fill-rule="evenodd" d="M10 3a1 1 0 011 1v5h5a1 1 0 110 2h-5v5a1 1 0 11-2 0v-5H4a1 1 0 110-2h5V4a1 1 0 011-1z" clip-rule="evenodd" />
 				</svg>
 			</button>
-			<button
-				class="action-btn delete-btn"
-				on:click={handleDelete}
-				title="Delete turn"
-			>
+			<button class="action-btn delete-btn" on:click={handleDelete} title="Delete turn">
 				<svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" viewBox="0 0 20 20" fill="currentColor">
-					<path fill-rule="evenodd" d="M9 2a1 1 0 00-.894.553L7.382 4H4a1 1 0 000 2v10a2 2 0 002 2h8a2 2 0 002-2V6a1 1 0 100-2h-3.382l-.724-1.447A1 1 0 0011 2H9zM7 8a1 1 0 012 0v6a1 1 0 11-2 0V8zm5-1a1 1 0 00-1 1v6a1 1 0 102 0V8a1 1 0 00-1-1z" clip-rule="evenodd" />
+					<path
+						fill-rule="evenodd"
+						d="M9 2a1 1 0 00-.894.553L7.382 4H4a1 1 0 000 2v10a2 2 0 002 2h8a2 2 0 002-2V6a1 1 0 100-2h-3.382l-.724-1.447A1 1 0 0011 2H9zM7 8a1 1 0 012 0v6a1 1 0 11-2 0V8zm5-1a1 1 0 00-1 1v6a1 1 0 102 0V8a1 1 0 00-1-1z"
+						clip-rule="evenodd"
+					/>
 				</svg>
 			</button>
 		</div>
@@ -540,7 +459,9 @@
 		border: none;
 		border-radius: 0.25rem;
 		cursor: pointer;
-		transition: background-color 0.15s, color 0.15s;
+		transition:
+			background-color 0.15s,
+			color 0.15s;
 		background-color: #e5e7eb;
 		color: #6b7280;
 		flex-shrink: 0;
@@ -562,34 +483,14 @@
 		line-height: 1;
 	}
 
-	.speaker-edit-container {
-		flex-shrink: 0;
-		display: flex;
-		align-items: center;
-	}
-
 	.speaker-input {
 		width: 100px;
 		font-weight: 600;
 		padding: 0.25rem;
 		border: 1px solid #d1d5db;
-		border-radius: 0.25rem 0 0 0.25rem;
+		border-radius: 0.25rem;
 		text-transform: uppercase;
-	}
-
-	.speaker-select {
-		padding: 0.25rem 0.5rem;
-		border: 1px solid #d1d5db;
-		border-left: none;
-		border-radius: 0 0.25rem 0.25rem 0;
-		background-color: #f9fafb;
-		cursor: pointer;
-		font-size: 0.75rem;
-		height: 100%;
-	}
-
-	.speaker-select:hover {
-		background-color: #e5e7eb;
+		flex-shrink: 0;
 	}
 
 	.content-edit-container {
@@ -602,9 +503,11 @@
 		padding: 0.25rem;
 		border: 1px solid #d1d5db;
 		border-radius: 0.25rem;
-		resize: vertical;
 		font-family: inherit;
 		font-size: inherit;
+		min-height: 2.5rem;
+		overflow: hidden;
+		resize: none;
 	}
 
 	.edit-hint {
@@ -631,7 +534,9 @@
 		border: none;
 		border-radius: 0.25rem;
 		cursor: pointer;
-		transition: background-color 0.15s, color 0.15s;
+		transition:
+			background-color 0.15s,
+			color 0.15s;
 		background-color: transparent;
 		color: #9ca3af;
 	}
@@ -649,5 +554,4 @@
 		color: #dc2626;
 		background-color: #fee2e2;
 	}
-
-	</style>
+</style>

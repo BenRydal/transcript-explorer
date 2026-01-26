@@ -124,16 +124,8 @@
 	}
 </script>
 
-<div
-	class="flex flex-1 flex-row justify-start items-center bg-[#f6f5f3] px-8 overflow-x-auto"
-	data-tour="speakers"
-	on:wheel={handleWheelScroll}
->
-	<UserButtonGroup
-		users={$UserStore}
-		on:toggleVisibility={handleToggleVisibility}
-		on:openDropdown={handleOpenDropdown}
-	/>
+<div class="flex flex-1 flex-row justify-start items-center bg-[#f6f5f3] px-8 overflow-x-auto" data-tour="speakers" on:wheel={handleWheelScroll}>
+	<UserButtonGroup users={$UserStore} on:toggleVisibility={handleToggleVisibility} on:openDropdown={handleOpenDropdown} />
 
 	{#each $UserStore as user, index}
 		<div id={`dropdown-${index}`} class="hidden bg-base-100 rounded-box p-2 shadow absolute" style="z-index: 9999;">

@@ -1,46 +1,48 @@
 <script lang="ts">
-	import { onMount } from 'svelte';
+	import { onMount, createEventDispatcher } from 'svelte';
 	import { get } from 'svelte/store';
 	import TranscriptStore from '../../stores/transcriptStore';
 	import UserStore from '../../stores/userStore';
 	import EditorStore from '../../stores/editorStore';
 	import ConfigStore from '../../stores/configStore';
 	import P5Store from '../../stores/p5Store';
-	import { getTurnsFromWordArray } from '$lib/core/turn-utils';
-	import {
-		applyTimingModeToWordArray,
-		updateTimelineFromData,
-		getMaxTime
-	} from '$lib/core/timing-utils';
+	import HistoryStore from '../../stores/historyStore';
+	import TranscribeModeStore from '../../stores/transcribeModeStore';
+	import { getTurnsFromWordArray, getTurnContent } from '$lib/core/turn-utils';
+	import { applyTimingModeToWordArray, updateTimelineFromData, getMaxTime } from '$lib/core/timing-utils';
 	import type { Turn } from '$lib/core/turn-utils';
 	import { DataPoint } from '../../models/dataPoint';
+	import { USER_COLORS } from '$lib/constants/ui';
 	import EditorToolbar from './EditorToolbar.svelte';
 	import TranscriptEditorRow from './TranscriptEditorRow.svelte';
+	import ConfirmModal from './ConfirmModal.svelte';
 
 	import type { TimingMode } from '../../models/transcript';
 
-	let turns: Turn[] = [];
-	let speakers: string[] = [];
-	let editorContainer: HTMLElement;
-	let timingMode: TimingMode = 'untimed';
+	const dispatch = createEventDispatcher<{ createTranscript: void }>();
 
-	// Subscribe to transcript changes
-	TranscriptStore.subscribe((transcript) => {
-		if (transcript.wordArray.length > 0) {
-			turns = getTurnsFromWordArray(transcript.wordArray);
-		} else {
-			turns = [];
-		}
-		timingMode = transcript.timingMode;
+	let deleteModal: number | null = null;
+
+	// Reactively derive turns from TranscriptStore
+	$: turns = $TranscriptStore.wordArray.length > 0 ? getTurnsFromWordArray($TranscriptStore.wordArray) : [];
+	$: timingMode = $TranscriptStore.timingMode;
+
+	// Get enabled speakers from UserStore
+	$: enabledSpeakers = new Set($UserStore.filter((u) => u.enabled).map((u) => u.name));
+
+	// Create a reactive speaker color map
+	$: speakerColorMap = new Map($UserStore.map((u) => [u.name, u.color]));
+
+	// Transcribe mode state for empty state UI
+	$: isInTranscribeMode = $TranscribeModeStore.isActive;
+
+	// Filter turns by speaker visibility, locked filter, and search term
+	$: displayedTurns = turns.filter((turn) => {
+		if (!enabledSpeakers.has(turn.speaker)) return false;
+		if ($EditorStore.selection.filteredSpeaker && turn.speaker !== $EditorStore.selection.filteredSpeaker) return false;
+		if ($ConfigStore.wordToSearch && !getTurnContent(turn).toLowerCase().includes($ConfigStore.wordToSearch.toLowerCase())) return false;
+		return true;
 	});
-
-	// Get list of unique speakers
-	$: speakers = $UserStore.map((u) => u.name);
-
-	// Filter turns by speaker if filteredSpeaker is set
-	$: displayedTurns = $EditorStore.selection.filteredSpeaker
-		? turns.filter((turn) => turn.speaker === $EditorStore.selection.filteredSpeaker)
-		: turns;
 
 	// Clear the locked speaker filter
 	function clearSpeakerFilter() {
@@ -55,11 +57,9 @@
 		}));
 	}
 
-	// Get user color for a speaker
+	// Get user color for a speaker (uses reactive map)
 	function getSpeakerColor(speakerName: string): string {
-		const users = $UserStore;
-		const user = users.find((u) => u.name === speakerName);
-		return user?.color || '#666666';
+		return speakerColorMap.get(speakerName) || '#666666';
 	}
 
 	// Check if a turn is selected
@@ -107,10 +107,11 @@
 		const { turnNumber, field, value } = event.detail;
 
 		// Handle speaker name change - need to update UserStore and recalculate all speaker orders
-		let newSpeakerName: string | null = null;
-		if (field === 'speaker') {
-			newSpeakerName = value.trim().toUpperCase();
-		}
+		// Note: speaker name is already normalized by TranscriptEditorRow before dispatch
+		const newSpeakerName: string | null = field === 'speaker' ? value : null;
+
+		// Save state for undo
+		HistoryStore.pushState(get(TranscriptStore).wordArray);
 
 		TranscriptStore.update((transcript) => {
 			let updatedWordArray: DataPoint[];
@@ -126,16 +127,7 @@
 				const firstDp = turnDataPoints[0];
 
 				// Create new DataPoints for the new words
-				const newDataPoints = newWords.map(
-					(word: string) =>
-						new DataPoint(
-							firstDp.speaker,
-							turnNumber,
-							word,
-							firstDp.startTime,
-							firstDp.endTime
-						)
-				);
+				const newDataPoints = newWords.map((word: string) => new DataPoint(firstDp.speaker, turnNumber, word, firstDp.startTime, firstDp.endTime));
 
 				// Build new array: words before this turn + new words + words after this turn
 				const wordsBefore = transcript.wordArray.filter((dp) => dp.turnNumber < turnNumber);
@@ -146,13 +138,7 @@
 				updatedWordArray = transcript.wordArray.map((dp) => {
 					if (dp.turnNumber !== turnNumber) return dp;
 
-					return new DataPoint(
-						newSpeakerName!,
-						dp.turnNumber,
-						dp.word,
-						dp.startTime,
-						dp.endTime
-					);
+					return new DataPoint(newSpeakerName!, dp.turnNumber, dp.word, dp.startTime, dp.endTime);
 				});
 			} else {
 				// Handle time edits
@@ -219,16 +205,17 @@
 					// Add new speaker if they don't exist
 					let updatedUsers = [...users];
 					if (!updatedUsers.some((u) => u.name === newSpeakerName)) {
-						const colors = ['#FF6B6B', '#4ECDC4', '#45B7D1', '#96CEB4', '#FFEAA7', '#DDA0DD', '#98D8C8', '#F7DC6F'];
 						const usedColors = updatedUsers.map((u) => u.color);
-						const availableColor = colors.find((c) => !usedColors.includes(c)) || colors[updatedUsers.length % colors.length];
+						const availableColor = USER_COLORS.find((c) => !usedColors.includes(c)) || USER_COLORS[updatedUsers.length % USER_COLORS.length];
 						updatedUsers.push({ name: newSpeakerName!, color: availableColor, enabled: true });
 					}
 
 					// Reorder users based on transcript order
-					const reorderedUsers = speakerOrder.map((speakerName) => {
-						return updatedUsers.find((u) => u.name === speakerName)!;
-					}).filter(Boolean);
+					const reorderedUsers = speakerOrder
+						.map((speakerName) => {
+							return updatedUsers.find((u) => u.name === speakerName)!;
+						})
+						.filter(Boolean);
 
 					// Add any users that aren't in the transcript (they may have been removed from all turns)
 					updatedUsers.forEach((user) => {
@@ -261,30 +248,26 @@
 		const speakerWordCounts = new Map<string, number>();
 		const speakerTurnCounts = new Map<string, Set<number>>();
 		const wordFrequency = new Map<string, number>();
+		const turnLengths = new Map<number, number>();
 		let maxWordFrequency = 0;
 		let mostFrequentWord = '';
-		const turnLengths = new Map<number, number>();
 
 		wordArray.forEach(({ speaker, turnNumber, word }) => {
-			// Track word count for each speaker
 			speakerWordCounts.set(speaker, (speakerWordCounts.get(speaker) || 0) + 1);
 
-			// Track unique turns per speaker
 			if (!speakerTurnCounts.has(speaker)) {
 				speakerTurnCounts.set(speaker, new Set());
 			}
 			speakerTurnCounts.get(speaker)?.add(turnNumber);
 
-			// Track turn lengths
 			turnLengths.set(turnNumber, (turnLengths.get(turnNumber) || 0) + 1);
 
-			// Track word frequency
 			if (word) {
 				const lowerWord = word.toLowerCase();
-				wordFrequency.set(lowerWord, (wordFrequency.get(lowerWord) || 0) + 1);
-				const currentCount = wordFrequency.get(lowerWord) || 0;
-				if (currentCount > maxWordFrequency) {
-					maxWordFrequency = currentCount;
+				const count = (wordFrequency.get(lowerWord) || 0) + 1;
+				wordFrequency.set(lowerWord, count);
+				if (count > maxWordFrequency) {
+					maxWordFrequency = count;
 					mostFrequentWord = word;
 				}
 			}
@@ -329,10 +312,7 @@
 	}
 
 	// Auto-scroll to selected turn when selection changes from visualization
-	$: if (
-		$EditorStore.selection.selectedTurnNumber !== null &&
-		$EditorStore.selection.selectionSource !== 'editor'
-	) {
+	$: if ($EditorStore.selection.selectedTurnNumber !== null && $EditorStore.selection.selectionSource !== 'editor') {
 		scrollToTurn($EditorStore.selection.selectedTurnNumber);
 	}
 
@@ -343,24 +323,28 @@
 		}
 	}
 
-	// Handle delete turn
+	// Handle delete turn - show confirmation modal
 	function handleTurnDelete(event: CustomEvent<{ turnNumber: number }>) {
-		const { turnNumber } = event.detail;
+		deleteModal = event.detail.turnNumber;
+	}
+
+	// Actually delete the turn after confirmation
+	function onDeleteConfirm() {
+		if (deleteModal === null) return;
+		const turnNumber = deleteModal;
+		deleteModal = null;
+
+		// Save state for undo
+		HistoryStore.pushState(get(TranscriptStore).wordArray);
 
 		TranscriptStore.update((transcript) => {
 			// Remove all words from this turn
 			const updatedWordArray = transcript.wordArray.filter((dp) => dp.turnNumber !== turnNumber);
 
 			// Renumber turns that come after the deleted one
-			let renumberedWordArray = updatedWordArray.map((dp) => {
+			const renumberedWordArray = updatedWordArray.map((dp) => {
 				if (dp.turnNumber > turnNumber) {
-					return new DataPoint(
-						dp.speaker,
-						dp.turnNumber - 1,
-						dp.word,
-						dp.startTime,
-						dp.endTime
-					);
+					return new DataPoint(dp.speaker, dp.turnNumber - 1, dp.word, dp.startTime, dp.endTime);
 				}
 				return dp;
 			});
@@ -369,7 +353,7 @@
 			const result = finalizeWordArrayEdit(renumberedWordArray, transcript.timingMode);
 
 			// Remove speakers from UserStore who no longer have any turns
-			const remainingSpeakers = new Set(renumberedWordArray.map((dp) => dp.speaker));
+			const remainingSpeakers = new Set(result.wordArray.map((dp) => dp.speaker));
 			UserStore.update((users) => users.filter((user) => remainingSpeakers.has(user.name)));
 
 			return {
@@ -388,6 +372,9 @@
 	function handleAddAfter(event: CustomEvent<{ turnNumber: number; speaker: string }>) {
 		const { turnNumber, speaker } = event.detail;
 
+		// Save state for undo
+		HistoryStore.pushState(get(TranscriptStore).wordArray);
+
 		TranscriptStore.update((transcript) => {
 			// Get the last word of the current turn to get timing info
 			const currentTurnWords = transcript.wordArray.filter((dp) => dp.turnNumber === turnNumber);
@@ -399,25 +386,13 @@
 			// Renumber all turns after the insertion point
 			const renumberedWordArray = transcript.wordArray.map((dp) => {
 				if (dp.turnNumber > turnNumber) {
-					return new DataPoint(
-						dp.speaker,
-						dp.turnNumber + 1,
-						dp.word,
-						dp.startTime,
-						dp.endTime
-					);
+					return new DataPoint(dp.speaker, dp.turnNumber + 1, dp.word, dp.startTime, dp.endTime);
 				}
 				return dp;
 			});
 
 			// Create a new DataPoint for the new turn with placeholder text
-			const newDataPoint = new DataPoint(
-				speaker,
-				newTurnNumber,
-				'[new]',
-				lastWord?.endTime ?? 0,
-				lastWord?.endTime ?? 0
-			);
+			const newDataPoint = new DataPoint(speaker, newTurnNumber, '[new]', lastWord?.endTime ?? 0, lastWord?.endTime ?? 0);
 
 			// Insert the new turn at the right position
 			const insertIndex = renumberedWordArray.findIndex((dp) => dp.turnNumber > newTurnNumber);
@@ -441,17 +416,82 @@
 
 		markDirtyAndRefresh();
 	}
+
+	// Apply a restored state from history
+	function applyHistoryState(restoredState: DataPoint[] | null) {
+		if (!restoredState) return;
+		TranscriptStore.update((transcript) => {
+			const result = finalizeWordArrayEdit(restoredState, transcript.timingMode);
+
+			// Clean up orphaned speakers from UserStore
+			const activeSpeakers = new Set(result.wordArray.map((dp) => dp.speaker));
+			UserStore.update((users) => users.filter((user) => activeSpeakers.has(user.name)));
+
+			return {
+				...transcript,
+				wordArray: result.wordArray,
+				totalNumOfWords: result.wordArray.length,
+				totalTimeInSeconds: result.maxTime,
+				...result.stats
+			};
+		});
+		markDirtyAndRefresh();
+	}
+
+	export function undo(): void {
+		applyHistoryState(HistoryStore.undo(get(TranscriptStore).wordArray));
+	}
+
+	export function redo(): void {
+		applyHistoryState(HistoryStore.redo(get(TranscriptStore).wordArray));
+	}
+
+	// Keyboard shortcuts for undo/redo
+	function handleKeydown(event: KeyboardEvent) {
+		// Skip if user is typing in a text input (let browser handle native undo)
+		const target = event.target as HTMLElement;
+		if (target.tagName === 'INPUT' || target.tagName === 'TEXTAREA' || target.isContentEditable) {
+			return;
+		}
+
+		// Check for Ctrl+Z (undo) or Ctrl+Shift+Z / Ctrl+Y (redo)
+		if ((event.ctrlKey || event.metaKey) && event.key === 'z') {
+			event.preventDefault();
+			if (event.shiftKey) {
+				redo();
+			} else {
+				undo();
+			}
+		} else if ((event.ctrlKey || event.metaKey) && event.key === 'y') {
+			event.preventDefault();
+			redo();
+		}
+	}
+
+	// Set up keyboard listener
+	onMount(() => {
+		window.addEventListener('keydown', handleKeydown);
+		return () => window.removeEventListener('keydown', handleKeydown);
+	});
 </script>
 
-<div class="transcript-editor" bind:this={editorContainer}>
-	<EditorToolbar />
+<div class="transcript-editor">
+	<EditorToolbar on:undo={undo} on:redo={redo} />
 
 	<div class="editor-content">
 		{#if turns.length === 0}
 			<div class="empty-state">
-				<p class="text-gray-500 text-center py-8">
-					No transcript loaded. Upload a CSV or TXT file to get started.
-				</p>
+				{#if isInTranscribeMode}
+					<div class="empty-state-content">
+						<p class="text-gray-600 mb-4">No transcript yet. Create one to start transcribing.</p>
+						<button class="create-transcript-btn" on:click={() => dispatch('createTranscript')}>
+							Create New Transcript
+						</button>
+						<p class="text-gray-400 text-sm mt-3">Or upload an existing transcript file</p>
+					</div>
+				{:else}
+					<p class="text-gray-500 text-center py-8">No transcript loaded. Upload a CSV or TXT file, or create a new transcript.</p>
+				{/if}
 			</div>
 		{:else}
 			{#if $EditorStore.selection.filteredSpeaker}
@@ -473,7 +513,6 @@
 							speakerColor={getSpeakerColor(turn.speaker)}
 							isSelected={isTurnSelected(turn)}
 							isSpeakerHighlighted={isSpeakerHighlighted(turn)}
-							{speakers}
 							{timingMode}
 							on:select={handleTurnSelect}
 							on:edit={handleTurnEdit}
@@ -486,6 +525,15 @@
 		{/if}
 	</div>
 </div>
+
+<ConfirmModal
+	isOpen={deleteModal !== null}
+	title="Delete Turn?"
+	message="Are you sure you want to delete this turn? This can be undone."
+	confirmText="Delete"
+	on:confirm={onDeleteConfirm}
+	on:cancel={() => (deleteModal = null)}
+/>
 
 <style>
 	.transcript-editor {
@@ -513,6 +561,30 @@
 		align-items: center;
 		justify-content: center;
 		height: 100%;
+	}
+
+	.empty-state-content {
+		display: flex;
+		flex-direction: column;
+		align-items: center;
+		text-align: center;
+		padding: 2rem;
+	}
+
+	.create-transcript-btn {
+		background-color: #3b82f6;
+		color: white;
+		font-weight: 500;
+		padding: 0.75rem 1.5rem;
+		border-radius: 8px;
+		border: none;
+		cursor: pointer;
+		font-size: 1rem;
+		transition: background-color 0.15s;
+	}
+
+	.create-transcript-btn:hover {
+		background-color: #2563eb;
 	}
 
 	.filter-banner {

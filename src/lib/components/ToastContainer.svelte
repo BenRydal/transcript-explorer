@@ -18,12 +18,7 @@
 
 <div class="toast toast-center toast-top z-50">
 	{#each $notifications as { id, type, message } (id)}
-		<div
-			class="alert alert-{type} shadow-lg"
-			animate:flip={{ duration: 200 }}
-			in:fly={{ y: -20, duration: 200 }}
-			out:fade={{ duration: 200 }}
-		>
+		<div class="alert alert-{type} shadow-lg" animate:flip={{ duration: 200 }} in:fly={{ y: -20, duration: 200 }} out:fade={{ duration: 200 }}>
 			<div class="w-5 h-5 shrink-0">
 				<svelte:component this={icons[type]} />
 			</div>

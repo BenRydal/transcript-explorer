@@ -122,10 +122,7 @@ function resampleAudio(audioData: Float32Array, fromSampleRate: number, toSample
 /**
  * Transcribe a video file using Whisper
  */
-export async function transcribeVideo(
-	videoFile: File | Blob,
-	onProgress?: ProgressCallback
-): Promise<TranscriptionResult> {
+export async function transcribeVideo(videoFile: File | Blob, onProgress?: ProgressCallback): Promise<TranscriptionResult> {
 	try {
 		// Step 1: Load the model
 		onProgress?.({

@@ -4,7 +4,7 @@ export interface EditorSelection {
 	selectedTurnNumber: number | null;
 	highlightedSpeaker: string | null;
 	filteredSpeaker: string | null;
-	selectionSource: 'editor' | 'distributionDiagram' | 'distributionDiagramClick' | 'turnChart' | 'contributionCloud' | null;
+	selectionSource: 'editor' | 'distributionDiagram' | 'distributionDiagramClick' | 'turnChart' | 'contributionCloud' | 'video' | null;
 }
 
 export interface EditorConfig {
@@ -44,8 +44,6 @@ const EditorStore = writable<EditorState>(initialState);
  * Derived store that emits a stable key when editor layout changes.
  * Used to trigger canvas resize when orientation or collapse state changes.
  */
-export const editorLayoutKey = derived(EditorStore, ($editor) =>
-	`${$editor.config.orientation}-${$editor.config.isCollapsed}`
-);
+export const editorLayoutKey = derived(EditorStore, ($editor) => `${$editor.config.orientation}-${$editor.config.isCollapsed}`);
 
 export default EditorStore;

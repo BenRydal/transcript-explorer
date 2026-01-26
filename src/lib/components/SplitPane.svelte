@@ -31,6 +31,7 @@
 		document.addEventListener('mouseup', handleMouseUp);
 		document.body.style.cursor = cursorStyle;
 		document.body.style.userSelect = 'none';
+		dispatch('dragstart');
 	}
 
 	function handleMouseMove(event: MouseEvent) {
@@ -68,6 +69,7 @@
 		document.removeEventListener('mouseup', handleMouseUp);
 		document.body.style.cursor = '';
 		document.body.style.userSelect = '';
+		dispatch('dragend');
 	}
 
 	function handleKeyDown(event: KeyboardEvent) {
@@ -108,11 +110,7 @@
 	});
 </script>
 
-<div
-	class="split-pane"
-	bind:this={container}
-	style="flex-direction: {flexDirection};"
->
+<div class="split-pane" bind:this={container} style="flex-direction: {flexDirection};">
 	<div
 		class="split-pane-panel first-panel"
 		style="{orientation === 'vertical' ? 'height' : 'width'}: {collapsed && collapsedPanel === 'first' ? '0%' : collapsed ? '100%' : sizes[0] + '%'};"
@@ -141,7 +139,11 @@
 
 	<div
 		class="split-pane-panel second-panel"
-		style="{orientation === 'vertical' ? 'height' : 'width'}: {collapsed && collapsedPanel === 'second' ? '0%' : collapsed ? '100%' : sizes[1] + '%'};"
+		style="{orientation === 'vertical' ? 'height' : 'width'}: {collapsed && collapsedPanel === 'second'
+			? '0%'
+			: collapsed
+				? '100%'
+				: sizes[1] + '%'};"
 	>
 		<slot name="second" />
 	</div>

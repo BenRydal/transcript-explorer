@@ -1,6 +1,7 @@
 <script lang="ts">
 	import { createEventDispatcher } from 'svelte';
 	import MdMoreVert from 'svelte-icons/md/MdMoreVert.svelte';
+	import { toTitleCase } from '$lib/core/string-utils';
 
 	export let user: { name: string; color: string; enabled: boolean };
 
@@ -10,16 +11,14 @@
 		event.stopPropagation();
 		dispatch('openDropdown', event);
 	}
+
+	$: displayName = toTitleCase(user.name);
 </script>
 
 <div class="user-button-container" class:hidden-state={!user.enabled}>
-	<button
-		class="user-button"
-		on:click={() => dispatch('toggleVisibility')}
-		title={user.enabled ? `Hide ${user.name}` : `Show ${user.name}`}
-	>
+	<button class="user-button" on:click={() => dispatch('toggleVisibility')} title={user.enabled ? `Hide ${displayName}` : `Show ${displayName}`}>
 		<span class="color-chip" style:background-color={user.enabled ? user.color : 'transparent'}></span>
-		<span class="user-name">{user.name}</span>
+		<span class="user-name">{displayName}</span>
 	</button>
 	<button class="settings-button" on:click={handleSettingsClick} title="Settings">
 		<div class="settings-icon">
@@ -34,7 +33,9 @@
 		align-items: center;
 		background-color: #e5e5e5;
 		border-radius: 9999px;
-		transition: opacity 0.15s, background-color 0.15s;
+		transition:
+			opacity 0.15s,
+			background-color 0.15s;
 	}
 
 	.user-button-container:hover {

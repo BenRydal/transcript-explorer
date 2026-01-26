@@ -1,31 +1,38 @@
 <script lang="ts">
 	import P5, { type Sketch } from 'p5-svelte';
-
 	import type p5 from 'p5';
-	import MdHelpOutline from 'svelte-icons/md/MdHelpOutline.svelte';
-	import MdCloudUpload from 'svelte-icons/md/MdCloudUpload.svelte';
-	import MdNoteAdd from 'svelte-icons/md/MdNoteAdd.svelte';
-	import MdVideocam from 'svelte-icons/md/MdVideocam.svelte';
-	import MdVideocamOff from 'svelte-icons/md/MdVideocamOff.svelte';
-	import MdCheck from 'svelte-icons/md/MdCheck.svelte';
-	import MdSettings from 'svelte-icons/md/MdSettings.svelte';
-	import MdSubject from 'svelte-icons/md/MdSubject.svelte';
-	import MdInsertChart from 'svelte-icons/md/MdInsertChart.svelte';
-	import MdTouchApp from 'svelte-icons/md/MdTouchApp.svelte';
-	import MdMenu from 'svelte-icons/md/MdMenu.svelte';
-	import MdClose from 'svelte-icons/md/MdClose.svelte';
+	import { browser } from '$app/environment';
+	import { onMount } from 'svelte';
+	import { writable, get } from 'svelte/store';
+
+	// Stores
 	import UserStore from '../stores/userStore';
 	import P5Store from '../stores/p5Store';
-	import VideoStore, { toggleVisibility as toggleVideoVisibility } from '../stores/videoStore';
+	import VideoStore, { toggleVisibility as toggleVideoVisibility, reset as resetVideo, loadVideo } from '../stores/videoStore';
 	import EditorStore, { editorLayoutKey } from '../stores/editorStore';
+	import TimelineStore from '../stores/timelineStore';
+	import ConfigStore, { filterToggleKey } from '../stores/configStore';
+	import type { ConfigStoreType } from '../stores/configStore';
+	import TranscriptStore from '../stores/transcriptStore';
+	import TranscribeModeStore, { toggle as toggleTranscribeMode, exit as exitTranscribeMode } from '../stores/transcribeModeStore';
 
-	import { browser } from '$app/environment';
+	// Core utilities
 	import { Core } from '$lib/core/core';
 	import { igsSketch } from '$lib/p5/igsSketch';
-	import { writable, get } from 'svelte/store';
-	import { DataPoint } from '../models/dataPoint';
-	import { Transcript } from '../models/transcript';
-	import IconButton from '$lib/components/IconButton.svelte';
+	import { USER_COLORS } from '$lib/constants/ui';
+	import { createEmptyTranscript, createTranscriptFromWhisper } from '$lib/core/transcript-factory';
+	import { filterValidFiles, createUploadEntries, type UploadedFile } from '$lib/core/file-upload';
+	import {
+		getPersistedTimestamp,
+		restoreState,
+		clearState,
+		saveStateDebounced,
+		saveStateImmediate
+	} from '$lib/core/persistence';
+	import { getMaxTime } from '$lib/core/timing-utils';
+
+	// Components
+	import AppNavbar from '$lib/components/AppNavbar.svelte';
 	import InfoModal from '$lib/components/InfoModal.svelte';
 	import TimelinePanel from '$lib/components/TimelinePanel.svelte';
 	import SplitPane from '$lib/components/SplitPane.svelte';
@@ -36,51 +43,39 @@
 	import SettingsModal from '$lib/components/SettingsModal.svelte';
 	import UploadModal from '$lib/components/UploadModal.svelte';
 	import DataExplorerModal from '$lib/components/DataExplorerModal.svelte';
+	import ConfirmModal from '$lib/components/ConfirmModal.svelte';
 	import TourOverlay from '$lib/components/TourOverlay.svelte';
 	import SpeakerControls from '$lib/components/SpeakerControls.svelte';
+	import TranscribeModeLayout from '$lib/components/TranscribeModeLayout.svelte';
+	import RecoveryModal from '$lib/components/RecoveryModal.svelte';
+
 	import type { TranscriptionResult } from '$lib/core/transcription-service';
 
-	import TimelineStore from '../stores/timelineStore';
-	import ConfigStore, { filterToggleKey } from '../stores/configStore';
-	import type { ConfigStoreType } from '../stores/configStore';
-	import TranscriptStore from '../stores/transcriptStore';
+	// Modal state
+	let showDataPopup = false;
+	let showSettings = false;
+	let showUploadModal = false;
+	let showTranscriptionModal = false;
+	let showNewTranscriptConfirm = false;
+	let showRecoveryModal = false;
+	let recoveryTimestamp: number | null = null;
+	let isModalOpen = writable(true);
 
-	// Define ToggleKey type to fix TypeScript errors
-	type ToggleKey = string;
+	// File upload state
+	let isDraggingOver = false;
+	let uploadedFiles: UploadedFile[] = [];
+	let pendingVideoFile: File | null = null;
+	let pendingVideoDuration: number = 0;
+	let files: FileList | undefined;
 
-	const techniqueToggleOptions = ['distributionDiagramToggle', 'turnChartToggle', 'contributionCloudToggle', 'dashboardToggle'] as const;
+	// Core references
+	let p5Instance: p5 | null = null;
+	let core: Core;
+	let tourOverlay: TourOverlay;
 
-	// Define which interactions apply to which visualizations
-	const distributionDiagramInteractions = ['flowersToggle'] as const;
-	const turnChartInteractions = ['separateToggle'] as const;
-	const contributionCloudInteractions = [
-		'separateToggle',
-		'sortToggle',
-		'lastWordToggle',
-		'echoWordsToggle',
-		'stopWordsToggle',
-		'repeatedWordsToggle'
-	] as const;
-	const allInteractions = [...new Set([...distributionDiagramInteractions, ...turnChartInteractions, ...contributionCloudInteractions])] as const;
-
-	// Compute visible interactions based on active visualization
-	$: visibleInteractions = (() => {
-		if ($ConfigStore.dashboardToggle) {
-			return allInteractions;
-		} else if ($ConfigStore.distributionDiagramToggle) {
-			return distributionDiagramInteractions;
-		} else if ($ConfigStore.turnChartToggle) {
-			return turnChartInteractions;
-		} else if ($ConfigStore.contributionCloudToggle) {
-			return contributionCloudInteractions;
-		}
-		return allInteractions; // fallback
-	})();
-
-	// Check if repeated words slider should show (only for contribution cloud or dashboard)
-	$: showRepeatedWordsSlider = $ConfigStore.contributionCloudToggle || $ConfigStore.dashboardToggle;
-
+	// Example selection state
 	let selectedDropDownOption = '';
+
 	const dropdownOptions = [
 		{
 			label: 'Classrooms',
@@ -94,36 +89,20 @@
 		{ label: 'Presidential Debates', items: [{ value: 'example-5', label: 'Biden-Trump 2020 Debate' }] }
 	];
 
-	let showDataPopup = false;
-	let showSettings = false;
-	let showUploadModal = false;
-	let mobileMenuOpen = false;
-	let showTranscriptionModal = false;
-	let isDraggingOver = false;
-	let uploadedFiles: { name: string; type: string; status: 'pending' | 'processing' | 'done' | 'error'; error?: string }[] = [];
-	let currentConfig: ConfigStoreType;
-	let pendingVideoFile: File | null = null;
-	let pendingVideoDuration: number = 0;
-
-	let files: any = [];
-	let p5Instance: p5 | null = null;
-	let core: Core;
-	let videoContainerRef: VideoContainer;
-
-	// Reactive bindings to video store
+	// Reactive bindings to stores
 	$: isVideoLoaded = $VideoStore.isLoaded;
 	$: isVideoVisible = $VideoStore.isVisible;
 	$: hasVideoSource = $VideoStore.source.type !== null;
+	$: isEditorVisible = $EditorStore.config.isVisible;
+	$: isTranscribeModeActive = $TranscribeModeStore.isActive;
 
 	// When video loads, expand timeline to accommodate video duration (only for timed transcripts)
 	let prevVideoLoaded = false;
 	$: {
 		if (isVideoLoaded && !prevVideoLoaded && $VideoStore.duration > 0) {
-			// Only expand timeline if transcript has real timestamps (not word-count mode)
 			if ($TranscriptStore.timingMode !== 'untimed') {
 				const videoDuration = $VideoStore.duration;
 				TimelineStore.update((timeline) => {
-					// Only expand, never shrink
 					if (videoDuration > timeline.rightMarker) {
 						timeline.endTime = videoDuration;
 						timeline.rightMarker = videoDuration;
@@ -135,30 +114,63 @@
 		prevVideoLoaded = isVideoLoaded;
 	}
 
-	// Reactive binding for editor visibility
-	$: isEditorVisible = $EditorStore.config.isVisible;
-
-	// Get currently active visualization name
-	$: activeVisualization = techniqueToggleOptions.find((t) => $ConfigStore[t]) || '';
-	$: activeVisualizationName = activeVisualization ? formatToggleName(activeVisualization) : 'Select';
-
-	ConfigStore.subscribe((value) => {
-		currentConfig = value;
-	});
-
+	// Store subscriptions
 	P5Store.subscribe((value) => {
 		p5Instance = value;
-
 		if (p5Instance) {
 			core = new Core(p5Instance);
 		}
 	});
 
+	// Auto-save subscriptions - save when transcript or users change
+	let isRestoringState = false;
+	TranscriptStore.subscribe(() => {
+		if (!isRestoringState) saveStateDebounced();
+	});
+	UserStore.subscribe(() => {
+		if (!isRestoringState) saveStateDebounced();
+	});
+
+	onMount(() => {
+		recoveryTimestamp = getPersistedTimestamp();
+		if (recoveryTimestamp !== null) {
+			showRecoveryModal = true;
+		}
+
+		window.addEventListener('beforeunload', saveStateImmediate);
+		return () => window.removeEventListener('beforeunload', saveStateImmediate);
+	});
+
+	function handleRestore() {
+		isRestoringState = true;
+		restoreState();
+
+		const { wordArray } = get(TranscriptStore);
+		const maxTime = getMaxTime(wordArray);
+		TimelineStore.update((t) => ({
+			...t,
+			currTime: 0,
+			startTime: 0,
+			endTime: maxTime,
+			leftMarker: 0,
+			rightMarker: maxTime,
+			isAnimating: false
+		}));
+
+		requestAnimationFrame(() => {
+			triggerCanvasResize();
+			p5Instance?.fillAllData?.();
+			isRestoringState = false;
+		});
+	}
+
+	function handleDiscard() {
+		clearState();
+	}
+
 	const sketch: Sketch = (p5: p5) => {
 		igsSketch(p5);
 	};
-
-	let isModalOpen = writable(true);
 
 	// Refresh data when filter toggles change
 	$: $filterToggleKey, browser && p5Instance?.fillSelectedData();
@@ -166,90 +178,158 @@
 	// Resize canvas when editor layout changes
 	$: $editorLayoutKey, browser && requestAnimationFrame(() => triggerCanvasResize());
 
-	function toggleVideo() {
-		toggleVideoVisibility();
+	// Resize canvas when exiting transcribe mode (fillAllData is handled by igsSketch setup)
+	let prevTranscribeModeActive = false;
+	$: {
+		if (prevTranscribeModeActive && !isTranscribeModeActive) {
+			requestAnimationFrame(() => triggerCanvasResize());
+		}
+		prevTranscribeModeActive = isTranscribeModeActive;
 	}
 
-	function formatToggleName(toggle) {
-		return toggle
-			.replace('Toggle', '') // Remove 'Toggle'
-			.replace(/([A-Z])/g, ' $1') // Add space before capital letters
-			.trim()
-			.replace(/^./, (str) => str.toUpperCase()); // Capitalize first letter
+	// ============ Event Handlers ============
+
+	function handleLoadExample(event: CustomEvent<string>) {
+		const exampleId = event.detail;
+		clearState(); // Clear auto-save when intentionally loading new data
+		core?.loadExample(exampleId);
+		// Update dropdown to show selected example
+		for (const group of dropdownOptions) {
+			const item = group.items.find((i) => i.value === exampleId);
+			if (item) {
+				selectedDropDownOption = item.label;
+				break;
+			}
+		}
 	}
 
-	function handleConfigChangeFromInput(e: Event, key: keyof ConfigStoreType) {
-		const target = e.target as HTMLInputElement;
-		ConfigStore.update((value) => ({
-			...value,
-			[key]: parseFloat(target.value)
+	function handleToggleEditor() {
+		EditorStore.update((state) => ({
+			...state,
+			config: {
+				...state.config,
+				isVisible: !state.config.isVisible
+			}
+		}));
+		requestAnimationFrame(() => triggerCanvasResize());
+	}
+
+	function handleWordSearch(event: CustomEvent<string>) {
+		ConfigStore.update((config) => ({
+			...config,
+			wordToSearch: event.detail
 		}));
 	}
 
-	function toggleSelection(selection: ToggleKey, toggleOptions: ToggleKey[]) {
-		ConfigStore.update((store: ConfigStoreType) => {
-			const updatedStore = { ...store };
-			toggleOptions.forEach((key) => {
-				if (key.endsWith('Toggle')) {
-					updatedStore[key] = key === selection ? !updatedStore[key] : false;
-				}
-			});
-			return updatedStore;
-		});
-		p5Instance?.fillSelectedData();
+	function handleConfigChange(event: CustomEvent<{ key: keyof ConfigStoreType; value: number }>) {
+		ConfigStore.update((config) => ({
+			...config,
+			[event.detail.key]: event.detail.value
+		}));
 	}
 
-	function toggleSelectionOnly(selection: ToggleKey, toggleOptions: ToggleKey[]) {
-		ConfigStore.update((store: ConfigStoreType) => {
-			const updatedStore = { ...store };
-			toggleOptions.forEach((key) => {
-				if (key === selection && key.endsWith('Toggle')) {
-					updatedStore[key] = !updatedStore[key];
-				}
-			});
-			return updatedStore;
-		});
-	}
-
-	function clickOutside(node) {
-		const handleClick = (event) => {
-			if (!node.contains(event.target)) {
-				node.removeAttribute('open');
+	function handlePanelResize(event: CustomEvent<{ sizes: [number, number] }>) {
+		EditorStore.update((state) => ({
+			...state,
+			config: {
+				...state.config,
+				panelSizes: event.detail.sizes
 			}
-		};
-
-		document.addEventListener('click', handleClick, true);
-
-		return {
-			destroy() {
-				document.removeEventListener('click', handleClick, true);
-			}
-		};
+		}));
+		triggerCanvasResize();
 	}
+
+	// ============ Transcript Creation ============
+
+	// Create a new transcript (always timed - user can switch to untimed if needed)
+	function createTranscript() {
+		clearState(); // Clear auto-save when intentionally creating new transcript
+		core.clearTranscriptData();
+
+		const { transcript, users } = createEmptyTranscript(USER_COLORS[0]);
+
+		// Use video duration if loaded, otherwise default to 60 seconds
+		const videoDuration = get(VideoStore).duration;
+		const timelineEnd = (get(VideoStore).isLoaded && videoDuration > 0) ? videoDuration : 60;
+
+		transcript.timingMode = 'startEnd';
+		transcript.totalTimeInSeconds = timelineEnd;
+
+		UserStore.set(users);
+		TranscriptStore.set(transcript);
+
+		TimelineStore.update((t) => ({
+			...t,
+			currTime: 0,
+			startTime: 0,
+			endTime: timelineEnd,
+			leftMarker: 0,
+			rightMarker: timelineEnd,
+			isAnimating: false
+		}));
+
+		EditorStore.update((state) => ({
+			...state,
+			config: { ...state.config, isVisible: true }
+		}));
+
+		requestAnimationFrame(() => {
+			triggerCanvasResize();
+			p5Instance?.fillAllData?.();
+		});
+	}
+
+	function handleTranscriptionComplete(event: CustomEvent<TranscriptionResult>) {
+		const result = event.detail;
+		clearState(); // Clear auto-save when creating transcript from transcription
+		core.clearTranscriptData();
+
+		const { transcript, users } = createTranscriptFromWhisper(result.segments, pendingVideoDuration, USER_COLORS[0]);
+		UserStore.set(users);
+		TranscriptStore.set(transcript);
+
+		const timelineEnd = pendingVideoDuration || transcript.totalTimeInSeconds;
+		TimelineStore.update((timeline) => ({
+			...timeline,
+			currTime: 0,
+			startTime: 0,
+			endTime: timelineEnd,
+			leftMarker: 0,
+			rightMarker: timelineEnd
+		}));
+
+		EditorStore.update((state) => ({
+			...state,
+			config: { ...state.config, isVisible: true }
+		}));
+
+		requestAnimationFrame(() => {
+			triggerCanvasResize();
+			p5Instance?.fillAllData?.();
+		});
+
+		pendingVideoFile = null;
+		pendingVideoDuration = 0;
+	}
+
+	// ============ File Upload ============
 
 	function updateUserLoadedFiles(event: Event) {
 		const input = event.target as HTMLInputElement;
 		if (input.files) {
 			processFiles(Array.from(input.files));
 		}
-		input.value = ''; // reset so same file can be selected again
+		input.value = '';
 	}
 
 	async function processFiles(fileList: File[]) {
-		// Add files to the upload list
-		const newFiles = fileList.map((f) => ({
-			name: f.name,
-			type: getFileTypeLabel(f.name),
-			status: 'pending' as const
-		}));
-		uploadedFiles = [...uploadedFiles, ...newFiles];
+		const newEntries = createUploadEntries(fileList);
+		uploadedFiles = [...uploadedFiles, ...newEntries];
 
-		// Process each file
 		for (let i = 0; i < fileList.length; i++) {
 			const file = fileList[i];
 			const fileIndex = uploadedFiles.length - fileList.length + i;
 
-			// Update status to processing
 			uploadedFiles[fileIndex].status = 'processing';
 			uploadedFiles = uploadedFiles;
 
@@ -268,18 +348,16 @@
 		return new Promise((resolve, reject) => {
 			const fileName = file.name.toLowerCase();
 			if (fileName.endsWith('.csv') || file.type === 'text/csv') {
-				core.clearTranscriptData();
+				clearState(); // Clear auto-save when loading new transcript
 				core.loadCSVData(file);
 				resolve();
 			} else if (fileName.endsWith('.txt')) {
-				core.clearTranscriptData();
+				clearState(); // Clear auto-save when loading new transcript
 				core.loadP5Strings(URL.createObjectURL(file));
 				resolve();
 			} else if (fileName.endsWith('.mp4') || file.type === 'video/mp4') {
-				// Store video file for potential transcription
 				pendingVideoFile = file;
 				core.prepVideoFromFile(URL.createObjectURL(file));
-				// Get video duration after a short delay to let video load
 				setTimeout(() => {
 					pendingVideoDuration = get(VideoStore).duration || 0;
 				}, 1000);
@@ -290,28 +368,11 @@
 		});
 	}
 
-	function getFileTypeLabel(fileName: string): string {
-		const ext = fileName.toLowerCase().split('.').pop();
-		switch (ext) {
-			case 'csv':
-				return 'Transcript (CSV)';
-			case 'txt':
-				return 'Transcript (TXT)';
-			case 'mp4':
-				return 'Video (MP4)';
-			default:
-				return 'Unknown';
-		}
-	}
-
 	function handleDrop(event: DragEvent) {
 		event.preventDefault();
 		isDraggingOver = false;
 		if (event.dataTransfer?.files) {
-			const validFiles = Array.from(event.dataTransfer.files).filter((f) => {
-				const name = f.name.toLowerCase();
-				return name.endsWith('.csv') || name.endsWith('.txt') || name.endsWith('.mp4');
-			});
+			const validFiles = filterValidFiles(Array.from(event.dataTransfer.files));
 			if (validFiles.length > 0) {
 				processFiles(validFiles);
 			}
@@ -336,232 +397,13 @@
 		uploadedFiles = [];
 	}
 
-	function createNewTranscript() {
-		// Clear existing data
-		if (p5Instance) {
-			p5Instance.dynamicData?.clear();
-		}
+	// ============ Canvas Resize ============
 
-		// Clear users first
-		UserStore.set([]);
-
-		// Check if video is loaded to determine if transcript should be timed
-		const videoState = get(VideoStore);
-		const hasVideo = videoState.isLoaded;
-
-		// Create a default speaker
-		const defaultSpeaker = 'SPEAKER 1';
-		const defaultColor = '#FF6B6B';
-
-		// Set up users
-		UserStore.set([{ name: defaultSpeaker, color: defaultColor, enabled: true }]);
-
-		// Create one empty turn with placeholder text
-		const startTime = hasVideo ? videoState.currentTime : 0;
-		// For untimed mode, use word count positions (0 to 1 for first word)
-		const initialStartTime = hasVideo ? startTime : 0;
-		const initialEndTime = hasVideo ? startTime + 1 : 1;
-
-		const initialDataPoint = new DataPoint(
-			defaultSpeaker,
-			0, // turnNumber
-			'[new]', // placeholder word
-			initialStartTime,
-			initialEndTime
-		);
-
-		// Create new transcript with all required stats populated
-		const newTranscript = new Transcript();
-		newTranscript.wordArray = [initialDataPoint];
-		newTranscript.totalNumOfWords = 1;
-		newTranscript.totalConversationTurns = 1;
-		// For untimed, totalTimeInSeconds represents total word count
-		newTranscript.totalTimeInSeconds = hasVideo ? Math.max(videoState.duration, 1) : 1;
-		newTranscript.largestTurnLength = 1;
-		newTranscript.largestNumOfWordsByASpeaker = 1;
-		newTranscript.largestNumOfTurnsByASpeaker = 1;
-		newTranscript.maxCountOfMostRepeatedWord = 1;
-		newTranscript.mostFrequentWord = '[new]';
-		// Start in startEnd mode if video is loaded, otherwise untimed
-		newTranscript.timingMode = hasVideo ? 'startEnd' : 'untimed';
-
-		TranscriptStore.set(newTranscript);
-
-		// Update timeline - for untimed, use word count as timeline range
-		const timelineEnd = hasVideo ? Math.max(videoState.duration, 1) : 1;
-		TimelineStore.update((timeline) => {
-			timeline.currTime = 0;
-			timeline.startTime = 0;
-			timeline.endTime = timelineEnd;
-			timeline.leftMarker = 0;
-			timeline.rightMarker = timelineEnd;
-			return timeline;
-		});
-
-		// Open the editor if not already open
-		EditorStore.update((state) => ({
-			...state,
-			config: {
-				...state.config,
-				isVisible: true
-			}
-		}));
-
-		// Trigger canvas resize and refresh visualization after a delay
-		requestAnimationFrame(() => {
-			triggerCanvasResize();
-			// Refresh visualization after resize
-			if (p5Instance) {
-				p5Instance.fillAllData?.();
-			}
-		});
-	}
-
-	function handleTranscriptionComplete(event: CustomEvent<TranscriptionResult>) {
-		const result = event.detail;
-
-		// Clear existing data
-		if (p5Instance) {
-			p5Instance.dynamicData?.clear();
-		}
-
-		// Set up single speaker (Whisper doesn't do speaker diarization)
-		const defaultSpeaker = 'SPEAKER 1';
-		UserStore.set([{ name: defaultSpeaker, color: '#FF6B6B', enabled: true }]);
-
-		// Convert transcription segments to DataPoints
-		const wordArray: DataPoint[] = [];
-		const turnLengths = new Map<number, number>();
-		const wordCounts = new Map<string, number>();
-
-		result.segments.forEach((segment, turnIndex) => {
-			const words = segment.text.split(/\s+/).filter((w) => w.trim());
-			const wordDuration = words.length > 0 ? (segment.end - segment.start) / words.length : 0;
-			turnLengths.set(turnIndex, words.length);
-
-			words.forEach((word, wordIndex) => {
-				const wordStart = segment.start + wordIndex * wordDuration;
-				const wordEnd = segment.start + (wordIndex + 1) * wordDuration;
-				wordArray.push(new DataPoint(defaultSpeaker, turnIndex, word, wordStart, wordEnd));
-				const lowerWord = word.toLowerCase();
-				wordCounts.set(lowerWord, (wordCounts.get(lowerWord) || 0) + 1);
-			});
-		});
-
-		// Find most frequent word
-		let maxWordCount = 0;
-		let mostFrequentWord = '';
-		wordCounts.forEach((count, word) => {
-			if (count > maxWordCount) {
-				maxWordCount = count;
-				mostFrequentWord = word;
-			}
-		});
-
-		// Create transcript
-		const maxTime = wordArray.length > 0 ? wordArray[wordArray.length - 1].endTime : 0;
-		const newTranscript = new Transcript();
-		newTranscript.wordArray = wordArray;
-		newTranscript.timingMode = 'startEnd';
-		newTranscript.totalNumOfWords = wordArray.length;
-		newTranscript.totalConversationTurns = result.segments.length;
-		newTranscript.totalTimeInSeconds = pendingVideoDuration || maxTime;
-		newTranscript.largestTurnLength = Math.max(...turnLengths.values(), 1);
-		newTranscript.largestNumOfWordsByASpeaker = wordArray.length;
-		newTranscript.largestNumOfTurnsByASpeaker = result.segments.length;
-		newTranscript.maxCountOfMostRepeatedWord = maxWordCount;
-		newTranscript.mostFrequentWord = mostFrequentWord;
-
-		TranscriptStore.set(newTranscript);
-
-		// Update timeline
-		const timelineEnd = pendingVideoDuration || maxTime;
-		TimelineStore.update((timeline) => {
-			timeline.currTime = 0;
-			timeline.startTime = 0;
-			timeline.endTime = timelineEnd;
-			timeline.leftMarker = 0;
-			timeline.rightMarker = timelineEnd;
-			return timeline;
-		});
-
-		// Open the editor
-		EditorStore.update((state) => ({
-			...state,
-			config: { ...state.config, isVisible: true }
-		}));
-
-		// Refresh visualization
-		requestAnimationFrame(() => {
-			triggerCanvasResize();
-			if (p5Instance) {
-				p5Instance.fillAllData?.();
-			}
-		});
-
-		// Clear pending video file
-		pendingVideoFile = null;
-		pendingVideoDuration = 0;
-	}
-
-	function loadExample(exampleId: string) {
-		core?.loadExample(exampleId);
-		// Update dropdown to show selected example
-		for (const group of dropdownOptions) {
-			const item = group.items.find((i) => i.value === exampleId);
-			if (item) {
-				selectedDropDownOption = item.label;
-				break;
-			}
-		}
-	}
-
-	let tourOverlay: TourOverlay;
-
-	function handleWordSearch(event) {
-		const newWord = event.target.value.trim();
-		ConfigStore.update((config) => ({
-			...config,
-			wordToSearch: newWord
-		}));
-	}
-
-	// Toggle transcript editor visibility
-	function toggleEditor() {
-		EditorStore.update((state) => ({
-			...state,
-			config: {
-				...state.config,
-				isVisible: !state.config.isVisible
-			}
-		}));
-		// Trigger canvas resize after editor toggle
-		// Use requestAnimationFrame to wait for DOM to update
-		requestAnimationFrame(() => {
-			triggerCanvasResize();
-		});
-	}
-
-	// Handle split pane resize
-	function handlePanelResize(event: CustomEvent<{ sizes: [number, number] }>) {
-		EditorStore.update((state) => ({
-			...state,
-			config: {
-				...state.config,
-				panelSizes: event.detail.sizes
-			}
-		}));
-		// Trigger canvas resize
-		triggerCanvasResize();
-	}
-
-	// Safely trigger canvas resize only when container exists and has valid dimensions
 	function triggerCanvasResize() {
 		if (!p5Instance) return;
 		const container = document.getElementById('p5-container');
 		if (container) {
 			const rect = container.getBoundingClientRect();
-			// Only resize if container has valid dimensions
 			if (rect.width > 0 && rect.height > 0) {
 				p5Instance.windowResized?.();
 			}
@@ -570,329 +412,29 @@
 </script>
 
 <svelte:head>
-	<title>TRANSCRIPT EXPLORER</title>
+	<title>Transcript Explorer</title>
 </svelte:head>
 
-
-<div class="page-container">
-	<div class="navbar min-h-16 bg-[#ffffff]">
-		<div class="flex-1 px-2 lg:flex-none">
-			<span class="text-2xl text-black italic">TRANSCRIPT EXPLORER</span>
-		</div>
-
-		<!-- Mobile hamburger button -->
-		<button
-			class="btn btn-ghost md:hidden"
-			on:click={() => (mobileMenuOpen = !mobileMenuOpen)}
-			aria-label="Toggle menu"
-		>
-			<div class="w-6 h-6">
-				{#if mobileMenuOpen}
-					<MdClose />
-				{:else}
-					<MdMenu />
-				{/if}
-			</div>
-		</button>
-
-		<!-- Desktop navigation -->
-		<div class="hidden md:flex justify-end flex-1 px-2 items-center gap-1">
-			<!-- Example Data Dropdown -->
-			<details class="dropdown" use:clickOutside data-tour="examples">
-				<summary
-					class="flex justify-between items-center min-w-[180px] rounded border border-gray-300 px-3 py-1.5 bg-white text-sm font-medium text-gray-700 hover:bg-gray-50 cursor-pointer"
-				>
-					<span class="truncate">{selectedDropDownOption || 'Select an Example'}</span>
-					<svg class="w-3 h-3 ml-2 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-						<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" />
-					</svg>
-				</summary>
-				<ul class="menu dropdown-content rounded-box z-[1] w-56 p-2 shadow bg-base-100 max-h-[60vh] overflow-y-auto">
-					{#each dropdownOptions as group}
-						<li class="menu-title text-xs uppercase tracking-wider text-gray-500 pt-2">{group.label}</li>
-						{#each group.items as item}
-							<li>
-								<button
-									on:click={() => loadExample(item.value)}
-									class="text-sm {selectedDropDownOption === item.label ? 'active' : ''}"
-								>
-									{item.label}
-								</button>
-							</li>
-						{/each}
-					{/each}
-				</ul>
-			</details>
-
-			<!-- Divider -->
-			<div class="divider divider-horizontal mx-1 h-8"></div>
-
-			<!-- Visualization Controls Group -->
-			<div class="flex items-center gap-2">
-				<!-- Visualizations Dropdown -->
-				<details class="dropdown" use:clickOutside data-tour="viz-modes">
-					<summary class="btn btn-sm gap-1 flex items-center">
-						<div class="w-4 h-4">
-							<MdInsertChart />
-						</div>
-						{activeVisualizationName}
-						<svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-							<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" />
-						</svg>
-					</summary>
-					<ul class="menu dropdown-content rounded-box z-[1] w-52 p-2 shadow bg-base-100">
-						{#each techniqueToggleOptions as toggle}
-							<li>
-								<button on:click={() => toggleSelection(toggle, techniqueToggleOptions)} class="w-full text-left flex items-center">
-									<div class="w-4 h-4 mr-2">
-										{#if $ConfigStore[toggle]}
-											<MdCheck />
-										{/if}
-									</div>
-									{formatToggleName(toggle)}
-								</button>
-							</li>
-						{/each}
-					</ul>
-				</details>
-
-				<!-- Interactions & Editor -->
-				<div class="flex items-center gap-2" data-tour="interactions">
-					<details class="dropdown" use:clickOutside>
-						<summary class="btn btn-sm gap-1 flex items-center">
-							<div class="w-4 h-4">
-								<MdTouchApp />
-							</div>
-							Interactions
-							<svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-								<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" />
-							</svg>
-						</summary>
-						<ul class="menu dropdown-content rounded-box z-[1] w-52 p-2 shadow bg-base-100">
-							{#each visibleInteractions as toggle}
-								<li>
-									<button on:click={() => toggleSelectionOnly(toggle, allInteractions)} class="w-full text-left flex items-center">
-										<div class="w-4 h-4 mr-2">
-											{#if $ConfigStore[toggle]}
-												<MdCheck />
-											{/if}
-										</div>
-										{formatToggleName(toggle)}
-									</button>
-								</li>
-							{/each}
-							{#if showRepeatedWordsSlider}
-								<li class="cursor-default">
-									<p>Repeated Word Filter: {$ConfigStore.repeatWordSliderValue}</p>
-								</li>
-								<li>
-									<label for="repeatWordRange" class="sr-only">Repeated word filter</label>
-									<input
-										id="repeatWordRange"
-										type="range"
-										min="2"
-										max="30"
-										value={$ConfigStore.repeatWordSliderValue}
-										class="range"
-										on:input={(e) => handleConfigChangeFromInput(e, 'repeatWordSliderValue')}
-									/>
-								</li>
-							{/if}
-							<hr class="my-4 border-t border-gray-300" />
-							<input type="text" placeholder="Search conversations..." on:input={(e) => handleWordSearch(e)} class="input input-bordered w-full" />
-						</ul>
-					</details>
-
-					<!-- Editor Toggle -->
-					<button
-						class="btn btn-sm gap-1 {isEditorVisible ? 'btn-primary' : ''}"
-						on:click={toggleEditor}
-						title={isEditorVisible ? 'Hide Editor' : 'Show Editor'}
-					>
-						<div class="w-4 h-4">
-							<MdSubject />
-						</div>
-						Editor
-					</button>
-				</div>
-
-				<!-- Video Toggle -->
-				<IconButton
-					icon={isVideoVisible ? MdVideocam : MdVideocamOff}
-					tooltip={isVideoVisible ? 'Hide Video' : 'Show Video'}
-					on:click={toggleVideo}
-					disabled={!isVideoLoaded}
-				/>
-			</div>
-
-			<!-- Divider -->
-			<div class="divider divider-horizontal mx-1 h-8"></div>
-
-			<!-- File & Settings Group -->
-			<div class="flex items-center gap-1">
-				<IconButton icon={MdCloudUpload} tooltip={'Upload Files'} on:click={() => (showUploadModal = true)} />
-				<IconButton icon={MdNoteAdd} tooltip={'Create New Transcript'} on:click={createNewTranscript} />
-				<input class="hidden" id="file-input" multiple accept=".csv, .txt, .mp4" type="file" bind:files on:change={updateUserLoadedFiles} />
-				<IconButton icon={MdHelpOutline} tooltip={'Help'} on:click={() => ($isModalOpen = !$isModalOpen)} />
-				<IconButton icon={MdSettings} tooltip={'Settings'} on:click={() => (showSettings = true)} />
-			</div>
-		</div>
-	</div>
-
-	<!-- Mobile menu dropdown -->
-	{#if mobileMenuOpen}
-		<div class="md:hidden bg-white border-b border-gray-200 shadow-lg">
-			<div class="p-4 space-y-4">
-				<!-- Example Data Section -->
-				<div>
-					<p class="text-xs uppercase tracking-wider text-gray-500 mb-2">Example Data</p>
-					<select
-						class="select select-bordered w-full"
-						on:change={(e) => {
-							loadExample(e.currentTarget.value);
-							mobileMenuOpen = false;
-						}}
-					>
-						<option value="" disabled selected={!selectedDropDownOption}>Select an Example</option>
-						{#each dropdownOptions as group}
-							<optgroup label={group.label}>
-								{#each group.items as item}
-									<option value={item.value} selected={selectedDropDownOption === item.label}>{item.label}</option>
-								{/each}
-							</optgroup>
-						{/each}
-					</select>
-				</div>
-
-				<!-- Visualization Mode -->
-				<div>
-					<p class="text-xs uppercase tracking-wider text-gray-500 mb-2">Visualization</p>
-					<div class="flex flex-wrap gap-2">
-						{#each techniqueToggleOptions as toggle}
-							<button
-								class="btn btn-sm {$ConfigStore[toggle] ? 'btn-primary' : 'btn-ghost'}"
-								on:click={() => {
-									toggleSelection(toggle, techniqueToggleOptions);
-									mobileMenuOpen = false;
-								}}
-							>
-								{formatToggleName(toggle)}
-							</button>
-						{/each}
-					</div>
-				</div>
-
-				<!-- Interactions -->
-				<div>
-					<p class="text-xs uppercase tracking-wider text-gray-500 mb-2">Interactions</p>
-					<div class="flex flex-wrap gap-2">
-						{#each visibleInteractions as toggle}
-							<button
-								class="btn btn-sm {$ConfigStore[toggle] ? 'btn-primary' : 'btn-ghost'}"
-								on:click={() => toggleSelectionOnly(toggle, allInteractions)}
-							>
-								{formatToggleName(toggle)}
-							</button>
-						{/each}
-					</div>
-					{#if showRepeatedWordsSlider}
-						<div class="mt-2">
-							<label for="repeatWordRangeMobile" class="text-sm">Repeated Word Filter: {$ConfigStore.repeatWordSliderValue}</label>
-							<input
-								id="repeatWordRangeMobile"
-								type="range"
-								min="2"
-								max="30"
-								value={$ConfigStore.repeatWordSliderValue}
-								class="range range-sm w-full"
-								on:input={(e) => handleConfigChangeFromInput(e, 'repeatWordSliderValue')}
-							/>
-						</div>
-					{/if}
-					<input
-						type="text"
-						placeholder="Search conversations..."
-						on:input={(e) => handleWordSearch(e)}
-						class="input input-bordered input-sm w-full mt-2"
-					/>
-				</div>
-
-				<!-- Quick Actions -->
-				<div>
-					<p class="text-xs uppercase tracking-wider text-gray-500 mb-2">Actions</p>
-					<div class="flex flex-wrap gap-2">
-						<button
-							class="btn btn-sm {isEditorVisible ? 'btn-primary' : 'btn-ghost'}"
-							on:click={() => {
-								toggleEditor();
-								mobileMenuOpen = false;
-							}}
-						>
-							<div class="w-4 h-4 mr-1"><MdSubject /></div>
-							Editor
-						</button>
-						<button
-							class="btn btn-sm btn-ghost"
-							on:click={() => {
-								toggleVideo();
-								mobileMenuOpen = false;
-							}}
-							disabled={!isVideoLoaded}
-						>
-							<div class="w-4 h-4 mr-1">
-								{#if isVideoVisible}
-									<MdVideocam />
-								{:else}
-									<MdVideocamOff />
-								{/if}
-							</div>
-							Video
-						</button>
-						<button
-							class="btn btn-sm btn-ghost"
-							on:click={() => {
-								showUploadModal = true;
-								mobileMenuOpen = false;
-							}}
-						>
-							<div class="w-4 h-4 mr-1"><MdCloudUpload /></div>
-							Upload
-						</button>
-						<button
-							class="btn btn-sm btn-ghost"
-							on:click={() => {
-								createNewTranscript();
-								mobileMenuOpen = false;
-							}}
-						>
-							<div class="w-4 h-4 mr-1"><MdNoteAdd /></div>
-							New
-						</button>
-						<button
-							class="btn btn-sm btn-ghost"
-							on:click={() => {
-								$isModalOpen = true;
-								mobileMenuOpen = false;
-							}}
-						>
-							<div class="w-4 h-4 mr-1"><MdHelpOutline /></div>
-							Help
-						</button>
-						<button
-							class="btn btn-sm btn-ghost"
-							on:click={() => {
-								showSettings = true;
-								mobileMenuOpen = false;
-							}}
-						>
-							<div class="w-4 h-4 mr-1"><MdSettings /></div>
-							Settings
-						</button>
-					</div>
-				</div>
-			</div>
-		</div>
-	{/if}
+{#if isTranscribeModeActive}
+	<TranscribeModeLayout on:exit={exitTranscribeMode} on:createTranscript={createTranscript} />
+{:else}
+	<div class="page-container">
+	<AppNavbar
+		selectedExample={selectedDropDownOption}
+		{isEditorVisible}
+		{isVideoVisible}
+		{isVideoLoaded}
+		on:loadExample={handleLoadExample}
+		on:toggleEditor={handleToggleEditor}
+		on:toggleVideo={toggleVideoVisibility}
+		on:openUpload={() => (showUploadModal = true)}
+		on:openHelp={() => ($isModalOpen = !$isModalOpen)}
+		on:openSettings={() => (showSettings = true)}
+		on:createNewTranscript={() => (showNewTranscriptConfirm = true)}
+		on:toggleTranscribeMode={toggleTranscribeMode}
+		on:wordSearch={handleWordSearch}
+		on:configChange={handleConfigChange}
+	/>
 
 	<div class="main-content">
 		<SplitPane
@@ -905,12 +447,15 @@
 			<div slot="first" class="h-full relative" id="p5-container" data-tour="visualization">
 				<P5 {sketch} />
 				<CanvasTooltip />
+				{#if $ConfigStore.cloudHasOverflow && ($ConfigStore.contributionCloudToggle || $ConfigStore.dashboardToggle)}
+					<div class="badge badge-neutral absolute bottom-3 right-3">Some content not shown</div>
+				{/if}
 				{#if hasVideoSource}
-					<VideoContainer bind:this={videoContainerRef} />
+					<VideoContainer />
 				{/if}
 			</div>
 			<div slot="second" class="h-full">
-				<TranscriptEditor />
+				<TranscriptEditor on:createTranscript={createTranscript} />
 			</div>
 		</SplitPane>
 	</div>
@@ -928,9 +473,18 @@
 		on:openFileDialog={openFileDialog}
 		on:clearFiles={clearUploadedFiles}
 		on:startTranscription={() => (showTranscriptionModal = true)}
+		on:youtubeUrl={(e) => loadVideo({ type: 'youtube', videoId: e.detail })}
 	/>
 
 	<DataExplorerModal bind:isOpen={showDataPopup} />
+
+	<ConfirmModal
+		bind:isOpen={showNewTranscriptConfirm}
+		title="Create New Transcript?"
+		message="This will erase the current transcript. This action cannot be undone."
+		confirmText="Erase and Create New"
+		on:confirm={createTranscript}
+	/>
 
 	<div class="btm-nav flex justify-between min-h-20" style="position: relative;">
 		<SpeakerControls />
@@ -939,12 +493,15 @@
 		</div>
 	</div>
 </div>
+{/if}
 
 <slot />
 
+<input class="hidden" id="file-input" multiple accept=".csv, .txt, .mp4" type="file" bind:files on:change={updateUserLoadedFiles} />
+
 <InfoModal
 	{isModalOpen}
-	onLoadExample={loadExample}
+	onLoadExample={(id) => handleLoadExample(new CustomEvent('loadExample', { detail: id }))}
 	onOpenUpload={() => (showUploadModal = true)}
 	onStartTour={() => tourOverlay.start()}
 />
@@ -958,6 +515,13 @@
 />
 
 <TourOverlay bind:this={tourOverlay} />
+
+<RecoveryModal
+	bind:isOpen={showRecoveryModal}
+	savedAt={recoveryTimestamp}
+	on:restore={handleRestore}
+	on:discard={handleDiscard}
+/>
 
 <style>
 	.page-container {

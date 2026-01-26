@@ -104,12 +104,18 @@ export function getMaxTime(wordArray: DataPoint[]): number {
 /**
  * Update timeline to match data range.
  * @param wordArray - The word array to derive time range from
- * @param expandOnly - If true, only expand timeline (never shrink). Default: true.
+ * @param expandOnly - If true, only expand timeline endTime but preserve user's zoom (rightMarker). Default: true.
  */
 export function updateTimelineFromData(wordArray: DataPoint[], expandOnly = true): void {
 	const maxTime = getMaxTime(wordArray);
 	TimelineStore.update((timeline) => {
-		if (!expandOnly || maxTime > timeline.rightMarker) {
+		if (expandOnly) {
+			// Only expand endTime if data grew, preserve user's zoom level
+			if (maxTime > timeline.endTime) {
+				timeline.endTime = maxTime;
+			}
+		} else {
+			// Reset both endTime and rightMarker to match data
 			timeline.endTime = maxTime;
 			timeline.rightMarker = maxTime;
 		}
@@ -121,10 +127,7 @@ export function updateTimelineFromData(wordArray: DataPoint[], expandOnly = true
  * Apply timing mode recalculations to word array.
  * Call this after any edit operation to ensure times are correct for the current mode.
  */
-export function applyTimingModeToWordArray(
-	wordArray: DataPoint[],
-	timingMode: TimingMode
-): DataPoint[] {
+export function applyTimingModeToWordArray(wordArray: DataPoint[], timingMode: TimingMode): DataPoint[] {
 	if (timingMode === 'untimed') {
 		return recalculateWordCountTimes(wordArray);
 	}

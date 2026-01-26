@@ -29,7 +29,9 @@
 - **Multiple Visualizations** — Distribution diagram, turn chart, contribution cloud, and flower mode
 - **Video Integration** — Sync transcripts with YouTube videos or local video files
 - **Auto-Transcription** — In-browser Whisper AI transcription (no data leaves your device)
-- **Interactive Editor** — Edit transcripts with inline timing controls and video sync
+- **Transcribe Mode** — Dedicated workspace with keyboard shortcuts for manual video transcription
+- **Interactive Editor** — Edit transcripts with inline timing controls, video sync, and undo/redo
+- **Auto-Save** — Work is automatically saved to prevent data loss
 - **Export Options** — Export edited transcripts as CSV
 
 ---
@@ -42,13 +44,13 @@ Transcript Explorer provides four visualization modes to explore your conversati
 
 |                                                                                                                                                                                      |                                                                                                                                                                |
 | :----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------: | :------------------------------------------------------------------------------------------------------------------------------------------------------------: |
-|                                                          ![Distribution Diagram](./static/images/thumbs-modes/distribution-diagram.webp)                                                           |                                                         ![Turn Chart](./static/images/thumbs-modes/turn-chart.webp)                                                          |
+|                                                   ![Distribution Diagram](./static/images/thumbs-modes/distribution-diagram.webp)                                                    |                                                  ![Turn Chart](./static/images/thumbs-modes/turn-chart.webp)                                                   |
 |                                                                               **Distribution Diagram**                                                                               |                                                                         **Turn Chart**                                                                         |
 | Each flower represents a speaker. Flower size indicates words spoken; height indicates number of turns. Hover to see the first word of each turn; click to watch video of each turn. | Each ellipse is a conversation turn, colored by speaker. Width indicates turn duration; height indicates word count. Hover to read turns; click to play video. |
 
 |                                                                                                                                                        |                                                             |
 | :----------------------------------------------------------------------------------------------------------------------------------------------------: | :---------------------------------------------------------: |
-|                                             ![Contribution Cloud](./static/images/thumbs-modes/contribution-cloud.webp)                                              |         ![Dashboard](./static/images/thumbs-modes/dashboard.webp)         |
+|                                      ![Contribution Cloud](./static/images/thumbs-modes/contribution-cloud.webp)                                       |  ![Dashboard](./static/images/thumbs-modes/dashboard.webp)  |
 |                                                                 **Contribution Cloud**                                                                 |                        **Dashboard**                        |
 | Turns displayed as a paragraph as they unfold. When a word is repeated, its first instance grows in size. Click any word to play video from that turn. | Coordinated view showing all visualizations simultaneously. |
 
@@ -82,6 +84,7 @@ SPEAKER 2,Hi there!,0:00:08,0:00:09
 ```
 
 You can also load:
+
 - **Video** (MP4, YouTube URL) synced to timeline
 - **Auto-transcribe** video files directly in the browser
 

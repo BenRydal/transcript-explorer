@@ -37,13 +37,7 @@
 </script>
 
 {#if isOpen}
-	<div
-		class="modal modal-open"
-		on:click|self={() => (isOpen = false)}
-		on:keydown={handleKeydown}
-		role="dialog"
-		aria-modal="true"
-	>
+	<div class="modal modal-open" on:click|self={() => (isOpen = false)} on:keydown={handleKeydown} role="dialog" aria-modal="true">
 		<div class="modal-box w-11/12 max-w-md p-8">
 			<div class="flex justify-between mb-6">
 				<h3 class="font-bold text-xl">Settings</h3>
@@ -131,6 +125,27 @@
 								handleConfigChange('speechRateWordsPerSecond', parseFloat(e.target.value));
 								recalculateStartOnlyEndTimes();
 							}}
+							class="range range-sm"
+						/>
+					</div>
+				</div>
+
+				<!-- Video Playback Settings -->
+				<div class="flex flex-col border-t pt-4">
+					<p class="font-medium mb-2">Video Playback</p>
+					<div class="flex flex-col">
+						<label for="snippetDuration" class="text-sm">
+							Turn preview duration: {$ConfigStore.snippetDurationSeconds}s
+						</label>
+						<p class="text-xs text-gray-500 mb-1">When clicking a speaker in the distribution diagram, plays this duration from each of their turns</p>
+						<input
+							id="snippetDuration"
+							type="range"
+							min="1"
+							max="5"
+							step="1"
+							value={$ConfigStore.snippetDurationSeconds}
+							on:input={(e) => handleConfigChange('snippetDurationSeconds', parseInt(e.target.value))}
 							class="range range-sm"
 						/>
 					</div>
