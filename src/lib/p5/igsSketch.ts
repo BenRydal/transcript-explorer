@@ -140,18 +140,13 @@ export const igsSketch = (p5: any) => {
 	};
 
 	p5.continueTimelineAnimation = () => {
-		let timeToSet = 0;
-		if (videoState.isLoaded && videoState.isPlaying) {
-			// Get time from video via VideoStore's currentTime
-			timeToSet = videoState.currentTime;
-		} else {
-			// Cap deltaTime to 100ms to prevent huge jumps when tab is backgrounded
-			const cappedDeltaTime = Math.min(p5.deltaTime, 100);
-			timeToSet = timeline.currTime + (currConfig.animationRate * cappedDeltaTime) / 1000;
-		}
-		TimelineStore.update((timeline) => {
-			timeline.currTime = timeToSet;
-			return timeline;
+		const timeToSet = videoState.isLoaded && videoState.isPlaying
+			? videoState.currentTime
+			: timeline.currTime + (currConfig.animationRate * Math.min(p5.deltaTime, 100)) / 1000;
+
+		TimelineStore.update((t) => {
+			t.currTime = timeToSet;
+			return t;
 		});
 	};
 
@@ -172,63 +167,53 @@ export const igsSketch = (p5: any) => {
 		requestAnimationFrame(() => {
 			mouseEventLocked = false;
 		});
-		// Handle distribution diagram click to lock speaker filter (only if editor is open)
-		if ((currConfig.distributionDiagramToggle || currConfig.dashboardToggle) && editorState?.config?.isVisible) {
-			const hoveredSpeaker = currConfig.hoveredSpeakerInDistributionDiagram;
-			if (hoveredSpeaker) {
-				EditorStore.update((state) => ({
-					...state,
-					selection: {
-						...state.selection,
-						filteredSpeaker: hoveredSpeaker,
-						highlightedSpeaker: hoveredSpeaker,
-						selectedTurnNumber: null,
-						selectionSource: 'distributionDiagramClick'
-					}
-				}));
-			}
-		}
 
-		if (!videoState.isLoaded || !videoState.isVisible) return;
+		p5.handleSpeakerFilterClick();
+		p5.handleVideoClick();
+	};
 
-		if (videoState.isPlaying || isPlayingTurnSnippets) {
-			p5.stopTurnSnippets();
-			videoPause();
-		} else if (p5.overRect(0, 0, p5.width, p5.height)) {
-			p5.handleVideoPlay();
+	// Lock speaker filter in editor when clicking on a speaker's visualization
+	p5.handleSpeakerFilterClick = () => {
+		if (!editorState?.config?.isVisible) return;
+
+		const hoveredSpeaker = currConfig.hoveredSpeakerInDistributionDiagram;
+		if (hoveredSpeaker) {
+			EditorStore.update((state) => ({
+				...state,
+				selection: {
+					...state.selection,
+					filteredSpeaker: hoveredSpeaker,
+					highlightedSpeaker: hoveredSpeaker,
+					selectedTurnNumber: null,
+					selectionSource: 'distributionDiagramClick'
+				}
+			}));
 		}
 	};
 
-	p5.handleVideoPlay = () => {
-		const {
-			distributionDiagramToggle,
-			turnChartToggle,
-			contributionCloudToggle,
-			arrayOfFirstWords,
-			selectedWordFromContributionCloud,
-			firstWordOfTurnSelectedInTurnChart
-		} = currConfig;
+	// Handle video play/pause when clicking on canvas
+	p5.handleVideoClick = () => {
+		if (!videoState.isLoaded || !videoState.isVisible) return;
+		if (!p5.overRect(0, 0, p5.width, p5.height)) return;
 
-		if (
-			distributionDiagramToggle ||
-			(currConfig.dashboardToggle && arrayOfFirstWords.length && !firstWordOfTurnSelectedInTurnChart && !selectedWordFromContributionCloud)
-		) {
-			// Distribution diagram: play first 2 seconds of each turn
-			if (arrayOfFirstWords.length) {
-				p5.playTurnSnippets(arrayOfFirstWords);
-			}
-		} else if (turnChartToggle || (currConfig.dashboardToggle && firstWordOfTurnSelectedInTurnChart)) {
-			// Turn chart: play from hovered turn
-			if (firstWordOfTurnSelectedInTurnChart) {
-				requestSeek(firstWordOfTurnSelectedInTurnChart.startTime);
-				videoPlay();
-			}
-		} else if (contributionCloudToggle || (currConfig.dashboardToggle && selectedWordFromContributionCloud)) {
-			// Contribution cloud: play from hovered word
-			if (selectedWordFromContributionCloud) {
-				requestSeek(selectedWordFromContributionCloud.startTime);
-				videoPlay();
-			}
+		// If playing, pause
+		if (videoState.isPlaying || isPlayingTurnSnippets) {
+			p5.stopTurnSnippets();
+			videoPause();
+			return;
+		}
+
+		// Play from whatever is currently hovered
+		const { firstWordOfTurnSelectedInTurnChart, selectedWordFromContributionCloud, arrayOfFirstWords } = currConfig;
+
+		if (firstWordOfTurnSelectedInTurnChart) {
+			requestSeek(firstWordOfTurnSelectedInTurnChart.startTime);
+			videoPlay();
+		} else if (selectedWordFromContributionCloud) {
+			requestSeek(selectedWordFromContributionCloud.startTime);
+			videoPlay();
+		} else if (arrayOfFirstWords?.length) {
+			p5.playTurnSnippets(arrayOfFirstWords);
 		}
 	};
 
@@ -236,24 +221,21 @@ export const igsSketch = (p5: any) => {
 		if (isPlayingTurnSnippets) return;
 		isPlayingTurnSnippets = true;
 
-		for (const turn of turns) {
-			if (!isPlayingTurnSnippets) break;
-			requestSeek(turn.startTime);
-			videoPlay();
-			await new Promise((resolve) => setTimeout(resolve, 2000));
+		try {
+			for (const turn of turns) {
+				if (!isPlayingTurnSnippets) break;
+				requestSeek(turn.startTime);
+				videoPlay();
+				await new Promise((resolve) => setTimeout(resolve, 2000));
+			}
+		} finally {
+			videoPause();
+			isPlayingTurnSnippets = false;
 		}
-
-		videoPause();
-		isPlayingTurnSnippets = false;
 	};
 
 	p5.stopTurnSnippets = () => {
 		isPlayingTurnSnippets = false;
-	};
-
-	p5.resetAnimation = () => {
-		p5.dynamicData.clear();
-		p5.animationCounter = 0;
 	};
 
 	p5.fillAllData = () => {
@@ -289,10 +271,6 @@ export const igsSketch = (p5: any) => {
 			hasFirstWords && currConfig.arrayOfFirstWords[0]?.speaker ? item.speaker === currConfig.arrayOfFirstWords[0].speaker : true;
 
 		return matchesComparisonProperty && matchesFirstSpeaker;
-	};
-
-	p5.getTimeValueFromPixel = (pixelValue: number) => {
-		return Math.floor(p5.map(pixelValue, p5.SPACING, p5.width - p5.SPACING, timeline.leftMarker, timeline.rightMarker));
 	};
 
 	p5.overRect = (x: number, y: number, boxWidth: number, boxHeight: number) => {
