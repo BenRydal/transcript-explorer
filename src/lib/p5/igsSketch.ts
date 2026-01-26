@@ -5,7 +5,11 @@ import type { User } from '../../models/user';
 import TimelineStore from '../../stores/timelineStore';
 import ConfigStore from '../../stores/configStore';
 import EditorStore from '../../stores/editorStore';
-import VideoStore, { play as videoPlay, pause as videoPause, requestSeek } from '../../stores/videoStore';
+import VideoStore, {
+	stopPlayback,
+	playFrom,
+	playSnippets
+} from '../../stores/videoStore';
 import type { VideoState } from '../../stores/videoStore';
 import { Draw } from '../draw/draw';
 import { DynamicData } from '../core/dynamic-data';
@@ -13,7 +17,6 @@ import { DynamicData } from '../core/dynamic-data';
 let users: User[] = [];
 let timeline, transcript, currConfig, editorState;
 let videoState: VideoState;
-let isPlayingTurnSnippets = false;
 let canHover = true;
 let mouseEventLocked = false;
 
@@ -191,51 +194,24 @@ export const igsSketch = (p5: any) => {
 		}
 	};
 
-	// Handle video play/pause when clicking on canvas
 	p5.handleVideoClick = () => {
 		if (!videoState.isLoaded || !videoState.isVisible) return;
 		if (!p5.overRect(0, 0, p5.width, p5.height)) return;
 
-		// If playing, pause
-		if (videoState.isPlaying || isPlayingTurnSnippets) {
-			p5.stopTurnSnippets();
-			videoPause();
+		if (videoState.isPlaying) {
+			stopPlayback();
 			return;
 		}
 
-		// Play from whatever is currently hovered
 		const { firstWordOfTurnSelectedInTurnChart, selectedWordFromContributionCloud, arrayOfFirstWords } = currConfig;
 
 		if (firstWordOfTurnSelectedInTurnChart) {
-			requestSeek(firstWordOfTurnSelectedInTurnChart.startTime);
-			videoPlay();
+			playFrom(firstWordOfTurnSelectedInTurnChart);
 		} else if (selectedWordFromContributionCloud) {
-			requestSeek(selectedWordFromContributionCloud.startTime);
-			videoPlay();
+			playFrom(selectedWordFromContributionCloud);
 		} else if (arrayOfFirstWords?.length) {
-			p5.playTurnSnippets(arrayOfFirstWords);
+			playSnippets(arrayOfFirstWords);
 		}
-	};
-
-	p5.playTurnSnippets = async (turns: any[]) => {
-		if (isPlayingTurnSnippets) return;
-		isPlayingTurnSnippets = true;
-
-		try {
-			for (const turn of turns) {
-				if (!isPlayingTurnSnippets) break;
-				requestSeek(turn.startTime);
-				videoPlay();
-				await new Promise((resolve) => setTimeout(resolve, 2000));
-			}
-		} finally {
-			videoPause();
-			isPlayingTurnSnippets = false;
-		}
-	};
-
-	p5.stopTurnSnippets = () => {
-		isPlayingTurnSnippets = false;
 	};
 
 	p5.fillAllData = () => {

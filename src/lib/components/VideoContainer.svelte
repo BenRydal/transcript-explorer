@@ -1,7 +1,7 @@
 <script lang="ts">
 	import { onMount, onDestroy } from 'svelte';
 	import { browser } from '$app/environment';
-	import VideoStore, { updatePosition, updateSize, setDragging, setResizing, play, pause, clearSeekRequest } from '../../stores/videoStore';
+	import VideoStore, { updatePosition, updateSize, setDragging, setResizing, clearSeekRequest } from '../../stores/videoStore';
 	import EditorStore from '../../stores/editorStore';
 	import { playVideo, pauseVideo, seekTo, muteVideo, unmuteVideo, type VideoPlayer } from '../video/video-service';
 	import VideoPlayerComponent from './VideoPlayer.svelte';
@@ -182,14 +182,6 @@
 		if (player) {
 			seekTo(player, time);
 		}
-	}
-
-	export function videoPlay() {
-		play();
-	}
-
-	export function videoPause() {
-		pause();
 	}
 
 	export function getPlayer(): VideoPlayer | null {

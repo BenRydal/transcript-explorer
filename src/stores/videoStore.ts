@@ -1,9 +1,16 @@
 import { writable, get } from 'svelte/store';
+import type { DataPoint } from '../models/dataPoint';
 
 export interface VideoSource {
 	type: 'youtube' | 'file' | null;
 	videoId?: string;
 	fileUrl?: string;
+}
+
+// Snippets mode state (null = continuous/idle)
+export interface SnippetsMode {
+	turns: DataPoint[];
+	currentIndex: number;
 }
 
 export interface VideoState {
@@ -16,6 +23,7 @@ export interface VideoState {
 	currentTime: number;
 	duration: number;
 	isMuted: boolean;
+	snippetsMode: SnippetsMode | null; // null = continuous/idle
 
 	// UI state
 	isVisible: boolean;
@@ -38,6 +46,7 @@ const initialState: VideoState = {
 	currentTime: 0,
 	duration: 0,
 	isMuted: false,
+	snippetsMode: null,
 	isVisible: false,
 	position: { x: 20, y: 20 },
 	size: { width: 480, height: 270 },
@@ -49,13 +58,60 @@ const initialState: VideoState = {
 
 const VideoStore = writable<VideoState>(initialState);
 
+// Seek request ID for deduplication
+let seekRequestId = 0;
+
+// Track which snippet we last advanced from (guards against race conditions)
+let lastAdvancedFromIndex = -1;
+
+// Snippet duration in seconds (for time-based advancement)
+const SNIPPET_DURATION_SEC = 2;
+
+function advanceSnippet(): void {
+	const state = get(VideoStore);
+	if (!state.snippetsMode) return;
+
+	const { turns, currentIndex } = state.snippetsMode;
+	const nextIndex = currentIndex + 1;
+
+	if (nextIndex >= turns.length) {
+		// Finished all snippets
+		stopPlayback();
+	} else {
+		// Advance to next snippet
+		const nextTurn = turns[nextIndex];
+		seekRequestId++;
+		VideoStore.update((s) => ({
+			...s,
+			snippetsMode: { ...s.snippetsMode!, currentIndex: nextIndex },
+			seekRequest: { time: nextTurn.startTime, id: seekRequestId }
+		}));
+	}
+}
+
+function checkSnippetAdvancement(currentTime: number): void {
+	const state = get(VideoStore);
+	if (!state.isPlaying || !state.snippetsMode) return;
+
+	const { turns, currentIndex } = state.snippetsMode;
+	if (currentIndex <= lastAdvancedFromIndex) return;
+
+	const currentTurn = turns[currentIndex];
+	const snippetEnd = currentTurn.startTime + SNIPPET_DURATION_SEC;
+
+	if (currentTime >= snippetEnd) {
+		lastAdvancedFromIndex = currentIndex;
+		advanceSnippet();
+	}
+}
+
 // Action functions
 export function loadVideo(source: VideoSource): void {
+	stopPlayback();
 	VideoStore.update((state) => ({
 		...state,
 		source,
 		isLoaded: false,
-		isPlaying: false,
 		currentTime: 0,
 		duration: 0,
 		isVisible: false // Don't auto-show, user must click button
@@ -78,10 +134,10 @@ export function showVideo(): void {
 }
 
 export function hideVideo(): void {
+	stopPlayback();
 	VideoStore.update((state) => ({
 		...state,
-		isVisible: false,
-		isPlaying: false
+		isVisible: false
 	}));
 }
 
@@ -95,27 +151,54 @@ export function toggleVisibility(): void {
 	}
 }
 
-export function play(): void {
-	VideoStore.update((state) => ({
-		...state,
+function play(): void {
+	VideoStore.update((s) => ({
+		...s,
 		isPlaying: true
-	}));
-}
-
-export function pause(): void {
-	VideoStore.update((state) => ({
-		...state,
-		isPlaying: false
 	}));
 }
 
 export function togglePlayPause(): void {
 	const state = get(VideoStore);
 	if (state.isPlaying) {
-		pause();
+		stopPlayback();
 	} else {
 		play();
 	}
+}
+
+export function playFrom(dataPoint: DataPoint): void {
+	seekRequestId++;
+	VideoStore.update((state) => ({
+		...state,
+		isPlaying: true,
+		snippetsMode: null,
+		seekRequest: { time: dataPoint.startTime, id: seekRequestId }
+	}));
+}
+
+export function playSnippets(turns: DataPoint[]): void {
+	if (turns.length === 0) return;
+	lastAdvancedFromIndex = -1;
+
+	const firstTurn = turns[0];
+	seekRequestId++;
+
+	VideoStore.update((state) => ({
+		...state,
+		isPlaying: true,
+		snippetsMode: { turns, currentIndex: 0 },
+		seekRequest: { time: firstTurn.startTime, id: seekRequestId }
+	}));
+}
+
+export function stopPlayback(): void {
+	lastAdvancedFromIndex = -1;
+	VideoStore.update((state) => ({
+		...state,
+		isPlaying: false,
+		snippetsMode: null
+	}));
 }
 
 export function setCurrentTime(time: number): void {
@@ -123,15 +206,7 @@ export function setCurrentTime(time: number): void {
 		...state,
 		currentTime: time
 	}));
-}
-
-let seekRequestId = 0;
-export function requestSeek(time: number): void {
-	seekRequestId++;
-	VideoStore.update((state) => ({
-		...state,
-		seekRequest: { time, id: seekRequestId }
-	}));
+	checkSnippetAdvancement(time);
 }
 
 export function clearSeekRequest(): void {

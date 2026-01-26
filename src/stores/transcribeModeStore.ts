@@ -1,8 +1,10 @@
 import { writable } from 'svelte/store';
+import { stopPlayback } from './videoStore';
 
 const TranscribeModeStore = writable({ isActive: false });
 
 export function enter(): void {
+	stopPlayback();
 	TranscribeModeStore.set({ isActive: true });
 }
 
