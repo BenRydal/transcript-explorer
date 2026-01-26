@@ -527,7 +527,7 @@
 </div>
 
 <ConfirmModal
-	isOpen={!!deleteModal}
+	isOpen={deleteModal !== null}
 	title="Delete Turn?"
 	message="Are you sure you want to delete this turn? This can be undone."
 	confirmText="Delete"
