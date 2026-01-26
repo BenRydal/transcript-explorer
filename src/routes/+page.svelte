@@ -2,6 +2,7 @@
 	import P5, { type Sketch } from 'p5-svelte';
 	import type p5 from 'p5';
 	import { browser } from '$app/environment';
+	import { onMount } from 'svelte';
 	import { writable, get } from 'svelte/store';
 
 	// Stores
@@ -21,6 +22,14 @@
 	import { USER_COLORS } from '$lib/constants/ui';
 	import { createEmptyTranscript, createTranscriptFromWhisper } from '$lib/core/transcript-factory';
 	import { filterValidFiles, createUploadEntries, type UploadedFile } from '$lib/core/file-upload';
+	import {
+		getPersistedTimestamp,
+		restoreState,
+		clearState,
+		saveStateDebounced,
+		saveStateImmediate
+	} from '$lib/core/persistence';
+	import { getMaxTime } from '$lib/core/timing-utils';
 
 	// Components
 	import AppNavbar from '$lib/components/AppNavbar.svelte';
@@ -38,6 +47,7 @@
 	import TourOverlay from '$lib/components/TourOverlay.svelte';
 	import SpeakerControls from '$lib/components/SpeakerControls.svelte';
 	import TranscribeModeLayout from '$lib/components/TranscribeModeLayout.svelte';
+	import RecoveryModal from '$lib/components/RecoveryModal.svelte';
 
 	import type { TranscriptionResult } from '$lib/core/transcription-service';
 
@@ -47,6 +57,8 @@
 	let showUploadModal = false;
 	let showTranscriptionModal = false;
 	let showNewTranscriptConfirm = false;
+	let showRecoveryModal = false;
+	let recoveryTimestamp: number | null = null;
 	let isModalOpen = writable(true);
 
 	// File upload state
@@ -110,6 +122,52 @@
 		}
 	});
 
+	// Auto-save subscriptions - save when transcript or users change
+	let isRestoringState = false;
+	TranscriptStore.subscribe(() => {
+		if (!isRestoringState) saveStateDebounced();
+	});
+	UserStore.subscribe(() => {
+		if (!isRestoringState) saveStateDebounced();
+	});
+
+	onMount(() => {
+		recoveryTimestamp = getPersistedTimestamp();
+		if (recoveryTimestamp !== null) {
+			showRecoveryModal = true;
+		}
+
+		window.addEventListener('beforeunload', saveStateImmediate);
+		return () => window.removeEventListener('beforeunload', saveStateImmediate);
+	});
+
+	function handleRestore() {
+		isRestoringState = true;
+		restoreState();
+
+		const { wordArray } = get(TranscriptStore);
+		const maxTime = getMaxTime(wordArray);
+		TimelineStore.update((t) => ({
+			...t,
+			currTime: 0,
+			startTime: 0,
+			endTime: maxTime,
+			leftMarker: 0,
+			rightMarker: maxTime,
+			isAnimating: false
+		}));
+
+		requestAnimationFrame(() => {
+			triggerCanvasResize();
+			p5Instance?.fillAllData?.();
+			isRestoringState = false;
+		});
+	}
+
+	function handleDiscard() {
+		clearState();
+	}
+
 	const sketch: Sketch = (p5: p5) => {
 		igsSketch(p5);
 	};
@@ -133,6 +191,7 @@
 
 	function handleLoadExample(event: CustomEvent<string>) {
 		const exampleId = event.detail;
+		clearState(); // Clear auto-save when intentionally loading new data
 		core?.loadExample(exampleId);
 		// Update dropdown to show selected example
 		for (const group of dropdownOptions) {
@@ -184,6 +243,7 @@
 
 	// Create a new transcript (always timed - user can switch to untimed if needed)
 	function createTranscript() {
+		clearState(); // Clear auto-save when intentionally creating new transcript
 		core.clearTranscriptData();
 
 		const { transcript, users } = createEmptyTranscript(USER_COLORS[0]);
@@ -221,6 +281,7 @@
 
 	function handleTranscriptionComplete(event: CustomEvent<TranscriptionResult>) {
 		const result = event.detail;
+		clearState(); // Clear auto-save when creating transcript from transcription
 		core.clearTranscriptData();
 
 		const { transcript, users } = createTranscriptFromWhisper(result.segments, pendingVideoDuration, USER_COLORS[0]);
@@ -287,9 +348,11 @@
 		return new Promise((resolve, reject) => {
 			const fileName = file.name.toLowerCase();
 			if (fileName.endsWith('.csv') || file.type === 'text/csv') {
+				clearState(); // Clear auto-save when loading new transcript
 				core.loadCSVData(file);
 				resolve();
 			} else if (fileName.endsWith('.txt')) {
+				clearState(); // Clear auto-save when loading new transcript
 				core.loadP5Strings(URL.createObjectURL(file));
 				resolve();
 			} else if (fileName.endsWith('.mp4') || file.type === 'video/mp4') {
@@ -452,6 +515,13 @@
 />
 
 <TourOverlay bind:this={tourOverlay} />
+
+<RecoveryModal
+	bind:isOpen={showRecoveryModal}
+	savedAt={recoveryTimestamp}
+	on:restore={handleRestore}
+	on:discard={handleDiscard}
+/>
 
 <style>
 	.page-container {
