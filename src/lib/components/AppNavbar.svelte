@@ -13,6 +13,9 @@
 	import MdMenu from 'svelte-icons/md/MdMenu.svelte';
 	import MdClose from 'svelte-icons/md/MdClose.svelte';
 	import MdKeyboard from 'svelte-icons/md/MdKeyboard.svelte';
+	import MdSchool from 'svelte-icons/md/MdSchool.svelte';
+	import MdAccountBalance from 'svelte-icons/md/MdAccountBalance.svelte';
+	import MdRecordVoiceOver from 'svelte-icons/md/MdRecordVoiceOver.svelte';
 	import IconButton from './IconButton.svelte';
 	import ConfigStore from '../../stores/configStore';
 	import type { ConfigStoreType } from '../../stores/configStore';
@@ -51,20 +54,12 @@
 	] as const;
 	const allInteractions = [...new Set([...distributionDiagramInteractions, ...turnChartInteractions, ...contributionCloudInteractions])] as const;
 
-	const dropdownOptions = [
-		{
-			label: 'Classrooms',
-			items: [
-				{ value: 'example-1', label: 'Kindergarten Activity' },
-				{ value: 'example-3', label: 'Classroom Discussion' },
-				{ value: 'example-4', label: 'Classroom Science Lesson' }
-			]
-		},
-		{ label: 'Museums', items: [{ value: 'example-2', label: 'Family Gallery Visit' }] },
-		{
-			label: 'Presidential Debates',
-			items: [{ value: 'example-5', label: 'Biden-Trump 2020 Debate' }]
-		}
+	const exampleOptions = [
+		{ value: 'example-1', label: 'Kindergarten Activity', icon: MdSchool },
+		{ value: 'example-3', label: '3rd Grade Discussion Odd/Even Numbers', icon: MdSchool },
+		{ value: 'example-4', label: '8th Grade Science Lesson', icon: MdSchool },
+		{ value: 'example-2', label: 'Family Gallery Visit', icon: MdAccountBalance },
+		{ value: 'example-5', label: 'Biden-Trump 2020 Debate', icon: MdRecordVoiceOver }
 	];
 
 	$: visibleInteractions = $ConfigStore.dashboardToggle
@@ -121,6 +116,11 @@
 		dispatch('loadExample', exampleId);
 	}
 
+	function truncateExample(name: string): string {
+		if (!name) return 'Examples';
+		return name.length > 8 ? name.slice(0, 5) + '...' : name;
+	}
+
 	function clickOutside(node: HTMLElement) {
 		const handleClick = (event: MouseEvent) => {
 			if (!node.contains(event.target as Node)) {
@@ -139,12 +139,12 @@
 </script>
 
 <div class="navbar min-h-16 bg-white">
-	<div class="flex-1 px-2 lg:flex-none">
+	<div class="flex-1 px-2 xl:flex-none">
 		<span class="text-2xl text-black italic">TRANSCRIPT EXPLORER</span>
 	</div>
 
 	<!-- Mobile hamburger button -->
-	<button class="btn btn-ghost lg:hidden" on:click={() => (mobileMenuOpen = !mobileMenuOpen)} aria-label="Toggle menu">
+	<button class="btn btn-ghost xl:hidden" on:click={() => (mobileMenuOpen = !mobileMenuOpen)} aria-label="Toggle menu">
 		<div class="w-6 h-6">
 			{#if mobileMenuOpen}
 				<MdClose />
@@ -155,29 +155,30 @@
 	</button>
 
 	<!-- Desktop navigation -->
-	<div class="hidden lg:flex justify-end flex-1 px-2 items-center gap-1">
+	<div class="hidden xl:flex justify-end flex-1 px-2 items-center gap-1">
 		<!-- Example Data Dropdown -->
 		<details class="dropdown" use:clickOutside data-tour="examples">
 			<summary
-				class="flex justify-between items-center min-w-[180px] rounded border border-gray-300 px-3 py-1.5 bg-white text-sm font-medium text-gray-700 hover:bg-gray-50 cursor-pointer"
+				class="flex justify-between items-center rounded border border-gray-300 px-3 py-1.5 bg-white text-sm font-medium text-gray-700 hover:bg-gray-50 cursor-pointer"
+				title={selectedExample || 'Examples'}
 			>
-				<span class="truncate">{selectedExample || 'Select an Example'}</span>
+				<span class="truncate">{truncateExample(selectedExample)}</span>
 				<svg class="w-3 h-3 ml-2 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
 					<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" />
 				</svg>
 			</summary>
-			<ul class="menu dropdown-content rounded-box z-[1] w-56 p-2 shadow bg-base-100 max-h-[60vh] overflow-y-auto">
-				{#each dropdownOptions as group}
-					<li class="menu-title text-xs uppercase tracking-wider text-gray-500 pt-2">
-						{group.label}
+			<ul class="menu dropdown-content rounded-box z-[1] w-56 p-2 shadow bg-base-100 max-h-[60vh] overflow-y-auto overflow-x-hidden">
+				{#each exampleOptions as item}
+					<li class="w-full">
+						<button
+							on:click={() => loadExample(item.value)}
+							class="text-sm w-full flex items-center gap-2 {selectedExample === item.label ? 'active' : ''}"
+							title={item.label}
+						>
+							<div class="w-4 h-4 flex-shrink-0"><svelte:component this={item.icon} /></div>
+							<span class="block truncate">{item.label}</span>
+						</button>
 					</li>
-					{#each group.items as item}
-						<li>
-							<button on:click={() => loadExample(item.value)} class="text-sm {selectedExample === item.label ? 'active' : ''}">
-								{item.label}
-							</button>
-						</li>
-					{/each}
 				{/each}
 			</ul>
 		</details>
@@ -292,22 +293,21 @@
 			</button>
 		</div>
 
-		<!-- Transcribe Mode -->
-		{#if isVideoLoaded}
-			<!-- Divider -->
-			<div class="divider divider-horizontal mx-1 h-8"></div>
+		<!-- Divider -->
+		<div class="divider divider-horizontal mx-1 h-8"></div>
 
-			<button
-				class="btn btn-sm gap-1 btn-outline border-gray-400 hover:bg-gray-100 hover:border-gray-500"
-				on:click={() => dispatch('toggleTranscribeMode')}
-				title="Enter Transcribe Mode - focused video transcription workflow"
-			>
-				<div class="w-4 h-4">
-					<MdKeyboard />
-				</div>
-				Transcribe
-			</button>
-		{/if}
+		<!-- Transcribe Mode -->
+		<button
+			class="btn btn-sm gap-1 btn-outline border-gray-400 hover:bg-gray-100 hover:border-gray-500 disabled:opacity-50 disabled:cursor-not-allowed"
+			on:click={() => dispatch('toggleTranscribeMode')}
+			title={isVideoLoaded ? 'Enter Transcribe Mode - focused video transcription workflow' : 'Load a video to enable Transcribe Mode'}
+			disabled={!isVideoLoaded}
+		>
+			<div class="w-4 h-4">
+				<MdKeyboard />
+			</div>
+			Transcribe
+		</button>
 
 		<!-- Divider -->
 		<div class="divider divider-horizontal mx-1 h-8"></div>
@@ -324,7 +324,7 @@
 
 <!-- Mobile menu dropdown -->
 {#if mobileMenuOpen}
-	<div class="lg:hidden bg-white border-b border-gray-200 shadow-lg">
+	<div class="xl:hidden bg-white border-b border-gray-200 shadow-lg">
 		<div class="p-4 space-y-4">
 			<!-- Example Data Section -->
 			<div>
@@ -336,13 +336,9 @@
 						mobileMenuOpen = false;
 					}}
 				>
-					<option value="" disabled selected={!selectedExample}>Select an Example</option>
-					{#each dropdownOptions as group}
-						<optgroup label={group.label}>
-							{#each group.items as item}
-								<option value={item.value} selected={selectedExample === item.label}>{item.label}</option>
-							{/each}
-						</optgroup>
+					<option value="" disabled selected={!selectedExample}>Examples</option>
+					{#each exampleOptions as item}
+						<option value={item.value} selected={selectedExample === item.label}>{item.label}</option>
 					{/each}
 				</select>
 			</div>
@@ -423,18 +419,17 @@
 						</div>
 						Video
 					</button>
-					{#if isVideoLoaded}
-						<button
-							class="btn btn-sm btn-outline border-gray-400"
-							on:click={() => {
-								dispatch('toggleTranscribeMode');
-								mobileMenuOpen = false;
-							}}
-						>
-							<div class="w-4 h-4 mr-1"><MdKeyboard /></div>
-							Transcribe
-						</button>
-					{/if}
+					<button
+						class="btn btn-sm btn-outline border-gray-400 disabled:opacity-50"
+						on:click={() => {
+							dispatch('toggleTranscribeMode');
+							mobileMenuOpen = false;
+						}}
+						disabled={!isVideoLoaded}
+					>
+						<div class="w-4 h-4 mr-1"><MdKeyboard /></div>
+						Transcribe
+					</button>
 					<button
 						class="btn btn-sm btn-ghost"
 						on:click={() => {
