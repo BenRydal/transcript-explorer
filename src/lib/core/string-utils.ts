@@ -14,3 +14,10 @@ export function toTitleCase(str: string): string {
 export function normalizeSpeakerName(name: string): string {
 	return name.trim().toUpperCase();
 }
+
+/**
+ * Splits text into word tokens, stripping whitespace and punctuation (,?.!:;).
+ */
+export function splitIntoWords(text: string): string[] {
+	return text.split(/\s+|[,?.!:;]+/).filter(Boolean);
+}

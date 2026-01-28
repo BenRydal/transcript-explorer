@@ -15,17 +15,21 @@
 	import type { ConfigStoreType } from '../stores/configStore';
 	import TranscriptStore from '../stores/transcriptStore';
 	import TranscribeModeStore, { toggle as toggleTranscribeMode, exit as exitTranscribeMode } from '../stores/transcribeModeStore';
+	import { notifications } from '../stores/notificationStore';
 
 	// Core utilities
 	import { Core } from '$lib/core/core';
 	import { igsSketch } from '$lib/p5/igsSketch';
 	import { USER_COLORS } from '$lib/constants/ui';
-	import { createEmptyTranscript, createTranscriptFromWhisper, createTranscriptFromParsedText, createTranscriptFromSubtitle } from '$lib/core/transcript-factory';
+	import { createEmptyTranscript, createTranscriptFromWhisper, createTranscriptFromParsedText, createTranscriptFromSubtitle, type TranscriptCreationResult } from '$lib/core/transcript-factory';
 	import type { ParseResult } from '$lib/core/text-parser';
 	import { parseSubtitleText } from '$lib/core/subtitle-parser';
+	import { parseCSVRows, parseTXTLines } from '$lib/core/csv-txt-parser';
+	import { testTranscript } from '$lib/core/core-utils';
 	import { filterValidFiles, createUploadEntries, type UploadedFile } from '$lib/core/file-upload';
 	import { getPersistedTimestamp, restoreState, clearState, saveStateDebounced, saveStateImmediate } from '$lib/core/persistence';
 	import { getMaxTime, applyTimingModeToWordArray } from '$lib/core/timing-utils';
+	import Papa from 'papaparse';
 
 	// Components
 	import AppNavbar from '$lib/components/AppNavbar.svelte';
@@ -185,19 +189,81 @@
 		prevTranscribeModeActive = isTranscribeModeActive;
 	}
 
+	// ============ Transcript Loading ============
+
+	/**
+	 * Apply a newly created transcript to all stores.
+	 * Handles timing mode application, timeline reset, and canvas refresh.
+	 * @param timelineEndOverride - Use when timeline should extend beyond transcript data (e.g., video duration)
+	 */
+	function applyTranscriptResult(
+		{ transcript, users }: TranscriptCreationResult,
+		timelineEndOverride?: number
+	) {
+		transcript.wordArray = applyTimingModeToWordArray(transcript.wordArray, transcript.timingMode);
+		const maxTime = getMaxTime(transcript.wordArray);
+		transcript.totalTimeInSeconds = maxTime;
+
+		UserStore.set(users);
+		TranscriptStore.set(transcript);
+
+		const timelineEnd = timelineEndOverride ?? maxTime;
+		TimelineStore.update((timeline) => ({
+			...timeline,
+			currTime: 0,
+			startTime: 0,
+			endTime: timelineEnd,
+			leftMarker: 0,
+			rightMarker: timelineEnd,
+			isAnimating: false
+		}));
+
+		requestAnimationFrame(() => {
+			triggerCanvasResize();
+			p5Instance?.fillAllData?.();
+		});
+	}
+
+	function openEditor() {
+		EditorStore.update((state) => ({
+			...state,
+			config: { ...state.config, isVisible: true }
+		}));
+	}
+
 	// ============ Event Handlers ============
 
-	function handleLoadExample(event: CustomEvent<string>) {
+	async function handleLoadExample(event: CustomEvent<string>) {
 		const exampleId = event.detail;
-		clearState(); // Clear auto-save when intentionally loading new data
-		core?.loadExample(exampleId);
-		// Update dropdown to show selected example
-		for (const group of dropdownOptions) {
-			const item = group.items.find((i) => i.value === exampleId);
-			if (item) {
-				selectedDropDownOption = item.label;
-				break;
+		const example = core?.getExample(exampleId);
+		if (!example || !core) return;
+
+		try {
+			clearState(); // Clear auto-save when intentionally loading new data
+			core.resetVideo();
+
+			// Load each CSV file for the example
+			for (const fileName of example.files) {
+				const file = await core.fetchExampleFile(exampleId, fileName);
+				await processFile(file);
 			}
+
+			// Load example video
+			if (example.videoId) {
+				core.loadExampleVideo(example.videoId);
+			}
+
+			// Update dropdown to show selected example
+			for (const group of dropdownOptions) {
+				const item = group.items.find((i) => i.value === exampleId);
+				if (item) {
+					selectedDropDownOption = item.label;
+					break;
+				}
+			}
+		} catch (error) {
+			notifications.error('Error loading example. Please check your internet connection.');
+			console.error('Example load error:', error);
 		}
 	}
 
@@ -278,72 +344,49 @@
 	}
 
 	function handleTranscriptionComplete(event: CustomEvent<TranscriptionResult>) {
-		const result = event.detail;
-		clearState(); // Clear auto-save when creating transcript from transcription
-		core.clearTranscriptData();
+		try {
+			const result = event.detail;
 
-		const { transcript, users } = createTranscriptFromWhisper(result.segments, pendingVideoDuration, USER_COLORS[0]);
-		UserStore.set(users);
-		TranscriptStore.set(transcript);
+			if (!result.segments || result.segments.length === 0) {
+				notifications.error('Transcription produced no results. The audio may be too short or unclear.');
+				return;
+			}
 
-		const timelineEnd = pendingVideoDuration || transcript.totalTimeInSeconds;
-		TimelineStore.update((timeline) => ({
-			...timeline,
-			currTime: 0,
-			startTime: 0,
-			endTime: timelineEnd,
-			leftMarker: 0,
-			rightMarker: timelineEnd
-		}));
+			clearState(); // Clear auto-save when creating transcript from transcription
+			core.clearTranscriptData();
 
-		EditorStore.update((state) => ({
-			...state,
-			config: { ...state.config, isVisible: true }
-		}));
-
-		requestAnimationFrame(() => {
-			triggerCanvasResize();
-			p5Instance?.fillAllData?.();
-		});
-
-		pendingVideoFile = null;
-		pendingVideoDuration = 0;
+			applyTranscriptResult(
+				createTranscriptFromWhisper(result.segments, pendingVideoDuration, USER_COLORS[0]),
+				pendingVideoDuration
+			);
+			openEditor();
+		} catch (error) {
+			notifications.error('Failed to process transcription results.');
+			console.error('Transcription processing error:', error);
+		} finally {
+			pendingVideoFile = null;
+			pendingVideoDuration = 0;
+		}
 	}
 
 	function handlePasteImport(event: CustomEvent<ParseResult>) {
-		const parseResult = event.detail;
-		clearState(); // Clear auto-save when importing from paste
-		core.clearTranscriptData();
+		try {
+			const parseResult = event.detail;
 
-		const { transcript, users } = createTranscriptFromParsedText(parseResult);
+			if (!parseResult.turns || parseResult.turns.length === 0) {
+				notifications.error('No valid turns found in pasted text.');
+				return;
+			}
 
-		// Apply timing mode to calculate proper end times using user settings
-		// (speech rate, gap preservation) from ConfigStore
-		transcript.wordArray = applyTimingModeToWordArray(transcript.wordArray, transcript.timingMode);
-		const maxTime = getMaxTime(transcript.wordArray);
-		transcript.totalTimeInSeconds = maxTime;
+			clearState(); // Clear auto-save when importing from paste
+			core.clearTranscriptData();
 
-		UserStore.set(users);
-		TranscriptStore.set(transcript);
-		TimelineStore.update((timeline) => ({
-			...timeline,
-			currTime: 0,
-			startTime: 0,
-			endTime: maxTime,
-			leftMarker: 0,
-			rightMarker: maxTime,
-			isAnimating: false
-		}));
-
-		EditorStore.update((state) => ({
-			...state,
-			config: { ...state.config, isVisible: true }
-		}));
-
-		requestAnimationFrame(() => {
-			triggerCanvasResize();
-			p5Instance?.fillAllData?.();
-		});
+			applyTranscriptResult(createTranscriptFromParsedText(parseResult));
+			openEditor();
+		} catch (error) {
+			notifications.error('Failed to import pasted transcript.');
+			console.error('Paste import error:', error);
+		}
 	}
 
 	// ============ File Upload ============
@@ -372,74 +415,83 @@
 				uploadedFiles[fileIndex].status = 'done';
 			} catch (err) {
 				uploadedFiles[fileIndex].status = 'error';
-				uploadedFiles[fileIndex].error = err instanceof Error ? err.message : 'Unknown error';
+				const errorMessage = err instanceof Error ? err.message : 'Unknown error';
+				uploadedFiles[fileIndex].error = errorMessage;
+				notifications.error(errorMessage);
 			}
 			uploadedFiles = uploadedFiles;
 		}
 	}
 
-	async function processFile(file: File): Promise<void> {
+	function readFileAsText(file: File): Promise<string> {
 		return new Promise((resolve, reject) => {
-			const fileName = file.name.toLowerCase();
-			if (fileName.endsWith('.csv') || file.type === 'text/csv') {
-				clearState(); // Clear auto-save when loading new transcript
-				core.loadCSVData(file);
-				resolve();
-			} else if (fileName.endsWith('.txt')) {
-				clearState(); // Clear auto-save when loading new transcript
-				core.loadP5Strings(URL.createObjectURL(file));
-				resolve();
-			} else if (fileName.endsWith('.mp4') || file.type === 'video/mp4') {
-				pendingVideoFile = file;
-				core.prepVideoFromFile(URL.createObjectURL(file));
-				setTimeout(() => {
-					pendingVideoDuration = get(VideoStore).duration || 0;
-				}, 1000);
-				resolve();
-			} else if (fileName.endsWith('.srt') || fileName.endsWith('.vtt')) {
-				clearState(); // Clear auto-save when loading new transcript
-				const reader = new FileReader();
-				reader.onload = (e) => {
-					const text = e.target?.result as string;
-					if (!text) {
-						reject(new Error('Failed to read subtitle file'));
-						return;
-					}
-					core.clearTranscriptData();
-
-					const parseResult = parseSubtitleText(text);
-					const { transcript, users } = createTranscriptFromSubtitle(parseResult, USER_COLORS[0]);
-					const maxTime = transcript.totalTimeInSeconds;
-
-					UserStore.set(users);
-					TranscriptStore.set(transcript);
-					TimelineStore.update((timeline) => ({
-						...timeline,
-						currTime: 0,
-						startTime: 0,
-						endTime: maxTime,
-						leftMarker: 0,
-						rightMarker: maxTime,
-						isAnimating: false
-					}));
-
-					EditorStore.update((state) => ({
-						...state,
-						config: { ...state.config, isVisible: true }
-					}));
-
-					requestAnimationFrame(() => {
-						triggerCanvasResize();
-						p5Instance?.fillAllData?.();
-					});
-					resolve();
-				};
-				reader.onerror = () => reject(new Error('Failed to read subtitle file'));
-				reader.readAsText(file);
-			} else {
-				reject(new Error('Unsupported file format'));
-			}
+			const reader = new FileReader();
+			reader.onload = (e) => {
+				const text = e.target?.result as string;
+				if (!text) reject(new Error(`Failed to read file: ${file.name}`));
+				else resolve(text);
+			};
+			reader.onerror = () => reject(new Error(`Failed to read file: ${file.name}`));
+			reader.readAsText(file);
 		});
+	}
+
+	function parseCSVFile(file: File): Promise<Papa.ParseResult<Record<string, unknown>>> {
+		return new Promise((resolve, reject) => {
+			Papa.parse(file, {
+				dynamicTyping: true,
+				skipEmptyLines: 'greedy',
+				header: true,
+				transformHeader: (h: string) => h.trim().toLowerCase(),
+				complete: resolve,
+				error: (error: Error) => reject(new Error(`CSV parsing error: ${error.message}`))
+			});
+		});
+	}
+
+	async function processFile(file: File): Promise<void> {
+		const fileName = file.name.toLowerCase();
+
+		if (fileName.endsWith('.csv') || file.type === 'text/csv') {
+			const results = await parseCSVFile(file);
+			if (!testTranscript(results)) {
+				throw new Error('Invalid CSV format. Required columns: "speaker" and "content".');
+			}
+			const speechRate = get(ConfigStore).speechRateWordsPerSecond;
+			const parseResult = parseCSVRows(results.data, speechRate);
+			if (parseResult.turns.length === 0) {
+				throw new Error('No valid turns found in CSV. Check that rows have speaker and content values.');
+			}
+			clearState();
+			core.clearTranscriptData();
+			applyTranscriptResult(createTranscriptFromParsedText(parseResult, parseResult.detectedTimingMode));
+		} else if (fileName.endsWith('.txt')) {
+			const text = await readFileAsText(file);
+			const parseResult = parseTXTLines(text.split(/\r?\n/));
+			if (parseResult.turns.length === 0) {
+				throw new Error('No valid turns found in text file. Expected format: "Speaker: content"');
+			}
+			clearState();
+			core.clearTranscriptData();
+			applyTranscriptResult(createTranscriptFromParsedText(parseResult));
+		} else if (fileName.endsWith('.mp4') || file.type === 'video/mp4') {
+			pendingVideoFile = file;
+			core.prepVideoFromFile(URL.createObjectURL(file));
+			setTimeout(() => {
+				pendingVideoDuration = get(VideoStore).duration || 0;
+			}, 1000);
+		} else if (fileName.endsWith('.srt') || fileName.endsWith('.vtt')) {
+			const text = await readFileAsText(file);
+			const parseResult = parseSubtitleText(text);
+			if (parseResult.turns.length === 0) {
+				throw new Error('No valid subtitles found in file. Check the file format.');
+			}
+			clearState();
+			core.clearTranscriptData();
+			applyTranscriptResult(createTranscriptFromSubtitle(parseResult, USER_COLORS[0]));
+		} else {
+			throw new Error('Unsupported file format');
+		}
 	}
 
 	function handleDrop(event: DragEvent) {
