@@ -1,0 +1,12 @@
+[9:00 AM] Sarah: Good morning everyone!
+[9:01 AM] Mike: Morning Sarah!
+[9:02 AM] Sarah: Ready for the standup?
+[9:03 AM] Mike: Yep, just grabbing coffee.
+[9:15 AM] Sarah: Okay let's begin.
+[11:30 AM] Mike: Lunch break?
+[12:00 PM] Sarah: Sure, back in an hour.
+[1:00 PM] Mike: I'm back.
+[1:01 PM] Sarah: Great, let's continue.
+[11:59 PM] Mike: Working late tonight.
+[12:01 AM] Sarah: New day, same project.
+[12:30 AM] Mike: Finally done!

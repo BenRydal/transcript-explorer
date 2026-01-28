@@ -1,0 +1,8 @@
+Alice: What about special chars like & and % and #?
+Bob: Those should work fine! Right?
+Alice: Let's try quotes: "Hello" and 'World'
+Bob: Math expressions like 2+2=4 or 3*5=15?
+Alice: Currency: $100, 50 euros, 500 yen
+Bob: Emojis might be tricky though
+Alice: What about (parentheses) and [brackets]?
+Bob: And {curly braces} too!

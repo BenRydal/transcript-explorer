@@ -1,0 +1,6 @@
+Alice: Check out https://example.com for more info.
+Bob: You can email me at bob@example.com anytime.
+Alice: The ratio is 3:1 for best results.
+Bob: Meeting at 5:30 tomorrow, not 4:30.
+Alice: Visit www.example.org/path/to/page for details.
+Bob: The score was 10:5 in our favor.

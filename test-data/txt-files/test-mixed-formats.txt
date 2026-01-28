@@ -1,0 +1,6 @@
+Alice: Let's start the meeting.
+[0:15] Bob: I have the timestamped notes.
+Carol: I'll just use plain format.
+[9:30 AM] Dave: Coming from chat log format.
+Eve: Back to simple colon format.
+[1:00] Frank: Another timestamp here.

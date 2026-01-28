@@ -1,0 +1,11 @@
+speaker,content,start,end
+Speaker A,Hello and welcome.,0,2
+Speaker B,Thanks for the introduction.,5,8
+Speaker A,Lets jump right in.,15,18
+Speaker B,Sure thing. Where should we start?,20,24
+Speaker A,How about from the beginning?,30,33
+Speaker B,Sounds good.,40,42
+Speaker A,So it all started in 2019.,50,54
+Speaker B,Right before the pandemic.,60,63
+Speaker A,Exactly. Everything changed after that.,70,74
+Speaker B,It certainly did.,80,82

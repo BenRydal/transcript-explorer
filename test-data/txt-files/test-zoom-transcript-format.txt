@@ -1,0 +1,6 @@
+00:00:05	John Smith	Hello everyone, thanks for joining.
+00:00:15	Jane Doe	Thanks for having us John.
+00:01:30	John Smith	Let's get started with the agenda.
+00:02:00	Mike Johnson	I have a question about item one.
+00:02:45	John Smith	Sure, go ahead Mike.
+00:03:10	Mike Johnson	What's the timeline for delivery?

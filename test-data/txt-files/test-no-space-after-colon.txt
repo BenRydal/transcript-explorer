@@ -1,0 +1,4 @@
+Alice:No space after colon.
+Bob:Also no space here.
+Carol: This one has a space.
+Dave:Back to no space.

@@ -1,0 +1,11 @@
+speaker,content,start,end
+Interviewer,Tell me about your experience with the project.,0,3
+Candidate,Sure. I led a team of five engineers building a real-time data pipeline.,3,8
+Interviewer,What technologies did you use?,8,10
+Candidate,We used Kafka for event streaming and PostgreSQL for storage.,10,14
+Interviewer,What was the biggest challenge?,14,16
+Candidate,Handling backpressure during peak traffic was tricky. We had to implement circuit breakers.,16,22
+Interviewer,How did you solve that?,22,24
+Candidate,We added adaptive rate limiting and a dead letter queue for failed messages.,24,29
+Interviewer,Impressive. What would you do differently?,29,32
+Candidate,I would invest more in observability from the start. We added monitoring too late.,32,37

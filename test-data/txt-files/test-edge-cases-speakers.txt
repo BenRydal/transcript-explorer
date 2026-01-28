@@ -1,0 +1,10 @@
+A: Single letter speaker name works.
+Dr. Smith: Speaker with title and period.
+Jean-Pierre: Hyphenated name.
+Mary Jane Watson: Three word name.
+SPEAKER 1: All caps speaker.
+speaker 2: All lowercase speaker.
+Student (Grade 5): Speaker with parentheses.
+Mr. O'Brien: Speaker with apostrophe.
+X: Another single letter.
+R2D2: Alphanumeric name.

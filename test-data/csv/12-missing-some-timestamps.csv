@@ -1,0 +1,8 @@
+speaker,content,start,end
+Alice,This row has both times.,0,3
+Bob,This row has start only.,5,
+Alice,This row has no times.,,
+Bob,Back to having start time.,12,
+Alice,And this has both again.,15,19
+Bob,No times here either.,,
+Alice,Final row with end time only.,,25

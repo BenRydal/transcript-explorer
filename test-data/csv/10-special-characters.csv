@@ -1,0 +1,10 @@
+speaker,content,start,end
+Chef,Today we are making cr??me br??l??e. You will need eggs sugar and cream.,0,6
+Sous Chef,"Don't forget the vanilla bean! It's essential for the flavor.",6,10
+Chef,"Right. First separate the yolks. You need exactly 5 yolks, no whites.",10,16
+Sous Chef,"Should I heat the cream to 180??F or 82??C?",16,20
+Chef,"Either works. Just don't let it boil, or you'll scramble the eggs.",20,25
+Sous Chef,What about the sugar ratio? 1:2 or 1:3?,25,29
+Chef,"For this recipe, use 3/4 cup. And add a pinch of salt -- it enhances everything.",29,35
+Sous Chef,"The torch is ready. Should I caramelize now?",35,38
+Chef,"Yes! Keep it moving. You want an even, golden-brown layer.",38,43

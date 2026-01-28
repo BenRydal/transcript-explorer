@@ -1,0 +1,9 @@
+[99:99] BadTime: This timestamp is invalid.
+[13:00 PM] WrongHour: 13 PM doesn't exist.
+[12:60 AM] BadMinutes: 60 minutes is invalid.
+[0:00:60] BadSeconds: 60 seconds is invalid.
+[-1:00] Negative: Negative time.
+[abc] NotATime: Letters instead of numbers.
+[1:2:3:4] TooMany: Too many colons.
+[1:23] ValidOne: This one should work.
+[12:00 AM] ValidTwo: This should also work.

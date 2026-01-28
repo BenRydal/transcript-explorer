@@ -1,0 +1,7 @@
+speaker,content,start,end
+Speaker A,First person starts talking.,0,5
+Speaker B,Second person interrupts mid-sentence.,3,7
+Speaker A,First person continues after interruption.,6,10
+Speaker B,Another overlap here.,9,13
+Speaker A,They keep talking over each other.,12,16
+Speaker B,Finally a clean transition.,16,20

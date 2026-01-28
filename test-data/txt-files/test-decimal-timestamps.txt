@@ -1,0 +1,5 @@
+[0:00.5] Alice: Half second mark.
+[0:01.25] Bob: Quarter past one second.
+[1:30.999] Alice: Very precise timestamp.
+[0:00,5] Bob: European decimal comma.
+[1:23,456] Alice: Another European format.
