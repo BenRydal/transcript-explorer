@@ -244,8 +244,8 @@
 										<tr>
 											<th class="px-2 py-1 text-left font-medium text-gray-700">speaker</th>
 											<th class="px-2 py-1 text-left font-medium text-gray-700">content</th>
-											<th class="px-2 py-1 text-left font-medium text-gray-400">start</th>
-											<th class="px-2 py-1 text-left font-medium text-gray-400">end</th>
+											<th class="px-2 py-1 text-left font-medium text-gray-400">start <span class="font-normal italic">(optional)</span></th>
+											<th class="px-2 py-1 text-left font-medium text-gray-400">end <span class="font-normal italic">(optional)</span></th>
 										</tr>
 									</thead>
 									<tbody class="font-mono">
@@ -264,7 +264,7 @@
 									</tbody>
 								</table>
 							</div>
-							<p class="text-xs text-gray-500 mt-2">Times are optional (seconds or HH:MM:SS)</p>
+							<p class="text-xs text-gray-500 mt-2"><strong>Times</strong> are optional and can be in seconds, MM:SS, or HH:MM:SS</p>
 						</div>
 						<div class="bg-gray-50 rounded-lg p-4">
 							<h4 class="font-medium text-gray-700 mb-2">TXT format</h4>
