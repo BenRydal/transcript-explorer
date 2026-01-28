@@ -1,0 +1,7 @@
+Alice: The time is now 3:30 PM.
+Bob: Ratio of success: 5:1 in our favor.
+Alice: Here's a list: item one, item two, item three.
+Bob: Note: this contains a colon in the middle.
+Alice: The URL is http://example.com:8080/path
+Bob: JSON example: {"key": "value"}
+Teacher: Student said: "I understand now"

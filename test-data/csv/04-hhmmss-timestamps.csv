@@ -1,0 +1,11 @@
+speaker,content,start,end
+Host,Welcome to the show. Today we have a special guest.,0:00:00,0:00:04
+Guest,Thanks for having me. Its great to be here.,0:00:04,0:00:07
+Host,So tell us about your latest book.,0:00:07,0:00:10
+Guest,Its about the history of space exploration from the 1950s to today.,0:00:10,0:00:15
+Host,What inspired you to write it?,0:00:15,0:00:18
+Guest,I grew up watching shuttle launches on TV. That sense of wonder never left.,0:00:18,0:00:24
+Host,Fascinating. What surprised you most in your research?,0:00:24,0:00:28
+Guest,How close we came to canceling the Apollo program before the moon landing.,0:00:28,0:00:34
+Host,We will be right back after a short break.,0:00:34,0:00:37
+Guest,Looking forward to it.,0:00:37,0:00:39

@@ -1,0 +1,9 @@
+[0:00] Host: Welcome to the show everyone!
+[0:05] Guest: Thanks for having me.
+[0:12] Host: So tell us about your new book.
+[1:23] Guest: Well, it's a story about adventure and discovery.
+[2:45] Host: That sounds fascinating.
+[3:01] Guest: I spent three years researching it.
+[10:30] Host: We'll be right back after this break.
+[15:00:01] Host: And we're back with more discussion.
+[1:23:45] Guest: Time really flies when you're having fun.

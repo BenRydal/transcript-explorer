@@ -1,0 +1,7 @@
+speaker,content,start,end,confidence,language
+Host,Welcome to the podcast.,0,3,0.95,en
+Guest,Glad to be here.,3,6,0.92,en
+Host,Tell us about your work.,6,9,0.98,en
+Guest,I study marine biology off the coast of California.,9,14,0.89,en
+Host,What species are you focused on?,14,17,0.97,en
+Guest,Primarily kelp forests and the ecosystems they support.,17,22,0.91,en

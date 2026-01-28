@@ -1,0 +1,6 @@
+[0:00] today we're going to talk about something exciting
+[0:05] so let me start by introducing the topic
+[0:15] this is a format commonly seen in youtube transcripts
+[0:25] where timestamps are provided but no speaker names
+[0:35] each line is its own segment
+[1:00] and they usually don't have colons after timestamps

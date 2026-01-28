@@ -1,30 +1,50 @@
 <script lang="ts">
 	import { writable, type Writable } from 'svelte/store';
+	import MdClose from 'svelte-icons/md/MdClose.svelte';
+	import MdLightbulbOutline from 'svelte-icons/md/MdLightbulbOutline.svelte';
+	import MdPlayCircleOutline from 'svelte-icons/md/MdPlayCircleOutline.svelte';
 	import MdCloudUpload from 'svelte-icons/md/MdCloudUpload.svelte';
+	import MdVideocam from 'svelte-icons/md/MdVideocam.svelte';
+	import MdMic from 'svelte-icons/md/MdMic.svelte';
+	import MdEdit from 'svelte-icons/md/MdEdit.svelte';
+	import MdChat from 'svelte-icons/md/MdChat.svelte';
 
 	export let isModalOpen: Writable<boolean> = writable(false);
 	export let onLoadExample: ((exampleId: string) => void) | null = null;
 	export let onOpenUpload: (() => void) | null = null;
+	export let onOpenPaste: (() => void) | null = null;
 	export let onStartTour: (() => void) | null = null;
 
-	let activeTab: 'try' | 'upload' | 'transcribe' | 'create' = 'try';
+	let activeTab: 'start' | 'views' | 'import' | 'create' = 'start';
 
 	const tabs = [
-		{ id: 'try', label: 'Try an Example' },
-		{ id: 'upload', label: 'Upload Transcript' },
-		{ id: 'transcribe', label: 'Auto-Transcribe' },
+		{ id: 'start', label: 'Get Started' },
+		{ id: 'views', label: 'Understand the Views' },
+		{ id: 'import', label: 'Import Transcript' },
 		{ id: 'create', label: 'Create Transcript' }
-	];
+	] as const;
 
 	const visualizations = [
 		{
 			img: 'distribution-diagram',
 			title: 'Distribution Diagram',
-			desc: 'Each flower is a speaker. Size shows words spoken, height shows turns taken.'
+			desc: 'Each flower represents a speaker. Flower size shows words spoken, stalk height shows number of turns.'
 		},
-		{ img: 'turn-chart', title: 'Turn Chart', desc: 'Each ellipse is a turn. Width is duration, height is word count.' },
-		{ img: 'contribution-cloud', title: 'Contribution Cloud', desc: 'Words appear in a paragraph. When repeated, the first instance grows larger.' },
-		{ img: 'dashboard', title: 'Dashboard', desc: 'All visualizations combined.' }
+		{
+			img: 'turn-chart',
+			title: 'Turn Chart',
+			desc: 'Each ellipse is one speaking turn. Width shows duration, height shows word count, position shows timing.'
+		},
+		{
+			img: 'contribution-cloud',
+			title: 'Contribution Cloud',
+			desc: 'Words appear as flowing text. Repeated words grow larger at their first occurrence.'
+		},
+		{
+			img: 'dashboard',
+			title: 'Dashboard',
+			desc: 'All three visualizations combined in a single view for comprehensive analysis.'
+		}
 	];
 
 	const examples = [
@@ -62,18 +82,8 @@
 		}
 	];
 
-	function handleExampleClick(exampleId: string) {
-		onLoadExample?.(exampleId);
-		$isModalOpen = false;
-	}
-
-	function handleUploadClick() {
-		onOpenUpload?.();
-		$isModalOpen = false;
-	}
-
-	function handleStartTour() {
-		onStartTour?.();
+	function closeAndRun(fn: (() => void) | null) {
+		fn?.();
 		$isModalOpen = false;
 	}
 
@@ -108,9 +118,7 @@
 							on:click={() => ($isModalOpen = false)}
 							aria-label="Close modal"
 						>
-							<svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-								<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
-							</svg>
+							<div class="w-6 h-6"><MdClose /></div>
 						</button>
 					</div>
 					<div
@@ -149,12 +157,47 @@
 
 			<!-- Tab Content -->
 			<div class="px-8 py-6">
-				{#if activeTab === 'try'}
-					<div class="grid grid-cols-1 md:grid-cols-2 gap-3 mb-6">
+				{#if activeTab === 'start'}
+					<!-- Get Started Tab -->
+					<div class="flex gap-4 mb-6">
+						<button
+							on:click={() => closeAndRun(onStartTour)}
+							class="flex-1 bg-gradient-to-r from-amber-50 to-orange-50 border border-amber-200 rounded-lg p-4 hover:border-amber-400 transition-all group text-left"
+						>
+							<div class="flex items-center gap-3">
+								<div class="w-10 h-10 rounded-full bg-amber-100 flex items-center justify-center group-hover:bg-amber-200 transition-colors text-amber-600">
+									<div class="w-5 h-5"><MdLightbulbOutline /></div>
+								</div>
+								<div>
+									<h3 class="font-semibold text-gray-800 group-hover:text-amber-700">Take a Guided Tour</h3>
+									<p class="text-sm text-gray-500">Interactive walkthrough of the interface</p>
+								</div>
+							</div>
+						</button>
+						<a
+							href="https://youtu.be/_2_3ilMm4pQ"
+							target="_blank"
+							rel="noopener noreferrer"
+							class="flex-1 bg-gradient-to-r from-blue-50 to-indigo-50 border border-blue-200 rounded-lg p-4 hover:border-blue-400 transition-all group text-left"
+						>
+							<div class="flex items-center gap-3">
+								<div class="w-10 h-10 rounded-full bg-blue-100 flex items-center justify-center group-hover:bg-blue-200 transition-colors text-blue-600">
+									<div class="w-5 h-5"><MdPlayCircleOutline /></div>
+								</div>
+								<div>
+									<h3 class="font-semibold text-gray-800 group-hover:text-blue-700">Watch Demo Video</h3>
+									<p class="text-sm text-gray-500">See the tool in action (3 min)</p>
+								</div>
+							</div>
+						</a>
+					</div>
+
+					<h3 class="text-sm font-medium text-gray-500 uppercase tracking-wide mb-3">Or dive in with an example</h3>
+					<div class="grid grid-cols-1 md:grid-cols-2 gap-3">
 						{#each examples as example}
 							<button
 								class="text-left border border-gray-200 rounded-lg hover:border-amber-400 hover:bg-amber-50 transition-all group overflow-hidden flex"
-								on:click={() => handleExampleClick(example.id)}
+								on:click={() => closeAndRun(() => onLoadExample?.(example.id))}
 							>
 								<img src={example.thumb} alt={example.title} class="w-24 h-24 object-cover flex-shrink-0" />
 								<div class="p-3 flex flex-col justify-center">
@@ -168,143 +211,151 @@
 							</button>
 						{/each}
 					</div>
-
-					<div class="border-t border-gray-100 pt-5">
-						<p class="text-sm text-gray-500 mb-3">4 visualization modes to explore your data:</p>
-						<div class="grid grid-cols-2 sm:grid-cols-4 gap-3">
-							{#each visualizations as viz}
-								<div class="text-center">
-									<img src="/images/thumbs-modes/{viz.img}.webp" alt={viz.title} class="rounded border border-gray-200 mb-1 w-full" />
-									<span class="text-xs font-medium text-gray-700">{viz.title}</span>
-									<p class="text-[10px] text-gray-400 mt-0.5">{viz.desc}</p>
-								</div>
-							{/each}
-						</div>
-					</div>
-				{:else if activeTab === 'upload'}
-					<div class="space-y-6">
-						<p class="text-gray-600">
-							CSV or TXT files with conversation data. If transcript has start times, add MP4 video to link transcript with video.
-						</p>
-						<button class="btn btn-primary" on:click={handleUploadClick}>
-							<svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-								<path
-									stroke-linecap="round"
-									stroke-linejoin="round"
-									stroke-width="2"
-									d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12"
-								/>
-							</svg>
-							Open Upload Dialog
-						</button>
-						<div class="grid grid-cols-2 gap-4">
-							<div class="bg-gray-50 rounded-lg p-4">
-								<h4 class="font-medium text-gray-700 mb-2">CSV format</h4>
-								<div class="bg-white border border-gray-200 rounded overflow-hidden">
-									<table class="w-full text-xs">
-										<thead class="bg-gray-100">
-											<tr>
-												<th class="px-2 py-1 text-left font-medium text-gray-700">speaker</th>
-												<th class="px-2 py-1 text-left font-medium text-gray-700">content</th>
-												<th class="px-2 py-1 text-left font-medium text-gray-400">start <span class="font-normal italic">(optional)</span></th>
-												<th class="px-2 py-1 text-left font-medium text-gray-400">end <span class="font-normal italic">(optional)</span></th>
-											</tr>
-										</thead>
-										<tbody class="font-mono">
-											<tr class="border-t border-gray-100">
-												<td class="px-2 py-1">Teacher</td>
-												<td class="px-2 py-1">Good morning</td>
-												<td class="px-2 py-1 text-gray-400">0</td>
-												<td class="px-2 py-1 text-gray-400">3</td>
-											</tr>
-											<tr class="border-t border-gray-100">
-												<td class="px-2 py-1">Student</td>
-												<td class="px-2 py-1">Hi!</td>
-												<td class="px-2 py-1 text-gray-400">3</td>
-												<td class="px-2 py-1 text-gray-400">4</td>
-											</tr>
-										</tbody>
-									</table>
-								</div>
-								<p class="text-xs text-gray-500 mt-2"><strong>Times</strong> are optional and can be in seconds or HH:MM:SS format.</p>
+				{:else if activeTab === 'views'}
+					<!-- Understand the Views Tab -->
+					<div class="grid grid-cols-2 gap-4">
+						{#each visualizations as viz}
+							<div class="p-3 rounded-lg hover:bg-gray-50 transition-colors">
+								<img src="/images/thumbs-modes/{viz.img}.webp" alt={viz.title} class="rounded border border-gray-200 w-full mb-2" />
+								<h4 class="font-semibold text-gray-800 mb-1">{viz.title}</h4>
+								<p class="text-sm text-gray-600">{viz.desc}</p>
 							</div>
-							<div class="bg-gray-50 rounded-lg p-4">
-								<h4 class="font-medium text-gray-700 mb-2">TXT format</h4>
-								<div class="bg-white border border-gray-200 rounded p-2 font-mono text-xs">
-									<div>Teacher: Good morning</div>
-									<div>Student 1: Hi!</div>
-									<div>Teacher: Let's begin</div>
-								</div>
-								<p class="text-xs text-gray-500 mt-2"><strong>Each line:</strong> speaker name, colon, space, then what was said.</p>
+						{/each}
+					</div>
+				{:else if activeTab === 'import'}
+					<!-- Import Transcript Tab -->
+					<div class="grid grid-cols-2 gap-4 mb-5">
+						<div class="bg-gray-50 rounded-lg p-4">
+							<h4 class="font-medium text-gray-700 mb-2">CSV format</h4>
+							<div class="bg-white border border-gray-200 rounded overflow-hidden">
+								<table class="w-full text-xs">
+									<thead class="bg-gray-100">
+										<tr>
+											<th class="px-2 py-1 text-left font-medium text-gray-700">speaker</th>
+											<th class="px-2 py-1 text-left font-medium text-gray-700">content</th>
+											<th class="px-2 py-1 text-left font-medium text-gray-400">start <span class="font-normal italic">(optional)</span></th>
+											<th class="px-2 py-1 text-left font-medium text-gray-400">end <span class="font-normal italic">(optional)</span></th>
+										</tr>
+									</thead>
+									<tbody class="font-mono">
+										<tr class="border-t border-gray-100">
+											<td class="px-2 py-1">Teacher</td>
+											<td class="px-2 py-1">Good morning</td>
+											<td class="px-2 py-1 text-gray-400">0</td>
+											<td class="px-2 py-1 text-gray-400">3</td>
+										</tr>
+										<tr class="border-t border-gray-100">
+											<td class="px-2 py-1">Student</td>
+											<td class="px-2 py-1">Hi!</td>
+											<td class="px-2 py-1 text-gray-400">3</td>
+											<td class="px-2 py-1 text-gray-400">4</td>
+										</tr>
+									</tbody>
+								</table>
+							</div>
+							<p class="text-xs text-gray-500 mt-2">Times are optional and can be in seconds, MM:SS, or HH:MM:SS</p>
+						</div>
+						<div class="bg-gray-50 rounded-lg p-4">
+							<h4 class="font-medium text-gray-700 mb-2">TXT format</h4>
+							<div class="bg-white border border-gray-200 rounded p-2 font-mono text-xs">
+								<div>Teacher: Good morning</div>
+								<div>Student 1: Hi!</div>
+								<div>Teacher: Let's begin</div>
+							</div>
+							<p class="text-xs text-gray-500 mt-2">Each line: Speaker, colon, then content</p>
+						</div>
+						<div class="bg-gray-50 rounded-lg p-4">
+							<h4 class="font-medium text-gray-700 mb-2">SRT / VTT subtitles</h4>
+							<div class="bg-white border border-gray-200 rounded p-2 font-mono text-xs">
+								<div class="text-gray-400">1</div>
+								<div class="text-gray-400">00:00:01,000 --> 00:00:03,500</div>
+								<div>Good morning class</div>
+								<div class="mt-1 text-gray-400">2</div>
+								<div class="text-gray-400">00:00:04,000 --> 00:00:05,000</div>
+								<div>Hi teacher!</div>
 							</div>
 						</div>
+						<div class="bg-gray-50 rounded-lg p-4">
+							<h4 class="font-medium text-gray-700 mb-2">Paste text</h4>
+							<div class="bg-white border border-gray-200 rounded p-2 font-mono text-xs">
+								<div>Alice: Hello there</div>
+								<div>Bob: Hi Alice!</div>
+								<div class="text-gray-400 mt-1">— or with timestamps —</div>
+								<div>[0:01] Alice: Hello there</div>
+								<div>[0:03] Bob: Hi Alice!</div>
+							</div>
+							<p class="text-xs text-gray-500 mt-2">Auto-detects many common formats</p>
+						</div>
 					</div>
-				{:else if activeTab === 'transcribe'}
-					<div class="space-y-4">
-						<p class="text-gray-600">Upload an MP4 video to generate a transcript using AI speech recognition.</p>
-						<div class="flex items-center gap-2 text-gray-500">
-							<svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 text-emerald-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-								<path
-									stroke-linecap="round"
-									stroke-linejoin="round"
-									stroke-width="2"
-									d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z"
-								/>
-							</svg>
-							<span class="text-sm">Everything runs in your browser—no data is sent anywhere.</span>
-						</div>
 
-						<div class="bg-purple-50 border border-purple-200 rounded-lg p-4">
-							<h4 class="font-medium text-purple-800 mb-2">How it works</h4>
-							<ol class="text-sm text-purple-700 space-y-2 list-decimal list-inside">
-								<li>Upload an MP4 video file using the upload dialog</li>
-								<li>Click "Auto-Transcribe" when prompted</li>
-								<li>Wait while the AI processes your video</li>
-								<li>Use the editor to edit and assign speakers to the AI-generated transcript</li>
-							</ol>
+					<div class="bg-blue-50 border border-blue-200 rounded-lg p-4 mb-4">
+						<div class="flex items-start gap-3">
+							<div class="w-5 h-5 text-blue-600 flex-shrink-0 mt-0.5"><MdVideocam /></div>
+							<div>
+								<h4 class="font-medium text-blue-800 mb-1">Link with video</h4>
+								<p class="text-sm text-blue-700">If your transcript has timestamps, you can also upload an MP4 or paste a YouTube link to sync visualizations with video playback.</p>
+							</div>
 						</div>
+					</div>
 
-						<button class="btn btn-primary" on:click={handleUploadClick}>
-							<svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-								<path
-									stroke-linecap="round"
-									stroke-linejoin="round"
-									stroke-width="2"
-									d="M15 10l4.553-2.276A1 1 0 0121 8.618v6.764a1 1 0 01-1.447.894L15 14M5 18h8a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v8a2 2 0 002 2z"
-								/>
-							</svg>
-							Upload Video to Transcribe
+					<div class="flex gap-3">
+						<button class="btn btn-primary" on:click={() => closeAndRun(onOpenUpload)}>
+							<div class="w-5 h-5 mr-2"><MdCloudUpload /></div>
+							Upload Files
 						</button>
-
-						<div class="text-sm text-gray-500">
-							<p class="font-medium mb-1">Limitations:</p>
-							<ul class="list-disc list-inside space-y-1 text-gray-400">
-								<li>English only (uses Whisper tiny model)</li>
-								<li>No speaker identification—all speech assigned to one speaker</li>
-								<li>Best with clear audio and minimal background noise</li>
-							</ul>
-						</div>
+						<button class="btn btn-outline" on:click={() => closeAndRun(onOpenPaste)}>
+							<svg xmlns="http://www.w3.org/2000/svg" class="w-5 h-5 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+								<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
+							</svg>
+							Paste Text
+						</button>
 					</div>
 				{:else if activeTab === 'create'}
-					<div class="space-y-4">
-						<p class="text-gray-600">
-							A focused workspace for manually transcribing video with keyboard shortcuts for efficient transcription. Switch between transcribe mode and visualization mode anytime to see your transcript come to life.
-						</p>
+					<!-- Create Transcript Tab -->
+					<p class="text-gray-600 mb-5">Have a video but no transcript? Generate one automatically or transcribe it yourself.</p>
 
-						<div class="bg-blue-50 border border-blue-200 rounded-lg p-4">
-							<h4 class="font-medium text-blue-800 mb-3">How to use</h4>
-							<ol class="text-sm text-blue-700 space-y-2 list-decimal list-inside">
-								<li>Upload a video file</li>
-								<li>Click the <strong>Transcribe</strong> button in the navbar to enter transcribe mode</li>
-								<li>Use keyboard shortcuts to control playback while typing</li>
-								<li>Add turns and assign speakers as you transcribe</li>
-							</ol>
+					<div class="space-y-4">
+						<!-- Auto-Transcribe Option -->
+						<div class="border border-gray-200 rounded-lg p-5 hover:border-purple-300 transition-colors">
+							<div class="flex items-start gap-4">
+								<div class="w-12 h-12 rounded-full bg-purple-100 flex items-center justify-center flex-shrink-0 text-purple-600">
+									<div class="w-6 h-6"><MdMic /></div>
+								</div>
+								<div class="flex-1">
+									<h4 class="font-semibold text-gray-800 mb-1">Auto-Transcribe with AI</h4>
+									<p class="text-sm text-gray-600 mb-3">Upload an MP4 video and let AI generate a transcript automatically. Everything runs in your browser—no data is sent anywhere.</p>
+									<div class="text-xs text-gray-500 space-y-1 mb-4">
+										<p><strong>How it works:</strong> Upload video → Click "Auto-Transcribe" → Edit result in the transcript editor</p>
+										<p><strong>Note:</strong> English only. All speech is assigned to one speaker—use the editor to assign speakers afterward.</p>
+									</div>
+									<button class="btn btn-sm btn-primary" on:click={() => closeAndRun(onOpenUpload)}>
+										<div class="w-4 h-4 mr-1"><MdCloudUpload /></div>
+										Upload Video
+									</button>
+								</div>
+							</div>
 						</div>
 
-						<button class="btn btn-primary" on:click={handleUploadClick}>
-							<div class="w-5 h-5 mr-2"><MdCloudUpload /></div>
-							Upload Video
-						</button>
+						<!-- Manual Transcribe Option -->
+						<div class="border border-gray-200 rounded-lg p-5 hover:border-emerald-300 transition-colors">
+							<div class="flex items-start gap-4">
+								<div class="w-12 h-12 rounded-full bg-emerald-100 flex items-center justify-center flex-shrink-0 text-emerald-600">
+									<div class="w-6 h-6"><MdEdit /></div>
+								</div>
+								<div class="flex-1">
+									<h4 class="font-semibold text-gray-800 mb-1">Transcribe Manually</h4>
+									<p class="text-sm text-gray-600 mb-3">Upload a video, then use Transcribe Mode—a focused workspace designed for efficient manual transcription.</p>
+									<div class="text-xs text-gray-500 space-y-1 mb-4">
+										<p><strong>How it works:</strong> Upload video → Click "Transcribe" in the navbar → Type while controlling playback</p>
+										<p><strong>Keyboard shortcuts:</strong> Space to pause, arrow keys to skip, capture timestamps as you go</p>
+									</div>
+									<button class="btn btn-sm btn-primary" on:click={() => closeAndRun(onOpenUpload)}>
+										<div class="w-4 h-4 mr-1"><MdCloudUpload /></div>
+										Upload Video
+									</button>
+								</div>
+							</div>
+						</div>
 					</div>
 				{/if}
 			</div>
@@ -313,47 +364,12 @@
 			<div class="bg-gray-50 px-8 py-4 flex flex-wrap items-center justify-between gap-4 border-t border-gray-200">
 				<div class="flex flex-wrap gap-3">
 					<a
-						href="https://youtu.be/_2_3ilMm4pQ"
-						target="_blank"
-						rel="noopener noreferrer"
-						class="text-sm text-gray-600 hover:text-gray-900 inline-flex items-center gap-1"
-					>
-						<svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-							<path
-								stroke-linecap="round"
-								stroke-linejoin="round"
-								stroke-width="2"
-								d="M14.752 11.168l-3.197-2.132A1 1 0 0010 9.87v4.263a1 1 0 001.555.832l3.197-2.132a1 1 0 000-1.664z"
-							/>
-							<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-						</svg>
-						Watch Demo
-					</a>
-					<button on:click={handleStartTour} class="text-sm text-gray-600 hover:text-gray-900 inline-flex items-center gap-1">
-						<svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-							<path
-								stroke-linecap="round"
-								stroke-linejoin="round"
-								stroke-width="2"
-								d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z"
-							/>
-						</svg>
-						Take a Tour
-					</button>
-					<a
 						href="https://forms.gle/3i1F74V6cy5Q8RHv5"
 						target="_blank"
 						rel="noopener noreferrer"
 						class="text-sm text-gray-600 hover:text-gray-900 inline-flex items-center gap-1"
 					>
-						<svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-							<path
-								stroke-linecap="round"
-								stroke-linejoin="round"
-								stroke-width="2"
-								d="M8 10h.01M12 10h.01M16 10h.01M9 16H5a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v8a2 2 0 01-2 2h-5l-5 5v-5z"
-							/>
-						</svg>
+						<div class="w-4 h-4"><MdChat /></div>
 						Feedback
 					</a>
 					<a

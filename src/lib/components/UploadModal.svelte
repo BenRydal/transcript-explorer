@@ -73,11 +73,20 @@
 				<div class="flex flex-wrap gap-2">
 					<span class="badge badge-outline">.csv</span>
 					<span class="badge badge-outline">.txt</span>
+					<span class="badge badge-outline">.srt</span>
+					<span class="badge badge-outline">.vtt</span>
 					<span class="badge badge-outline">.mp4</span>
 				</div>
 				<p class="text-xs text-gray-500 mt-2">
-					CSV/TXT files should contain transcript data with speaker and content columns. MP4 files will be used as video overlay.
+					CSV/TXT files should contain transcript data with speaker and content columns. SRT/VTT subtitle files are also supported. MP4 files will be used as video overlay.
 				</p>
+			</div>
+
+			<!-- Paste text option -->
+			<div class="mt-4">
+				<div class="divider text-sm text-gray-500">or</div>
+				<button class="btn btn-outline btn-block" on:click={() => dispatch('openPasteModal')}> Paste Transcript Text </button>
+				<p class="text-xs text-gray-500 mt-2 text-center">Paste text directly and we'll detect the format automatically</p>
 			</div>
 
 			<!-- YouTube URL input -->
@@ -92,9 +101,7 @@
 						on:input={() => (youtubeError = '')}
 						on:keydown={(e) => e.key === 'Enter' && handleYouTubeSubmit()}
 					/>
-					<button class="btn btn-sm btn-primary" on:click={handleYouTubeSubmit} disabled={!youtubeUrl.trim()}>
-						Load
-					</button>
+					<button class="btn btn-sm btn-primary" on:click={handleYouTubeSubmit} disabled={!youtubeUrl.trim()}> Load </button>
 				</div>
 				{#if youtubeError}
 					<p class="text-error text-xs mt-1">{youtubeError}</p>

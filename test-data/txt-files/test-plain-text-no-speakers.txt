@@ -1,0 +1,6 @@
+This is just plain text without any speakers.
+It should all be assigned to a default speaker.
+Each line becomes its own turn.
+Or maybe they should be merged?
+Let's see how the parser handles this.
+No colons or timestamps here at all.

@@ -1,0 +1,6 @@
+Marie: Hello from a regular name.
+Renee: Name with accent (should be Rene).
+Takeshi: Japanese romanized name.
+Bjorn: Nordic name (should be Bjorn).
+Nguyen: Vietnamese name.
+Saoirse: Irish name.

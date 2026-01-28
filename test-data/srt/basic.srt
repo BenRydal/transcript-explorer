@@ -1,0 +1,19 @@
+1
+00:00:01,000 --> 00:00:04,500
+Hello, welcome to this presentation.
+
+2
+00:00:05,000 --> 00:00:08,200
+Today we'll be discussing important topics.
+
+3
+00:00:09,500 --> 00:00:12,000
+Let's get started with the first item.
+
+4
+00:00:13,000 --> 00:00:17,500
+This is a longer sentence that spans more time to test word distribution.
+
+5
+00:00:20,000 --> 00:00:23,000
+And here's the final point of our presentation.

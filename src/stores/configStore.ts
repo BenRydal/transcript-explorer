@@ -48,8 +48,8 @@ export const initialConfig: ConfigStoreType = {
 	arrayOfFirstWords: [],
 	wordToSearch: '',
 	hoveredSpeakerInDistributionDiagram: null,
-	// Start-only mode settings (default: fill to next turn)
-	preserveGapsBetweenTurns: false,
+	// Start-only mode settings (default: estimate from speech rate)
+	preserveGapsBetweenTurns: true,
 	speechRateWordsPerSecond: 3,
 	// Video playback settings
 	snippetDurationSeconds: 2

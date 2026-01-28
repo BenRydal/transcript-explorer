@@ -1,0 +1,11 @@
+Alice: First line.
+
+Bob: After empty line.
+
+
+Carol: After two empty lines.
+
+Dave: After whitespace-only line.
+
+Eve: After tab-only line.
+Frank: Normal line.

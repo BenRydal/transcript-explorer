@@ -1,0 +1,13 @@
+WEBVTT
+
+0:01.000 --> 0:04.500
+Short format without hours - just minutes and seconds.
+
+0:05.000 --> 0:08.200
+Another short timestamp format.
+
+1:30.000 --> 1:35.500
+One minute thirty seconds to one thirty-five.
+
+10:00.000 --> 10:05.000
+Ten minutes in, still no hours.

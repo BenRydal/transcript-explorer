@@ -1,0 +1,9 @@
+:Missing speaker before colon
+Alice:
+: Another missing speaker
+[0:00]: Missing speaker after timestamp
+Alice: Normal line for comparison
+[0:00] : Space before colon issue
+This line has no structure at all
+Another unstructured line here
+Bob: Back to normal format

@@ -1,0 +1,9 @@
+Professor: Today we'll discuss quantum mechanics, which is
+a fascinating subject that deals with the behavior of
+matter and energy at the smallest scales.
+Student: That sounds complicated. Can you explain
+more about how particles behave?
+Professor: Of course! At the quantum level, particles exhibit
+wave-particle duality, meaning they can behave as both
+waves and particles depending on how we observe them.
+This is one of the most counterintuitive aspects.

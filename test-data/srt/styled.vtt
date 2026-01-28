@@ -1,0 +1,28 @@
+WEBVTT
+
+NOTE This is a comment that should be ignored
+
+STYLE
+::cue {
+  color: white;
+}
+
+cue-1
+00:00:01.000 --> 00:00:04.000
+<b>Bold text</b> and <i>italic text</i> here.
+
+cue-2
+00:00:05.500 --> 00:00:09.000
+Text with <u>underline</u> and <c.yellow>colored</c> styling.
+
+00:00:10.000 --> 00:00:14.000
+<v Speaker>This has a voice tag that should be stripped.</v>
+
+00:00:15.000 --> 00:00:18.500
+Normal text without any HTML tags.
+
+NOTE Another comment block
+that spans multiple lines
+
+00:00:20.000 --> 00:00:24.000
+Final cue after the comment block.

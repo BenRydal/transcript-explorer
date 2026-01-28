@@ -1,0 +1,15 @@
+1
+01:30:00,000 --> 01:30:05,500
+This subtitle starts at one hour and thirty minutes.
+
+2
+01:30:10,000 --> 01:30:15,000
+Testing timestamps with hours component.
+
+3
+02:00:00,000 --> 02:00:08,000
+Now we're at the two hour mark with a longer duration cue.
+
+4
+02:15:30,500 --> 02:15:35,250
+Precise milliseconds in the middle of the file.

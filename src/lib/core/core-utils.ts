@@ -1,7 +1,7 @@
 interface PapaParseResults {
 	data: Record<string, unknown>[];
 	meta: {
-		fields: string[];
+		fields?: string[];
 	};
 }
 
@@ -10,9 +10,11 @@ export const HEADERS_TRANSCRIPT_WITH_TIME = ['speaker', 'content', 'start', 'end
 export const HEADERS_SIMPLE_TRANSCRIPT = ['speaker', 'content'];
 
 export function testTranscript(results: PapaParseResults): boolean {
+	const fields = results.meta.fields;
 	return (
 		results.data.length > 0 &&
-		HEADERS_SIMPLE_TRANSCRIPT.every((h) => results.meta.fields.includes(h)) &&
+		Array.isArray(fields) &&
+		HEADERS_SIMPLE_TRANSCRIPT.every((h) => fields.includes(h)) &&
 		results.data.some(hasSpeakerNameAndContent)
 	);
 }

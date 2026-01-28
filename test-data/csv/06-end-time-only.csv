@@ -1,0 +1,11 @@
+speaker,content,end
+Doctor,How are you feeling today?,5
+Patient,Not great. I have had a headache for three days.,10
+Doctor,On a scale of one to ten how would you rate the pain?,14
+Patient,About a six. Sometimes it spikes to an eight.,18
+Doctor,Is the pain constant or does it come and go?,21
+Patient,It comes and goes. Worse in the morning.,25
+Doctor,Have you taken anything for it?,28
+Patient,Just ibuprofen. It helps a little.,31
+Doctor,I am going to order some tests. Lets get this sorted out.,36
+Patient,Thank you doctor.,38
