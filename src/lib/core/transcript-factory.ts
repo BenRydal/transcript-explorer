@@ -55,15 +55,32 @@ export function createEmptyTranscript(defaultColor: string): TranscriptCreationR
 	return { transcript, users: [{ name: defaultSpeaker, color: defaultColor, enabled: true }] };
 }
 
-export function createTranscriptFromWhisper(segments: TranscriptionSegment[], videoDuration: number, defaultColor: string): TranscriptCreationResult {
-	const defaultSpeaker = 'SPEAKER 1';
+interface TimedSegment {
+	text: string;
+	start: number;
+	end: number;
+}
+
+/**
+ * Creates a transcript from timed segments (used by Whisper and subtitle parsers).
+ * Words are distributed evenly within each segment's time span.
+ */
+function createTranscriptFromTimedSegments(
+	segments: TimedSegment[],
+	defaultSpeaker: string,
+	defaultColor: string,
+	overrideDuration?: number
+): TranscriptCreationResult {
 	const wordArray: DataPoint[] = [];
 	const turnLengths = new Map<number, number>();
 	const wordCounts = new Map<string, number>();
 
-	segments.forEach((segment, turnIndex) => {
-		const words = segment.text.split(/\s+/).filter((w) => w.trim());
-		const wordDuration = words.length > 0 ? (segment.end - segment.start) / words.length : 0;
+	let turnIndex = 0;
+	for (const segment of segments) {
+		const words = segment.text.split(/\s+/).filter(Boolean);
+		if (words.length === 0) continue;
+
+		const wordDuration = (segment.end - segment.start) / words.length;
 		turnLengths.set(turnIndex, words.length);
 
 		words.forEach((word, wordIndex) => {
@@ -74,7 +91,8 @@ export function createTranscriptFromWhisper(segments: TranscriptionSegment[], vi
 			const lowerWord = word.toLowerCase();
 			wordCounts.set(lowerWord, (wordCounts.get(lowerWord) || 0) + 1);
 		});
-	});
+		turnIndex++;
+	}
 
 	const { word: mostFrequentWord, count: maxWordCount } = findMostFrequent(wordCounts);
 	const maxTime = wordArray.length > 0 ? wordArray[wordArray.length - 1].endTime : 0;
@@ -83,15 +101,23 @@ export function createTranscriptFromWhisper(segments: TranscriptionSegment[], vi
 	transcript.wordArray = wordArray;
 	transcript.timingMode = 'startEnd';
 	transcript.totalNumOfWords = wordArray.length;
-	transcript.totalConversationTurns = segments.length;
-	transcript.totalTimeInSeconds = videoDuration || maxTime;
+	transcript.totalConversationTurns = turnIndex;
+	transcript.totalTimeInSeconds = overrideDuration ?? maxTime;
 	transcript.largestTurnLength = Math.max(...turnLengths.values(), 1);
 	transcript.largestNumOfWordsByASpeaker = wordArray.length;
-	transcript.largestNumOfTurnsByASpeaker = segments.length;
+	transcript.largestNumOfTurnsByASpeaker = turnIndex;
 	transcript.maxCountOfMostRepeatedWord = maxWordCount;
 	transcript.mostFrequentWord = mostFrequentWord;
 
 	return { transcript, users: [{ name: defaultSpeaker, color: defaultColor, enabled: true }] };
+}
+
+export function createTranscriptFromWhisper(
+	segments: TranscriptionSegment[],
+	videoDuration: number,
+	defaultColor: string
+): TranscriptCreationResult {
+	return createTranscriptFromTimedSegments(segments, 'SPEAKER 1', defaultColor, videoDuration || undefined);
 }
 
 /**
@@ -113,7 +139,7 @@ export function createTranscriptFromParsedText(parseResult: ParseResult): Transc
 
 	let actualTurnIndex = 0;
 	parseResult.turns.forEach((turn) => {
-		const words = turn.content.split(/\s+/).filter((w) => w.trim());
+		const words = turn.content.split(/\s+/).filter(Boolean);
 		if (words.length === 0) return; // Skip empty turns
 
 		if (words.length > largestTurnLength) largestTurnLength = words.length;
@@ -160,4 +186,16 @@ export function createTranscriptFromParsedText(parseResult: ParseResult): Transc
 	}));
 
 	return { transcript, users };
+}
+
+/**
+ * Creates a transcript from parsed subtitle (SRT/VTT) input.
+ */
+export function createTranscriptFromSubtitle(parseResult: ParseResult, defaultColor: string): TranscriptCreationResult {
+	const segments: TimedSegment[] = parseResult.turns.map((turn) => ({
+		text: turn.content,
+		start: turn.startTime ?? 0,
+		end: turn.endTime ?? turn.startTime ?? 0
+	}));
+	return createTranscriptFromTimedSegments(segments, 'SPEAKER 1', defaultColor);
 }

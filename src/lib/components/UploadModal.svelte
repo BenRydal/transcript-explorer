@@ -73,10 +73,12 @@
 				<div class="flex flex-wrap gap-2">
 					<span class="badge badge-outline">.csv</span>
 					<span class="badge badge-outline">.txt</span>
+					<span class="badge badge-outline">.srt</span>
+					<span class="badge badge-outline">.vtt</span>
 					<span class="badge badge-outline">.mp4</span>
 				</div>
 				<p class="text-xs text-gray-500 mt-2">
-					CSV/TXT files should contain transcript data with speaker and content columns. MP4 files will be used as video overlay.
+					CSV/TXT files should contain transcript data with speaker and content columns. SRT/VTT subtitle files are also supported. MP4 files will be used as video overlay.
 				</p>
 			</div>
 

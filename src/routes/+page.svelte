@@ -20,8 +20,9 @@
 	import { Core } from '$lib/core/core';
 	import { igsSketch } from '$lib/p5/igsSketch';
 	import { USER_COLORS } from '$lib/constants/ui';
-	import { createEmptyTranscript, createTranscriptFromWhisper, createTranscriptFromParsedText } from '$lib/core/transcript-factory';
+	import { createEmptyTranscript, createTranscriptFromWhisper, createTranscriptFromParsedText, createTranscriptFromSubtitle } from '$lib/core/transcript-factory';
 	import type { ParseResult } from '$lib/core/text-parser';
+	import { parseSubtitleText } from '$lib/core/subtitle-parser';
 	import { filterValidFiles, createUploadEntries, type UploadedFile } from '$lib/core/file-upload';
 	import { getPersistedTimestamp, restoreState, clearState, saveStateDebounced, saveStateImmediate } from '$lib/core/persistence';
 	import { getMaxTime, applyTimingModeToWordArray } from '$lib/core/timing-utils';
@@ -395,6 +396,46 @@
 					pendingVideoDuration = get(VideoStore).duration || 0;
 				}, 1000);
 				resolve();
+			} else if (fileName.endsWith('.srt') || fileName.endsWith('.vtt')) {
+				clearState(); // Clear auto-save when loading new transcript
+				const reader = new FileReader();
+				reader.onload = (e) => {
+					const text = e.target?.result as string;
+					if (!text) {
+						reject(new Error('Failed to read subtitle file'));
+						return;
+					}
+					core.clearTranscriptData();
+
+					const parseResult = parseSubtitleText(text);
+					const { transcript, users } = createTranscriptFromSubtitle(parseResult, USER_COLORS[0]);
+					const maxTime = transcript.totalTimeInSeconds;
+
+					UserStore.set(users);
+					TranscriptStore.set(transcript);
+					TimelineStore.update((timeline) => ({
+						...timeline,
+						currTime: 0,
+						startTime: 0,
+						endTime: maxTime,
+						leftMarker: 0,
+						rightMarker: maxTime,
+						isAnimating: false
+					}));
+
+					EditorStore.update((state) => ({
+						...state,
+						config: { ...state.config, isVisible: true }
+					}));
+
+					requestAnimationFrame(() => {
+						triggerCanvasResize();
+						p5Instance?.fillAllData?.();
+					});
+					resolve();
+				};
+				reader.onerror = () => reject(new Error('Failed to read subtitle file'));
+				reader.readAsText(file);
 			} else {
 				reject(new Error('Unsupported file format'));
 			}
@@ -536,7 +577,7 @@
 
 <slot />
 
-<input class="hidden" id="file-input" multiple accept=".csv, .txt, .mp4" type="file" bind:files on:change={updateUserLoadedFiles} />
+<input class="hidden" id="file-input" multiple accept=".csv, .txt, .mp4, .srt, .vtt" type="file" bind:files on:change={updateUserLoadedFiles} />
 
 <InfoModal
 	{isModalOpen}

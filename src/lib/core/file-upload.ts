@@ -11,25 +11,24 @@ export interface UploadedFile {
 	error?: string;
 }
 
-const SUPPORTED_EXTENSIONS = ['csv', 'txt', 'mp4'] as const;
+const FILE_TYPE_LABELS: Record<string, string> = {
+	csv: 'Transcript (CSV)',
+	txt: 'Transcript (TXT)',
+	mp4: 'Video (MP4)',
+	srt: 'Subtitle (SRT)',
+	vtt: 'Subtitle (VTT)'
+};
+
+function getExtension(fileName: string): string {
+	return fileName.toLowerCase().split('.').pop() || '';
+}
 
 function getFileTypeLabel(fileName: string): string {
-	const ext = fileName.toLowerCase().split('.').pop();
-	switch (ext) {
-		case 'csv':
-			return 'Transcript (CSV)';
-		case 'txt':
-			return 'Transcript (TXT)';
-		case 'mp4':
-			return 'Video (MP4)';
-		default:
-			return 'Unknown';
-	}
+	return FILE_TYPE_LABELS[getExtension(fileName)] || 'Unknown';
 }
 
 function isValidFileType(fileName: string): boolean {
-	const ext = fileName.toLowerCase().split('.').pop();
-	return SUPPORTED_EXTENSIONS.includes(ext as (typeof SUPPORTED_EXTENSIONS)[number]);
+	return getExtension(fileName) in FILE_TYPE_LABELS;
 }
 
 /**
