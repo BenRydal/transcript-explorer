@@ -20,16 +20,11 @@
 	import { Core } from '$lib/core/core';
 	import { igsSketch } from '$lib/p5/igsSketch';
 	import { USER_COLORS } from '$lib/constants/ui';
-	import { createEmptyTranscript, createTranscriptFromWhisper } from '$lib/core/transcript-factory';
+	import { createEmptyTranscript, createTranscriptFromWhisper, createTranscriptFromParsedText } from '$lib/core/transcript-factory';
+	import type { ParseResult } from '$lib/core/text-parser';
 	import { filterValidFiles, createUploadEntries, type UploadedFile } from '$lib/core/file-upload';
-	import {
-		getPersistedTimestamp,
-		restoreState,
-		clearState,
-		saveStateDebounced,
-		saveStateImmediate
-	} from '$lib/core/persistence';
-	import { getMaxTime } from '$lib/core/timing-utils';
+	import { getPersistedTimestamp, restoreState, clearState, saveStateDebounced, saveStateImmediate } from '$lib/core/persistence';
+	import { getMaxTime, applyTimingModeToWordArray } from '$lib/core/timing-utils';
 
 	// Components
 	import AppNavbar from '$lib/components/AppNavbar.svelte';
@@ -42,6 +37,7 @@
 	import TranscriptionModal from '$lib/components/TranscriptionModal.svelte';
 	import SettingsModal from '$lib/components/SettingsModal.svelte';
 	import UploadModal from '$lib/components/UploadModal.svelte';
+	import PasteModal from '$lib/components/PasteModal.svelte';
 	import DataExplorerModal from '$lib/components/DataExplorerModal.svelte';
 	import ConfirmModal from '$lib/components/ConfirmModal.svelte';
 	import TourOverlay from '$lib/components/TourOverlay.svelte';
@@ -55,6 +51,7 @@
 	let showDataPopup = false;
 	let showSettings = false;
 	let showUploadModal = false;
+	let showPasteModal = false;
 	let showTranscriptionModal = false;
 	let showNewTranscriptConfirm = false;
 	let showRecoveryModal = false;
@@ -250,7 +247,7 @@
 
 		// Use video duration if loaded, otherwise default to 60 seconds
 		const videoDuration = get(VideoStore).duration;
-		const timelineEnd = (get(VideoStore).isLoaded && videoDuration > 0) ? videoDuration : 60;
+		const timelineEnd = get(VideoStore).isLoaded && videoDuration > 0 ? videoDuration : 60;
 
 		transcript.timingMode = 'startEnd';
 		transcript.totalTimeInSeconds = timelineEnd;
@@ -310,6 +307,42 @@
 
 		pendingVideoFile = null;
 		pendingVideoDuration = 0;
+	}
+
+	function handlePasteImport(event: CustomEvent<ParseResult>) {
+		const parseResult = event.detail;
+		clearState(); // Clear auto-save when importing from paste
+		core.clearTranscriptData();
+
+		const { transcript, users } = createTranscriptFromParsedText(parseResult);
+
+		// Apply timing mode to calculate proper end times using user settings
+		// (speech rate, gap preservation) from ConfigStore
+		transcript.wordArray = applyTimingModeToWordArray(transcript.wordArray, transcript.timingMode);
+		const maxTime = getMaxTime(transcript.wordArray);
+		transcript.totalTimeInSeconds = maxTime;
+
+		UserStore.set(users);
+		TranscriptStore.set(transcript);
+		TimelineStore.update((timeline) => ({
+			...timeline,
+			currTime: 0,
+			startTime: 0,
+			endTime: maxTime,
+			leftMarker: 0,
+			rightMarker: maxTime,
+			isAnimating: false
+		}));
+
+		EditorStore.update((state) => ({
+			...state,
+			config: { ...state.config, isVisible: true }
+		}));
+
+		requestAnimationFrame(() => {
+			triggerCanvasResize();
+			p5Instance?.fillAllData?.();
+		});
 	}
 
 	// ============ File Upload ============
@@ -419,80 +452,86 @@
 	<TranscribeModeLayout on:exit={exitTranscribeMode} on:createTranscript={createTranscript} />
 {:else}
 	<div class="page-container">
-	<AppNavbar
-		selectedExample={selectedDropDownOption}
-		{isEditorVisible}
-		{isVideoVisible}
-		{isVideoLoaded}
-		on:loadExample={handleLoadExample}
-		on:toggleEditor={handleToggleEditor}
-		on:toggleVideo={toggleVideoVisibility}
-		on:openUpload={() => (showUploadModal = true)}
-		on:openHelp={() => ($isModalOpen = !$isModalOpen)}
-		on:openSettings={() => (showSettings = true)}
-		on:createNewTranscript={() => (showNewTranscriptConfirm = true)}
-		on:toggleTranscribeMode={toggleTranscribeMode}
-		on:wordSearch={handleWordSearch}
-		on:configChange={handleConfigChange}
-	/>
+		<AppNavbar
+			selectedExample={selectedDropDownOption}
+			{isEditorVisible}
+			{isVideoVisible}
+			{isVideoLoaded}
+			on:loadExample={handleLoadExample}
+			on:toggleEditor={handleToggleEditor}
+			on:toggleVideo={toggleVideoVisibility}
+			on:openUpload={() => (showUploadModal = true)}
+			on:openHelp={() => ($isModalOpen = !$isModalOpen)}
+			on:openSettings={() => (showSettings = true)}
+			on:createNewTranscript={() => (showNewTranscriptConfirm = true)}
+			on:toggleTranscribeMode={toggleTranscribeMode}
+			on:wordSearch={handleWordSearch}
+			on:configChange={handleConfigChange}
+		/>
 
-	<div class="main-content">
-		<SplitPane
-			orientation={$EditorStore.config.orientation}
-			sizes={$EditorStore.config.panelSizes}
-			collapsed={!$EditorStore.config.isVisible}
-			collapsedPanel="second"
-			on:resize={handlePanelResize}
-		>
-			<div slot="first" class="h-full relative" id="p5-container" data-tour="visualization">
-				<P5 {sketch} />
-				<CanvasTooltip />
-				{#if $ConfigStore.cloudHasOverflow && ($ConfigStore.contributionCloudToggle || $ConfigStore.dashboardToggle)}
-					<div class="badge badge-neutral absolute bottom-3 right-3">Some content not shown</div>
-				{/if}
-				{#if hasVideoSource}
-					<VideoContainer />
-				{/if}
+		<div class="main-content">
+			<SplitPane
+				orientation={$EditorStore.config.orientation}
+				sizes={$EditorStore.config.panelSizes}
+				collapsed={!$EditorStore.config.isVisible}
+				collapsedPanel="second"
+				on:resize={handlePanelResize}
+			>
+				<div slot="first" class="h-full relative" id="p5-container" data-tour="visualization">
+					<P5 {sketch} />
+					<CanvasTooltip />
+					{#if $ConfigStore.cloudHasOverflow && ($ConfigStore.contributionCloudToggle || $ConfigStore.dashboardToggle)}
+						<div class="badge badge-neutral absolute bottom-3 right-3">Some content not shown</div>
+					{/if}
+					{#if hasVideoSource}
+						<VideoContainer />
+					{/if}
+				</div>
+				<div slot="second" class="h-full">
+					<TranscriptEditor on:createTranscript={createTranscript} />
+				</div>
+			</SplitPane>
+		</div>
+
+		<SettingsModal bind:isOpen={showSettings} on:openDataExplorer={() => (showDataPopup = true)} />
+
+		<UploadModal
+			bind:isOpen={showUploadModal}
+			{isDraggingOver}
+			{pendingVideoFile}
+			{uploadedFiles}
+			on:drop={(e) => handleDrop(e.detail)}
+			on:dragover={(e) => handleDragOver(e.detail)}
+			on:dragleave={handleDragLeave}
+			on:openFileDialog={openFileDialog}
+			on:clearFiles={clearUploadedFiles}
+			on:startTranscription={() => (showTranscriptionModal = true)}
+			on:youtubeUrl={(e) => loadVideo({ type: 'youtube', videoId: e.detail })}
+			on:openPasteModal={() => {
+				showUploadModal = false;
+				showPasteModal = true;
+			}}
+		/>
+
+		<PasteModal bind:isOpen={showPasteModal} on:import={handlePasteImport} />
+
+		<DataExplorerModal bind:isOpen={showDataPopup} />
+
+		<ConfirmModal
+			bind:isOpen={showNewTranscriptConfirm}
+			title="Create New Transcript?"
+			message="This will erase the current transcript. This action cannot be undone."
+			confirmText="Erase and Create New"
+			on:confirm={createTranscript}
+		/>
+
+		<div class="btm-nav flex justify-between min-h-20" style="position: relative;">
+			<SpeakerControls />
+			<div class="flex-1 bg-[#f6f5f3]" data-tour="timeline">
+				<TimelinePanel />
 			</div>
-			<div slot="second" class="h-full">
-				<TranscriptEditor on:createTranscript={createTranscript} />
-			</div>
-		</SplitPane>
-	</div>
-
-	<SettingsModal bind:isOpen={showSettings} on:openDataExplorer={() => (showDataPopup = true)} />
-
-	<UploadModal
-		bind:isOpen={showUploadModal}
-		{isDraggingOver}
-		{pendingVideoFile}
-		{uploadedFiles}
-		on:drop={(e) => handleDrop(e.detail)}
-		on:dragover={(e) => handleDragOver(e.detail)}
-		on:dragleave={handleDragLeave}
-		on:openFileDialog={openFileDialog}
-		on:clearFiles={clearUploadedFiles}
-		on:startTranscription={() => (showTranscriptionModal = true)}
-		on:youtubeUrl={(e) => loadVideo({ type: 'youtube', videoId: e.detail })}
-	/>
-
-	<DataExplorerModal bind:isOpen={showDataPopup} />
-
-	<ConfirmModal
-		bind:isOpen={showNewTranscriptConfirm}
-		title="Create New Transcript?"
-		message="This will erase the current transcript. This action cannot be undone."
-		confirmText="Erase and Create New"
-		on:confirm={createTranscript}
-	/>
-
-	<div class="btm-nav flex justify-between min-h-20" style="position: relative;">
-		<SpeakerControls />
-		<div class="flex-1 bg-[#f6f5f3]" data-tour="timeline">
-			<TimelinePanel />
 		</div>
 	</div>
-</div>
 {/if}
 
 <slot />
@@ -516,12 +555,7 @@
 
 <TourOverlay bind:this={tourOverlay} />
 
-<RecoveryModal
-	bind:isOpen={showRecoveryModal}
-	savedAt={recoveryTimestamp}
-	on:restore={handleRestore}
-	on:discard={handleDiscard}
-/>
+<RecoveryModal bind:isOpen={showRecoveryModal} savedAt={recoveryTimestamp} on:restore={handleRestore} on:discard={handleDiscard} />
 
 <style>
 	.page-container {

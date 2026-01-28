@@ -1,13 +1,13 @@
 /**
- * Transcript Factory - Functions for creating transcript data structures
- *
- * These pure functions create DataPoint arrays and Transcript objects
- * without side effects. Store updates should be done by the caller.
+ * Transcript Factory - Pure functions for creating transcript data structures.
+ * Store updates should be done by the caller.
  */
 
 import { DataPoint } from '../../models/dataPoint';
 import { Transcript } from '../../models/transcript';
 import type { TranscriptionSegment } from './transcription-service';
+import type { ParseResult } from './text-parser';
+import { USER_COLORS } from '../constants/ui';
 
 export interface User {
 	name: string;
@@ -20,20 +20,25 @@ export interface TranscriptCreationResult {
 	users: User[];
 }
 
-/**
- * Creates a new empty transcript with a single placeholder word.
- * Used when user clicks "Create New Transcript".
- */
+function findMostFrequent(counts: Map<string, number>): { word: string; count: number } {
+	let maxCount = 0;
+	let mostFrequent = '';
+	for (const [word, count] of counts) {
+		if (count > maxCount) {
+			maxCount = count;
+			mostFrequent = word;
+		}
+	}
+	return { word: mostFrequent, count: maxCount };
+}
+
+function maxMapValue(map: Map<unknown, number>): number {
+	return Math.max(...map.values(), 0);
+}
+
 export function createEmptyTranscript(defaultColor: string): TranscriptCreationResult {
 	const defaultSpeaker = 'SPEAKER 1';
-
-	const initialDataPoint = new DataPoint(
-		defaultSpeaker,
-		0, // turnNumber
-		'[new]', // placeholder word
-		0,
-		1
-	);
+	const initialDataPoint = new DataPoint(defaultSpeaker, 0, '[new]', 0, 1);
 
 	const transcript = new Transcript();
 	transcript.wordArray = [initialDataPoint];
@@ -47,18 +52,11 @@ export function createEmptyTranscript(defaultColor: string): TranscriptCreationR
 	transcript.mostFrequentWord = '[new]';
 	transcript.timingMode = 'untimed';
 
-	const users: User[] = [{ name: defaultSpeaker, color: defaultColor, enabled: true }];
-
-	return { transcript, users };
+	return { transcript, users: [{ name: defaultSpeaker, color: defaultColor, enabled: true }] };
 }
 
-/**
- * Creates a transcript from Whisper transcription segments.
- * Converts segments with text and timestamps into word-level DataPoints.
- */
 export function createTranscriptFromWhisper(segments: TranscriptionSegment[], videoDuration: number, defaultColor: string): TranscriptCreationResult {
 	const defaultSpeaker = 'SPEAKER 1';
-
 	const wordArray: DataPoint[] = [];
 	const turnLengths = new Map<number, number>();
 	const wordCounts = new Map<string, number>();
@@ -72,23 +70,15 @@ export function createTranscriptFromWhisper(segments: TranscriptionSegment[], vi
 			const wordStart = segment.start + wordIndex * wordDuration;
 			const wordEnd = segment.start + (wordIndex + 1) * wordDuration;
 			wordArray.push(new DataPoint(defaultSpeaker, turnIndex, word, wordStart, wordEnd));
+
 			const lowerWord = word.toLowerCase();
 			wordCounts.set(lowerWord, (wordCounts.get(lowerWord) || 0) + 1);
 		});
 	});
 
-	// Find most frequent word
-	let maxWordCount = 0;
-	let mostFrequentWord = '';
-	wordCounts.forEach((count, word) => {
-		if (count > maxWordCount) {
-			maxWordCount = count;
-			mostFrequentWord = word;
-		}
-	});
-
-	// Create transcript
+	const { word: mostFrequentWord, count: maxWordCount } = findMostFrequent(wordCounts);
 	const maxTime = wordArray.length > 0 ? wordArray[wordArray.length - 1].endTime : 0;
+
 	const transcript = new Transcript();
 	transcript.wordArray = wordArray;
 	transcript.timingMode = 'startEnd';
@@ -101,7 +91,73 @@ export function createTranscriptFromWhisper(segments: TranscriptionSegment[], vi
 	transcript.maxCountOfMostRepeatedWord = maxWordCount;
 	transcript.mostFrequentWord = mostFrequentWord;
 
-	const users: User[] = [{ name: defaultSpeaker, color: defaultColor, enabled: true }];
+	return { transcript, users: [{ name: defaultSpeaker, color: defaultColor, enabled: true }] };
+}
+
+/**
+ * Creates a transcript from parsed text input.
+ * For timed transcripts (startOnly mode): all words in a turn share the turn's start time.
+ * End times are set as placeholders - caller should use applyTimingModeToWordArray() to
+ * calculate proper end times based on user settings (speech rate, gap preservation).
+ * For untimed transcripts: word positions are used as time values.
+ */
+export function createTranscriptFromParsedText(parseResult: ParseResult): TranscriptCreationResult {
+	const wordArray: DataPoint[] = [];
+	const wordCounts = new Map<string, number>();
+	const speakerWordCounts = new Map<string, number>();
+	const speakerTurnCounts = new Map<string, number>();
+	const hasTimestamps = parseResult.hasTimestamps;
+
+	let wordPosition = 0;
+	let largestTurnLength = 0;
+
+	let actualTurnIndex = 0;
+	parseResult.turns.forEach((turn) => {
+		const words = turn.content.split(/\s+/).filter((w) => w.trim());
+		if (words.length === 0) return; // Skip empty turns
+
+		if (words.length > largestTurnLength) largestTurnLength = words.length;
+
+		speakerWordCounts.set(turn.speaker, (speakerWordCounts.get(turn.speaker) || 0) + words.length);
+		speakerTurnCounts.set(turn.speaker, (speakerTurnCounts.get(turn.speaker) || 0) + 1);
+
+		const useTurnTime = hasTimestamps && turn.startTime !== null;
+
+		words.forEach((word) => {
+			const startTime = useTurnTime ? turn.startTime! : wordPosition;
+			const endTime = useTurnTime ? turn.startTime! : wordPosition + 1;
+			wordArray.push(new DataPoint(turn.speaker, actualTurnIndex, word, startTime, endTime));
+
+			const lowerWord = word.toLowerCase();
+			wordCounts.set(lowerWord, (wordCounts.get(lowerWord) || 0) + 1);
+			wordPosition++;
+		});
+		actualTurnIndex++;
+	});
+
+	const { word: mostFrequentWord, count: maxWordCount } = findMostFrequent(wordCounts);
+
+	// maxTime: for untimed it's wordPosition, for timed use last word's values
+	const lastWord = wordArray[wordArray.length - 1];
+	const maxTime = lastWord ? Math.max(lastWord.startTime, lastWord.endTime) : 0;
+
+	const transcript = new Transcript();
+	transcript.wordArray = wordArray;
+	transcript.timingMode = hasTimestamps ? 'startOnly' : 'untimed';
+	transcript.totalNumOfWords = wordArray.length;
+	transcript.totalConversationTurns = actualTurnIndex;
+	transcript.totalTimeInSeconds = maxTime;
+	transcript.largestTurnLength = largestTurnLength || 1;
+	transcript.largestNumOfWordsByASpeaker = maxMapValue(speakerWordCounts);
+	transcript.largestNumOfTurnsByASpeaker = maxMapValue(speakerTurnCounts);
+	transcript.maxCountOfMostRepeatedWord = maxWordCount;
+	transcript.mostFrequentWord = mostFrequentWord;
+
+	const users: User[] = parseResult.speakers.map((speaker, index) => ({
+		name: speaker,
+		color: USER_COLORS[index % USER_COLORS.length],
+		enabled: true
+	}));
 
 	return { transcript, users };
 }

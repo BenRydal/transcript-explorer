@@ -80,6 +80,13 @@
 				</p>
 			</div>
 
+			<!-- Paste text option -->
+			<div class="mt-4">
+				<div class="divider text-sm text-gray-500">or</div>
+				<button class="btn btn-outline btn-block" on:click={() => dispatch('openPasteModal')}> Paste Transcript Text </button>
+				<p class="text-xs text-gray-500 mt-2 text-center">Paste text directly and we'll detect the format automatically</p>
+			</div>
+
 			<!-- YouTube URL input -->
 			<div class="mt-4">
 				<div class="divider text-sm text-gray-500">or</div>
@@ -92,9 +99,7 @@
 						on:input={() => (youtubeError = '')}
 						on:keydown={(e) => e.key === 'Enter' && handleYouTubeSubmit()}
 					/>
-					<button class="btn btn-sm btn-primary" on:click={handleYouTubeSubmit} disabled={!youtubeUrl.trim()}>
-						Load
-					</button>
+					<button class="btn btn-sm btn-primary" on:click={handleYouTubeSubmit} disabled={!youtubeUrl.trim()}> Load </button>
 				</div>
 				{#if youtubeError}
 					<p class="text-error text-xs mt-1">{youtubeError}</p>
