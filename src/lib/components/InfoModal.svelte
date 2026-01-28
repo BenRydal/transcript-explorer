@@ -12,6 +12,7 @@
 	export let isModalOpen: Writable<boolean> = writable(false);
 	export let onLoadExample: ((exampleId: string) => void) | null = null;
 	export let onOpenUpload: (() => void) | null = null;
+	export let onOpenPaste: (() => void) | null = null;
 	export let onStartTour: (() => void) | null = null;
 
 	let activeTab: 'start' | 'views' | 'import' | 'create' = 'start';
@@ -81,18 +82,8 @@
 		}
 	];
 
-	function handleExampleClick(exampleId: string) {
-		onLoadExample?.(exampleId);
-		$isModalOpen = false;
-	}
-
-	function handleUploadClick() {
-		onOpenUpload?.();
-		$isModalOpen = false;
-	}
-
-	function handleStartTour() {
-		onStartTour?.();
+	function closeAndRun(fn: (() => void) | null) {
+		fn?.();
 		$isModalOpen = false;
 	}
 
@@ -170,7 +161,7 @@
 					<!-- Get Started Tab -->
 					<div class="flex gap-4 mb-6">
 						<button
-							on:click={handleStartTour}
+							on:click={() => closeAndRun(onStartTour)}
 							class="flex-1 bg-gradient-to-r from-amber-50 to-orange-50 border border-amber-200 rounded-lg p-4 hover:border-amber-400 transition-all group text-left"
 						>
 							<div class="flex items-center gap-3">
@@ -206,7 +197,7 @@
 						{#each examples as example}
 							<button
 								class="text-left border border-gray-200 rounded-lg hover:border-amber-400 hover:bg-amber-50 transition-all group overflow-hidden flex"
-								on:click={() => handleExampleClick(example.id)}
+								on:click={() => closeAndRun(() => onLoadExample?.(example.id))}
 							>
 								<img src={example.thumb} alt={example.title} class="w-24 h-24 object-cover flex-shrink-0" />
 								<div class="p-3 flex flex-col justify-center">
@@ -233,9 +224,7 @@
 					</div>
 				{:else if activeTab === 'import'}
 					<!-- Import Transcript Tab -->
-					<p class="text-gray-600 mb-5">Already have a transcript? Import it from a CSV or TXT file.</p>
-
-					<div class="grid grid-cols-2 gap-4 mb-6">
+					<div class="grid grid-cols-2 gap-4 mb-5">
 						<div class="bg-gray-50 rounded-lg p-4">
 							<h4 class="font-medium text-gray-700 mb-2">CSV format</h4>
 							<div class="bg-white border border-gray-200 rounded overflow-hidden">
@@ -264,7 +253,7 @@
 									</tbody>
 								</table>
 							</div>
-							<p class="text-xs text-gray-500 mt-2"><strong>Times</strong> are optional and can be in seconds, MM:SS, or HH:MM:SS</p>
+							<p class="text-xs text-gray-500 mt-2">Times are optional and can be in seconds, MM:SS, or HH:MM:SS</p>
 						</div>
 						<div class="bg-gray-50 rounded-lg p-4">
 							<h4 class="font-medium text-gray-700 mb-2">TXT format</h4>
@@ -273,7 +262,29 @@
 								<div>Student 1: Hi!</div>
 								<div>Teacher: Let's begin</div>
 							</div>
-							<p class="text-xs text-gray-500 mt-2">Each line: Speaker name, colon, then content</p>
+							<p class="text-xs text-gray-500 mt-2">Each line: Speaker, colon, then content</p>
+						</div>
+						<div class="bg-gray-50 rounded-lg p-4">
+							<h4 class="font-medium text-gray-700 mb-2">SRT / VTT subtitles</h4>
+							<div class="bg-white border border-gray-200 rounded p-2 font-mono text-xs">
+								<div class="text-gray-400">1</div>
+								<div class="text-gray-400">00:00:01,000 --> 00:00:03,500</div>
+								<div>Good morning class</div>
+								<div class="mt-1 text-gray-400">2</div>
+								<div class="text-gray-400">00:00:04,000 --> 00:00:05,000</div>
+								<div>Hi teacher!</div>
+							</div>
+						</div>
+						<div class="bg-gray-50 rounded-lg p-4">
+							<h4 class="font-medium text-gray-700 mb-2">Paste text</h4>
+							<div class="bg-white border border-gray-200 rounded p-2 font-mono text-xs">
+								<div>Alice: Hello there</div>
+								<div>Bob: Hi Alice!</div>
+								<div class="text-gray-400 mt-1">— or with timestamps —</div>
+								<div>[0:01] Alice: Hello there</div>
+								<div>[0:03] Bob: Hi Alice!</div>
+							</div>
+							<p class="text-xs text-gray-500 mt-2">Auto-detects many common formats</p>
 						</div>
 					</div>
 
@@ -287,10 +298,18 @@
 						</div>
 					</div>
 
-					<button class="btn btn-primary" on:click={handleUploadClick}>
-						<div class="w-5 h-5 mr-2"><MdCloudUpload /></div>
-						Upload Files
-					</button>
+					<div class="flex gap-3">
+						<button class="btn btn-primary" on:click={() => closeAndRun(onOpenUpload)}>
+							<div class="w-5 h-5 mr-2"><MdCloudUpload /></div>
+							Upload Files
+						</button>
+						<button class="btn btn-outline" on:click={() => closeAndRun(onOpenPaste)}>
+							<svg xmlns="http://www.w3.org/2000/svg" class="w-5 h-5 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+								<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
+							</svg>
+							Paste Text
+						</button>
+					</div>
 				{:else if activeTab === 'create'}
 					<!-- Create Transcript Tab -->
 					<p class="text-gray-600 mb-5">Have a video but no transcript? Generate one automatically or transcribe it yourself.</p>
@@ -309,7 +328,7 @@
 										<p><strong>How it works:</strong> Upload video → Click "Auto-Transcribe" → Edit result in the transcript editor</p>
 										<p><strong>Note:</strong> English only. All speech is assigned to one speaker—use the editor to assign speakers afterward.</p>
 									</div>
-									<button class="btn btn-sm btn-primary" on:click={handleUploadClick}>
+									<button class="btn btn-sm btn-primary" on:click={() => closeAndRun(onOpenUpload)}>
 										<div class="w-4 h-4 mr-1"><MdCloudUpload /></div>
 										Upload Video
 									</button>
@@ -330,7 +349,7 @@
 										<p><strong>How it works:</strong> Upload video → Click "Transcribe" in the navbar → Type while controlling playback</p>
 										<p><strong>Keyboard shortcuts:</strong> Space to pause, arrow keys to skip, capture timestamps as you go</p>
 									</div>
-									<button class="btn btn-sm btn-primary" on:click={handleUploadClick}>
+									<button class="btn btn-sm btn-primary" on:click={() => closeAndRun(onOpenUpload)}>
 										<div class="w-4 h-4 mr-1"><MdCloudUpload /></div>
 										Upload Video
 									</button>

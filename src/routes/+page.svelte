@@ -583,6 +583,7 @@
 	{isModalOpen}
 	onLoadExample={(id) => handleLoadExample(new CustomEvent('loadExample', { detail: id }))}
 	onOpenUpload={() => (showUploadModal = true)}
+	onOpenPaste={() => (showPasteModal = true)}
 	onStartTour={() => tourOverlay.start()}
 />
 
