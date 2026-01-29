@@ -1,5 +1,5 @@
 <script lang="ts">
-	import MdMoreVert from 'svelte-icons/md/MdMoreVert.svelte';
+	import { EllipsisVertical } from '@lucide/svelte';
 	import { toTitleCase } from '$lib/core/string-utils';
 
 	interface Props {
@@ -24,9 +24,7 @@
 		<span class="user-name">{displayName}</span>
 	</button>
 	<button class="settings-button" onclick={handleSettingsClick} title="Settings">
-		<div class="settings-icon">
-			<MdMoreVert />
-		</div>
+		<EllipsisVertical size={16} />
 	</button>
 </div>
 
@@ -80,11 +78,6 @@
 
 	.settings-button:hover {
 		color: #1f2937;
-	}
-
-	.settings-icon {
-		width: 16px;
-		height: 16px;
 	}
 
 	.color-chip {

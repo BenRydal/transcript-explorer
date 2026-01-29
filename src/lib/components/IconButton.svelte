@@ -37,5 +37,5 @@
 	onclick={handleClick}
 	{onkeydown}
 >
-	<Icon />
+	<Icon size={20} />
 </div>

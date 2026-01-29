@@ -1,5 +1,5 @@
 <script lang="ts">
-	import MdCloudUpload from 'svelte-icons/md/MdCloudUpload.svelte';
+	import { CloudUpload } from '@lucide/svelte';
 	import { extractYouTubeVideoId } from '$lib/core/url-utils';
 
 	interface Props {
@@ -81,9 +81,7 @@
 				tabindex="0"
 			>
 				<div class="flex flex-col items-center gap-2">
-					<div class="w-12 h-12 text-gray-400">
-						<MdCloudUpload />
-					</div>
+					<CloudUpload size={48} class="text-gray-400" />
 					<p class="font-medium">Drag & drop files here</p>
 					<p class="text-sm text-gray-500">or click to browse</p>
 				</div>

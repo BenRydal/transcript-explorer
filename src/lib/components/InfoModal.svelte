@@ -1,13 +1,6 @@
 <script lang="ts">
 	import { writable, type Writable } from 'svelte/store';
-	import MdClose from 'svelte-icons/md/MdClose.svelte';
-	import MdLightbulbOutline from 'svelte-icons/md/MdLightbulbOutline.svelte';
-	import MdPlayCircleOutline from 'svelte-icons/md/MdPlayCircleOutline.svelte';
-	import MdCloudUpload from 'svelte-icons/md/MdCloudUpload.svelte';
-	import MdVideocam from 'svelte-icons/md/MdVideocam.svelte';
-	import MdMic from 'svelte-icons/md/MdMic.svelte';
-	import MdEdit from 'svelte-icons/md/MdEdit.svelte';
-	import MdChat from 'svelte-icons/md/MdChat.svelte';
+	import { X, Lightbulb, CirclePlay, CloudUpload, Video, Mic, Pencil, MessageSquare } from '@lucide/svelte';
 
 	interface Props {
 		isModalOpen?: Writable<boolean>;
@@ -128,7 +121,7 @@
 							onclick={() => ($isModalOpen = false)}
 							aria-label="Close modal"
 						>
-							<div class="w-6 h-6"><MdClose /></div>
+							<X size={24} />
 						</button>
 					</div>
 					<div
@@ -176,7 +169,7 @@
 						>
 							<div class="flex items-center gap-3">
 								<div class="w-10 h-10 rounded-full bg-amber-100 flex items-center justify-center group-hover:bg-amber-200 transition-colors text-amber-600">
-									<div class="w-5 h-5"><MdLightbulbOutline /></div>
+									<Lightbulb size={20} />
 								</div>
 								<div>
 									<h3 class="font-semibold text-gray-800 group-hover:text-amber-700">Take a Guided Tour</h3>
@@ -192,7 +185,7 @@
 						>
 							<div class="flex items-center gap-3">
 								<div class="w-10 h-10 rounded-full bg-blue-100 flex items-center justify-center group-hover:bg-blue-200 transition-colors text-blue-600">
-									<div class="w-5 h-5"><MdPlayCircleOutline /></div>
+									<CirclePlay size={20} />
 								</div>
 								<div>
 									<h3 class="font-semibold text-gray-800 group-hover:text-blue-700">Watch Demo Video</h3>
@@ -300,7 +293,7 @@
 
 					<div class="bg-blue-50 border border-blue-200 rounded-lg p-4 mb-4">
 						<div class="flex items-start gap-3">
-							<div class="w-5 h-5 text-blue-600 flex-shrink-0 mt-0.5"><MdVideocam /></div>
+							<Video size={20} class="text-blue-600 flex-shrink-0 mt-0.5" />
 							<div>
 								<h4 class="font-medium text-blue-800 mb-1">Link with video</h4>
 								<p class="text-sm text-blue-700">If your transcript has timestamps, you can also upload an MP4 or paste a YouTube link to sync visualizations with video playback.</p>
@@ -310,7 +303,7 @@
 
 					<div class="flex gap-3">
 						<button class="btn btn-primary" onclick={() => closeAndRun(onOpenUpload)}>
-							<div class="w-5 h-5 mr-2"><MdCloudUpload /></div>
+							<CloudUpload size={20} class="mr-2" />
 							Upload Files
 						</button>
 						<button class="btn btn-outline" onclick={() => closeAndRun(onOpenPaste)}>
@@ -329,7 +322,7 @@
 						<div class="border border-gray-200 rounded-lg p-5 hover:border-purple-300 transition-colors">
 							<div class="flex items-start gap-4">
 								<div class="w-12 h-12 rounded-full bg-purple-100 flex items-center justify-center flex-shrink-0 text-purple-600">
-									<div class="w-6 h-6"><MdMic /></div>
+									<Mic size={24} />
 								</div>
 								<div class="flex-1">
 									<h4 class="font-semibold text-gray-800 mb-1">Auto-Transcribe with AI</h4>
@@ -339,7 +332,7 @@
 										<p><strong>Note:</strong> English only. All speech is assigned to one speaker—use the editor to assign speakers afterward.</p>
 									</div>
 									<button class="btn btn-sm btn-primary" onclick={() => closeAndRun(onOpenUpload)}>
-										<div class="w-4 h-4 mr-1"><MdCloudUpload /></div>
+										<CloudUpload size={16} class="mr-1" />
 										Upload Video
 									</button>
 								</div>
@@ -350,7 +343,7 @@
 						<div class="border border-gray-200 rounded-lg p-5 hover:border-emerald-300 transition-colors">
 							<div class="flex items-start gap-4">
 								<div class="w-12 h-12 rounded-full bg-emerald-100 flex items-center justify-center flex-shrink-0 text-emerald-600">
-									<div class="w-6 h-6"><MdEdit /></div>
+									<Pencil size={24} />
 								</div>
 								<div class="flex-1">
 									<h4 class="font-semibold text-gray-800 mb-1">Transcribe Manually</h4>
@@ -360,7 +353,7 @@
 										<p><strong>Keyboard shortcuts:</strong> Space to pause, arrow keys to skip, capture timestamps as you go</p>
 									</div>
 									<button class="btn btn-sm btn-primary" onclick={() => closeAndRun(onOpenUpload)}>
-										<div class="w-4 h-4 mr-1"><MdCloudUpload /></div>
+										<CloudUpload size={16} class="mr-1" />
 										Upload Video
 									</button>
 								</div>
@@ -379,7 +372,7 @@
 						rel="noopener noreferrer"
 						class="text-sm text-gray-600 hover:text-gray-900 inline-flex items-center gap-1"
 					>
-						<div class="w-4 h-4"><MdChat /></div>
+						<MessageSquare size={16} />
 						Feedback
 					</a>
 					<a

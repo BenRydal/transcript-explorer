@@ -1,5 +1,5 @@
 <script lang="ts">
-	import MdChevronLeft from 'svelte-icons/md/MdChevronLeft.svelte';
+	import { ChevronLeft } from '@lucide/svelte';
 	import UserButton from './UserButton.svelte';
 
 	interface Props {
@@ -32,9 +32,7 @@
 	{#if showExpandButton}
 		<button class="expand-button" onclick={() => (isExpanded = !isExpanded)} title={isExpanded ? 'Show fewer' : `Show ${hiddenCount} more`}>
 			{#if isExpanded}
-				<div class="collapse-icon">
-					<MdChevronLeft />
-				</div>
+				<ChevronLeft size={16} />
 			{:else}
 				+{hiddenCount}
 			{/if}
@@ -75,8 +73,4 @@
 		background-color: #c4c4c4;
 	}
 
-	.collapse-icon {
-		width: 1rem;
-		height: 1rem;
-	}
 </style>

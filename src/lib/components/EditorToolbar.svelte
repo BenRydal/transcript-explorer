@@ -1,10 +1,5 @@
 <script lang="ts">
-	import MdSwapVert from 'svelte-icons/md/MdSwapVert.svelte';
-	import MdSwapHoriz from 'svelte-icons/md/MdSwapHoriz.svelte';
-	import MdFileDownload from 'svelte-icons/md/MdFileDownload.svelte';
-	import MdVideoLibrary from 'svelte-icons/md/MdVideoLibrary.svelte';
-	import MdUndo from 'svelte-icons/md/MdUndo.svelte';
-	import MdRedo from 'svelte-icons/md/MdRedo.svelte';
+	import { ArrowDownUp, ArrowLeftRight, Download, Clapperboard, Undo2, Redo2 } from '@lucide/svelte';
 	import { get } from 'svelte/store';
 	import EditorStore from '../../stores/editorStore';
 	import TranscriptStore from '../../stores/transcriptStore';
@@ -109,11 +104,11 @@
 		{/if}
 
 		<button class="toolbar-btn" onclick={() => onundo?.()} disabled={!canUndo} title="Undo (Ctrl+Z)">
-			<MdUndo />
+			<Undo2 size={16} />
 		</button>
 
 		<button class="toolbar-btn" onclick={() => onredo?.()} disabled={!canRedo} title="Redo (Ctrl+Shift+Z)">
-			<MdRedo />
+			<Redo2 size={16} />
 		</button>
 
 		<button
@@ -122,19 +117,19 @@
 			onclick={toggleAdvancedVideoControls}
 			title={showAdvancedVideoControls ? 'Hide video controls' : 'Show video controls (for transcript editing)'}
 		>
-			<MdVideoLibrary />
+			<Clapperboard size={16} />
 		</button>
 
 		<button class="toolbar-btn" onclick={toggleOrientation} title={isVertical ? 'Switch to horizontal layout' : 'Switch to vertical layout'}>
 			{#if isVertical}
-				<MdSwapHoriz />
+				<ArrowLeftRight size={16} />
 			{:else}
-				<MdSwapVert />
+				<ArrowDownUp size={16} />
 			{/if}
 		</button>
 
 		<button class="toolbar-btn" onclick={exportTranscriptToCSV} title="Export transcript as CSV">
-			<MdFileDownload />
+			<Download size={16} />
 		</button>
 	</div>
 </div>
