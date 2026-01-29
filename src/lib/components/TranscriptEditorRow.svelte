@@ -1,5 +1,5 @@
 <script lang="ts">
-	import { createEventDispatcher, onMount } from 'svelte';
+	import { onMount } from 'svelte';
 	import type { Turn } from '$lib/core/turn-utils';
 	import { getTurnContent } from '$lib/core/turn-utils';
 	import { toSeconds, formatTimeAuto } from '$lib/core/time-utils';
@@ -10,27 +10,43 @@
 
 	let rowElement: HTMLElement;
 
-	export let turn: Turn;
-	export let speakerColor: string = '#666666';
-	export let isSelected: boolean = false;
-	export let isSpeakerHighlighted: boolean = false;
-	export let timingMode: TimingMode = 'untimed';
+	interface Props {
+		turn: Turn;
+		speakerColor?: string;
+		isSelected?: boolean;
+		isSpeakerHighlighted?: boolean;
+		timingMode?: TimingMode;
+		onedit?: (data: { turnNumber: number; field: string; value: any }) => void;
+		onselect?: (data: { turn: Turn }) => void;
+		ondelete?: (data: { turnNumber: number }) => void;
+		onaddAfter?: (data: { turnNumber: number; speaker: string }) => void;
+	}
+
+	let {
+		turn,
+		speakerColor = '#666666',
+		isSelected = false,
+		isSpeakerHighlighted = false,
+		timingMode = 'untimed',
+		onedit,
+		onselect,
+		ondelete,
+		onaddAfter
+	}: Props = $props();
 
 	// Derived flags for easier template logic
-	$: showStartTime = timingMode === 'startOnly' || timingMode === 'startEnd';
-	$: showEndTime = timingMode === 'startEnd';
+	let showStartTime = $derived(timingMode === 'startOnly' || timingMode === 'startEnd');
+	let showEndTime = $derived(timingMode === 'startEnd');
 
-	const dispatch = createEventDispatcher();
-
-	let isHovering = false;
+	let isHovering = $state(false);
 
 	type EditMode = 'none' | 'content' | 'speaker' | 'startTime' | 'endTime';
-	let editMode: EditMode = 'none';
+	let editMode: EditMode = $state('none');
 
-	let editedContent = '';
-	let editedSpeaker = '';
-	let editedStartTime = '';
-	let editedEndTime = '';
+	let editedContent = $state('');
+	let editedSpeaker = $state('');
+	let editedStartTime = $state('');
+	let editedEndTime = $state('');
 
 	// Start editing content
 	function startEditingContent() {
@@ -41,7 +57,7 @@
 	// Save content changes
 	function saveContent() {
 		if (editedContent.trim() !== getTurnContent(turn)) {
-			dispatch('edit', {
+			onedit?.({
 				turnNumber: turn.turnNumber,
 				field: 'content',
 				value: editedContent.trim()
@@ -65,7 +81,7 @@
 	function saveSpeaker() {
 		const newSpeaker = normalizeSpeakerName(editedSpeaker);
 		if (newSpeaker && newSpeaker !== turn.speaker) {
-			dispatch('edit', {
+			onedit?.({
 				turnNumber: turn.turnNumber,
 				field: 'speaker',
 				value: newSpeaker
@@ -90,7 +106,7 @@
 		}
 
 		if (parsed !== turn.startTime) {
-			dispatch('edit', {
+			onedit?.({
 				turnNumber: turn.turnNumber,
 				field: 'time',
 				value: { startTime: parsed, endTime: turn.endTime }
@@ -115,7 +131,7 @@
 		}
 
 		if (parsed !== turn.endTime) {
-			dispatch('edit', {
+			onedit?.({
 				turnNumber: turn.turnNumber,
 				field: 'time',
 				value: { startTime: turn.startTime, endTime: parsed }
@@ -158,17 +174,17 @@
 	function handleRowClick() {
 		// If edit mode is active, close it first
 		closeEditMode();
-		dispatch('select', { turn });
+		onselect?.({ turn });
 	}
 
 	// Handle delete turn
 	function handleDelete() {
-		dispatch('delete', { turnNumber: turn.turnNumber });
+		ondelete?.({ turnNumber: turn.turnNumber });
 	}
 
 	// Handle add turn after this one
 	function handleAddAfter() {
-		dispatch('addAfter', { turnNumber: turn.turnNumber, speaker: turn.speaker });
+		onaddAfter?.({ turnNumber: turn.turnNumber, speaker: turn.speaker });
 	}
 
 	// Capture current video time for this turn's start time
@@ -179,7 +195,7 @@
 			// Update the local input value
 			editedStartTime = formattedTime;
 			// Also dispatch the edit to save immediately
-			dispatch('edit', {
+			onedit?.({
 				turnNumber: turn.turnNumber,
 				field: 'time',
 				value: { startTime: videoState.currentTime, endTime: turn.endTime }
@@ -195,7 +211,7 @@
 			// Update the local input value
 			editedEndTime = formattedTime;
 			// Also dispatch the edit to save immediately
-			dispatch('edit', {
+			onedit?.({
 				turnNumber: turn.turnNumber,
 				field: 'time',
 				value: { startTime: turn.startTime, endTime: videoState.currentTime }
@@ -218,8 +234,8 @@
 	});
 
 	// Reactive time displays
-	$: startTimeDisplay = `[${formatTimeAuto(turn.startTime)}]`;
-	$: endTimeDisplay = `[${formatTimeAuto(turn.endTime)}]`;
+	let startTimeDisplay = $derived(`[${formatTimeAuto(turn.startTime)}]`);
+	let endTimeDisplay = $derived(`[${formatTimeAuto(turn.endTime)}]`);
 
 	// Auto-resize textarea action
 	function autoresize(node: HTMLTextAreaElement) {
@@ -238,19 +254,19 @@
 	class:selected={isSelected}
 	class:speaker-highlighted={isSpeakerHighlighted}
 	bind:this={rowElement}
-	on:click={handleRowClick}
-	on:keydown={(e) => e.key === 'Enter' && handleRowClick()}
-	on:mouseenter={() => (isHovering = true)}
-	on:mouseleave={() => (isHovering = false)}
+	onclick={handleRowClick}
+	onkeydown={(e) => e.key === 'Enter' && handleRowClick()}
+	onmouseenter={() => (isHovering = true)}
+	onmouseleave={() => (isHovering = false)}
 	role="button"
 	tabindex="0"
 >
 	<!-- Start Time Column (shown in startOnly and startEnd modes) -->
 	{#if showStartTime}
 		{#if editMode === 'startTime'}
-			<div class="time-edit-container" on:click|stopPropagation>
+			<div class="time-edit-container" onclick={(e) => e.stopPropagation()}>
 				{#if $VideoStore.isLoaded}
-					<button class="time-capture-btn capture-start-btn" on:click={captureStartTime} title="Set IN point from video">
+					<button class="time-capture-btn capture-start-btn" onclick={captureStartTime} title="Set IN point from video">
 						<span class="capture-bracket">[</span>
 					</button>
 				{/if}
@@ -258,13 +274,13 @@
 					type="text"
 					class="time-input"
 					bind:value={editedStartTime}
-					on:keydown={handleEditKeydown}
-					on:blur={saveStartTime}
+					onkeydown={handleEditKeydown}
+					onblur={saveStartTime}
 					placeholder="Start"
 				/>
 			</div>
 		{:else}
-			<button class="turn-timecode" on:click|stopPropagation={startEditingStartTime} title="Click to edit start time">
+			<button class="turn-timecode" onclick={(e) => { e.stopPropagation(); startEditingStartTime(); }} title="Click to edit start time">
 				{startTimeDisplay}
 			</button>
 		{/if}
@@ -278,16 +294,16 @@
 	<!-- End Time Column (shown only in startEnd mode) -->
 	{#if showEndTime}
 		{#if editMode === 'endTime'}
-			<div class="time-edit-container" on:click|stopPropagation>
-				<input type="text" class="time-input" bind:value={editedEndTime} on:keydown={handleEditKeydown} on:blur={saveEndTime} placeholder="End" />
+			<div class="time-edit-container" onclick={(e) => e.stopPropagation()}>
+				<input type="text" class="time-input" bind:value={editedEndTime} onkeydown={handleEditKeydown} onblur={saveEndTime} placeholder="End" />
 				{#if $VideoStore.isLoaded}
-					<button class="time-capture-btn capture-end-btn" on:click={captureEndTime} title="Set OUT point from video">
+					<button class="time-capture-btn capture-end-btn" onclick={captureEndTime} title="Set OUT point from video">
 						<span class="capture-bracket">]</span>
 					</button>
 				{/if}
 			</div>
 		{:else}
-			<button class="turn-timecode" on:click|stopPropagation={startEditingEndTime} title="Click to edit end time">
+			<button class="turn-timecode" onclick={(e) => { e.stopPropagation(); startEditingEndTime(); }} title="Click to edit end time">
 				{endTimeDisplay}
 			</button>
 		{/if}
@@ -299,38 +315,38 @@
 			type="text"
 			class="speaker-input"
 			bind:value={editedSpeaker}
-			on:keydown={handleEditKeydown}
-			on:blur={saveSpeaker}
-			on:click|stopPropagation
+			onkeydown={handleEditKeydown}
+			onblur={saveSpeaker}
+			onclick={(e) => e.stopPropagation()}
 			placeholder="Speaker name..."
 		/>
 	{:else}
-		<button class="turn-speaker" style="color: {speakerColor}" on:click|stopPropagation={startEditingSpeaker} title="Click to edit speaker">
+		<button class="turn-speaker" style="color: {speakerColor}" onclick={(e) => { e.stopPropagation(); startEditingSpeaker(); }} title="Click to edit speaker">
 			{toTitleCase(turn.speaker)}:
 		</button>
 	{/if}
 
 	<!-- Content -->
 	{#if editMode === 'content'}
-		<div class="content-edit-container" on:click|stopPropagation>
-			<textarea class="content-textarea" bind:value={editedContent} on:keydown={handleEditKeydown} on:blur={saveContent} use:autoresize />
+		<div class="content-edit-container" onclick={(e) => e.stopPropagation()}>
+			<textarea class="content-textarea" bind:value={editedContent} onkeydown={handleEditKeydown} onblur={saveContent} use:autoresize></textarea>
 			<div class="edit-hint">Enter to save, Esc to cancel</div>
 		</div>
 	{:else}
-		<button class="turn-content" on:click|stopPropagation={startEditingContent} title="Click to edit content">
+		<button class="turn-content" onclick={(e) => { e.stopPropagation(); startEditingContent(); }} title="Click to edit content">
 			{getTurnContent(turn)}
 		</button>
 	{/if}
 
 	<!-- Action buttons (visible on hover) -->
 	{#if isHovering}
-		<div class="row-actions" on:click|stopPropagation>
-			<button class="action-btn add-btn" on:click={handleAddAfter} title="Add turn after">
+		<div class="row-actions" onclick={(e) => e.stopPropagation()}>
+			<button class="action-btn add-btn" onclick={handleAddAfter} title="Add turn after">
 				<svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" viewBox="0 0 20 20" fill="currentColor">
 					<path fill-rule="evenodd" d="M10 3a1 1 0 011 1v5h5a1 1 0 110 2h-5v5a1 1 0 11-2 0v-5H4a1 1 0 110-2h5V4a1 1 0 011-1z" clip-rule="evenodd" />
 				</svg>
 			</button>
-			<button class="action-btn delete-btn" on:click={handleDelete} title="Delete turn">
+			<button class="action-btn delete-btn" onclick={handleDelete} title="Delete turn">
 				<svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" viewBox="0 0 20 20" fill="currentColor">
 					<path
 						fill-rule="evenodd"

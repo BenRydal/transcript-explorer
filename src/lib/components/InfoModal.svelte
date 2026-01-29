@@ -9,13 +9,23 @@
 	import MdEdit from 'svelte-icons/md/MdEdit.svelte';
 	import MdChat from 'svelte-icons/md/MdChat.svelte';
 
-	export let isModalOpen: Writable<boolean> = writable(false);
-	export let onLoadExample: ((exampleId: string) => void) | null = null;
-	export let onOpenUpload: (() => void) | null = null;
-	export let onOpenPaste: (() => void) | null = null;
-	export let onStartTour: (() => void) | null = null;
+	interface Props {
+		isModalOpen?: Writable<boolean>;
+		onLoadExample?: ((exampleId: string) => void) | null;
+		onOpenUpload?: (() => void) | null;
+		onOpenPaste?: (() => void) | null;
+		onStartTour?: (() => void) | null;
+	}
 
-	let activeTab: 'start' | 'views' | 'import' | 'create' = 'start';
+	let {
+		isModalOpen = writable(false),
+		onLoadExample = null,
+		onOpenUpload = null,
+		onOpenPaste = null,
+		onStartTour = null
+	}: Props = $props();
+
+	let activeTab: 'start' | 'views' | 'import' | 'create' = $state('start');
 
 	const tabs = [
 		{ id: 'start', label: 'Get Started' },
@@ -93,11 +103,11 @@
 </script>
 
 {#if $isModalOpen}
-	<!-- svelte-ignore a11y-no-noninteractive-element-interactions -->
+	<!-- svelte-ignore a11y_no_noninteractive_element_interactions -->
 	<div
 		class="modal modal-open"
-		on:click|self={() => ($isModalOpen = false)}
-		on:keydown={handleKeydown}
+		onclick={(e) => { if (e.target === e.currentTarget) $isModalOpen = false; }}
+		onkeydown={handleKeydown}
 		role="dialog"
 		aria-modal="true"
 		aria-labelledby="modal-title"
@@ -115,7 +125,7 @@
 						</div>
 						<button
 							class="btn btn-circle btn-ghost btn-sm text-white hover:bg-white/20 flex-shrink-0"
-							on:click={() => ($isModalOpen = false)}
+							onclick={() => ($isModalOpen = false)}
 							aria-label="Close modal"
 						>
 							<div class="w-6 h-6"><MdClose /></div>
@@ -147,7 +157,7 @@
 							class="px-4 py-3 text-sm font-medium border-b-2 transition-colors {activeTab === tab.id
 								? 'border-gray-800 text-gray-800'
 								: 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'}"
-							on:click={() => (activeTab = tab.id)}
+							onclick={() => (activeTab = tab.id)}
 						>
 							{tab.label}
 						</button>
@@ -161,7 +171,7 @@
 					<!-- Get Started Tab -->
 					<div class="flex gap-4 mb-6">
 						<button
-							on:click={() => closeAndRun(onStartTour)}
+							onclick={() => closeAndRun(onStartTour)}
 							class="flex-1 bg-gradient-to-r from-amber-50 to-orange-50 border border-amber-200 rounded-lg p-4 hover:border-amber-400 transition-all group text-left"
 						>
 							<div class="flex items-center gap-3">
@@ -197,7 +207,7 @@
 						{#each examples as example}
 							<button
 								class="text-left border border-gray-200 rounded-lg hover:border-amber-400 hover:bg-amber-50 transition-all group overflow-hidden flex"
-								on:click={() => closeAndRun(() => onLoadExample?.(example.id))}
+								onclick={() => closeAndRun(() => onLoadExample?.(example.id))}
 							>
 								<img src={example.thumb} alt={example.title} class="w-24 h-24 object-cover flex-shrink-0" />
 								<div class="p-3 flex flex-col justify-center">
@@ -299,11 +309,11 @@
 					</div>
 
 					<div class="flex gap-3">
-						<button class="btn btn-primary" on:click={() => closeAndRun(onOpenUpload)}>
+						<button class="btn btn-primary" onclick={() => closeAndRun(onOpenUpload)}>
 							<div class="w-5 h-5 mr-2"><MdCloudUpload /></div>
 							Upload Files
 						</button>
-						<button class="btn btn-outline" on:click={() => closeAndRun(onOpenPaste)}>
+						<button class="btn btn-outline" onclick={() => closeAndRun(onOpenPaste)}>
 							<svg xmlns="http://www.w3.org/2000/svg" class="w-5 h-5 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
 								<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
 							</svg>
@@ -328,7 +338,7 @@
 										<p><strong>How it works:</strong> Upload video → Click "Auto-Transcribe" → Edit result in the transcript editor</p>
 										<p><strong>Note:</strong> English only. All speech is assigned to one speaker—use the editor to assign speakers afterward.</p>
 									</div>
-									<button class="btn btn-sm btn-primary" on:click={() => closeAndRun(onOpenUpload)}>
+									<button class="btn btn-sm btn-primary" onclick={() => closeAndRun(onOpenUpload)}>
 										<div class="w-4 h-4 mr-1"><MdCloudUpload /></div>
 										Upload Video
 									</button>
@@ -349,7 +359,7 @@
 										<p><strong>How it works:</strong> Upload video → Click "Transcribe" in the navbar → Type while controlling playback</p>
 										<p><strong>Keyboard shortcuts:</strong> Space to pause, arrow keys to skip, capture timestamps as you go</p>
 									</div>
-									<button class="btn btn-sm btn-primary" on:click={() => closeAndRun(onOpenUpload)}>
+									<button class="btn btn-sm btn-primary" onclick={() => closeAndRun(onOpenUpload)}>
 										<div class="w-4 h-4 mr-1"><MdCloudUpload /></div>
 										Upload Video
 									</button>

@@ -36,8 +36,8 @@
 	});
 
 	// Clean up dropdowns when UserStore changes (e.g., switching datasets)
-	let previousUserCount = 0;
-	$: {
+	let previousUserCount = $state(0);
+	$effect(() => {
 		const currentUserCount = $UserStore.length;
 		if (currentUserCount !== previousUserCount) {
 			document.querySelectorAll('body > [id^="dropdown-"]').forEach((dropdown) => {
@@ -45,7 +45,7 @@
 			});
 			previousUserCount = currentUserCount;
 		}
-	}
+	});
 
 	function handleWheelScroll(e: WheelEvent) {
 		if (e.deltaY !== 0) {
@@ -115,17 +115,10 @@
 		}
 	}
 
-	function handleToggleVisibility(event: CustomEvent<{ index: number }>) {
-		toggleUserVisibility(event.detail.index);
-	}
-
-	function handleOpenDropdown(event: CustomEvent<{ index: number; event: MouseEvent }>) {
-		openDropdown(event.detail.index, event.detail.event);
-	}
 </script>
 
-<div class="flex flex-1 flex-row justify-start items-center bg-[#f6f5f3] px-8 overflow-x-auto" data-tour="speakers" on:wheel={handleWheelScroll}>
-	<UserButtonGroup users={$UserStore} on:toggleVisibility={handleToggleVisibility} on:openDropdown={handleOpenDropdown} />
+<div class="flex flex-1 flex-row justify-start items-center bg-[#f6f5f3] px-8 overflow-x-auto" data-tour="speakers" onwheel={handleWheelScroll}>
+	<UserButtonGroup users={$UserStore} ontoggleVisibility={(index) => toggleUserVisibility(index)} onopenDropdown={(index, event) => openDropdown(index, event)} />
 
 	{#each $UserStore as user, index}
 		<div id={`dropdown-${index}`} class="hidden bg-base-100 rounded-box p-2 shadow absolute" style="z-index: 9999;">
@@ -136,7 +129,7 @@
 							type="text"
 							class="input input-bordered input-sm w-full"
 							value={user.name}
-							on:change={(e) => handleNameChange(e, user, index)}
+							onchange={(e) => handleNameChange(e, user, index)}
 							placeholder="Speaker name"
 						/>
 					</div>

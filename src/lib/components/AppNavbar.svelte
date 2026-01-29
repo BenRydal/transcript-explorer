@@ -1,5 +1,4 @@
 <script lang="ts">
-	import { createEventDispatcher } from 'svelte';
 	import MdHelpOutline from 'svelte-icons/md/MdHelpOutline.svelte';
 	import MdCloudUpload from 'svelte-icons/md/MdCloudUpload.svelte';
 	import MdNoteAdd from 'svelte-icons/md/MdNoteAdd.svelte';
@@ -15,30 +14,46 @@
 	import MdKeyboard from 'svelte-icons/md/MdKeyboard.svelte';
 	import MdSchool from 'svelte-icons/md/MdSchool.svelte';
 	import MdAccountBalance from 'svelte-icons/md/MdAccountBalance.svelte';
-	import MdRecordVoiceOver from 'svelte-icons/md/MdRecordVoiceOver.svelte';
+	import MdMic from 'svelte-icons/md/MdMic.svelte';
 	import IconButton from './IconButton.svelte';
 	import ConfigStore from '../../stores/configStore';
 	import type { ConfigStoreType } from '../../stores/configStore';
 
-	const dispatch = createEventDispatcher<{
-		loadExample: string;
-		toggleEditor: void;
-		toggleVideo: void;
-		toggleTranscribeMode: void;
-		openUpload: void;
-		openHelp: void;
-		openSettings: void;
-		createNewTranscript: void;
-		wordSearch: string;
-		configChange: { key: keyof ConfigStoreType; value: number };
-	}>();
+	interface Props {
+		selectedExample?: string;
+		isEditorVisible?: boolean;
+		isVideoVisible?: boolean;
+		isVideoLoaded?: boolean;
+		onloadExample?: (exampleId: string) => void;
+		ontoggleEditor?: () => void;
+		ontoggleVideo?: () => void;
+		ontoggleTranscribeMode?: () => void;
+		onopenUpload?: () => void;
+		onopenHelp?: () => void;
+		onopenSettings?: () => void;
+		oncreateNewTranscript?: () => void;
+		onwordSearch?: (term: string) => void;
+		onconfigChange?: (data: { key: keyof ConfigStoreType; value: number }) => void;
+	}
 
-	export let selectedExample: string = '';
-	export let isEditorVisible: boolean = false;
-	export let isVideoVisible: boolean = false;
-	export let isVideoLoaded: boolean = false;
+	let {
+		selectedExample = '',
+		isEditorVisible = false,
+		isVideoVisible = false,
+		isVideoLoaded = false,
+		onloadExample,
+		ontoggleEditor,
+		ontoggleVideo,
+		ontoggleTranscribeMode,
+		onopenUpload,
+		onopenHelp,
+		onopenSettings,
+		oncreateNewTranscript,
+		onwordSearch,
+		onconfigChange,
+	}: Props = $props();
 
-	let mobileMenuOpen = false;
+	let mobileMenuOpen = $state(false);
 
 	const techniqueToggleOptions = ['distributionDiagramToggle', 'turnChartToggle', 'contributionCloudToggle', 'dashboardToggle'] as const;
 
@@ -59,10 +74,10 @@
 		{ value: 'example-3', label: '3rd Grade Discussion Odd/Even Numbers', icon: MdSchool },
 		{ value: 'example-4', label: '8th Grade Science Lesson', icon: MdSchool },
 		{ value: 'example-2', label: 'Family Gallery Visit', icon: MdAccountBalance },
-		{ value: 'example-5', label: 'Biden-Trump 2020 Debate', icon: MdRecordVoiceOver }
+		{ value: 'example-5', label: 'Biden-Trump 2020 Debate', icon: MdMic }
 	];
 
-	$: visibleInteractions = $ConfigStore.dashboardToggle
+	let visibleInteractions = $derived($ConfigStore.dashboardToggle
 		? allInteractions
 		: $ConfigStore.distributionDiagramToggle
 			? distributionDiagramInteractions
@@ -70,12 +85,12 @@
 				? turnChartInteractions
 				: $ConfigStore.contributionCloudToggle
 					? contributionCloudInteractions
-					: allInteractions;
+					: allInteractions);
 
-	$: showRepeatedWordsSlider = $ConfigStore.contributionCloudToggle || $ConfigStore.dashboardToggle;
+	let showRepeatedWordsSlider = $derived($ConfigStore.contributionCloudToggle || $ConfigStore.dashboardToggle);
 
-	$: activeVisualization = techniqueToggleOptions.find((t) => $ConfigStore[t]) || '';
-	$: activeVisualizationName = activeVisualization ? formatToggleName(activeVisualization) : 'Select';
+	let activeVisualization = $derived(techniqueToggleOptions.find((t) => $ConfigStore[t]) || '');
+	let activeVisualizationName = $derived(activeVisualization ? formatToggleName(activeVisualization) : 'Select');
 
 	function formatToggleName(toggle: string) {
 		return toggle
@@ -104,16 +119,16 @@
 
 	function handleConfigChangeFromInput(e: Event, key: keyof ConfigStoreType) {
 		const target = e.target as HTMLInputElement;
-		dispatch('configChange', { key, value: parseFloat(target.value) });
+		onconfigChange?.({ key, value: parseFloat(target.value) });
 	}
 
 	function handleWordSearch(event: Event) {
 		const target = event.target as HTMLInputElement;
-		dispatch('wordSearch', target.value.trim());
+		onwordSearch?.(target.value.trim());
 	}
 
 	function loadExample(exampleId: string) {
-		dispatch('loadExample', exampleId);
+		onloadExample?.(exampleId);
 	}
 
 	function truncateExample(name: string): string {
@@ -144,7 +159,7 @@
 	</div>
 
 	<!-- Mobile hamburger button -->
-	<button class="btn btn-ghost xl:hidden" on:click={() => (mobileMenuOpen = !mobileMenuOpen)} aria-label="Toggle menu">
+	<button class="btn btn-ghost xl:hidden" onclick={() => (mobileMenuOpen = !mobileMenuOpen)} aria-label="Toggle menu">
 		<div class="w-6 h-6">
 			{#if mobileMenuOpen}
 				<MdClose />
@@ -169,13 +184,14 @@
 			</summary>
 			<ul class="menu dropdown-content rounded-box z-[1] w-56 p-2 shadow bg-base-100 max-h-[60vh] overflow-y-auto overflow-x-hidden">
 				{#each exampleOptions as item}
+					{@const Icon = item.icon}
 					<li class="w-full">
 						<button
-							on:click={() => loadExample(item.value)}
+							onclick={() => loadExample(item.value)}
 							class="text-sm w-full flex items-center gap-2 {selectedExample === item.label ? 'active' : ''}"
 							title={item.label}
 						>
-							<div class="w-4 h-4 flex-shrink-0"><svelte:component this={item.icon} /></div>
+							<div class="w-4 h-4 flex-shrink-0"><Icon /></div>
 							<span class="block truncate">{item.label}</span>
 						</button>
 					</li>
@@ -202,7 +218,7 @@
 				<ul class="menu dropdown-content rounded-box z-[1] w-52 p-2 shadow bg-base-100">
 					{#each techniqueToggleOptions as toggle}
 						<li>
-							<button on:click={() => toggleSelection(toggle, techniqueToggleOptions)} class="w-full text-left flex items-center">
+							<button onclick={() => toggleSelection(toggle, techniqueToggleOptions)} class="w-full text-left flex items-center">
 								<div class="w-4 h-4 mr-2">
 									{#if $ConfigStore[toggle]}
 										<MdCheck />
@@ -229,7 +245,7 @@
 				<ul class="menu dropdown-content rounded-box z-[1] w-52 p-2 shadow bg-base-100">
 					{#each visibleInteractions as toggle}
 						<li>
-							<button on:click={() => toggleSelectionOnly(toggle)} class="w-full text-left flex items-center">
+							<button onclick={() => toggleSelectionOnly(toggle)} class="w-full text-left flex items-center">
 								<div class="w-4 h-4 mr-2">
 									{#if $ConfigStore[toggle]}
 										<MdCheck />
@@ -252,12 +268,12 @@
 								max="30"
 								value={$ConfigStore.repeatWordSliderValue}
 								class="range"
-								on:input={(e) => handleConfigChangeFromInput(e, 'repeatWordSliderValue')}
+								oninput={(e) => handleConfigChangeFromInput(e, 'repeatWordSliderValue')}
 							/>
 						</li>
 					{/if}
 					<hr class="my-4 border-t border-gray-300" />
-					<input type="text" placeholder="Search conversations..." on:input={handleWordSearch} class="input input-bordered w-full" />
+					<input type="text" placeholder="Search conversations..." oninput={handleWordSearch} class="input input-bordered w-full" />
 				</ul>
 			</details>
 		</div>
@@ -269,7 +285,7 @@
 		<div class="flex items-center gap-1">
 			<button
 				class="btn btn-sm gap-1 {isEditorVisible ? 'btn-primary' : ''}"
-				on:click={() => dispatch('toggleEditor')}
+				onclick={() => ontoggleEditor?.()}
 				title={isEditorVisible ? 'Hide Editor' : 'Show Editor'}
 			>
 				<div class="w-4 h-4">
@@ -279,7 +295,7 @@
 			</button>
 			<button
 				class="btn btn-sm btn-square {isVideoVisible ? 'btn-primary' : ''}"
-				on:click={() => dispatch('toggleVideo')}
+				onclick={() => ontoggleVideo?.()}
 				title={isVideoVisible ? 'Hide Video' : 'Show Video'}
 				disabled={!isVideoLoaded}
 			>
@@ -299,7 +315,7 @@
 		<!-- Transcribe Mode -->
 		<button
 			class="btn btn-sm gap-1 btn-outline border-gray-400 hover:bg-gray-100 hover:border-gray-500 disabled:opacity-50 disabled:cursor-not-allowed"
-			on:click={() => dispatch('toggleTranscribeMode')}
+			onclick={() => ontoggleTranscribeMode?.()}
 			title={isVideoLoaded ? 'Enter Transcribe Mode - focused video transcription workflow' : 'Load a video to enable Transcribe Mode'}
 			disabled={!isVideoLoaded}
 		>
@@ -314,10 +330,10 @@
 
 		<!-- File & Settings Group -->
 		<div class="flex items-center gap-1">
-			<IconButton icon={MdCloudUpload} tooltip={'Upload Files'} on:click={() => dispatch('openUpload')} />
-			<IconButton icon={MdNoteAdd} tooltip={'Create New Transcript'} on:click={() => dispatch('createNewTranscript')} />
-			<IconButton icon={MdHelpOutline} tooltip={'Help'} on:click={() => dispatch('openHelp')} />
-			<IconButton icon={MdSettings} tooltip={'Settings'} on:click={() => dispatch('openSettings')} />
+			<IconButton icon={MdCloudUpload} tooltip={'Upload Files'} onclick={() => onopenUpload?.()} />
+			<IconButton icon={MdNoteAdd} tooltip={'Create New Transcript'} onclick={() => oncreateNewTranscript?.()} />
+			<IconButton icon={MdHelpOutline} tooltip={'Help'} onclick={() => onopenHelp?.()} />
+			<IconButton icon={MdSettings} tooltip={'Settings'} onclick={() => onopenSettings?.()} />
 		</div>
 	</div>
 </div>
@@ -331,7 +347,7 @@
 				<p class="text-xs uppercase tracking-wider text-gray-500 mb-2">Example Data</p>
 				<select
 					class="select select-bordered w-full"
-					on:change={(e) => {
+					onchange={(e) => {
 						loadExample(e.currentTarget.value);
 						mobileMenuOpen = false;
 					}}
@@ -350,7 +366,7 @@
 					{#each techniqueToggleOptions as toggle}
 						<button
 							class="btn btn-sm {$ConfigStore[toggle] ? 'btn-primary' : 'btn-ghost'}"
-							on:click={() => {
+							onclick={() => {
 								toggleSelection(toggle, techniqueToggleOptions);
 								mobileMenuOpen = false;
 							}}
@@ -366,7 +382,7 @@
 				<p class="text-xs uppercase tracking-wider text-gray-500 mb-2">Options</p>
 				<div class="flex flex-wrap gap-2">
 					{#each visibleInteractions as toggle}
-						<button class="btn btn-sm {$ConfigStore[toggle] ? 'btn-primary' : 'btn-ghost'}" on:click={() => toggleSelectionOnly(toggle)}>
+						<button class="btn btn-sm {$ConfigStore[toggle] ? 'btn-primary' : 'btn-ghost'}" onclick={() => toggleSelectionOnly(toggle)}>
 							{formatToggleName(toggle)}
 						</button>
 					{/each}
@@ -381,11 +397,11 @@
 							max="30"
 							value={$ConfigStore.repeatWordSliderValue}
 							class="range range-sm w-full"
-							on:input={(e) => handleConfigChangeFromInput(e, 'repeatWordSliderValue')}
+							oninput={(e) => handleConfigChangeFromInput(e, 'repeatWordSliderValue')}
 						/>
 					</div>
 				{/if}
-				<input type="text" placeholder="Search conversations..." on:input={handleWordSearch} class="input input-bordered input-sm w-full mt-2" />
+				<input type="text" placeholder="Search conversations..." oninput={handleWordSearch} class="input input-bordered input-sm w-full mt-2" />
 			</div>
 
 			<!-- Quick Actions -->
@@ -394,8 +410,8 @@
 				<div class="flex flex-wrap gap-2">
 					<button
 						class="btn btn-sm {isEditorVisible ? 'btn-primary' : 'btn-ghost'}"
-						on:click={() => {
-							dispatch('toggleEditor');
+						onclick={() => {
+							ontoggleEditor?.();
 							mobileMenuOpen = false;
 						}}
 					>
@@ -404,8 +420,8 @@
 					</button>
 					<button
 						class="btn btn-sm {isVideoVisible ? 'btn-primary' : 'btn-ghost'}"
-						on:click={() => {
-							dispatch('toggleVideo');
+						onclick={() => {
+							ontoggleVideo?.();
 							mobileMenuOpen = false;
 						}}
 						disabled={!isVideoLoaded}
@@ -421,8 +437,8 @@
 					</button>
 					<button
 						class="btn btn-sm btn-outline border-gray-400 disabled:opacity-50"
-						on:click={() => {
-							dispatch('toggleTranscribeMode');
+						onclick={() => {
+							ontoggleTranscribeMode?.();
 							mobileMenuOpen = false;
 						}}
 						disabled={!isVideoLoaded}
@@ -432,8 +448,8 @@
 					</button>
 					<button
 						class="btn btn-sm btn-ghost"
-						on:click={() => {
-							dispatch('openUpload');
+						onclick={() => {
+							onopenUpload?.();
 							mobileMenuOpen = false;
 						}}
 					>
@@ -442,8 +458,8 @@
 					</button>
 					<button
 						class="btn btn-sm btn-ghost"
-						on:click={() => {
-							dispatch('createNewTranscript');
+						onclick={() => {
+							oncreateNewTranscript?.();
 							mobileMenuOpen = false;
 						}}
 					>
@@ -452,8 +468,8 @@
 					</button>
 					<button
 						class="btn btn-sm btn-ghost"
-						on:click={() => {
-							dispatch('openHelp');
+						onclick={() => {
+							onopenHelp?.();
 							mobileMenuOpen = false;
 						}}
 					>
@@ -462,8 +478,8 @@
 					</button>
 					<button
 						class="btn btn-sm btn-ghost"
-						on:click={() => {
-							dispatch('openSettings');
+						onclick={() => {
+							onopenSettings?.();
 							mobileMenuOpen = false;
 						}}
 					>

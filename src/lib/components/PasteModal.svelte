@@ -1,5 +1,5 @@
 <script lang="ts">
-	import { createEventDispatcher, onDestroy, tick } from 'svelte';
+	import { onDestroy, tick } from 'svelte';
 	import {
 		parseTranscriptText,
 		mergeSameSpeakerTurns,
@@ -11,23 +11,24 @@
 	import { toTitleCase } from '$lib/core/string-utils';
 	import { formatTimeAuto } from '$lib/core/time-utils';
 
-	export let isOpen = false;
+	interface Props {
+		isOpen: boolean;
+		onimport?: (result: ParseResult) => void;
+	}
 
-	const dispatch = createEventDispatcher<{
-		import: ParseResult;
-	}>();
+	let { isOpen = $bindable(false), onimport }: Props = $props();
 
-	let inputText = '';
-	let selectedFormat: DetectedFormat | 'auto' = 'auto';
-	let mergeSameSpeaker = false;
-	let parseResult: ParseResult | null = null;
-	let debounceTimer: ReturnType<typeof setTimeout> | null = null;
+	let inputText = $state('');
+	let selectedFormat: DetectedFormat | 'auto' = $state('auto');
+	let mergeSameSpeaker = $state(false);
+	let parseResult: ParseResult | null = $state(null);
+	let debounceTimer: ReturnType<typeof setTimeout> | null = $state(null);
 	let textareaRef: HTMLTextAreaElement;
 
 	// Track last parsed state for debounce optimization
-	let lastParsedInput = '';
-	let lastParsedFormat: DetectedFormat | 'auto' = 'auto';
-	let lastParsedMerge = false;
+	let lastParsedInput = $state('');
+	let lastParsedFormat: DetectedFormat | 'auto' = $state('auto');
+	let lastParsedMerge = $state(false);
 
 	function clearDebounce() {
 		if (debounceTimer) {
@@ -38,9 +39,11 @@
 
 	onDestroy(clearDebounce);
 
-	$: if (isOpen) {
-		tick().then(() => textareaRef?.focus());
-	}
+	$effect(() => {
+		if (isOpen) {
+			tick().then(() => textareaRef?.focus());
+		}
+	});
 
 	function doParse() {
 		if (!inputText.trim()) {
@@ -57,7 +60,7 @@
 	}
 
 	// Debounce text changes; parse immediately on option changes
-	$: {
+	$effect(() => {
 		const textChanged = inputText !== lastParsedInput;
 		const optionsChanged = selectedFormat !== lastParsedFormat || mergeSameSpeaker !== lastParsedMerge;
 
@@ -68,7 +71,7 @@
 		} else if (textChanged) {
 			debounceTimer = setTimeout(doParse, 200);
 		}
-	}
+	});
 
 	function handleKeydown(e: KeyboardEvent) {
 		if (e.key === 'Escape') close();
@@ -88,7 +91,7 @@
 
 	function handleImport() {
 		if (parseResult?.turns.length) {
-			dispatch('import', parseResult);
+			onimport?.(parseResult);
 			close();
 		}
 	}
@@ -99,11 +102,11 @@
 </script>
 
 {#if isOpen}
-	<div class="modal modal-open" on:click|self={close} on:keydown={handleKeydown} role="dialog" aria-modal="true" aria-labelledby="paste-modal-title">
+	<div class="modal modal-open" onclick={(e) => { if (e.target === e.currentTarget) close(); }} onkeydown={handleKeydown} role="dialog" aria-modal="true" aria-labelledby="paste-modal-title">
 		<div class="modal-box w-11/12 max-w-2xl max-h-[90vh] flex flex-col">
 			<div class="flex justify-between mb-4">
 				<h3 id="paste-modal-title" class="font-bold text-lg">Paste Transcript Text</h3>
-				<button class="btn btn-circle btn-sm" on:click={close}>
+				<button class="btn btn-circle btn-sm" onclick={close}>
 					<svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
 						<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
 					</svg>
@@ -211,8 +214,8 @@ With timestamps:
 			{/if}
 
 			<div class="modal-action flex-shrink-0">
-				<button class="btn" on:click={close}>Cancel</button>
-				<button class="btn btn-primary" on:click={handleImport} disabled={!parseResult?.turns.length}> Import </button>
+				<button class="btn" onclick={close}>Cancel</button>
+				<button class="btn btn-primary" onclick={handleImport} disabled={!parseResult?.turns.length}> Import </button>
 			</div>
 		</div>
 	</div>

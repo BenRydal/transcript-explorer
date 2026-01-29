@@ -1,21 +1,40 @@
 <script lang="ts">
-	import { createEventDispatcher, onMount, onDestroy } from 'svelte';
+	import { onDestroy } from 'svelte';
+	import type { Snippet } from 'svelte';
 
-	export let orientation: 'horizontal' | 'vertical' = 'vertical';
-	export let sizes: [number, number] = [60, 40];
-	export let minSize: number = 100; // minimum panel size in pixels
-	export let collapsed: boolean = false;
-	export let collapsedPanel: 'first' | 'second' = 'second';
+	interface Props {
+		orientation?: 'horizontal' | 'vertical';
+		sizes?: [number, number];
+		minSize?: number;
+		collapsed?: boolean;
+		collapsedPanel?: 'first' | 'second';
+		first?: Snippet;
+		second?: Snippet;
+		ondragstart?: () => void;
+		ondragend?: () => void;
+		onresize?: (data: { sizes: [number, number] }) => void;
+	}
 
-	const dispatch = createEventDispatcher();
+	let {
+		orientation = 'vertical',
+		sizes = $bindable<[number, number]>([60, 40]),
+		minSize = 100,
+		collapsed = false,
+		collapsedPanel = 'second',
+		first,
+		second,
+		ondragstart,
+		ondragend,
+		onresize
+	}: Props = $props();
 
 	let container: HTMLElement;
-	let isDragging = false;
-	let startPos = 0;
-	let startSizes: [number, number] = [...sizes];
+	let isDragging = $state(false);
+	let startPos = $state(0);
+	let startSizes: [number, number] = $state([...sizes]);
 
-	$: flexDirection = orientation === 'vertical' ? 'column' : 'row';
-	$: cursorStyle = orientation === 'vertical' ? 'row-resize' : 'col-resize';
+	let flexDirection = $derived(orientation === 'vertical' ? 'column' : 'row');
+	let cursorStyle = $derived(orientation === 'vertical' ? 'row-resize' : 'col-resize');
 
 	function getContainerSize(): number {
 		if (!container) return 0;
@@ -31,7 +50,7 @@
 		document.addEventListener('mouseup', handleMouseUp);
 		document.body.style.cursor = cursorStyle;
 		document.body.style.userSelect = 'none';
-		dispatch('dragstart');
+		ondragstart?.();
 	}
 
 	function handleMouseMove(event: MouseEvent) {
@@ -60,7 +79,7 @@
 		}
 
 		sizes = [newFirstSize, newSecondSize];
-		dispatch('resize', { sizes });
+		onresize?.({ sizes });
 	}
 
 	function handleMouseUp() {
@@ -69,7 +88,7 @@
 		document.removeEventListener('mouseup', handleMouseUp);
 		document.body.style.cursor = '';
 		document.body.style.userSelect = '';
-		dispatch('dragend');
+		ondragend?.();
 	}
 
 	function handleKeyDown(event: KeyboardEvent) {
@@ -98,7 +117,7 @@
 
 		if (newSizes[0] !== sizes[0]) {
 			sizes = newSizes;
-			dispatch('resize', { sizes });
+			onresize?.({ sizes });
 		}
 	}
 
@@ -115,7 +134,7 @@
 		class="split-pane-panel first-panel"
 		style="{orientation === 'vertical' ? 'height' : 'width'}: {collapsed && collapsedPanel === 'first' ? '0%' : collapsed ? '100%' : sizes[0] + '%'};"
 	>
-		<slot name="first" />
+		{@render first?.()}
 	</div>
 
 	{#if !collapsed}
@@ -130,10 +149,10 @@
 			aria-valuenow={Math.round(sizes[0])}
 			aria-valuemin="10"
 			aria-valuemax="90"
-			on:mousedown={handleMouseDown}
-			on:keydown={handleKeyDown}
+			onmousedown={handleMouseDown}
+			onkeydown={handleKeyDown}
 		>
-			<div class="divider-handle" />
+			<div class="divider-handle"></div>
 		</div>
 	{/if}
 
@@ -145,7 +164,7 @@
 				? '100%'
 				: sizes[1] + '%'};"
 	>
-		<slot name="second" />
+		{@render second?.()}
 	</div>
 </div>
 

@@ -1,13 +1,14 @@
 <script lang="ts">
-	import { createEventDispatcher } from 'svelte';
 	import MdClose from 'svelte-icons/md/MdClose.svelte';
 	import MdKeyboard from 'svelte-icons/md/MdKeyboard.svelte';
 
-	const dispatch = createEventDispatcher<{
-		exit: void;
-	}>();
+	interface Props {
+		onexit?: () => void;
+	}
 
-	let showShortcuts = false;
+	let { onexit }: Props = $props();
+
+	let showShortcuts = $state(false);
 </script>
 
 <div class="transcribe-toolbar">
@@ -21,7 +22,7 @@
 	<div class="toolbar-center">
 		<button
 			class="shortcuts-hint"
-			on:click={() => (showShortcuts = !showShortcuts)}
+			onclick={() => (showShortcuts = !showShortcuts)}
 			aria-expanded={showShortcuts}
 		>
 			Keyboard Shortcuts
@@ -32,7 +33,7 @@
 	</div>
 
 	<div class="toolbar-right">
-		<button class="exit-btn" on:click={() => dispatch('exit')} title="Exit Transcribe Mode (Esc)">
+		<button class="exit-btn" onclick={() => onexit?.()} title="Exit Transcribe Mode (Esc)">
 			<div class="icon"><MdClose /></div>
 			Exit
 		</button>

@@ -1,25 +1,25 @@
 <script lang="ts">
-	import { createEventDispatcher } from 'svelte';
 	import type { TranscriptionProgress, TranscriptionResult } from '$lib/core/transcription-service';
 	import { transcribeVideo } from '$lib/core/transcription-service';
 
-	export let isOpen = false;
-	export let videoFile: File | null = null;
-	export let videoDuration: number = 0;
+	interface Props {
+		isOpen?: boolean;
+		videoFile?: File | null;
+		videoDuration?: number;
+		onclose?: () => void;
+		oncomplete?: (result: TranscriptionResult) => void;
+	}
 
-	const dispatch = createEventDispatcher<{
-		close: void;
-		complete: TranscriptionResult;
-	}>();
+	let { isOpen = $bindable(false), videoFile = null, videoDuration = 0, onclose, oncomplete }: Props = $props();
 
-	let progress: TranscriptionProgress = {
+	let progress: TranscriptionProgress = $state({
 		status: 'loading-model',
 		progress: 0,
 		message: 'Ready to transcribe'
-	};
+	});
 
-	let isTranscribing = false;
-	let error: string | null = null;
+	let isTranscribing = $state(false);
+	let error: string | null = $state(null);
 
 	async function startTranscription() {
 		if (!videoFile) return;
@@ -32,7 +32,7 @@
 				progress = p;
 			});
 
-			dispatch('complete', result);
+			oncomplete?.(result);
 			isOpen = false;
 		} catch (err) {
 			error = err instanceof Error ? err.message : 'Transcription failed';
@@ -42,7 +42,7 @@
 
 	function handleClose() {
 		if (!isTranscribing) {
-			dispatch('close');
+			onclose?.();
 			isOpen = false;
 		}
 	}
@@ -51,8 +51,8 @@
 {#if isOpen}
 	<div
 		class="modal modal-open"
-		on:click|self={handleClose}
-		on:keydown={(e) => {
+		onclick={(e) => { if (e.target === e.currentTarget) handleClose(); }}
+		onkeydown={(e) => {
 			if (e.key === 'Escape' && !isTranscribing) handleClose();
 		}}
 	>
@@ -60,7 +60,7 @@
 			<div class="flex justify-between items-center mb-6">
 				<h3 class="font-bold text-xl">🎙️ Auto-Transcribe Video</h3>
 				{#if !isTranscribing}
-					<button class="btn btn-circle btn-sm" on:click={handleClose}>
+					<button class="btn btn-circle btn-sm" onclick={handleClose}>
 						<svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
 							<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
 						</svg>
@@ -99,8 +99,8 @@
 
 			<div class="modal-action">
 				{#if !isTranscribing}
-					<button class="btn btn-ghost" on:click={handleClose}>Cancel</button>
-					<button class="btn btn-primary" on:click={startTranscription} disabled={!videoFile}> Start Transcription </button>
+					<button class="btn btn-ghost" onclick={handleClose}>Cancel</button>
+					<button class="btn btn-primary" onclick={startTranscription} disabled={!videoFile}> Start Transcription </button>
 				{/if}
 			</div>
 		</div>

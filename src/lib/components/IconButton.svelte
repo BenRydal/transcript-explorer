@@ -1,16 +1,27 @@
 <script lang="ts">
-	import { createEventDispatcher } from 'svelte';
+	import type { Component } from 'svelte';
 
-	export let icon: ConstructorOfATypedSvelteComponent;
-	export let tooltip: string = '';
-	export let id: string = '';
-	export let disabled: boolean = false;
+	interface Props {
+		icon: Component;
+		tooltip?: string;
+		id?: string;
+		disabled?: boolean;
+		onclick?: (e: MouseEvent) => void;
+		onkeydown?: (e: KeyboardEvent) => void;
+	}
 
-	const dispatch = createEventDispatcher();
+	let {
+		icon: Icon,
+		tooltip = '',
+		id = '',
+		disabled = false,
+		onclick,
+		onkeydown
+	}: Props = $props();
 
 	function handleClick(e: MouseEvent) {
 		if (!disabled) {
-			dispatch('click', e);
+			onclick?.(e);
 		}
 	}
 </script>
@@ -23,8 +34,8 @@
 	role="button"
 	tabindex={disabled ? -1 : 0}
 	{id}
-	on:click={handleClick}
-	on:keydown
+	onclick={handleClick}
+	{onkeydown}
 >
-	<svelte:component this={icon} />
+	<Icon />
 </div>

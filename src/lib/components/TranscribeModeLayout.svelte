@@ -1,5 +1,5 @@
 <script lang="ts">
-	import { onMount, onDestroy, createEventDispatcher } from 'svelte';
+	import { onMount, onDestroy } from 'svelte';
 	import { browser } from '$app/environment';
 	import VideoStore, { setCurrentTime, togglePlayPause } from '../../stores/videoStore';
 	import TranscriptStore from '../../stores/transcriptStore';
@@ -11,50 +11,56 @@
 	import VideoPlayerComponent from './VideoPlayer.svelte';
 	import VideoControls from './VideoControls.svelte';
 
-	const dispatch = createEventDispatcher<{
-		exit: void;
-		createTranscript: void;
-	}>();
+	interface Props {
+		onexit?: () => void;
+		oncreateTranscript?: () => void;
+	}
 
-	let player: VideoPlayer | null = null;
-	let panelSizes: [number, number] = [50, 50];
-	let prevIsPlaying: boolean | null = null;
-	let isDraggingDivider = false;
+	let { onexit, oncreateTranscript }: Props = $props();
+
+	let player: VideoPlayer | null = $state(null);
+	let panelSizes: [number, number] = $state<[number, number]>([50, 50]);
+	let prevIsPlaying: boolean | null = $state<boolean | null>(null);
+	let isDraggingDivider = $state(false);
 
 	const SKIP_SECONDS = 5;
 
-	$: isPlaying = $VideoStore.isPlaying;
-	$: currentTime = $VideoStore.currentTime;
-	$: duration = $VideoStore.duration;
+	let isPlaying = $derived($VideoStore.isPlaying);
+	let currentTime = $derived($VideoStore.currentTime);
+	let duration = $derived($VideoStore.duration);
 
 	// Sync playback state with player
-	$: if (player && browser && $VideoStore.isLoaded) {
-		if (isPlaying !== prevIsPlaying) {
-			if (isPlaying) {
-				playVideo(player);
-			} else if (prevIsPlaying === true) {
-				pauseVideo(player);
+	$effect(() => {
+		if (player && browser && $VideoStore.isLoaded) {
+			if (isPlaying !== prevIsPlaying) {
+				if (isPlaying) {
+					playVideo(player);
+				} else if (prevIsPlaying === true) {
+					pauseVideo(player);
+				}
+				prevIsPlaying = isPlaying;
 			}
-			prevIsPlaying = isPlaying;
 		}
-	}
+	});
 
 	// Sync editor selection with video time (only for timed transcripts)
-	let prevSyncedTurn: number | null = null;
-	$: if ($TranscriptStore.timingMode !== 'untimed') {
-		const turn = findTurnAtTime(currentTime, $TranscriptStore.wordArray);
-		if (turn !== null && turn !== prevSyncedTurn) {
-			prevSyncedTurn = turn;
-			EditorStore.update((state) => ({
-				...state,
-				selection: {
-					...state.selection,
-					selectedTurnNumber: turn,
-					selectionSource: 'video'
-				}
-			}));
+	let prevSyncedTurn: number | null = $state<number | null>(null);
+	$effect(() => {
+		if ($TranscriptStore.timingMode !== 'untimed') {
+			const turn = findTurnAtTime(currentTime, $TranscriptStore.wordArray);
+			if (turn !== null && turn !== prevSyncedTurn) {
+				prevSyncedTurn = turn;
+				EditorStore.update((state) => ({
+					...state,
+					selection: {
+						...state.selection,
+						selectedTurnNumber: turn,
+						selectionSource: 'video'
+					}
+				}));
+			}
 		}
-	}
+	});
 
 	function findTurnAtTime(time: number, wordArray: { startTime: number; endTime: number; turnNumber: number }[]): number | null {
 		let fallbackTurn: number | null = null;
@@ -70,13 +76,13 @@
 		return fallbackTurn;
 	}
 
-	function handlePlayerReady(event: CustomEvent<{ player: VideoPlayer; duration: number }>) {
-		player = event.detail.player;
+	function handlePlayerReady(data: { player: VideoPlayer; duration: number }) {
+		player = data.player;
 		prevIsPlaying = isPlaying;
 	}
 
-	function handlePanelResize(event: CustomEvent<{ sizes: [number, number] }>) {
-		panelSizes = event.detail.sizes;
+	function handlePanelResize(data: { sizes: [number, number] }) {
+		panelSizes = data.sizes;
 	}
 
 	// Keyboard shortcuts for transcription
@@ -84,7 +90,7 @@
 		// Escape always exits transcribe mode
 		if (event.key === 'Escape') {
 			event.preventDefault();
-			dispatch('exit');
+			onexit?.();
 			return;
 		}
 
@@ -137,28 +143,32 @@
 </script>
 
 <div class="transcribe-mode-layout">
-	<TranscribeModeToolbar on:exit={() => dispatch('exit')} />
+	<TranscribeModeToolbar onexit={() => onexit?.()} />
 
 	<div class="transcribe-content">
 		<SplitPane
 			orientation="horizontal"
 			sizes={panelSizes}
 			minSize={200}
-			on:resize={handlePanelResize}
-			on:dragstart={() => (isDraggingDivider = true)}
-			on:dragend={() => (isDraggingDivider = false)}
+			onresize={handlePanelResize}
+			ondragstart={() => (isDraggingDivider = true)}
+			ondragend={() => (isDraggingDivider = false)}
 		>
-			<div slot="first" class="video-panel" class:dragging={isDraggingDivider}>
-				<div class="video-wrapper">
-					<VideoPlayerComponent on:ready={handlePlayerReady} />
+			{#snippet first()}
+				<div class="video-panel" class:dragging={isDraggingDivider}>
+					<div class="video-wrapper">
+						<VideoPlayerComponent onready={handlePlayerReady} />
+					</div>
+					<div class="video-controls-wrapper">
+						<VideoControls {player} isFullscreen={false} showAdvancedControls={true} />
+					</div>
 				</div>
-				<div class="video-controls-wrapper">
-					<VideoControls {player} isFullscreen={false} showAdvancedControls={true} />
+			{/snippet}
+			{#snippet second()}
+				<div class="editor-panel">
+					<TranscriptEditor oncreateTranscript={() => oncreateTranscript?.()} />
 				</div>
-			</div>
-			<div slot="second" class="editor-panel">
-				<TranscriptEditor on:createTranscript={() => dispatch('createTranscript')} />
-			</div>
+			{/snippet}
 		</SplitPane>
 	</div>
 </div>
