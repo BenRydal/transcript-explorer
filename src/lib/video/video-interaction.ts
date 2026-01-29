@@ -28,12 +28,14 @@ export function handleVisualizationClick(): void {
 	}
 
 	const config = get(ConfigStore);
-	const { firstWordOfTurnSelectedInTurnChart, selectedWordFromContributionCloud, arrayOfFirstWords } = config;
+	const { firstWordOfTurnSelectedInTurnChart, selectedWordFromContributionCloud, hoveredPetalData, arrayOfFirstWords } = config;
 
 	if (firstWordOfTurnSelectedInTurnChart) {
 		playFrom(firstWordOfTurnSelectedInTurnChart);
 	} else if (selectedWordFromContributionCloud) {
 		playFrom(selectedWordFromContributionCloud);
+	} else if (hoveredPetalData) {
+		playFrom(hoveredPetalData.firstDataPoint);
 	} else if (arrayOfFirstWords?.length) {
 		playSnippets(arrayOfFirstWords);
 	}

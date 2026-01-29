@@ -11,6 +11,7 @@
  */
 
 import type p5 from 'p5';
+import type { DataPoint } from '../../models/dataPoint';
 
 // ============================================================================
 // CONFIGURATION CONSTANTS
@@ -54,7 +55,6 @@ const LEAF_INNER_CURVE = 1.5;
 const LEAF_VEIN_COUNT = 4;
 
 // Petal configuration
-const NUM_PETALS = 11;
 const GRADIENT_STEPS = 6;
 const PETAL_LENGTH_SCALE = 52;
 const PETAL_WIDTH_SCALE = 18;
@@ -86,27 +86,215 @@ const MIN_SCALE_FOR_CENTER_DOTS = 0.35;
 const CENTER_DOT_BASE_COUNT = 8;
 const MIN_SCALE_FOR_PETAL_VEINS = 0.4;
 
+// Adaptive petal clustering
+const MAX_PETALS = 10;
+const CLUSTER_THRESHOLD = 11;
+const MIN_DISPLAY_PETALS = 7; // Always show at least this many petals for visual appeal
+const PREVIEW_WORD_COUNT = 6;
+
+// Decorative (empty) petal colors
+const EMPTY_PETAL_COLOR = { r: 180, g: 180, b: 180 };
+const EMPTY_PETAL_ALPHA = 40;
+
+/** A single petal's data — one turn or a cluster of consecutive turns */
+export interface PetalData {
+	turnNumbers: number[];
+	wordCount: number;
+	firstDataPoint: DataPoint;
+	previewText: string;
+	isClustered: boolean;
+}
+
+/** Hit zone geometry for a single petal */
+interface PetalHitZone {
+	angleStart: number;
+	angleEnd: number;
+	outerRadius: number;
+	innerRadius: number;
+	petalData: PetalData;
+}
+
+/** Returned from drawFlower for hit detection */
+export interface FlowerHitData {
+	centerX: number;
+	centerY: number;
+	petals: PetalHitZone[];
+	overallRadius: number;
+}
+
 export interface FlowerParams {
 	xPos: number;
 	yPos: number;
 	bottomY: number;
 	scaledWordArea: number;
 	color: p5.Color;
+	turnData: PetalData[];
+	hoveredPetalIndex?: number | null;
 }
 
 /**
- * Draws a complete flower visualization including stalk, leaves, and petals.
+ * Groups a speaker's words into petal data — one petal per turn,
+ * or clustered consecutive turns when turn count exceeds CLUSTER_THRESHOLD.
+ */
+export function buildPetalData(turnArray: DataPoint[]): PetalData[] {
+	// Group words by turnNumber, preserving chronological order
+	const turnMap = new Map<number, DataPoint[]>();
+	const turnOrder: number[] = [];
+
+	for (const dp of turnArray) {
+		if (!turnMap.has(dp.turnNumber)) {
+			turnMap.set(dp.turnNumber, []);
+			turnOrder.push(dp.turnNumber);
+		}
+		turnMap.get(dp.turnNumber)!.push(dp);
+	}
+
+	const turns = turnOrder.map((tn) => ({
+		turnNumber: tn,
+		words: turnMap.get(tn)!
+	}));
+
+	if (turns.length === 0) return [];
+
+	if (turns.length < CLUSTER_THRESHOLD) {
+		// One petal per turn
+		return turns.map((t) => ({
+			turnNumbers: [t.turnNumber],
+			wordCount: t.words.length,
+			firstDataPoint: t.words[0],
+			previewText: t.words.slice(0, PREVIEW_WORD_COUNT).map((w) => w.word).join(' '),
+			isClustered: false
+		}));
+	}
+
+	// Cluster consecutive turns into ~MAX_PETALS groups
+	const targetClusters = Math.min(MAX_PETALS, Math.ceil(turns.length / 2));
+	const turnsPerCluster = Math.ceil(turns.length / targetClusters);
+	const petals: PetalData[] = [];
+
+	for (let i = 0; i < turns.length; i += turnsPerCluster) {
+		const chunk = turns.slice(i, i + turnsPerCluster);
+		const allWords = chunk.flatMap((t) => t.words);
+		const turnNumbers = chunk.map((t) => t.turnNumber);
+
+		petals.push({
+			turnNumbers,
+			wordCount: allWords.length,
+			firstDataPoint: chunk[0].words[0],
+			previewText:
+				chunk.length === 1
+					? chunk[0].words.slice(0, PREVIEW_WORD_COUNT).map((w) => w.word).join(' ')
+					: `${chunk.length} turns (${allWords.length} words)`,
+			isClustered: chunk.length > 1
+		});
+	}
+
+	return petals;
+}
+
+/**
+ * Draws a complete flower visualization including stalk, leaves, and data-driven petals.
  */
 export function drawFlower(sk: p5, params: FlowerParams): void {
-	const { xPos, yPos, bottomY, scaledWordArea, color } = params;
+	const { xPos, yPos, bottomY, scaledWordArea, color, turnData, hoveredPetalIndex } = params;
 	const scaleFactor = scaledWordArea / 100;
 
 	drawStalk(sk, scaleFactor, xPos, yPos, bottomY);
 
 	sk.push();
 	sk.translate(xPos, yPos);
-	drawPetals(sk, scaleFactor, color);
+	drawDataDrivenPetals(sk, scaleFactor, color, turnData, hoveredPetalIndex ?? null);
 	sk.pop();
+}
+
+/**
+ * Pre-computes flower hit data without drawing, so hover can be determined
+ * before the draw call (needed for petal highlight on hover).
+ */
+export function computeFlowerHitData(
+	xPos: number,
+	yPos: number,
+	scaledWordArea: number,
+	turnData: PetalData[]
+): FlowerHitData {
+	const scaleFactor = scaledWordArea / 100;
+	const dataCount = turnData.length;
+	const totalDisplay = Math.max(dataCount, MIN_DISPLAY_PETALS);
+	const slots = buildPetalSlots(turnData, totalDisplay);
+
+	const { petalLength, centerRadius, variationScale, anglePerPetal } = computePetalGeometry(totalDisplay, scaleFactor);
+
+	const hitZones: PetalHitZone[] = [];
+	for (let i = 0; i < totalDisplay; i++) {
+		if (slots[i] === null) continue; // Skip decorative petals
+
+		const angleVariation = Math.sin(i * 2.3) * PETAL_ANGLE_VARIATION * variationScale;
+		const angle = anglePerPetal * i + angleVariation;
+		const sizeVariation = PETAL_BASE_SIZE + Math.sin(i * 1.7 + 0.5) * PETAL_SIZE_VARIATION * variationScale;
+
+		hitZones.push({
+			angleStart: angle - anglePerPetal / 2,
+			angleEnd: angle + anglePerPetal / 2,
+			innerRadius: centerRadius * 0.9,
+			outerRadius: centerRadius * 0.9 + petalLength * sizeVariation,
+			petalData: slots[i]!
+		});
+	}
+
+	return {
+		centerX: xPos,
+		centerY: yPos,
+		petals: hitZones,
+		overallRadius: scaleFactor * (PETAL_LENGTH_SCALE + CENTER_RADIUS_SCALE)
+	};
+}
+
+/**
+ * Finds which petal (if any) the mouse is hovering over.
+ * Uses angle-based sector detection for efficiency.
+ *
+ * p5.js rotate() convention: 0 radians = positive Y axis (downward),
+ * increasing clockwise. atan2 convention: 0 = positive X axis (right),
+ * increasing counter-clockwise. We convert atan2 to p5's convention.
+ */
+export function findHoveredPetal(
+	mouseX: number,
+	mouseY: number,
+	hitData: FlowerHitData
+): { petalData: PetalData; index: number } | null {
+	const dx = mouseX - hitData.centerX;
+	const dy = mouseY - hitData.centerY;
+	const dist = Math.sqrt(dx * dx + dy * dy);
+
+	// Quick rejection: outside the flower entirely
+	if (dist > hitData.overallRadius) return null;
+
+	// Convert mouse position to p5 rotation angle convention.
+	// p5 rotate(0) points along +Y (downward), clockwise.
+	// atan2(dx, dy) gives angle from +Y axis, clockwise — which matches p5's convention.
+	let mouseAngle = Math.atan2(dx, dy);
+	if (mouseAngle < 0) mouseAngle += Math.PI * 2;
+
+	for (let i = 0; i < hitData.petals.length; i++) {
+		const zone = hitData.petals[i];
+
+		// Normalize zone angles to [0, TWO_PI)
+		let start = zone.angleStart % (Math.PI * 2);
+		let end = zone.angleEnd % (Math.PI * 2);
+		if (start < 0) start += Math.PI * 2;
+		if (end < 0) end += Math.PI * 2;
+
+		const inAngle =
+			end > start
+				? mouseAngle >= start && mouseAngle <= end
+				: mouseAngle >= start || mouseAngle <= end; // wraps around 0
+
+		if (inAngle && dist >= zone.innerRadius && dist <= zone.outerRadius) {
+			return { petalData: zone.petalData, index: i };
+		}
+	}
+
+	return null;
 }
 
 /**
@@ -225,46 +413,141 @@ function drawLeafShape(sk: p5, scale: number, startX: number, endX: number, curv
 }
 
 /**
- * Draws all petals around the flower center.
+ * Computes adaptive petal geometry based on petal count and overall scale.
  */
-function drawPetals(sk: p5, scaleFactor: number, color: p5.Color): void {
+function computePetalGeometry(petalCount: number, scaleFactor: number) {
+	const anglePerPetal = (Math.PI * 2) / Math.max(petalCount, 1);
+
+	// Length stays fuller — only slight decrease at high counts (never below 80%)
+	const lengthFactor = Math.max(0.8, 1.0 - (petalCount - 7) * 0.02);
+	const petalLength = scaleFactor * PETAL_LENGTH_SCALE * lengthFactor;
+
+	// Allow overlap for fuller look — cap width gently rather than preventing overlap
+	const maxWidthFromAngle = Math.sin(anglePerPetal / 2) * petalLength * 1.3;
+	const baseWidth = scaleFactor * PETAL_WIDTH_SCALE;
+	const petalWidth = Math.min(baseWidth, maxWidthFromAngle);
+
+	const centerRadius = scaleFactor * CENTER_RADIUS_SCALE;
+	const gradientSteps = petalCount <= 8 ? GRADIENT_STEPS : 4;
+
+	// Moderate organic variation reduction — keep some life at higher counts
+	const variationScale = petalCount <= 5 ? 1.0 : Math.max(0.5, 1.0 - (petalCount - 5) * 0.04);
+
+	return { petalLength, petalWidth, centerRadius, gradientSteps, variationScale, anglePerPetal };
+}
+
+/**
+ * Builds a slot map that distributes data petals evenly among display slots.
+ * Returns an array of length totalDisplay where each element is either a
+ * PetalData (active petal) or null (decorative filler).
+ */
+function buildPetalSlots(turnData: PetalData[], totalDisplay: number): (PetalData | null)[] {
+	const slots: (PetalData | null)[] = new Array(totalDisplay).fill(null);
+	const dataCount = turnData.length;
+	if (dataCount === 0) return slots;
+
+	// Distribute data petals evenly around the ring
+	for (let d = 0; d < dataCount; d++) {
+		const pos = Math.floor(d * totalDisplay / dataCount);
+		slots[pos] = turnData[d];
+	}
+	return slots;
+}
+
+/**
+ * Draws data-driven petals (one per turn or cluster) with decorative filler
+ * petals to ensure the flower always has at least MIN_DISPLAY_PETALS.
+ */
+function drawDataDrivenPetals(
+	sk: p5,
+	scaleFactor: number,
+	color: p5.Color,
+	turnData: PetalData[],
+	hoveredPetalIndex: number | null = null
+): void {
+	const dataCount = turnData.length;
+	if (dataCount === 0) return;
+
+	const totalDisplay = Math.max(dataCount, MIN_DISPLAY_PETALS);
+	const slots = buildPetalSlots(turnData, totalDisplay);
+
 	const baseR = sk.red(color);
 	const baseG = sk.green(color);
 	const baseB = sk.blue(color);
 
-	const petalLength = scaleFactor * PETAL_LENGTH_SCALE;
-	const petalWidth = scaleFactor * PETAL_WIDTH_SCALE;
-	const centerRadius = scaleFactor * CENTER_RADIUS_SCALE;
+	const { petalLength, petalWidth, centerRadius, gradientSteps, variationScale, anglePerPetal } =
+		computePetalGeometry(totalDisplay, scaleFactor);
 
-	for (let i = 0; i < NUM_PETALS; i++) {
-		const angleVariation = Math.sin(i * 2.3) * PETAL_ANGLE_VARIATION;
-		const angle = (sk.TWO_PI / NUM_PETALS) * i + angleVariation;
+	// Track which data petal index we're on (for hover matching)
+	let dataIndex = 0;
 
-		const sizeVariation = PETAL_BASE_SIZE + Math.sin(i * 1.7 + 0.5) * PETAL_SIZE_VARIATION;
-		const widthVariation = PETAL_BASE_WIDTH + Math.cos(i * 2.1) * PETAL_WIDTH_VARIATION;
+	for (let i = 0; i < totalDisplay; i++) {
+		const petalData = slots[i];
+		const isDataPetal = petalData !== null;
+		const currentDataIndex = isDataPetal ? dataIndex++ : -1;
+		const isHovered = isDataPetal && hoveredPetalIndex === currentDataIndex;
+
+		const angleVariation = Math.sin(i * 2.3) * PETAL_ANGLE_VARIATION * variationScale;
+		const angle = anglePerPetal * i + angleVariation;
+
+		const sizeVariation = PETAL_BASE_SIZE + Math.sin(i * 1.7 + 0.5) * PETAL_SIZE_VARIATION * variationScale;
+		const widthVariation = PETAL_BASE_WIDTH + Math.cos(i * 2.1) * PETAL_WIDTH_VARIATION * variationScale;
 
 		sk.push();
 		sk.rotate(angle);
 
-		// Draw gradient layers from outside in
-		for (let g = 0; g < GRADIENT_STEPS; g++) {
-			const t = g / (GRADIENT_STEPS - 1);
-			const layerScale = 1 - t * 0.55;
+		if (isDataPetal) {
+			// Active petal — speaker colored, interactive
+			for (let g = 0; g < gradientSteps; g++) {
+				const t = g / (gradientSteps - 1);
+				const layerScale = 1 - t * 0.55;
 
-			const r = Math.min(255, baseR + (1 - t) * 55 + Math.sin(i) * 10);
-			const gColor = Math.min(255, baseG + (1 - t) * 50);
-			const b = Math.min(255, baseB + (1 - t) * 45);
+				let r = Math.min(255, baseR + (1 - t) * 55 + Math.sin(i) * 10);
+				let gColor = Math.min(255, baseG + (1 - t) * 50);
+				let b = Math.min(255, baseB + (1 - t) * 45);
 
-			sk.fill(r, gColor, b, 90 + t * 110);
-			sk.noStroke();
-			drawOrganicPetal(sk, centerRadius * 0.9, petalLength * layerScale * sizeVariation, petalWidth * layerScale * widthVariation, i);
-		}
+				if (isHovered) {
+					r = Math.min(255, r + 40);
+					gColor = Math.min(255, gColor + 40);
+					b = Math.min(255, b + 40);
+				}
 
-		// Subtle vein line on larger flowers
-		if (scaleFactor > MIN_SCALE_FOR_PETAL_VEINS) {
-			sk.stroke(baseR - 30, baseG - 30, baseB - 30, 40);
-			sk.strokeWeight(0.5);
-			sk.line(0, centerRadius, 0, centerRadius + petalLength * sizeVariation * 0.7);
+				sk.fill(r, gColor, b, isHovered ? 140 + t * 115 : 90 + t * 110);
+				sk.noStroke();
+				drawOrganicPetal(
+					sk,
+					centerRadius * 0.9,
+					petalLength * layerScale * sizeVariation,
+					petalWidth * layerScale * widthVariation,
+					i
+				);
+			}
+
+			if (scaleFactor > MIN_SCALE_FOR_PETAL_VEINS) {
+				sk.stroke(baseR - 30, baseG - 30, baseB - 30, 40);
+				sk.strokeWeight(0.5);
+				sk.line(0, centerRadius, 0, centerRadius + petalLength * sizeVariation * 0.7);
+			}
+		} else {
+			// Decorative filler petal — muted gray, non-interactive
+			for (let g = 0; g < gradientSteps; g++) {
+				const t = g / (gradientSteps - 1);
+				const layerScale = 1 - t * 0.55;
+
+				const r = EMPTY_PETAL_COLOR.r + (1 - t) * 20;
+				const gColor = EMPTY_PETAL_COLOR.g + (1 - t) * 20;
+				const b = EMPTY_PETAL_COLOR.b + (1 - t) * 20;
+
+				sk.fill(r, gColor, b, EMPTY_PETAL_ALPHA + t * 30);
+				sk.noStroke();
+				drawOrganicPetal(
+					sk,
+					centerRadius * 0.9,
+					petalLength * layerScale * sizeVariation,
+					petalWidth * layerScale * widthVariation,
+					i
+				);
+			}
 		}
 
 		sk.pop();

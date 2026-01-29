@@ -17,7 +17,13 @@ import { showTooltip } from '../../stores/tooltipStore';
 import type { DataPoint } from '../../models/dataPoint';
 import type { User } from '../../models/user';
 import type { Bounds } from './types/bounds';
-import { drawFlower } from './flower-drawing';
+import {
+	drawFlower,
+	buildPetalData,
+	findHoveredPetal,
+	computeFlowerHitData,
+	type PetalData
+} from './flower-drawing';
 
 const MIN_FLOWER_SIZE = 25; // Minimum flower radius so small speakers are still visible
 
@@ -45,6 +51,7 @@ export class DistributionDiagram {
 	yPosHalfHeight: number;
 	maxFlowerRadius: number;
 	hoveredSpeaker: string | null;
+	hoveredPetal: PetalData | null;
 
 	constructor(sk: p5, pos: Bounds) {
 		this.sk = sk;
@@ -64,9 +71,10 @@ export class DistributionDiagram {
 		this.yPosHalfHeight = pos.y + pos.height / 2;
 		this.maxFlowerRadius = this.calculateMaxFlowerRadius();
 		this.hoveredSpeaker = null;
+		this.hoveredPetal = null;
 	}
 
-	draw(sortedAnimationWordArray: Record<string, DataPoint[]>): { hoveredSpeaker: string | null } {
+	draw(sortedAnimationWordArray: Record<string, DataPoint[]>): { hoveredSpeaker: string | null; hoveredPetal: PetalData | null } {
 		const searchTerm = this.config.wordToSearch?.toLowerCase();
 		this.hoveredSpeaker = null;
 
@@ -91,7 +99,7 @@ export class DistributionDiagram {
 			this.xPosCurCircle += this.maxCircleRadius;
 		}
 
-		return { hoveredSpeaker: this.hoveredSpeaker };
+		return { hoveredSpeaker: this.hoveredSpeaker, hoveredPetal: this.hoveredPetal };
 	}
 
 	drawViz(tempTurnArray: DataPoint[], isDrawFlower: boolean): void {
@@ -144,15 +152,30 @@ export class DistributionDiagram {
 		// Map turns to Y position (flower center position)
 		const scaledNumOfTurns = this.sk.map(numOfTurns, 0, this.largestNumOfTurnsByASpeaker, bottom, top);
 
+		// Build petal data from turn array
+		const petalData = buildPetalData(tempTurnArray);
+
+		// Pre-compute hit zones to determine hover before drawing (for highlight)
+		const preHitData = computeFlowerHitData(this.xPosCurCircle, scaledNumOfTurns, scaledWordArea, petalData);
+		const hoverResult = findHoveredPetal(this.sk.mouseX, this.sk.mouseY, preHitData);
+
 		drawFlower(this.sk, {
 			xPos: this.xPosCurCircle,
 			yPos: scaledNumOfTurns,
 			bottomY: bottom,
 			scaledWordArea,
-			color
+			color,
+			turnData: petalData,
+			hoveredPetalIndex: hoverResult?.index ?? null
 		});
 
-		if (this.sk.overCircle(this.xPosCurCircle, scaledNumOfTurns, scaledWordArea)) {
+		if (hoverResult) {
+			// Per-petal hover
+			this.hoveredSpeaker = speaker;
+			this.hoveredPetal = hoverResult.petalData;
+			this.drawPetalTooltip(speaker, hoverResult.petalData, color);
+		} else if (this.sk.overCircle(this.xPosCurCircle, scaledNumOfTurns, scaledWordArea)) {
+			// Hovering flower center or between petals — fall back to speaker-level tooltip
 			this.hoveredSpeaker = speaker;
 			this.drawSpeakerTooltip(speaker, numOfTurns, numOfWords, tempTurnArray, color);
 		}
@@ -218,6 +241,26 @@ export class DistributionDiagram {
 		const tooltipContent = `<b>First word of each turn:</b>\n${firstWordsLine}\n\n${statsLine}`;
 
 		showTooltip(this.sk.mouseX, this.sk.mouseY, tooltipContent, speakerColor, this.sk.height);
+	}
+
+	drawPetalTooltip(speaker: string, petal: PetalData, speakerColor: p5.Color): void {
+		let content: string;
+
+		if (petal.isClustered) {
+			const first = petal.turnNumbers[0];
+			const last = petal.turnNumbers[petal.turnNumbers.length - 1];
+			content =
+				`<b>Turns ${first}–${last}</b> (${petal.turnNumbers.length} turns)\n` +
+				`${petal.previewText}\n` +
+				`${petal.wordCount} total words`;
+		} else {
+			content =
+				`<b>Turn ${petal.turnNumbers[0]}</b>\n` +
+				`"${petal.previewText}..."\n` +
+				`${petal.wordCount} words`;
+		}
+
+		showTooltip(this.sk.mouseX, this.sk.mouseY, content, speakerColor, this.sk.height);
 	}
 
 	getMaxCircleRadius(pixelWidth: number): number {

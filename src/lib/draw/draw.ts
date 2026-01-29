@@ -61,11 +61,12 @@ export class Draw {
 
 	updateDistributionDiagram(pos: Bounds): void {
 		const distributionDiagram = new DistributionDiagram(this.sk, pos);
-		const { hoveredSpeaker } = distributionDiagram.draw(this.sk.dynamicData.getDynamicArrayForDistributionDiagram());
+		const { hoveredSpeaker, hoveredPetal } = distributionDiagram.draw(this.sk.dynamicData.getDynamicArrayForDistributionDiagram());
 		ConfigStore.update((config) => ({
 			...config,
 			arrayOfFirstWords: distributionDiagram.localArrayOfFirstWords,
-			hoveredSpeakerInDistributionDiagram: hoveredSpeaker
+			hoveredSpeakerInDistributionDiagram: hoveredSpeaker,
+			hoveredPetalData: hoveredPetal
 		}));
 		// Sync to EditorStore - only update highlightedSpeaker if filter is locked, otherwise update both
 		EditorStore.update((state) => {

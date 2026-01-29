@@ -1,5 +1,6 @@
 import { writable, derived } from 'svelte/store';
 import type { DataPoint } from '../models/dataPoint';
+import type { PetalData } from '../lib/draw/flower-drawing';
 
 export interface ConfigStoreType {
 	distributionDiagramToggle: boolean;
@@ -21,6 +22,7 @@ export interface ConfigStoreType {
 	arrayOfFirstWords: DataPoint[];
 	wordToSearch: string;
 	hoveredSpeakerInDistributionDiagram: string | null;
+	hoveredPetalData: PetalData | null;
 	// Start-only mode settings
 	preserveGapsBetweenTurns: boolean;
 	speechRateWordsPerSecond: number;
@@ -48,6 +50,7 @@ export const initialConfig: ConfigStoreType = {
 	arrayOfFirstWords: [],
 	wordToSearch: '',
 	hoveredSpeakerInDistributionDiagram: null,
+	hoveredPetalData: null,
 	// Start-only mode settings (default: estimate from speech rate)
 	preserveGapsBetweenTurns: true,
 	speechRateWordsPerSecond: 3,
