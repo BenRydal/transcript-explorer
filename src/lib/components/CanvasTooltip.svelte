@@ -19,26 +19,29 @@
 		return `${preview}... (${wordCount} words)`;
 	}
 
-	$: displayContent = formatContent($TooltipStore.content);
+	let displayContent = $derived(formatContent($TooltipStore.content));
 
 	// Get the p5 container for positioning relative to it
-	let containerRect: DOMRect | null = null;
+	let containerRect: DOMRect | null = $state(null);
 	let tooltipEl: HTMLDivElement;
 
-	$: if ($TooltipStore.visible) {
-		const container = document.getElementById('p5-container');
-		if (container) {
-			containerRect = container.getBoundingClientRect();
+	$effect(() => {
+		if ($TooltipStore.visible) {
+			const container = document.getElementById('p5-container');
+			if (container) {
+				containerRect = container.getBoundingClientRect();
+			}
 		}
-	}
+	});
 
 	// Track arrow position in pixels from left edge of tooltip
-	let arrowLeftPx = 0;
-	let usePixelArrow = false;
+	let arrowLeftPx = $state(0);
+	let usePixelArrow = $state(false);
 
 	// Calculate tooltip position with edge detection
-	$: tooltipStyle = (() => {
-		if (!containerRect || !$TooltipStore.visible) return '';
+	// This is a pure computation returning style + arrow info as an object
+	let tooltipPositioning = $derived.by(() => {
+		if (!containerRect || !$TooltipStore.visible) return { style: '', pixelArrow: false, arrowPx: 0, needsRightEdgeMeasure: false };
 
 		const { x, y, position } = $TooltipStore;
 		const containerWidth = containerRect.width;
@@ -46,7 +49,9 @@
 		// Default: center on mouse
 		let left = x;
 		let translateX = '-50%';
-		usePixelArrow = false; // Use centered arrow by default
+		let pixelArrow = false;
+		let arrowPx = 0;
+		let needsRightEdgeMeasure = false;
 
 		// Only adjust if tooltip would go off-screen
 		// Estimate tooltip taking up half its max width on each side
@@ -56,23 +61,15 @@
 			// Too close to left edge - anchor to left
 			left = EDGE_PADDING;
 			translateX = '0';
-			usePixelArrow = true;
+			pixelArrow = true;
 			// Arrow position is mouse X relative to tooltip left edge
-			arrowLeftPx = Math.max(12, x - EDGE_PADDING);
+			arrowPx = Math.max(12, x - EDGE_PADDING);
 		} else if (x > containerWidth - halfWidth - EDGE_PADDING) {
 			// Too close to right edge - anchor to right
 			left = containerWidth - EDGE_PADDING;
 			translateX = '-100%';
-			usePixelArrow = true;
-			// After rendering, we'll measure actual width and position arrow
-			// For now, calculate based on mouse position relative to right edge
-			tick().then(() => {
-				if (tooltipEl) {
-					const tooltipWidth = tooltipEl.offsetWidth;
-					const tooltipLeft = containerWidth - EDGE_PADDING - tooltipWidth;
-					arrowLeftPx = Math.max(12, Math.min(tooltipWidth - 12, x - tooltipLeft));
-				}
-			});
+			pixelArrow = true;
+			needsRightEdgeMeasure = true;
 		}
 
 		// Vertical position
@@ -85,19 +82,44 @@
 
 		const translateY = position === 'above' ? 'translateY(-100%)' : '';
 
-		return `
+		const style = `
 			left: ${left}px;
 			top: ${top}px;
 			transform: translateX(${translateX}) ${translateY};
 		`;
-	})();
+
+		return { style, pixelArrow, arrowPx, needsRightEdgeMeasure };
+	});
+
+	// Apply arrow positioning from the derived computation
+	$effect(() => {
+		usePixelArrow = tooltipPositioning.pixelArrow;
+		if (!tooltipPositioning.needsRightEdgeMeasure) {
+			arrowLeftPx = tooltipPositioning.arrowPx;
+		}
+	});
+
+	// Handle the async right-edge measurement that requires tick + DOM measurement
+	$effect(() => {
+		if (tooltipPositioning.needsRightEdgeMeasure && containerRect) {
+			const containerWidth = containerRect.width;
+			const x = $TooltipStore.x;
+			tick().then(() => {
+				if (tooltipEl) {
+					const tooltipWidth = tooltipEl.offsetWidth;
+					const tooltipLeft = containerWidth - EDGE_PADDING - tooltipWidth;
+					arrowLeftPx = Math.max(12, Math.min(tooltipWidth - 12, x - tooltipLeft));
+				}
+			});
+		}
+	});
 
 	// Arrow style - use pixel positioning when near edges, otherwise center
-	$: arrowStyle = usePixelArrow ? `left: ${arrowLeftPx}px;` : `left: 50%;`;
+	let arrowStyle = $derived(usePixelArrow ? `left: ${arrowLeftPx}px;` : `left: 50%;`);
 </script>
 
 {#if $TooltipStore.visible}
-	<div class="canvas-tooltip" style={tooltipStyle} bind:this={tooltipEl}>
+	<div class="canvas-tooltip" style={tooltipPositioning.style} bind:this={tooltipEl}>
 		<div class="tooltip-content" style="border-color: {$TooltipStore.speakerColor}">
 			<p style="color: {$TooltipStore.speakerColor}">{@html displayContent}</p>
 		</div>
@@ -108,7 +130,7 @@
 			style="{arrowStyle} border-bottom-color: {$TooltipStore.position === 'below'
 				? $TooltipStore.speakerColor
 				: 'transparent'}; border-top-color: {$TooltipStore.position === 'above' ? $TooltipStore.speakerColor : 'transparent'};"
-		/>
+		></div>
 	</div>
 {/if}
 

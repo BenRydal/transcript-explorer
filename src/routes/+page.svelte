@@ -53,54 +53,46 @@
 	import type { TranscriptionResult } from '$lib/core/transcription-service';
 
 	// Modal state
-	let showDataPopup = false;
-	let showSettings = false;
-	let showUploadModal = false;
-	let showPasteModal = false;
-	let showTranscriptionModal = false;
-	let showNewTranscriptConfirm = false;
-	let showRecoveryModal = false;
-	let recoveryTimestamp: number | null = null;
+	let showDataPopup = $state(false);
+	let showSettings = $state(false);
+	let showUploadModal = $state(false);
+	let showPasteModal = $state(false);
+	let showTranscriptionModal = $state(false);
+	let showNewTranscriptConfirm = $state(false);
+	let showRecoveryModal = $state(false);
+	let recoveryTimestamp: number | null = $state(null);
 	let isModalOpen = writable(true);
 
 	// File upload state
-	let isDraggingOver = false;
-	let uploadedFiles: UploadedFile[] = [];
-	let pendingVideoFile: File | null = null;
-	let pendingVideoDuration: number = 0;
-	let files: FileList | undefined;
-
+	let isDraggingOver = $state(false);
+	let uploadedFiles: UploadedFile[] = $state([]);
+	let pendingVideoFile: File | null = $state(null);
+	let pendingVideoDuration: number = $state(0);
 	// Core references
-	let p5Instance: p5 | null = null;
+	let p5Instance: p5 | null = $state(null);
 	let core: Core;
 	let tourOverlay: TourOverlay;
 
 	// Example selection state
-	let selectedDropDownOption = '';
-
-	const dropdownOptions = [
-		{
-			label: 'Classrooms',
-			items: [
-				{ value: 'example-1', label: 'Kindergarten Activity' },
-				{ value: 'example-3', label: 'Classroom Discussion' },
-				{ value: 'example-4', label: 'Classroom Science Lesson' }
-			]
-		},
-		{ label: 'Museums', items: [{ value: 'example-2', label: 'Family Gallery Visit' }] },
-		{ label: 'Presidential Debates', items: [{ value: 'example-5', label: 'Biden-Trump 2020 Debate' }] }
-	];
+	let selectedDropDownOption = $state('');
+	const exampleLabels: Record<string, string> = {
+		'example-1': 'Kindergarten Activity',
+		'example-3': '3rd Grade Discussion Odd/Even Numbers',
+		'example-4': '8th Grade Science Lesson',
+		'example-2': 'Family Gallery Visit',
+		'example-5': 'Biden-Trump 2020 Debate'
+	};
 
 	// Reactive bindings to stores
-	$: isVideoLoaded = $VideoStore.isLoaded;
-	$: isVideoVisible = $VideoStore.isVisible;
-	$: hasVideoSource = $VideoStore.source.type !== null;
-	$: isEditorVisible = $EditorStore.config.isVisible;
-	$: isTranscribeModeActive = $TranscribeModeStore.isActive;
+	let isVideoLoaded = $derived($VideoStore.isLoaded);
+	let isVideoVisible = $derived($VideoStore.isVisible);
+	let hasVideoSource = $derived($VideoStore.source.type !== null);
+	let isEditorVisible = $derived($EditorStore.config.isVisible);
+	let isTranscribeModeActive = $derived($TranscribeModeStore.isActive);
 
 	// When video loads, expand timeline to accommodate video duration (only for timed transcripts)
-	let prevVideoLoaded = false;
-	$: {
+	let prevVideoLoaded = $state(false);
+	$effect(() => {
 		if (isVideoLoaded && !prevVideoLoaded && $VideoStore.duration > 0) {
 			if ($TranscriptStore.timingMode !== 'untimed') {
 				const videoDuration = $VideoStore.duration;
@@ -114,7 +106,7 @@
 			}
 		}
 		prevVideoLoaded = isVideoLoaded;
-	}
+	});
 
 	// Store subscriptions
 	P5Store.subscribe((value) => {
@@ -125,7 +117,7 @@
 	});
 
 	// Auto-save subscriptions - save when transcript or users change
-	let isRestoringState = false;
+	let isRestoringState = $state(false);
 	TranscriptStore.subscribe(() => {
 		if (!isRestoringState) saveStateDebounced();
 	});
@@ -175,19 +167,25 @@
 	};
 
 	// Refresh data when filter toggles change
-	$: $filterToggleKey, browser && p5Instance?.fillSelectedData();
+	$effect(() => {
+		$filterToggleKey;
+		if (browser) p5Instance?.fillSelectedData();
+	});
 
 	// Resize canvas when editor layout changes
-	$: $editorLayoutKey, browser && requestAnimationFrame(() => triggerCanvasResize());
+	$effect(() => {
+		$editorLayoutKey;
+		if (browser) requestAnimationFrame(() => triggerCanvasResize());
+	});
 
 	// Resize canvas when exiting transcribe mode (fillAllData is handled by igsSketch setup)
-	let prevTranscribeModeActive = false;
-	$: {
+	let prevTranscribeModeActive = $state(false);
+	$effect(() => {
 		if (prevTranscribeModeActive && !isTranscribeModeActive) {
 			requestAnimationFrame(() => triggerCanvasResize());
 		}
 		prevTranscribeModeActive = isTranscribeModeActive;
-	}
+	});
 
 	// ============ Transcript Loading ============
 
@@ -233,8 +231,7 @@
 
 	// ============ Event Handlers ============
 
-	async function handleLoadExample(event: CustomEvent<string>) {
-		const exampleId = event.detail;
+	async function handleLoadExample(exampleId: string) {
 		const example = core?.getExample(exampleId);
 		if (!example || !core) return;
 
@@ -254,13 +251,7 @@
 			}
 
 			// Update dropdown to show selected example
-			for (const group of dropdownOptions) {
-				const item = group.items.find((i) => i.value === exampleId);
-				if (item) {
-					selectedDropDownOption = item.label;
-					break;
-				}
-			}
+			selectedDropDownOption = exampleLabels[exampleId] ?? '';
 		} catch (error) {
 			notifications.error('Error loading example. Please check your internet connection.');
 			console.error('Example load error:', error);
@@ -278,26 +269,26 @@
 		requestAnimationFrame(() => triggerCanvasResize());
 	}
 
-	function handleWordSearch(event: CustomEvent<string>) {
+	function handleWordSearch(term: string) {
 		ConfigStore.update((config) => ({
 			...config,
-			wordToSearch: event.detail
+			wordToSearch: term
 		}));
 	}
 
-	function handleConfigChange(event: CustomEvent<{ key: keyof ConfigStoreType; value: number }>) {
+	function handleConfigChange(data: { key: keyof ConfigStoreType; value: number }) {
 		ConfigStore.update((config) => ({
 			...config,
-			[event.detail.key]: event.detail.value
+			[data.key]: data.value
 		}));
 	}
 
-	function handlePanelResize(event: CustomEvent<{ sizes: [number, number] }>) {
+	function handlePanelResize(data: { sizes: [number, number] }) {
 		EditorStore.update((state) => ({
 			...state,
 			config: {
 				...state.config,
-				panelSizes: event.detail.sizes
+				panelSizes: data.sizes
 			}
 		}));
 		triggerCanvasResize();
@@ -343,10 +334,8 @@
 		});
 	}
 
-	function handleTranscriptionComplete(event: CustomEvent<TranscriptionResult>) {
+	function handleTranscriptionComplete(result: TranscriptionResult) {
 		try {
-			const result = event.detail;
-
 			if (!result.segments || result.segments.length === 0) {
 				notifications.error('Transcription produced no results. The audio may be too short or unclear.');
 				return;
@@ -369,10 +358,8 @@
 		}
 	}
 
-	function handlePasteImport(event: CustomEvent<ParseResult>) {
+	function handlePasteImport(parseResult: ParseResult) {
 		try {
-			const parseResult = event.detail;
-
 			if (!parseResult.turns || parseResult.turns.length === 0) {
 				notifications.error('No valid turns found in pasted text.');
 				return;
@@ -542,7 +529,7 @@
 </svelte:head>
 
 {#if isTranscribeModeActive}
-	<TranscribeModeLayout on:exit={exitTranscribeMode} on:createTranscript={createTranscript} />
+	<TranscribeModeLayout onexit={exitTranscribeMode} oncreateTranscript={createTranscript} />
 {:else}
 	<div class="page-container">
 		<AppNavbar
@@ -550,16 +537,16 @@
 			{isEditorVisible}
 			{isVideoVisible}
 			{isVideoLoaded}
-			on:loadExample={handleLoadExample}
-			on:toggleEditor={handleToggleEditor}
-			on:toggleVideo={toggleVideoVisibility}
-			on:openUpload={() => (showUploadModal = true)}
-			on:openHelp={() => ($isModalOpen = !$isModalOpen)}
-			on:openSettings={() => (showSettings = true)}
-			on:createNewTranscript={() => (showNewTranscriptConfirm = true)}
-			on:toggleTranscribeMode={toggleTranscribeMode}
-			on:wordSearch={handleWordSearch}
-			on:configChange={handleConfigChange}
+			onloadExample={handleLoadExample}
+			ontoggleEditor={handleToggleEditor}
+			ontoggleVideo={toggleVideoVisibility}
+			onopenUpload={() => (showUploadModal = true)}
+			onopenHelp={() => ($isModalOpen = !$isModalOpen)}
+			onopenSettings={() => (showSettings = true)}
+			oncreateNewTranscript={() => (showNewTranscriptConfirm = true)}
+			ontoggleTranscribeMode={toggleTranscribeMode}
+			onwordSearch={handleWordSearch}
+			onconfigChange={handleConfigChange}
 		/>
 
 		<div class="main-content">
@@ -568,45 +555,49 @@
 				sizes={$EditorStore.config.panelSizes}
 				collapsed={!$EditorStore.config.isVisible}
 				collapsedPanel="second"
-				on:resize={handlePanelResize}
+				onresize={handlePanelResize}
 			>
-				<div slot="first" class="h-full relative" id="p5-container" data-tour="visualization">
-					<P5 {sketch} />
-					<CanvasTooltip />
-					{#if $ConfigStore.cloudHasOverflow && ($ConfigStore.contributionCloudToggle || $ConfigStore.dashboardToggle)}
-						<div class="badge badge-neutral absolute bottom-3 right-3">Some content not shown</div>
-					{/if}
-					{#if hasVideoSource}
-						<VideoContainer />
-					{/if}
-				</div>
-				<div slot="second" class="h-full">
-					<TranscriptEditor on:createTranscript={createTranscript} />
-				</div>
+				{#snippet first()}
+					<div class="h-full relative" id="p5-container" data-tour="visualization">
+						<P5 {sketch} />
+						<CanvasTooltip />
+						{#if $ConfigStore.cloudHasOverflow && ($ConfigStore.contributionCloudToggle || $ConfigStore.dashboardToggle)}
+							<div class="badge badge-neutral absolute bottom-3 right-3">Some content not shown</div>
+						{/if}
+						{#if hasVideoSource}
+							<VideoContainer />
+						{/if}
+					</div>
+				{/snippet}
+				{#snippet second()}
+					<div class="h-full">
+						<TranscriptEditor oncreateTranscript={createTranscript} />
+					</div>
+				{/snippet}
 			</SplitPane>
 		</div>
 
-		<SettingsModal bind:isOpen={showSettings} on:openDataExplorer={() => (showDataPopup = true)} />
+		<SettingsModal bind:isOpen={showSettings} onopenDataExplorer={() => (showDataPopup = true)} />
 
 		<UploadModal
 			bind:isOpen={showUploadModal}
 			{isDraggingOver}
 			{pendingVideoFile}
 			{uploadedFiles}
-			on:drop={(e) => handleDrop(e.detail)}
-			on:dragover={(e) => handleDragOver(e.detail)}
-			on:dragleave={handleDragLeave}
-			on:openFileDialog={openFileDialog}
-			on:clearFiles={clearUploadedFiles}
-			on:startTranscription={() => (showTranscriptionModal = true)}
-			on:youtubeUrl={(e) => loadVideo({ type: 'youtube', videoId: e.detail })}
-			on:openPasteModal={() => {
+			ondrop={handleDrop}
+			ondragover={handleDragOver}
+			ondragleave={handleDragLeave}
+			onopenFileDialog={openFileDialog}
+			onclearFiles={clearUploadedFiles}
+			onstartTranscription={() => (showTranscriptionModal = true)}
+			onyoutubeUrl={(videoId) => loadVideo({ type: 'youtube', videoId })}
+			onopenPasteModal={() => {
 				showUploadModal = false;
 				showPasteModal = true;
 			}}
 		/>
 
-		<PasteModal bind:isOpen={showPasteModal} on:import={handlePasteImport} />
+		<PasteModal bind:isOpen={showPasteModal} onimport={handlePasteImport} />
 
 		<DataExplorerModal bind:isOpen={showDataPopup} />
 
@@ -615,7 +606,7 @@
 			title="Create New Transcript?"
 			message="This will erase the current transcript. This action cannot be undone."
 			confirmText="Erase and Create New"
-			on:confirm={createTranscript}
+			onconfirm={createTranscript}
 		/>
 
 		<div class="btm-nav flex justify-between min-h-20" style="position: relative;">
@@ -627,13 +618,11 @@
 	</div>
 {/if}
 
-<slot />
-
-<input class="hidden" id="file-input" multiple accept=".csv, .txt, .mp4, .srt, .vtt" type="file" bind:files on:change={updateUserLoadedFiles} />
+<input class="hidden" id="file-input" multiple accept=".csv, .txt, .mp4, .srt, .vtt" type="file" onchange={updateUserLoadedFiles} />
 
 <InfoModal
 	{isModalOpen}
-	onLoadExample={(id) => handleLoadExample(new CustomEvent('loadExample', { detail: id }))}
+	onLoadExample={(id) => handleLoadExample(id)}
 	onOpenUpload={() => (showUploadModal = true)}
 	onOpenPaste={() => (showPasteModal = true)}
 	onStartTour={() => tourOverlay.start()}
@@ -643,13 +632,13 @@
 	bind:isOpen={showTranscriptionModal}
 	videoFile={pendingVideoFile}
 	videoDuration={pendingVideoDuration}
-	on:complete={handleTranscriptionComplete}
-	on:close={() => (showTranscriptionModal = false)}
+	oncomplete={handleTranscriptionComplete}
+	onclose={() => (showTranscriptionModal = false)}
 />
 
 <TourOverlay bind:this={tourOverlay} />
 
-<RecoveryModal bind:isOpen={showRecoveryModal} savedAt={recoveryTimestamp} on:restore={handleRestore} on:discard={handleDiscard} />
+<RecoveryModal bind:isOpen={showRecoveryModal} savedAt={recoveryTimestamp} onrestore={handleRestore} ondiscard={handleDiscard} />
 
 <style>
 	.page-container {

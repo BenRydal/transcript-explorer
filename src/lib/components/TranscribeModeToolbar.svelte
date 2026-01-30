@@ -1,19 +1,19 @@
 <script lang="ts">
-	import { createEventDispatcher } from 'svelte';
-	import MdClose from 'svelte-icons/md/MdClose.svelte';
-	import MdKeyboard from 'svelte-icons/md/MdKeyboard.svelte';
+	import { X, Keyboard } from '@lucide/svelte';
 
-	const dispatch = createEventDispatcher<{
-		exit: void;
-	}>();
+	interface Props {
+		onexit?: () => void;
+	}
 
-	let showShortcuts = false;
+	let { onexit }: Props = $props();
+
+	let showShortcuts = $state(false);
 </script>
 
 <div class="transcribe-toolbar">
 	<div class="toolbar-left">
 		<span class="toolbar-title">
-			<div class="icon"><MdKeyboard /></div>
+			<Keyboard size={18} />
 			Transcribe Mode
 		</span>
 	</div>
@@ -21,7 +21,7 @@
 	<div class="toolbar-center">
 		<button
 			class="shortcuts-hint"
-			on:click={() => (showShortcuts = !showShortcuts)}
+			onclick={() => (showShortcuts = !showShortcuts)}
 			aria-expanded={showShortcuts}
 		>
 			Keyboard Shortcuts
@@ -32,8 +32,8 @@
 	</div>
 
 	<div class="toolbar-right">
-		<button class="exit-btn" on:click={() => dispatch('exit')} title="Exit Transcribe Mode (Esc)">
-			<div class="icon"><MdClose /></div>
+		<button class="exit-btn" onclick={() => onexit?.()} title="Exit Transcribe Mode (Esc)">
+			<X size={14} />
 			Exit
 		</button>
 	</div>
@@ -94,11 +94,6 @@
 		font-size: 14px;
 	}
 
-	.toolbar-title .icon {
-		width: 18px;
-		height: 18px;
-	}
-
 	.shortcuts-hint {
 		display: flex;
 		align-items: center;
@@ -144,11 +139,6 @@
 	.exit-btn:hover {
 		background: rgba(239, 68, 68, 0.3);
 		border-color: rgba(239, 68, 68, 0.6);
-	}
-
-	.exit-btn .icon {
-		width: 14px;
-		height: 14px;
 	}
 
 	.shortcuts-panel {

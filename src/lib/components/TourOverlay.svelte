@@ -1,7 +1,11 @@
 <script lang="ts">
-	export let isOpen = false;
+	interface Props {
+		isOpen: boolean;
+	}
 
-	let tourStep = 0;
+	let { isOpen = $bindable(false) }: Props = $props();
+
+	let tourStep = $state(0);
 
 	const tourSteps = [
 		{
@@ -80,7 +84,7 @@
 	}
 </script>
 
-<svelte:window on:keydown={handleKeydown} />
+<svelte:window onkeydown={handleKeydown} />
 
 {#if isOpen}
 	{@const step = tourSteps[tourStep]}
@@ -98,7 +102,7 @@
 	{@const tooltipLeft = rect ? Math.max(16, Math.min(rect.left + rect.width / 2 - 160, window.innerWidth - 336)) : window.innerWidth / 2 - 160}
 
 	<div class="fixed inset-0 z-[9999] pointer-events-none">
-		<button class="absolute inset-0 bg-black/50 pointer-events-auto cursor-default" on:click={end}></button>
+		<button class="absolute inset-0 bg-black/50 pointer-events-auto cursor-default" onclick={end}></button>
 
 		{#if rect}
 			<div
@@ -115,12 +119,12 @@
 			</div>
 			<p class="text-sm text-gray-600 mb-4">{step.content}</p>
 			<div class="flex justify-between items-center">
-				<button class="text-sm text-gray-500 hover:text-gray-700" on:click={end}>Skip</button>
+				<button class="text-sm text-gray-500 hover:text-gray-700" onclick={end}>Skip</button>
 				<div class="flex gap-2">
 					{#if tourStep > 0}
-						<button class="btn btn-sm btn-ghost" on:click={prevStep}>Back</button>
+						<button class="btn btn-sm btn-ghost" onclick={prevStep}>Back</button>
 					{/if}
-					<button class="btn btn-sm btn-primary" on:click={nextStep}>
+					<button class="btn btn-sm btn-primary" onclick={nextStep}>
 						{tourStep === tourSteps.length - 1 ? 'Finish' : 'Next'}
 					</button>
 				</div>

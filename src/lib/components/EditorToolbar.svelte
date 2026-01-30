@@ -1,11 +1,5 @@
 <script lang="ts">
-	import { createEventDispatcher } from 'svelte';
-	import MdSwapVert from 'svelte-icons/md/MdSwapVert.svelte';
-	import MdSwapHoriz from 'svelte-icons/md/MdSwapHoriz.svelte';
-	import MdFileDownload from 'svelte-icons/md/MdFileDownload.svelte';
-	import MdVideoLibrary from 'svelte-icons/md/MdVideoLibrary.svelte';
-	import MdUndo from 'svelte-icons/md/MdUndo.svelte';
-	import MdRedo from 'svelte-icons/md/MdRedo.svelte';
+	import { ArrowDownUp, ArrowLeftRight, Download, Clapperboard, Undo2, Redo2 } from '@lucide/svelte';
 	import { get } from 'svelte/store';
 	import EditorStore from '../../stores/editorStore';
 	import TranscriptStore from '../../stores/transcriptStore';
@@ -16,9 +10,14 @@
 	import { applyTimingModeToWordArray, updateTimelineFromData } from '$lib/core/timing-utils';
 	import type { TimingMode } from '../../models/transcript';
 
-	const dispatch = createEventDispatcher();
+	interface Props {
+		onundo?: () => void;
+		onredo?: () => void;
+	}
 
-	let confirmModal: { mode: TimingMode; message: string } | null = null;
+	let { onundo, onredo }: Props = $props();
+
+	let confirmModal: { mode: TimingMode; message: string } | null = $state(null);
 
 	function toggleOrientation() {
 		EditorStore.update((state) => ({
@@ -63,16 +62,12 @@
 		confirmModal = null;
 	}
 
-	function handleExport() {
-		exportTranscriptToCSV();
-	}
-
-	$: isVertical = $EditorStore.config.orientation === 'vertical';
-	$: showAdvancedVideoControls = $EditorStore.config.showAdvancedVideoControls;
-	$: timingMode = $TranscriptStore.timingMode;
-	$: hasTranscript = $TranscriptStore.wordArray.length > 0;
-	$: canUndo = $HistoryStore.past.length > 0;
-	$: canRedo = $HistoryStore.future.length > 0;
+	let isVertical = $derived($EditorStore.config.orientation === 'vertical');
+	let showAdvancedVideoControls = $derived($EditorStore.config.showAdvancedVideoControls);
+	let timingMode = $derived($TranscriptStore.timingMode);
+	let hasTranscript = $derived($TranscriptStore.wordArray.length > 0);
+	let canUndo = $derived($HistoryStore.past.length > 0);
+	let canRedo = $derived($HistoryStore.future.length > 0);
 </script>
 
 <div class="editor-toolbar">
@@ -86,13 +81,13 @@
 	<div class="toolbar-right">
 		{#if hasTranscript}
 			<div class="timing-mode-group">
-				<button class="timing-mode-btn" class:active={timingMode === 'untimed'} on:click={() => setTimingMode('untimed')} title="No timestamps">
+				<button class="timing-mode-btn" class:active={timingMode === 'untimed'} onclick={() => setTimingMode('untimed')} title="No timestamps">
 					Untimed
 				</button>
 				<button
 					class="timing-mode-btn"
 					class:active={timingMode === 'startOnly'}
-					on:click={() => setTimingMode('startOnly')}
+					onclick={() => setTimingMode('startOnly')}
 					title="Start times only"
 				>
 					Start
@@ -100,7 +95,7 @@
 				<button
 					class="timing-mode-btn"
 					class:active={timingMode === 'startEnd'}
-					on:click={() => setTimingMode('startEnd')}
+					onclick={() => setTimingMode('startEnd')}
 					title="Start and end times"
 				>
 					Start/End
@@ -108,33 +103,33 @@
 			</div>
 		{/if}
 
-		<button class="toolbar-btn" on:click={() => dispatch('undo')} disabled={!canUndo} title="Undo (Ctrl+Z)">
-			<MdUndo />
+		<button class="toolbar-btn" onclick={() => onundo?.()} disabled={!canUndo} title="Undo (Ctrl+Z)">
+			<Undo2 size={16} />
 		</button>
 
-		<button class="toolbar-btn" on:click={() => dispatch('redo')} disabled={!canRedo} title="Redo (Ctrl+Shift+Z)">
-			<MdRedo />
+		<button class="toolbar-btn" onclick={() => onredo?.()} disabled={!canRedo} title="Redo (Ctrl+Shift+Z)">
+			<Redo2 size={16} />
 		</button>
 
 		<button
 			class="toolbar-btn"
 			class:active={showAdvancedVideoControls}
-			on:click={toggleAdvancedVideoControls}
+			onclick={toggleAdvancedVideoControls}
 			title={showAdvancedVideoControls ? 'Hide video controls' : 'Show video controls (for transcript editing)'}
 		>
-			<MdVideoLibrary />
+			<Clapperboard size={16} />
 		</button>
 
-		<button class="toolbar-btn" on:click={toggleOrientation} title={isVertical ? 'Switch to horizontal layout' : 'Switch to vertical layout'}>
+		<button class="toolbar-btn" onclick={toggleOrientation} title={isVertical ? 'Switch to horizontal layout' : 'Switch to vertical layout'}>
 			{#if isVertical}
-				<MdSwapHoriz />
+				<ArrowLeftRight size={16} />
 			{:else}
-				<MdSwapVert />
+				<ArrowDownUp size={16} />
 			{/if}
 		</button>
 
-		<button class="toolbar-btn" on:click={handleExport} title="Export transcript as CSV">
-			<MdFileDownload />
+		<button class="toolbar-btn" onclick={exportTranscriptToCSV} title="Export transcript as CSV">
+			<Download size={16} />
 		</button>
 	</div>
 </div>
@@ -143,8 +138,8 @@
 	isOpen={!!confirmModal}
 	title="Change Timing Mode?"
 	message={confirmModal?.message ?? ''}
-	on:confirm={onConfirm}
-	on:cancel={() => (confirmModal = null)}
+	onconfirm={onConfirm}
+	oncancel={() => (confirmModal = null)}
 />
 
 <style>

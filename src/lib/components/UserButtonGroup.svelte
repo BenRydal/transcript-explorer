@@ -1,37 +1,38 @@
 <script lang="ts">
-	import { createEventDispatcher } from 'svelte';
-	import MdChevronLeft from 'svelte-icons/md/MdChevronLeft.svelte';
+	import { ChevronLeft } from '@lucide/svelte';
 	import UserButton from './UserButton.svelte';
 
-	export let users: Array<{ name: string; color: string; enabled: boolean }>;
-	export let maxVisible: number = 5;
+	interface Props {
+		users: Array<{ name: string; color: string; enabled: boolean }>;
+		maxVisible?: number;
+		ontoggleVisibility?: (index: number) => void;
+		onopenDropdown?: (index: number, event: MouseEvent) => void;
+	}
 
-	const dispatch = createEventDispatcher();
+	let { users, maxVisible = 5, ontoggleVisibility, onopenDropdown }: Props = $props();
 
-	let isExpanded = false;
+	let isExpanded = $state(false);
 
 	// Track users with their original indices
-	$: usersWithIndices = users.map((user, index) => ({ user, index }));
-	$: visibleUsers = isExpanded || users.length <= maxVisible ? usersWithIndices : usersWithIndices.slice(0, maxVisible - 1);
-	$: hiddenCount = users.length - maxVisible + 1;
-	$: showExpandButton = users.length > maxVisible;
+	let usersWithIndices = $derived(users.map((user, index) => ({ user, index })));
+	let visibleUsers = $derived(isExpanded || users.length <= maxVisible ? usersWithIndices : usersWithIndices.slice(0, maxVisible - 1));
+	let hiddenCount = $derived(users.length - maxVisible + 1);
+	let showExpandButton = $derived(users.length > maxVisible);
 </script>
 
 <div class="user-button-group">
 	{#each visibleUsers as { user, index } (index)}
 		<UserButton
 			{user}
-			on:toggleVisibility={() => dispatch('toggleVisibility', { index })}
-			on:openDropdown={(e) => dispatch('openDropdown', { index, event: e.detail })}
+			ontoggleVisibility={() => ontoggleVisibility?.(index)}
+			onopenDropdown={(event) => onopenDropdown?.(index, event)}
 		/>
 	{/each}
 
 	{#if showExpandButton}
-		<button class="expand-button" on:click={() => (isExpanded = !isExpanded)} title={isExpanded ? 'Show fewer' : `Show ${hiddenCount} more`}>
+		<button class="expand-button" onclick={() => (isExpanded = !isExpanded)} title={isExpanded ? 'Show fewer' : `Show ${hiddenCount} more`}>
 			{#if isExpanded}
-				<div class="collapse-icon">
-					<MdChevronLeft />
-				</div>
+				<ChevronLeft size={16} />
 			{:else}
 				+{hiddenCount}
 			{/if}
@@ -72,8 +73,4 @@
 		background-color: #c4c4c4;
 	}
 
-	.collapse-icon {
-		width: 1rem;
-		height: 1rem;
-	}
 </style>

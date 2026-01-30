@@ -1,30 +1,52 @@
 <script lang="ts">
-	import { createEventDispatcher } from 'svelte';
-	import MdCloudUpload from 'svelte-icons/md/MdCloudUpload.svelte';
+	import { CloudUpload } from '@lucide/svelte';
 	import { extractYouTubeVideoId } from '$lib/core/url-utils';
 
-	export let isOpen = false;
-	export let isDraggingOver = false;
-	export let pendingVideoFile: File | null = null;
-	export let uploadedFiles: Array<{ name: string; type: string; status: string; error?: string }> = [];
+	interface Props {
+		isOpen?: boolean;
+		isDraggingOver?: boolean;
+		pendingVideoFile?: File | null;
+		uploadedFiles?: Array<{ name: string; type: string; status: string; error?: string }>;
+		ondrop?: (e: DragEvent) => void;
+		ondragover?: (e: DragEvent) => void;
+		ondragleave?: () => void;
+		onopenFileDialog?: () => void;
+		onopenPasteModal?: () => void;
+		onyoutubeUrl?: (videoId: string) => void;
+		onstartTranscription?: () => void;
+		onclearFiles?: () => void;
+	}
 
-	const dispatch = createEventDispatcher();
+	let {
+		isOpen = $bindable(false),
+		isDraggingOver = false,
+		pendingVideoFile = null,
+		uploadedFiles = [],
+		ondrop,
+		ondragover,
+		ondragleave,
+		onopenFileDialog,
+		onopenPasteModal,
+		onyoutubeUrl,
+		onstartTranscription,
+		onclearFiles
+	}: Props = $props();
 
-	let youtubeUrl = '';
-	let youtubeError = '';
+	let youtubeUrl = $state('');
+	let youtubeError = $state('');
 
 	function handleKeydown(e: KeyboardEvent) {
 		if (e.key === 'Escape') isOpen = false;
 	}
 
 	function handleDropzoneKeydown(e: KeyboardEvent) {
-		if (e.key === 'Enter') dispatch('openFileDialog');
+		if (e.key === 'Enter') onopenFileDialog?.();
 	}
 
 	function handleYouTubeSubmit() {
 		const videoId = extractYouTubeVideoId(youtubeUrl);
 		if (videoId) {
-			dispatch('youtubeUrl', videoId);
+			onyoutubeUrl?.(videoId);
 			youtubeUrl = '';
 			isOpen = false;
 		} else {
@@ -34,11 +56,11 @@
 </script>
 
 {#if isOpen}
-	<div class="modal modal-open" on:click|self={() => (isOpen = false)} on:keydown={handleKeydown} role="dialog" aria-modal="true">
+	<div class="modal modal-open" onclick={(e) => { if (e.target === e.currentTarget) isOpen = false; }} onkeydown={handleKeydown} role="dialog" aria-modal="true">
 		<div class="modal-box w-11/12 max-w-lg">
 			<div class="flex justify-between mb-4">
 				<h3 class="font-bold text-lg">Upload Files</h3>
-				<button class="btn btn-circle btn-sm" on:click={() => (isOpen = false)}>
+				<button class="btn btn-circle btn-sm" onclick={() => (isOpen = false)}>
 					<svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
 						<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
 					</svg>
@@ -50,18 +72,16 @@
 				class="border-2 border-dashed rounded-lg p-8 text-center cursor-pointer transition-colors {isDraggingOver
 					? 'border-primary bg-primary/10'
 					: 'border-gray-300 hover:border-gray-400'}"
-				on:drop|preventDefault={(e) => dispatch('drop', e)}
-				on:dragover|preventDefault={(e) => dispatch('dragover', e)}
-				on:dragleave={() => dispatch('dragleave')}
-				on:click={() => dispatch('openFileDialog')}
-				on:keydown={handleDropzoneKeydown}
+				ondrop={(e) => { e.preventDefault(); ondrop?.(e); }}
+				ondragover={(e) => { e.preventDefault(); ondragover?.(e); }}
+				ondragleave={() => ondragleave?.()}
+				onclick={() => onopenFileDialog?.()}
+				onkeydown={handleDropzoneKeydown}
 				role="button"
 				tabindex="0"
 			>
 				<div class="flex flex-col items-center gap-2">
-					<div class="w-12 h-12 text-gray-400">
-						<MdCloudUpload />
-					</div>
+					<CloudUpload size={48} class="text-gray-400" />
 					<p class="font-medium">Drag & drop files here</p>
 					<p class="text-sm text-gray-500">or click to browse</p>
 				</div>
@@ -85,7 +105,7 @@
 			<!-- Paste text option -->
 			<div class="mt-4">
 				<div class="divider text-sm text-gray-500">or</div>
-				<button class="btn btn-outline btn-block" on:click={() => dispatch('openPasteModal')}> Paste Transcript Text </button>
+				<button class="btn btn-outline btn-block" onclick={() => onopenPasteModal?.()}> Paste Transcript Text </button>
 				<p class="text-xs text-gray-500 mt-2 text-center">Paste text directly and we'll detect the format automatically</p>
 			</div>
 
@@ -98,10 +118,10 @@
 						class="input input-bordered input-sm flex-1"
 						placeholder="Paste YouTube URL"
 						bind:value={youtubeUrl}
-						on:input={() => (youtubeError = '')}
-						on:keydown={(e) => e.key === 'Enter' && handleYouTubeSubmit()}
+						oninput={() => (youtubeError = '')}
+						onkeydown={(e) => e.key === 'Enter' && handleYouTubeSubmit()}
 					/>
-					<button class="btn btn-sm btn-primary" on:click={handleYouTubeSubmit} disabled={!youtubeUrl.trim()}> Load </button>
+					<button class="btn btn-sm btn-primary" onclick={handleYouTubeSubmit} disabled={!youtubeUrl.trim()}> Load </button>
 				</div>
 				{#if youtubeError}
 					<p class="text-error text-xs mt-1">{youtubeError}</p>
@@ -117,9 +137,9 @@
 					</p>
 					<button
 						class="btn btn-sm btn-primary"
-						on:click={() => {
+						onclick={() => {
 							isOpen = false;
-							dispatch('startTranscription');
+							onstartTranscription?.();
 						}}
 					>
 						Start Auto-Transcription
@@ -132,7 +152,7 @@
 				<div class="mt-4">
 					<div class="flex justify-between items-center mb-2">
 						<p class="text-sm font-medium">Uploaded files:</p>
-						<button class="btn btn-xs btn-ghost" on:click={() => dispatch('clearFiles')}>Clear</button>
+						<button class="btn btn-xs btn-ghost" onclick={() => onclearFiles?.()}>Clear</button>
 					</div>
 					<div class="space-y-2 max-h-40 overflow-y-auto">
 						{#each uploadedFiles as file}
@@ -165,7 +185,7 @@
 			{/if}
 
 			<div class="modal-action">
-				<button class="btn" on:click={() => (isOpen = false)}>Close</button>
+				<button class="btn" onclick={() => (isOpen = false)}>Close</button>
 			</div>
 		</div>
 	</div>

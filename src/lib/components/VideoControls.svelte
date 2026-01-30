@@ -1,30 +1,33 @@
 <script lang="ts">
-	import { onMount, onDestroy, createEventDispatcher } from 'svelte';
+	import { onMount, onDestroy } from 'svelte';
 	import { browser } from '$app/environment';
 	import VideoStore, { togglePlayPause, toggleMute, setCurrentTime } from '../../stores/videoStore';
 	import { getCurrentTime, seekTo, setPlaybackRate, type VideoPlayer } from '../video/video-service';
 	import { formatTimeCompact } from '../core/time-utils';
 
-	export let player: VideoPlayer | null = null;
-	export let isFullscreen: boolean = false;
-	export let showAdvancedControls: boolean = false;
+	interface Props {
+		player?: VideoPlayer | null;
+		isFullscreen?: boolean;
+		showAdvancedControls?: boolean;
+		ontoggleFullscreen?: () => void;
+	}
 
-	const dispatch = createEventDispatcher();
+	let { player = null, isFullscreen = false, showAdvancedControls = false, ontoggleFullscreen }: Props = $props();
 
 	let animationFrameId: number;
-	let isScrubbing = false;
-	let scrubTime = 0;
+	let isScrubbing = $state(false);
+	let scrubTime = $state(0);
 
 	const SKIP_SECONDS = 5;
 	const SPEED_OPTIONS = [0.5, 0.75, 1, 1.25, 1.5, 2];
 
-	let currentSpeed = 1;
+	let currentSpeed = $state(1);
 
-	$: isPlaying = $VideoStore.isPlaying;
-	$: isMuted = $VideoStore.isMuted;
-	$: currentTime = $VideoStore.currentTime;
-	$: duration = $VideoStore.duration;
-	$: progressPercent = duration > 0 ? (currentTime / duration) * 100 : 0;
+	let isPlaying = $derived($VideoStore.isPlaying);
+	let isMuted = $derived($VideoStore.isMuted);
+	let currentTime = $derived($VideoStore.currentTime);
+	let duration = $derived($VideoStore.duration);
+	let progressPercent = $derived(duration > 0 ? (currentTime / duration) * 100 : 0);
 
 	// Update current time from player
 	function updateTime() {
@@ -106,7 +109,7 @@
 
 	function handleFullscreenToggle(e: MouseEvent) {
 		e.stopPropagation();
-		dispatch('toggleFullscreen');
+		ontoggleFullscreen?.();
 	}
 
 	onMount(() => {
@@ -130,16 +133,16 @@
 </script>
 
 {#if showAdvancedControls}
-	<div class="video-controls" on:mousedown|stopPropagation on:click|stopPropagation role="toolbar" tabindex="0" on:keydown|stopPropagation>
+	<div class="video-controls" onmousedown={(e) => e.stopPropagation()} onclick={(e) => e.stopPropagation()} role="toolbar" tabindex="0" onkeydown={(e) => e.stopPropagation()}>
 		<!-- Skip backward -->
-		<button class="control-btn" on:click={handleSkipBackward} aria-label="Skip back 5 seconds" title="-5s">
+		<button class="control-btn" onclick={handleSkipBackward} aria-label="Skip back 5 seconds" title="-5s">
 			<svg viewBox="0 0 24 24" fill="currentColor">
 				<path d="M11 18V6l-8.5 6 8.5 6zm.5-6l8.5 6V6l-8.5 6z" />
 			</svg>
 		</button>
 
 		<!-- Play/Pause -->
-		<button class="control-btn play-pause" on:click={handlePlayPause} aria-label={isPlaying ? 'Pause' : 'Play'}>
+		<button class="control-btn play-pause" onclick={handlePlayPause} aria-label={isPlaying ? 'Pause' : 'Play'}>
 			{#if isPlaying}
 				<svg viewBox="0 0 24 24" fill="currentColor">
 					<rect x="6" y="4" width="4" height="16" />
@@ -153,7 +156,7 @@
 		</button>
 
 		<!-- Skip forward -->
-		<button class="control-btn" on:click={handleSkipForward} aria-label="Skip forward 5 seconds" title="+5s">
+		<button class="control-btn" onclick={handleSkipForward} aria-label="Skip forward 5 seconds" title="+5s">
 			<svg viewBox="0 0 24 24" fill="currentColor">
 				<path d="M4 18l8.5-6L4 6v12zm9-12v12l8.5-6L13 6z" />
 			</svg>
@@ -169,7 +172,7 @@
 		<!-- Progress/scrub bar -->
 		<div
 			class="progress-bar"
-			on:mousedown={handleScrubStart}
+			onmousedown={handleScrubStart}
 			role="slider"
 			aria-label="Video progress"
 			aria-valuemin={0}
@@ -184,12 +187,12 @@
 		</div>
 
 		<!-- Speed -->
-		<button class="control-btn speed" on:click={handleSpeedChange} aria-label="Playback speed" title="Speed: {currentSpeed}x">
+		<button class="control-btn speed" onclick={handleSpeedChange} aria-label="Playback speed" title="Speed: {currentSpeed}x">
 			<span class="speed-text">{currentSpeed}x</span>
 		</button>
 
 		<!-- Mute -->
-		<button class="control-btn mute" on:click={handleMute} aria-label={isMuted ? 'Unmute' : 'Mute'}>
+		<button class="control-btn mute" onclick={handleMute} aria-label={isMuted ? 'Unmute' : 'Mute'}>
 			{#if isMuted}
 				<svg viewBox="0 0 24 24" fill="currentColor">
 					<path
@@ -208,7 +211,7 @@
 		<!-- Fullscreen toggle -->
 		<button
 			class="control-btn"
-			on:click={handleFullscreenToggle}
+			onclick={handleFullscreenToggle}
 			aria-label={isFullscreen ? 'Exit fullscreen' : 'Fullscreen'}
 			title={isFullscreen ? 'Exit fullscreen' : 'Fullscreen'}
 		>

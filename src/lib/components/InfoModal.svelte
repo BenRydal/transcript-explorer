@@ -1,21 +1,24 @@
 <script lang="ts">
 	import { writable, type Writable } from 'svelte/store';
-	import MdClose from 'svelte-icons/md/MdClose.svelte';
-	import MdLightbulbOutline from 'svelte-icons/md/MdLightbulbOutline.svelte';
-	import MdPlayCircleOutline from 'svelte-icons/md/MdPlayCircleOutline.svelte';
-	import MdCloudUpload from 'svelte-icons/md/MdCloudUpload.svelte';
-	import MdVideocam from 'svelte-icons/md/MdVideocam.svelte';
-	import MdMic from 'svelte-icons/md/MdMic.svelte';
-	import MdEdit from 'svelte-icons/md/MdEdit.svelte';
-	import MdChat from 'svelte-icons/md/MdChat.svelte';
+	import { X, Lightbulb, CirclePlay, CloudUpload, Video, Mic, Pencil, MessageSquare } from '@lucide/svelte';
 
-	export let isModalOpen: Writable<boolean> = writable(false);
-	export let onLoadExample: ((exampleId: string) => void) | null = null;
-	export let onOpenUpload: (() => void) | null = null;
-	export let onOpenPaste: (() => void) | null = null;
-	export let onStartTour: (() => void) | null = null;
+	interface Props {
+		isModalOpen?: Writable<boolean>;
+		onLoadExample?: ((exampleId: string) => void) | null;
+		onOpenUpload?: (() => void) | null;
+		onOpenPaste?: (() => void) | null;
+		onStartTour?: (() => void) | null;
+	}
 
-	let activeTab: 'start' | 'views' | 'import' | 'create' = 'start';
+	let {
+		isModalOpen = writable(false),
+		onLoadExample = null,
+		onOpenUpload = null,
+		onOpenPaste = null,
+		onStartTour = null
+	}: Props = $props();
+
+	let activeTab: 'start' | 'views' | 'import' | 'create' = $state('start');
 
 	const tabs = [
 		{ id: 'start', label: 'Get Started' },
@@ -93,11 +96,11 @@
 </script>
 
 {#if $isModalOpen}
-	<!-- svelte-ignore a11y-no-noninteractive-element-interactions -->
+	<!-- svelte-ignore a11y_no_noninteractive_element_interactions -->
 	<div
 		class="modal modal-open"
-		on:click|self={() => ($isModalOpen = false)}
-		on:keydown={handleKeydown}
+		onclick={(e) => { if (e.target === e.currentTarget) $isModalOpen = false; }}
+		onkeydown={handleKeydown}
 		role="dialog"
 		aria-modal="true"
 		aria-labelledby="modal-title"
@@ -115,10 +118,10 @@
 						</div>
 						<button
 							class="btn btn-circle btn-ghost btn-sm text-white hover:bg-white/20 flex-shrink-0"
-							on:click={() => ($isModalOpen = false)}
+							onclick={() => ($isModalOpen = false)}
 							aria-label="Close modal"
 						>
-							<div class="w-6 h-6"><MdClose /></div>
+							<X size={24} />
 						</button>
 					</div>
 					<div
@@ -147,7 +150,7 @@
 							class="px-4 py-3 text-sm font-medium border-b-2 transition-colors {activeTab === tab.id
 								? 'border-gray-800 text-gray-800'
 								: 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'}"
-							on:click={() => (activeTab = tab.id)}
+							onclick={() => (activeTab = tab.id)}
 						>
 							{tab.label}
 						</button>
@@ -161,12 +164,12 @@
 					<!-- Get Started Tab -->
 					<div class="flex gap-4 mb-6">
 						<button
-							on:click={() => closeAndRun(onStartTour)}
+							onclick={() => closeAndRun(onStartTour)}
 							class="flex-1 bg-gradient-to-r from-amber-50 to-orange-50 border border-amber-200 rounded-lg p-4 hover:border-amber-400 transition-all group text-left"
 						>
 							<div class="flex items-center gap-3">
 								<div class="w-10 h-10 rounded-full bg-amber-100 flex items-center justify-center group-hover:bg-amber-200 transition-colors text-amber-600">
-									<div class="w-5 h-5"><MdLightbulbOutline /></div>
+									<Lightbulb size={20} />
 								</div>
 								<div>
 									<h3 class="font-semibold text-gray-800 group-hover:text-amber-700">Take a Guided Tour</h3>
@@ -182,7 +185,7 @@
 						>
 							<div class="flex items-center gap-3">
 								<div class="w-10 h-10 rounded-full bg-blue-100 flex items-center justify-center group-hover:bg-blue-200 transition-colors text-blue-600">
-									<div class="w-5 h-5"><MdPlayCircleOutline /></div>
+									<CirclePlay size={20} />
 								</div>
 								<div>
 									<h3 class="font-semibold text-gray-800 group-hover:text-blue-700">Watch Demo Video</h3>
@@ -197,7 +200,7 @@
 						{#each examples as example}
 							<button
 								class="text-left border border-gray-200 rounded-lg hover:border-amber-400 hover:bg-amber-50 transition-all group overflow-hidden flex"
-								on:click={() => closeAndRun(() => onLoadExample?.(example.id))}
+								onclick={() => closeAndRun(() => onLoadExample?.(example.id))}
 							>
 								<img src={example.thumb} alt={example.title} class="w-24 h-24 object-cover flex-shrink-0" />
 								<div class="p-3 flex flex-col justify-center">
@@ -290,7 +293,7 @@
 
 					<div class="bg-blue-50 border border-blue-200 rounded-lg p-4 mb-4">
 						<div class="flex items-start gap-3">
-							<div class="w-5 h-5 text-blue-600 flex-shrink-0 mt-0.5"><MdVideocam /></div>
+							<Video size={20} class="text-blue-600 flex-shrink-0 mt-0.5" />
 							<div>
 								<h4 class="font-medium text-blue-800 mb-1">Link with video</h4>
 								<p class="text-sm text-blue-700">If your transcript has timestamps, you can also upload an MP4 or paste a YouTube link to sync visualizations with video playback.</p>
@@ -299,11 +302,11 @@
 					</div>
 
 					<div class="flex gap-3">
-						<button class="btn btn-primary" on:click={() => closeAndRun(onOpenUpload)}>
-							<div class="w-5 h-5 mr-2"><MdCloudUpload /></div>
+						<button class="btn btn-primary" onclick={() => closeAndRun(onOpenUpload)}>
+							<CloudUpload size={20} class="mr-2" />
 							Upload Files
 						</button>
-						<button class="btn btn-outline" on:click={() => closeAndRun(onOpenPaste)}>
+						<button class="btn btn-outline" onclick={() => closeAndRun(onOpenPaste)}>
 							<svg xmlns="http://www.w3.org/2000/svg" class="w-5 h-5 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
 								<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
 							</svg>
@@ -319,7 +322,7 @@
 						<div class="border border-gray-200 rounded-lg p-5 hover:border-purple-300 transition-colors">
 							<div class="flex items-start gap-4">
 								<div class="w-12 h-12 rounded-full bg-purple-100 flex items-center justify-center flex-shrink-0 text-purple-600">
-									<div class="w-6 h-6"><MdMic /></div>
+									<Mic size={24} />
 								</div>
 								<div class="flex-1">
 									<h4 class="font-semibold text-gray-800 mb-1">Auto-Transcribe with AI</h4>
@@ -328,8 +331,8 @@
 										<p><strong>How it works:</strong> Upload video → Click "Auto-Transcribe" → Edit result in the transcript editor</p>
 										<p><strong>Note:</strong> English only. All speech is assigned to one speaker—use the editor to assign speakers afterward.</p>
 									</div>
-									<button class="btn btn-sm btn-primary" on:click={() => closeAndRun(onOpenUpload)}>
-										<div class="w-4 h-4 mr-1"><MdCloudUpload /></div>
+									<button class="btn btn-sm btn-primary" onclick={() => closeAndRun(onOpenUpload)}>
+										<CloudUpload size={16} class="mr-1" />
 										Upload Video
 									</button>
 								</div>
@@ -340,7 +343,7 @@
 						<div class="border border-gray-200 rounded-lg p-5 hover:border-emerald-300 transition-colors">
 							<div class="flex items-start gap-4">
 								<div class="w-12 h-12 rounded-full bg-emerald-100 flex items-center justify-center flex-shrink-0 text-emerald-600">
-									<div class="w-6 h-6"><MdEdit /></div>
+									<Pencil size={24} />
 								</div>
 								<div class="flex-1">
 									<h4 class="font-semibold text-gray-800 mb-1">Transcribe Manually</h4>
@@ -349,8 +352,8 @@
 										<p><strong>How it works:</strong> Upload video → Click "Transcribe" in the navbar → Type while controlling playback</p>
 										<p><strong>Keyboard shortcuts:</strong> Space to pause, arrow keys to skip, capture timestamps as you go</p>
 									</div>
-									<button class="btn btn-sm btn-primary" on:click={() => closeAndRun(onOpenUpload)}>
-										<div class="w-4 h-4 mr-1"><MdCloudUpload /></div>
+									<button class="btn btn-sm btn-primary" onclick={() => closeAndRun(onOpenUpload)}>
+										<CloudUpload size={16} class="mr-1" />
 										Upload Video
 									</button>
 								</div>
@@ -369,7 +372,7 @@
 						rel="noopener noreferrer"
 						class="text-sm text-gray-600 hover:text-gray-900 inline-flex items-center gap-1"
 					>
-						<div class="w-4 h-4"><MdChat /></div>
+						<MessageSquare size={16} />
 						Feedback
 					</a>
 					<a

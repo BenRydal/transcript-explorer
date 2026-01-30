@@ -4,9 +4,7 @@
 	import P5Store from '../../stores/p5Store';
 	import ConfigStore from '../../stores/configStore';
 	import TranscriptStore from '../../stores/transcriptStore';
-	import MdSkipPrevious from 'svelte-icons/md/MdSkipPrevious.svelte';
-	import MdPlayArrow from 'svelte-icons/md/MdPlayArrow.svelte';
-	import MdPause from 'svelte-icons/md/MdPause.svelte';
+	import { SkipBack, Play, Pause } from '@lucide/svelte';
 	import RangeSlider from './RangeSlider.svelte';
 	import type { TimingMode } from '../../models/transcript';
 
@@ -163,16 +161,16 @@
 		<div class="control-group">
 			<button on:click={toggleAnimation} class="control-btn play-btn" aria-label={isAnimating ? 'Pause' : 'Play'}>
 				{#if isAnimating}
-					<MdPause />
+					<Pause size={16} />
 				{:else}
-					<MdPlayArrow />
+					<Play size={16} />
 				{/if}
 			</button>
 
 			<div class="control-divider"></div>
 
 			<button class="control-btn" on:click={resetToStart} title="Skip to start" aria-label="Skip to start">
-				<MdSkipPrevious />
+				<SkipBack size={16} />
 			</button>
 
 			<div class="control-divider"></div>
@@ -266,11 +264,6 @@
 	.control-btn.play-btn:hover {
 		background: #2563eb;
 		color: #ffffff;
-	}
-
-	.control-btn :global(svg) {
-		width: 16px;
-		height: 16px;
 	}
 
 	.control-btn.speed-btn {

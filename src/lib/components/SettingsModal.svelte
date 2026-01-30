@@ -1,5 +1,4 @@
 <script lang="ts">
-	import { createEventDispatcher } from 'svelte';
 	import { get } from 'svelte/store';
 	import ConfigStore, { type ConfigStoreType } from '../../stores/configStore';
 	import TimelineStore from '../../stores/timelineStore';
@@ -8,9 +7,12 @@
 	import { toSeconds, formatTimeAuto } from '$lib/core/time-utils';
 	import P5Store from '../../stores/p5Store';
 
-	export let isOpen = false;
+	interface Props {
+		isOpen: boolean;
+		onopenDataExplorer?: () => void;
+	}
 
-	const dispatch = createEventDispatcher();
+	let { isOpen = $bindable(false), onopenDataExplorer }: Props = $props();
 
 	function handleConfigChange(key: keyof ConfigStoreType, value: any) {
 		ConfigStore.update((store) => ({ ...store, [key]: value }));
@@ -31,17 +33,14 @@
 		if (e.key === 'Escape') isOpen = false;
 	}
 
-	function openDataExplorer() {
-		dispatch('openDataExplorer');
-	}
 </script>
 
 {#if isOpen}
-	<div class="modal modal-open" on:click|self={() => (isOpen = false)} on:keydown={handleKeydown} role="dialog" aria-modal="true">
+	<div class="modal modal-open" onclick={(e) => { if (e.target === e.currentTarget) isOpen = false; }} onkeydown={handleKeydown} role="dialog" aria-modal="true">
 		<div class="modal-box w-11/12 max-w-md p-8">
 			<div class="flex justify-between mb-6">
 				<h3 class="font-bold text-xl">Settings</h3>
-				<button class="btn btn-circle btn-sm" on:click={() => (isOpen = false)}>
+				<button class="btn btn-circle btn-sm" onclick={() => (isOpen = false)}>
 					<svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
 						<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
 					</svg>
@@ -58,8 +57,8 @@
 						type="text"
 						value={formatTimeAuto($TimelineStore.endTime)}
 						placeholder="e.g. 90, 1:30, or 0:01:30"
-						on:change={(e) => {
-							const input = e.target;
+						onchange={(e) => {
+							const input = e.target as HTMLInputElement;
 							const seconds = toSeconds(input.value);
 							if (seconds !== null && seconds > 0) {
 								TimelineStore.update((timeline) => {
@@ -89,7 +88,7 @@
 								name="endTimeCalculation"
 								class="radio radio-sm"
 								checked={!$ConfigStore.preserveGapsBetweenTurns}
-								on:change={() => {
+								onchange={() => {
 									handleConfigChange('preserveGapsBetweenTurns', false);
 									recalculateStartOnlyEndTimes();
 								}}
@@ -102,7 +101,7 @@
 								name="endTimeCalculation"
 								class="radio radio-sm"
 								checked={$ConfigStore.preserveGapsBetweenTurns}
-								on:change={() => {
+								onchange={() => {
 									handleConfigChange('preserveGapsBetweenTurns', true);
 									recalculateStartOnlyEndTimes();
 								}}
@@ -121,8 +120,8 @@
 							max="6"
 							step="0.5"
 							value={$ConfigStore.speechRateWordsPerSecond}
-							on:input={(e) => {
-								handleConfigChange('speechRateWordsPerSecond', parseFloat(e.target.value));
+							oninput={(e) => {
+								handleConfigChange('speechRateWordsPerSecond', parseFloat((e.target as HTMLInputElement).value));
 								recalculateStartOnlyEndTimes();
 							}}
 							class="range range-sm"
@@ -145,7 +144,7 @@
 							max="5"
 							step="1"
 							value={$ConfigStore.snippetDurationSeconds}
-							on:input={(e) => handleConfigChange('snippetDurationSeconds', parseInt(e.target.value))}
+							oninput={(e) => handleConfigChange('snippetDurationSeconds', parseInt((e.target as HTMLInputElement).value))}
 							class="range range-sm"
 						/>
 					</div>
@@ -153,11 +152,11 @@
 			</div>
 
 			<div class="flex justify-center mt-6">
-				<button class="btn btn-sm" on:click={openDataExplorer}>Data Explorer</button>
+				<button class="btn btn-sm" onclick={() => onopenDataExplorer?.()}>Data Explorer</button>
 			</div>
 
 			<div class="modal-action">
-				<button class="btn" on:click={() => (isOpen = false)}>Close</button>
+				<button class="btn" onclick={() => (isOpen = false)}>Close</button>
 			</div>
 		</div>
 	</div>

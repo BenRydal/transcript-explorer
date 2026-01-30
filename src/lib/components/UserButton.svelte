@@ -1,29 +1,30 @@
 <script lang="ts">
-	import { createEventDispatcher } from 'svelte';
-	import MdMoreVert from 'svelte-icons/md/MdMoreVert.svelte';
+	import { EllipsisVertical } from '@lucide/svelte';
 	import { toTitleCase } from '$lib/core/string-utils';
 
-	export let user: { name: string; color: string; enabled: boolean };
+	interface Props {
+		user: { name: string; color: string; enabled: boolean };
+		ontoggleVisibility?: () => void;
+		onopenDropdown?: (event: MouseEvent) => void;
+	}
 
-	const dispatch = createEventDispatcher();
+	let { user, ontoggleVisibility, onopenDropdown }: Props = $props();
 
 	function handleSettingsClick(event: MouseEvent) {
 		event.stopPropagation();
-		dispatch('openDropdown', event);
+		onopenDropdown?.(event);
 	}
 
-	$: displayName = toTitleCase(user.name);
+	let displayName = $derived(toTitleCase(user.name));
 </script>
 
 <div class="user-button-container" class:hidden-state={!user.enabled}>
-	<button class="user-button" on:click={() => dispatch('toggleVisibility')} title={user.enabled ? `Hide ${displayName}` : `Show ${displayName}`}>
+	<button class="user-button" onclick={() => ontoggleVisibility?.()} title={user.enabled ? `Hide ${displayName}` : `Show ${displayName}`}>
 		<span class="color-chip" style:background-color={user.enabled ? user.color : 'transparent'}></span>
 		<span class="user-name">{displayName}</span>
 	</button>
-	<button class="settings-button" on:click={handleSettingsClick} title="Settings">
-		<div class="settings-icon">
-			<MdMoreVert />
-		</div>
+	<button class="settings-button" onclick={handleSettingsClick} title="Settings">
+		<EllipsisVertical size={16} />
 	</button>
 </div>
 
@@ -77,11 +78,6 @@
 
 	.settings-button:hover {
 		color: #1f2937;
-	}
-
-	.settings-icon {
-		width: 16px;
-		height: 16px;
 	}
 
 	.color-chip {

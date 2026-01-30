@@ -13,84 +13,89 @@
 	const CHROME_HEIGHT = DRAG_HANDLE_HEIGHT + CONTROLS_HEIGHT;
 	const FULLSCREEN_PADDING = 8;
 
-	let videoPlayerComponent: VideoPlayerComponent;
-	let player: VideoPlayer | null = null;
-	let isFullscreen = false;
-	let resizeObserver: ResizeObserver | null = null;
+	let player: VideoPlayer | null = $state(null);
+	let isFullscreen = $state(false);
+	let resizeObserver: ResizeObserver | null = $state(null);
 
 	// Store pre-fullscreen state for restoration
-	let preFullscreenPosition = { x: 0, y: 0 };
-	let preFullscreenSize = { width: 320, height: 180 };
+	let preFullscreenPosition = $state({ x: 0, y: 0 });
+	let preFullscreenSize = $state({ width: 320, height: 180 });
 
 	// Get reactive state from store
-	$: position = $VideoStore.position;
-	$: size = $VideoStore.size;
-	$: aspectRatio = $VideoStore.aspectRatio;
-	$: isDragging = $VideoStore.isDragging;
-	$: isResizing = $VideoStore.isResizing;
-	$: isPlaying = $VideoStore.isPlaying;
-	$: isMuted = $VideoStore.isMuted;
-	$: seekRequest = $VideoStore.seekRequest;
-	$: isVisible = $VideoStore.isVisible;
-	$: snippetsMode = $VideoStore.snippetsMode;
-	$: showAdvancedControls = $EditorStore.config.showAdvancedVideoControls;
+	let position = $derived($VideoStore.position);
+	let size = $derived($VideoStore.size);
+	let aspectRatio = $derived($VideoStore.aspectRatio);
+	let isDragging = $derived($VideoStore.isDragging);
+	let isResizing = $derived($VideoStore.isResizing);
+	let isPlaying = $derived($VideoStore.isPlaying);
+	let isMuted = $derived($VideoStore.isMuted);
+	let seekRequest = $derived($VideoStore.seekRequest);
+	let isVisible = $derived($VideoStore.isVisible);
+	let snippetsMode = $derived($VideoStore.snippetsMode);
+	let showAdvancedControls = $derived($EditorStore.config.showAdvancedVideoControls);
 
 	// Handle seek requests from p5 or other sources
-	let lastSeekRequestId = 0;
-	$: if (player && seekRequest && seekRequest.id !== lastSeekRequestId) {
-		lastSeekRequestId = seekRequest.id;
-		seekTo(player, seekRequest.time);
-		clearSeekRequest();
-	}
+	let lastSeekRequestId = $state(0);
+	$effect(() => {
+		if (player && seekRequest && seekRequest.id !== lastSeekRequestId) {
+			lastSeekRequestId = seekRequest.id;
+			seekTo(player, seekRequest.time);
+			clearSeekRequest();
+		}
+	});
 
 	// Drag state
-	let dragStartX = 0;
-	let dragStartY = 0;
-	let dragStartPosX = 0;
-	let dragStartPosY = 0;
+	let dragStartX = $state(0);
+	let dragStartY = $state(0);
+	let dragStartPosX = $state(0);
+	let dragStartPosY = $state(0);
 
 	// Resize state
-	let resizeCorner = '';
-	let resizeStartX = 0;
-	let resizeStartWidth = 0;
-	let resizeStartHeight = 0;
-	let resizeStartPosX = 0;
-	let resizeStartPosY = 0;
+	let resizeCorner = $state('');
+	let resizeStartX = $state(0);
+	let resizeStartWidth = $state(0);
+	let resizeStartHeight = $state(0);
+	let resizeStartPosX = $state(0);
+	let resizeStartPosY = $state(0);
 
 	// Track previous state to only call player methods when state actually changes
-	let prevIsPlaying: boolean | null = null;
-	let prevIsMuted: boolean | null = null;
+	let prevIsPlaying: boolean | null = $state(null);
+	let prevIsMuted: boolean | null = $state(null);
 
 	// Sync playback state with actual player
 	// Use isLoaded to ensure player is fully ready before sending commands
-	$: if (player && browser && $VideoStore.isLoaded) {
-		// Only act when isPlaying actually changes, not on other store updates
-		if (isPlaying !== prevIsPlaying) {
-			if (isPlaying) {
-				playVideo(player);
-			} else if (prevIsPlaying === true) {
-				// Only pause if we were actually playing before
-				pauseVideo(player);
+	$effect(() => {
+		if (player && browser && $VideoStore.isLoaded) {
+			// Only act when isPlaying actually changes, not on other store updates
+			if (isPlaying !== prevIsPlaying) {
+				if (isPlaying) {
+					playVideo(player);
+				} else if (prevIsPlaying === true) {
+					// Only pause if we were actually playing before
+					pauseVideo(player);
+				}
+				prevIsPlaying = isPlaying;
 			}
-			prevIsPlaying = isPlaying;
 		}
-	}
+	});
 
-	$: if (player && browser && $VideoStore.isLoaded) {
-		// Only act when isMuted actually changes
-		if (isMuted !== prevIsMuted) {
-			if (isMuted) {
-				muteVideo(player);
-			} else if (prevIsMuted === true) {
-				// Only unmute if we were actually muted before
-				unmuteVideo(player);
+	$effect(() => {
+		if (player && browser && $VideoStore.isLoaded) {
+			// Only act when isMuted actually changes
+			if (isMuted !== prevIsMuted) {
+				if (isMuted) {
+					muteVideo(player);
+				} else if (prevIsMuted === true) {
+					// Only unmute if we were actually muted before
+					unmuteVideo(player);
+				}
+				prevIsMuted = isMuted;
 			}
-			prevIsMuted = isMuted;
 		}
-	}
+	});
 
-	function handlePlayerReady(event: CustomEvent<{ player: VideoPlayer; duration: number }>) {
-		player = event.detail.player;
+	function handlePlayerReady(data: { player: VideoPlayer; duration: number }) {
+		player = data.player;
 		// Reset previous state tracking when a new player is ready
 		// This prevents reactive statements from immediately trying to pause/unmute
 		prevIsPlaying = isPlaying;
@@ -294,8 +299,8 @@
 	<div
 		class="drag-handle"
 		class:dragging={isDragging}
-		on:mousedown={handleDragStart}
-		on:keydown={(e) => e.key === 'Enter' && handleDragStart}
+		onmousedown={handleDragStart}
+		onkeydown={(e) => e.key === 'Enter' && handleDragStart}
 		role="button"
 		tabindex="0"
 		aria-label="Drag to move video"
@@ -305,7 +310,7 @@
 
 	<!-- Video player area -->
 	<div class="video-area" style="height: {size.height - DRAG_HANDLE_HEIGHT}px;">
-		<VideoPlayerComponent bind:this={videoPlayerComponent} on:ready={handlePlayerReady} />
+		<VideoPlayerComponent onready={handlePlayerReady} />
 
 		<!-- Click shield for YouTube -->
 		<div class="click-shield"></div>
@@ -320,15 +325,15 @@
 
 	<!-- Controls bar at bottom -->
 	<div class="controls-bar">
-		<VideoControls {player} {isFullscreen} {showAdvancedControls} on:toggleFullscreen={handleToggleFullscreen} />
+		<VideoControls {player} {isFullscreen} {showAdvancedControls} ontoggleFullscreen={handleToggleFullscreen} />
 	</div>
 
 	<!-- Resize handles (hidden in fullscreen) -->
 	{#if !isFullscreen}
-		<button class="resize-handle nw" on:mousedown={(e) => handleResizeStart(e, 'nw')} aria-label="Resize from top-left corner"></button>
-		<button class="resize-handle ne" on:mousedown={(e) => handleResizeStart(e, 'ne')} aria-label="Resize from top-right corner"></button>
-		<button class="resize-handle sw" on:mousedown={(e) => handleResizeStart(e, 'sw')} aria-label="Resize from bottom-left corner"></button>
-		<button class="resize-handle se" on:mousedown={(e) => handleResizeStart(e, 'se')} aria-label="Resize from bottom-right corner"></button>
+		<button class="resize-handle nw" onmousedown={(e) => handleResizeStart(e, 'nw')} aria-label="Resize from top-left corner"></button>
+		<button class="resize-handle ne" onmousedown={(e) => handleResizeStart(e, 'ne')} aria-label="Resize from top-right corner"></button>
+		<button class="resize-handle sw" onmousedown={(e) => handleResizeStart(e, 'sw')} aria-label="Resize from bottom-left corner"></button>
+		<button class="resize-handle se" onmousedown={(e) => handleResizeStart(e, 'se')} aria-label="Resize from bottom-right corner"></button>
 	{/if}
 </div>
 

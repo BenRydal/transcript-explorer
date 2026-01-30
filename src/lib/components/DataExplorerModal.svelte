@@ -3,7 +3,11 @@
 	import UserStore from '../../stores/userStore';
 	import { toTitleCase } from '$lib/core/string-utils';
 
-	export let isOpen = false;
+	interface Props {
+		isOpen: boolean;
+	}
+
+	let { isOpen = $bindable(false) }: Props = $props();
 
 	function handleKeydown(e: KeyboardEvent) {
 		if (e.key === 'Escape') isOpen = false;
@@ -11,7 +15,7 @@
 </script>
 
 {#if isOpen}
-	<div class="modal modal-open" on:click|self={() => (isOpen = false)} on:keydown={handleKeydown} role="dialog" aria-modal="true">
+	<div class="modal modal-open" onclick={(e) => { if (e.target === e.currentTarget) isOpen = false; }} onkeydown={handleKeydown} role="dialog" aria-modal="true">
 		<div class="modal-box w-11/12 max-w-5xl">
 			<div class="flex justify-between">
 				<div class="flex flex-col">
@@ -19,7 +23,7 @@
 					<p>Here you will find detailed information on the data that you have uploaded.</p>
 				</div>
 
-				<button class="btn btn-circle btn-sm" on:click={() => (isOpen = false)}>
+				<button class="btn btn-circle btn-sm" onclick={() => (isOpen = false)}>
 					<svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
 						<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
 					</svg>
@@ -97,7 +101,7 @@
 				</div>
 			</div>
 			<div class="modal-action">
-				<button class="btn" on:click={() => (isOpen = false)}>Close</button>
+				<button class="btn" onclick={() => (isOpen = false)}>Close</button>
 			</div>
 		</div>
 	</div>

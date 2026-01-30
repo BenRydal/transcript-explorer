@@ -1,5 +1,5 @@
 <script lang="ts">
-	import { onMount, createEventDispatcher } from 'svelte';
+	import { onMount } from 'svelte';
 	import { get } from 'svelte/store';
 	import TranscriptStore from '../../stores/transcriptStore';
 	import UserStore from '../../stores/userStore';
@@ -19,30 +19,34 @@
 
 	import type { TimingMode } from '../../models/transcript';
 
-	const dispatch = createEventDispatcher<{ createTranscript: void }>();
+	interface Props {
+		oncreateTranscript?: () => void;
+	}
 
-	let deleteModal: number | null = null;
+	let { oncreateTranscript }: Props = $props();
+
+	let deleteModal: number | null = $state(null);
 
 	// Reactively derive turns from TranscriptStore
-	$: turns = $TranscriptStore.wordArray.length > 0 ? getTurnsFromWordArray($TranscriptStore.wordArray) : [];
-	$: timingMode = $TranscriptStore.timingMode;
+	let turns = $derived($TranscriptStore.wordArray.length > 0 ? getTurnsFromWordArray($TranscriptStore.wordArray) : []);
+	let timingMode = $derived($TranscriptStore.timingMode);
 
 	// Get enabled speakers from UserStore
-	$: enabledSpeakers = new Set($UserStore.filter((u) => u.enabled).map((u) => u.name));
+	let enabledSpeakers = $derived(new Set($UserStore.filter((u) => u.enabled).map((u) => u.name)));
 
 	// Create a reactive speaker color map
-	$: speakerColorMap = new Map($UserStore.map((u) => [u.name, u.color]));
+	let speakerColorMap = $derived(new Map($UserStore.map((u) => [u.name, u.color])));
 
 	// Transcribe mode state for empty state UI
-	$: isInTranscribeMode = $TranscribeModeStore.isActive;
+	let isInTranscribeMode = $derived($TranscribeModeStore.isActive);
 
 	// Filter turns by speaker visibility, locked filter, and search term
-	$: displayedTurns = turns.filter((turn) => {
+	let displayedTurns = $derived(turns.filter((turn) => {
 		if (!enabledSpeakers.has(turn.speaker)) return false;
 		if ($EditorStore.selection.filteredSpeaker && turn.speaker !== $EditorStore.selection.filteredSpeaker) return false;
 		if ($ConfigStore.wordToSearch && !getTurnContent(turn).toLowerCase().includes($ConfigStore.wordToSearch.toLowerCase())) return false;
 		return true;
-	});
+	}));
 
 	// Clear the locked speaker filter
 	function clearSpeakerFilter() {
@@ -73,8 +77,8 @@
 	}
 
 	// Handle turn selection from row component
-	function handleTurnSelect(event: CustomEvent<{ turn: Turn }>) {
-		const turn = event.detail.turn;
+	function handleTurnSelect(data: { turn: Turn }) {
+		const turn = data.turn;
 
 		// Update EditorStore
 		EditorStore.update((state) => ({
@@ -103,8 +107,8 @@
 	}
 
 	// Handle edit events from row component
-	function handleTurnEdit(event: CustomEvent<{ turnNumber: number; field: string; value: any }>) {
-		const { turnNumber, field, value } = event.detail;
+	function handleTurnEdit(data: { turnNumber: number; field: string; value: any }) {
+		const { turnNumber, field, value } = data;
 
 		// Handle speaker name change - need to update UserStore and recalculate all speaker orders
 		// Note: speaker name is already normalized by TranscriptEditorRow before dispatch
@@ -312,9 +316,11 @@
 	}
 
 	// Auto-scroll to selected turn when selection changes from visualization
-	$: if ($EditorStore.selection.selectedTurnNumber !== null && $EditorStore.selection.selectionSource !== 'editor') {
-		scrollToTurn($EditorStore.selection.selectedTurnNumber);
-	}
+	$effect(() => {
+		if ($EditorStore.selection.selectedTurnNumber !== null && $EditorStore.selection.selectionSource !== 'editor') {
+			scrollToTurn($EditorStore.selection.selectedTurnNumber);
+		}
+	});
 
 	function scrollToTurn(turnNumber: number) {
 		const element = document.getElementById(`turn-${turnNumber}`);
@@ -324,8 +330,8 @@
 	}
 
 	// Handle delete turn - show confirmation modal
-	function handleTurnDelete(event: CustomEvent<{ turnNumber: number }>) {
-		deleteModal = event.detail.turnNumber;
+	function handleTurnDelete(data: { turnNumber: number }) {
+		deleteModal = data.turnNumber;
 	}
 
 	// Actually delete the turn after confirmation
@@ -369,8 +375,8 @@
 	}
 
 	// Handle add turn after
-	function handleAddAfter(event: CustomEvent<{ turnNumber: number; speaker: string }>) {
-		const { turnNumber, speaker } = event.detail;
+	function handleAddAfter(data: { turnNumber: number; speaker: string }) {
+		const { turnNumber, speaker } = data;
 
 		// Save state for undo
 		HistoryStore.pushState(get(TranscriptStore).wordArray);
@@ -476,7 +482,7 @@
 </script>
 
 <div class="transcript-editor">
-	<EditorToolbar on:undo={undo} on:redo={redo} />
+	<EditorToolbar onundo={undo} onredo={redo} />
 
 	<div class="editor-content">
 		{#if turns.length === 0}
@@ -484,7 +490,7 @@
 				{#if isInTranscribeMode}
 					<div class="empty-state-content">
 						<p class="text-gray-600 mb-4">No transcript yet. Create one to start transcribing.</p>
-						<button class="create-transcript-btn" on:click={() => dispatch('createTranscript')}>
+						<button class="create-transcript-btn" onclick={() => oncreateTranscript?.()}>
 							Create New Transcript
 						</button>
 						<p class="text-gray-400 text-sm mt-3">Or upload an existing transcript file</p>
@@ -501,7 +507,7 @@
 						<span class="filter-count">({displayedTurns.length} of {turns.length} turns)</span>
 					</span>
 					{#if $EditorStore.selection.selectionSource === 'distributionDiagramClick'}
-						<button class="clear-filter-btn" on:click={clearSpeakerFilter}>× Show all</button>
+						<button class="clear-filter-btn" onclick={clearSpeakerFilter}>× Show all</button>
 					{/if}
 				</div>
 			{/if}
@@ -514,10 +520,10 @@
 							isSelected={isTurnSelected(turn)}
 							isSpeakerHighlighted={isSpeakerHighlighted(turn)}
 							{timingMode}
-							on:select={handleTurnSelect}
-							on:edit={handleTurnEdit}
-							on:delete={handleTurnDelete}
-							on:addAfter={handleAddAfter}
+							onselect={handleTurnSelect}
+							onedit={handleTurnEdit}
+							ondelete={handleTurnDelete}
+							onaddAfter={handleAddAfter}
 						/>
 					</div>
 				{/each}
@@ -531,8 +537,8 @@
 	title="Delete Turn?"
 	message="Are you sure you want to delete this turn? This can be undone."
 	confirmText="Delete"
-	on:confirm={onDeleteConfirm}
-	on:cancel={() => (deleteModal = null)}
+	onconfirm={onDeleteConfirm}
+	oncancel={() => (deleteModal = null)}
 />
 
 <style>

@@ -1,19 +1,27 @@
 <script lang="ts">
-	import { createEventDispatcher } from 'svelte';
 	import { DateTime } from 'luxon';
 
-	export let isOpen = false;
-	export let savedAt: number | null = null;
+	interface Props {
+		isOpen?: boolean;
+		savedAt?: number | null;
+		onrestore?: () => void;
+		ondiscard?: () => void;
+	}
 
-	const dispatch = createEventDispatcher();
+	let {
+		isOpen = $bindable(false),
+		savedAt = null,
+		onrestore,
+		ondiscard
+	}: Props = $props();
 
 	function restore() {
-		dispatch('restore');
+		onrestore?.();
 		isOpen = false;
 	}
 
 	function discard() {
-		dispatch('discard');
+		ondiscard?.();
 		isOpen = false;
 	}
 
@@ -34,10 +42,11 @@
 				Would you like to restore it?
 			</p>
 			<div class="modal-action">
-				<button class="btn btn-ghost" on:click={discard}>Start Fresh</button>
-				<button class="btn btn-primary" on:click={restore}>Restore</button>
+				<button class="btn btn-ghost" onclick={discard}>Start Fresh</button>
+				<button class="btn btn-primary" onclick={restore}>Restore</button>
 			</div>
 		</div>
-		<div class="modal-backdrop" on:click={discard} on:keydown={() => {}}></div>
+		<!-- svelte-ignore a11y_no_static_element_interactions -->
+		<div class="modal-backdrop" onclick={discard} onkeydown={() => {}}></div>
 	</div>
 {/if}

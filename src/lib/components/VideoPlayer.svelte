@@ -1,19 +1,21 @@
 <script lang="ts">
-	import { onMount, onDestroy, createEventDispatcher } from 'svelte';
+	import { onMount, onDestroy } from 'svelte';
 	import { derived } from 'svelte/store';
 	import { browser } from '$app/environment';
 	import VideoStore, { setLoaded, setAspectRatio } from '../../stores/videoStore';
 	import { createYouTubePlayer, type VideoPlayer, destroyPlayer } from '../video/video-service';
 
-	const dispatch = createEventDispatcher<{
-		ready: { player: VideoPlayer; duration: number };
-		error: { message: string };
-	}>();
+	interface Props {
+		onready?: (data: { player: VideoPlayer; duration: number }) => void;
+		onplayererror?: (data: { message: string }) => void;
+	}
+
+	let { onready, onplayererror }: Props = $props();
 
 	let containerEl: HTMLDivElement;
 	let youtubeContainerEl: HTMLDivElement;
 	let videoEl: HTMLVideoElement;
-	let player: VideoPlayer | null = null;
+	let player: VideoPlayer | null = $state(null);
 	// Use a stable ID for the YouTube container
 	const youtubeContainerId = 'youtube-player-container';
 
@@ -30,29 +32,26 @@
 	});
 
 	// Track the previous source to detect changes
-	let prevSourceType: string | null = null;
-	let prevVideoId: string | undefined = undefined;
-	let prevFileUrl: string | undefined = undefined;
-	let initialized = false;
+	let prevSourceType: string | null = $state(null);
+	let prevVideoId: string | undefined = $state(undefined);
+	let prevFileUrl: string | undefined = $state(undefined);
 
 	// Subscribe to the derived source store
-	$: source = $sourceStore;
+	let source = $derived($sourceStore);
 
 	// Only trigger initialization when source actually changes
-	$: if (browser && source.type && containerEl) {
-		const sourceChanged = source.type !== prevSourceType || source.videoId !== prevVideoId || source.fileUrl !== prevFileUrl;
+	$effect(() => {
+		if (browser && source.type && containerEl) {
+			const sourceChanged = source.type !== prevSourceType || source.videoId !== prevVideoId || source.fileUrl !== prevFileUrl;
 
-		if (sourceChanged) {
-			prevSourceType = source.type;
-			prevVideoId = source.videoId;
-			prevFileUrl = source.fileUrl;
-
-			if (!initialized) {
-				initialized = true;
+			if (sourceChanged) {
+				prevSourceType = source.type;
+				prevVideoId = source.videoId;
+				prevFileUrl = source.fileUrl;
+				initializePlayer();
 			}
-			initializePlayer();
 		}
-	}
+	});
 
 	function initializePlayer() {
 		// Destroy existing player first
@@ -90,10 +89,10 @@
 				player = ytPlayer;
 				setLoaded(duration);
 				setAspectRatio(16 / 9); // YouTube videos are typically 16:9
-				dispatch('ready', { player, duration });
+				onready?.({ player, duration });
 			},
 			(error) => {
-				dispatch('error', { message: `YouTube error: ${error}` });
+				onplayererror?.({ message: `YouTube error: ${error}` });
 			}
 		);
 	}
@@ -105,12 +104,12 @@
 			const ratio = videoEl.videoWidth / videoEl.videoHeight || 16 / 9;
 			setLoaded(duration);
 			setAspectRatio(ratio);
-			dispatch('ready', { player, duration });
+			onready?.({ player, duration });
 		}
 	}
 
 	function handleVideoError() {
-		dispatch('error', { message: 'Error loading video file' });
+		onplayererror?.({ message: 'Error loading video file' });
 	}
 
 	// Expose player reference
@@ -123,7 +122,6 @@
 			prevSourceType = source.type;
 			prevVideoId = source.videoId;
 			prevFileUrl = source.fileUrl;
-			initialized = true;
 			initializePlayer();
 		}
 	});
@@ -141,7 +139,7 @@
 	<div bind:this={youtubeContainerEl} class="youtube-container" class:hidden={source.type !== 'youtube'}></div>
 
 	{#if source.type === 'file' && source.fileUrl}
-		<video bind:this={videoEl} src={source.fileUrl} on:loadedmetadata={handleVideoLoaded} on:error={handleVideoError} playsinline>
+		<video bind:this={videoEl} src={source.fileUrl} onloadedmetadata={handleVideoLoaded} onerror={handleVideoError} playsinline>
 			<track kind="captions" />
 		</video>
 	{/if}
