@@ -5,6 +5,65 @@ import UserStore from '../../stores/userStore';
 import ConfigStore, { type ConfigStoreType } from '../../stores/configStore';
 import { get } from 'svelte/store';
 import { clearScalingCache, clearCloudBuffer } from '../draw/contribution-cloud';
+import { clearWordRainBuffer, aggregateWordsForRain } from '../draw/word-rain';
+import { clearHeatmapBuffer } from '../draw/speaker-heatmap';
+import { clearTurnNetworkBuffer } from '../draw/turn-network';
+import { clearTurnLengthBuffer } from '../draw/turn-length-distribution';
+import { binWordsByTime, type BinnedData } from './binning-utils';
+import type { NetworkData } from '../draw/turn-network';
+
+export interface TurnSummary {
+	turnNumber: number;
+	speaker: string;
+	startTime: number;
+	endTime: number;
+	wordCount: number;
+	firstDataPoint: DataPoint;
+}
+
+export interface TurnLengthBin {
+	minLength: number;
+	maxLength: number;
+	speakers: Record<string, { count: number; firstDataPoint: DataPoint | null }>;
+}
+
+export interface TurnLengthData {
+	bins: TurnLengthBin[];
+	maxCount: number;
+	speakers: string[];
+}
+
+export interface GapInfo {
+	startTime: number;
+	endTime: number;
+	duration: number;
+	speakerBefore: string;
+	speakerAfter: string;
+	firstDataPoint: DataPoint;
+}
+
+interface SilenceGapData {
+	gaps: GapInfo[];
+	maxGap: number;
+}
+
+export interface OverlapInfo {
+	startTime: number;
+	endTime: number;
+	speakers: string[];
+	firstDataPoint: DataPoint;
+}
+
+interface OverlapDetectorData {
+	overlaps: OverlapInfo[];
+	turns: TurnSummary[];
+	speakers: string[];
+}
+
+export interface AnnotationStripData {
+	overlaps: OverlapInfo[];
+	gaps: GapInfo[];
+}
 
 // Module-level stop words Set (created once, shared by all instances)
 const STOP_WORDS = new Set([
@@ -46,6 +105,19 @@ const STOP_WORDS = new Set([
 	'gonna', 'wanna', 'gotta', 'kinda', 'sorta', 'basically', 'actually', 'literally', 'right', 'mean'
 ]);
 
+function clearAllBuffers(): void {
+	clearScalingCache();
+	clearCloudBuffer();
+	clearWordRainBuffer();
+	clearHeatmapBuffer();
+	clearTurnNetworkBuffer();
+	clearTurnLengthBuffer();
+}
+
+function getEnabledSpeakers(): string[] {
+	return get(UserStore).filter((u) => u.enabled).map((u) => u.name);
+}
+
 let config: ConfigStoreType;
 let wordArray: DataPoint[] = [];
 
@@ -58,8 +130,7 @@ ConfigStore.subscribe((value) => {
 		config.sortToggle !== value.sortToggle ||
 		config.separateToggle !== value.separateToggle
 	)) {
-		clearScalingCache();
-		clearCloudBuffer();
+		clearAllBuffers();
 	}
 	config = value;
 });
@@ -77,8 +148,7 @@ export class DynamicData {
 
 	clear(): void {
 		this.endIndex = 0;
-		clearScalingCache();
-		clearCloudBuffer();
+		clearAllBuffers();
 	}
 
 	isStopWord(stringWord: string): boolean {
@@ -148,6 +218,10 @@ export class DynamicData {
 		return categorized;
 	}
 
+	getDynamicArrayForWordRain() {
+		return aggregateWordsForRain(this.getProcessedWords(true));
+	}
+
 	getDynamicArraySortedForContributionCloud(): DataPoint[] {
 		const words = this.getProcessedWords(true);
 
@@ -162,4 +236,203 @@ export class DynamicData {
 
 		return words;
 	}
+
+	getBinnedData(numBins: number): { binnedData: BinnedData; speakers: string[] } {
+		const words = this.getProcessedWords(true);
+		const timeline = get(TimelineStore);
+		const speakers = getEnabledSpeakers();
+		const binnedData = binWordsByTime(words, numBins, timeline.leftMarker, timeline.rightMarker, speakers);
+		return { binnedData, speakers };
+	}
+
+	getDynamicArrayForTurnNetwork(): NetworkData {
+		const words = this.getProcessedWords(true);
+
+		// Group words by turn number to get turn sequence
+		const turnMap = new Map<number, { speaker: string; firstDataPoint: DataPoint }>();
+		for (const word of words) {
+			if (!turnMap.has(word.turnNumber)) {
+				turnMap.set(word.turnNumber, { speaker: word.speaker, firstDataPoint: word });
+			}
+		}
+
+		// Sort turns by turn number
+		const turns = Array.from(turnMap.entries()).sort((a, b) => a[0] - b[0]);
+
+		// Build adjacency matrix
+		const transitions = new Map<string, Map<string, { count: number; firstDataPoint: DataPoint }>>();
+		for (let i = 0; i < turns.length - 1; i++) {
+			const from = turns[i][1].speaker;
+			const to = turns[i + 1][1].speaker;
+			const dp = turns[i][1].firstDataPoint;
+
+			if (!transitions.has(from)) transitions.set(from, new Map());
+			const targets = transitions.get(from)!;
+			if (!targets.has(to)) {
+				targets.set(to, { count: 0, firstDataPoint: dp });
+			}
+			targets.get(to)!.count++;
+		}
+
+		// Build speaker stats
+		const speakerStats = new Map<string, { wordCount: number; turnCount: number; firstDataPoint: DataPoint }>();
+		for (const word of words) {
+			const existing = speakerStats.get(word.speaker);
+			if (existing) {
+				existing.wordCount++;
+			} else {
+				speakerStats.set(word.speaker, { wordCount: 1, turnCount: 0, firstDataPoint: word });
+			}
+		}
+		for (const [, data] of turnMap) {
+			const stats = speakerStats.get(data.speaker);
+			if (stats) stats.turnCount++;
+		}
+
+		return { transitions, speakerStats };
+	}
+
+	getTurnSummaries(): TurnSummary[] {
+		const words = this.getProcessedWords(true);
+		const speakers = getEnabledSpeakers();
+		const turnMap = new Map<number, { speaker: string; startTime: number; endTime: number; wordCount: number; firstDataPoint: DataPoint }>();
+
+		for (const word of words) {
+			const existing = turnMap.get(word.turnNumber);
+			if (existing) {
+				existing.startTime = Math.min(existing.startTime, word.startTime);
+				existing.endTime = Math.max(existing.endTime, word.endTime);
+				existing.wordCount++;
+			} else {
+				turnMap.set(word.turnNumber, {
+					speaker: word.speaker,
+					startTime: word.startTime,
+					endTime: word.endTime,
+					wordCount: 1,
+					firstDataPoint: word
+				});
+			}
+		}
+
+		return Array.from(turnMap.entries())
+			.filter(([, data]) => speakers.includes(data.speaker))
+			.sort((a, b) => a[0] - b[0])
+			.map(([turnNumber, data]) => ({
+				turnNumber,
+				speaker: data.speaker,
+				startTime: data.startTime,
+				endTime: data.endTime,
+				wordCount: data.wordCount,
+				firstDataPoint: data.firstDataPoint
+			}));
+	}
+
+	getDynamicArrayForTurnLengthDistribution(): TurnLengthData {
+		const turns = this.getTurnSummaries();
+		const speakers = getEnabledSpeakers();
+
+		if (turns.length === 0) return { bins: [], maxCount: 0, speakers };
+
+		const lengths = turns.map((t) => t.wordCount);
+		const minLen = Math.min(...lengths);
+		const maxLen = Math.max(...lengths);
+
+		const binCount = Math.min(20, Math.max(5, maxLen - minLen + 1));
+		const binWidth = Math.max(1, Math.ceil((maxLen - minLen + 1) / binCount));
+
+		const bins: TurnLengthBin[] = [];
+		for (let i = 0; i < binCount; i++) {
+			const binMin = minLen + i * binWidth;
+			const binMax = binMin + binWidth - 1;
+			const speakerCounts: Record<string, { count: number; firstDataPoint: DataPoint | null }> = {};
+			for (const s of speakers) {
+				speakerCounts[s] = { count: 0, firstDataPoint: null };
+			}
+			bins.push({ minLength: binMin, maxLength: binMax, speakers: speakerCounts });
+		}
+
+		for (const turn of turns) {
+			const binIndex = Math.min(binCount - 1, Math.floor((turn.wordCount - minLen) / binWidth));
+			const bin = bins[binIndex];
+			if (bin.speakers[turn.speaker]) {
+				bin.speakers[turn.speaker].count++;
+				if (!bin.speakers[turn.speaker].firstDataPoint) {
+					bin.speakers[turn.speaker].firstDataPoint = turn.firstDataPoint;
+				}
+			}
+		}
+
+		// Remove trailing empty bins
+		while (bins.length > 1) {
+			const last = bins[bins.length - 1];
+			const totalCount = Object.values(last.speakers).reduce((sum, s) => sum + s.count, 0);
+			if (totalCount === 0) bins.pop();
+			else break;
+		}
+
+		let maxCount = 0;
+		for (const bin of bins) {
+			const total = Object.values(bin.speakers).reduce((sum, s) => sum + s.count, 0);
+			maxCount = Math.max(maxCount, total);
+		}
+
+		return { bins, maxCount, speakers };
+	}
+
+	getDynamicArrayForSilenceGapMap(): SilenceGapData {
+		const turns = this.getTurnSummaries().sort((a, b) => a.startTime - b.startTime);
+
+		const gaps: GapInfo[] = [];
+		let maxGap = 0;
+
+		for (let i = 0; i < turns.length - 1; i++) {
+			const gapDuration = turns[i + 1].startTime - turns[i].endTime;
+			if (gapDuration > 0) {
+				gaps.push({
+					startTime: turns[i].endTime,
+					endTime: turns[i + 1].startTime,
+					duration: gapDuration,
+					speakerBefore: turns[i].speaker,
+					speakerAfter: turns[i + 1].speaker,
+					firstDataPoint: turns[i].firstDataPoint
+				});
+				maxGap = Math.max(maxGap, gapDuration);
+			}
+		}
+
+		return { gaps, maxGap };
+	}
+
+	getDynamicArrayForOverlapDetector(): OverlapDetectorData {
+		const turns = this.getTurnSummaries().sort((a, b) => a.startTime - b.startTime);
+		const speakers = getEnabledSpeakers();
+		const overlaps: OverlapInfo[] = [];
+
+		for (let i = 0; i < turns.length; i++) {
+			for (let j = i + 1; j < turns.length; j++) {
+				if (turns[j].startTime >= turns[i].endTime) break;
+				if (turns[j].speaker === turns[i].speaker) continue;
+
+				const overlapStart = Math.max(turns[i].startTime, turns[j].startTime);
+				const overlapEnd = Math.min(turns[i].endTime, turns[j].endTime);
+				if (overlapEnd > overlapStart) {
+					overlaps.push({
+						startTime: overlapStart,
+						endTime: overlapEnd,
+						speakers: [turns[i].speaker, turns[j].speaker],
+						firstDataPoint: turns[j].firstDataPoint
+					});
+				}
+			}
+		}
+
+		return { overlaps, turns, speakers };
+	}
+
+	getDynamicArrayForAnnotationStrip(): AnnotationStripData {
+		const { overlaps } = this.getDynamicArrayForOverlapDetector();
+		const { gaps } = this.getDynamicArrayForSilenceGapMap();
+		return { overlaps, gaps };
+	}
+
 }

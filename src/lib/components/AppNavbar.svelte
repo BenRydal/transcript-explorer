@@ -40,7 +40,16 @@
 
 	let mobileMenuOpen = false;
 
-	const techniqueToggleOptions = ['distributionDiagramToggle', 'turnChartToggle', 'contributionCloudToggle', 'dashboardToggle'] as const;
+	const techniqueToggleOptions = [
+		'distributionDiagramToggle',
+		'turnChartToggle',
+		'turnNetworkToggle',
+		'contributionCloudToggle',
+		'wordRainToggle',
+		'speakerHeatmapToggle',
+		'turnLengthToggle',
+		'dashboardToggle'
+	] as const;
 
 	const distributionDiagramInteractions = ['flowersToggle'] as const;
 	const turnChartInteractions = ['separateToggle'] as const;
@@ -52,7 +61,8 @@
 		'stopWordsToggle',
 		'repeatedWordsToggle'
 	] as const;
-	const allInteractions = [...new Set([...distributionDiagramInteractions, ...turnChartInteractions, ...contributionCloudInteractions])] as const;
+	const stopWordsOnlyInteractions = ['stopWordsToggle'] as const;
+	const allInteractions = [...new Set([...distributionDiagramInteractions, ...turnChartInteractions, ...contributionCloudInteractions, ...stopWordsOnlyInteractions])] as const;
 
 	const exampleOptions = [
 		{ value: 'example-1', label: 'Kindergarten Activity', icon: MdSchool },
@@ -62,15 +72,19 @@
 		{ value: 'example-5', label: 'Biden-Trump 2020 Debate', icon: MdRecordVoiceOver }
 	];
 
+	const interactionMap: Record<string, readonly string[]> = {
+		distributionDiagramToggle: distributionDiagramInteractions,
+		turnChartToggle: turnChartInteractions,
+		contributionCloudToggle: contributionCloudInteractions,
+		wordRainToggle: stopWordsOnlyInteractions,
+		turnNetworkToggle: stopWordsOnlyInteractions,
+		speakerHeatmapToggle: stopWordsOnlyInteractions,
+		turnLengthToggle: stopWordsOnlyInteractions
+	};
+
 	$: visibleInteractions = $ConfigStore.dashboardToggle
 		? allInteractions
-		: $ConfigStore.distributionDiagramToggle
-			? distributionDiagramInteractions
-			: $ConfigStore.turnChartToggle
-				? turnChartInteractions
-				: $ConfigStore.contributionCloudToggle
-					? contributionCloudInteractions
-					: allInteractions;
+		: interactionMap[activeVisualization] || allInteractions;
 
 	$: showRepeatedWordsSlider = $ConfigStore.contributionCloudToggle || $ConfigStore.dashboardToggle;
 
@@ -199,7 +213,7 @@
 						<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" />
 					</svg>
 				</summary>
-				<ul class="menu dropdown-content rounded-box z-[1] w-52 p-2 shadow bg-base-100">
+				<ul class="menu dropdown-content rounded-box z-[1] w-52 p-2 shadow bg-base-100 max-h-[60vh] overflow-y-auto">
 					{#each techniqueToggleOptions as toggle}
 						<li>
 							<button on:click={() => toggleSelection(toggle, techniqueToggleOptions)} class="w-full text-left flex items-center">

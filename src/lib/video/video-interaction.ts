@@ -28,15 +28,21 @@ export function handleVisualizationClick(): void {
 	}
 
 	const config = get(ConfigStore);
-	const { firstWordOfTurnSelectedInTurnChart, selectedWordFromContributionCloud, hoveredPetalData, arrayOfFirstWords } = config;
 
-	if (firstWordOfTurnSelectedInTurnChart) {
-		playFrom(firstWordOfTurnSelectedInTurnChart);
-	} else if (selectedWordFromContributionCloud) {
-		playFrom(selectedWordFromContributionCloud);
-	} else if (hoveredPetalData) {
-		playFrom(hoveredPetalData.firstDataPoint);
-	} else if (arrayOfFirstWords?.length) {
-		playSnippets(arrayOfFirstWords);
+	// Check each visualization's hovered DataPoint in priority order
+	const hoveredDataPoint =
+		config.firstWordOfTurnSelectedInTurnChart ||
+		config.selectedWordFromContributionCloud ||
+		config.selectedWordFromWordRain ||
+		config.selectedElementFromTurnNetwork ||
+		config.selectedCellFromHeatmap ||
+		config.hoveredBarFromTurnLength;
+
+	if (hoveredDataPoint) {
+		playFrom(hoveredDataPoint);
+	} else if (config.hoveredPetalData) {
+		playFrom(config.hoveredPetalData.firstDataPoint);
+	} else if (config.arrayOfFirstWords?.length) {
+		playSnippets(config.arrayOfFirstWords);
 	}
 }

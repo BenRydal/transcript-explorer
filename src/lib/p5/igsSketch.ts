@@ -96,11 +96,14 @@ export const igsSketch = (p5: any) => {
 			return;
 		}
 
-		const { firstWordOfTurnSelectedInTurnChart, selectedWordFromContributionCloud, arrayOfFirstWords } = currConfig;
 		const hasPlayableHover =
-			firstWordOfTurnSelectedInTurnChart ||
-			selectedWordFromContributionCloud ||
-			arrayOfFirstWords?.length > 0;
+			currConfig.firstWordOfTurnSelectedInTurnChart ||
+			currConfig.selectedWordFromContributionCloud ||
+			currConfig.selectedWordFromWordRain ||
+			currConfig.selectedElementFromTurnNetwork ||
+			currConfig.selectedCellFromHeatmap ||
+			currConfig.hoveredBarFromTurnLength ||
+			currConfig.arrayOfFirstWords?.length > 0;
 
 		p5.cursor(hasPlayableHover ? p5.HAND : p5.ARROW);
 	};

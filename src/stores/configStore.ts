@@ -6,6 +6,10 @@ export interface ConfigStoreType {
 	distributionDiagramToggle: boolean;
 	turnChartToggle: boolean;
 	contributionCloudToggle: boolean;
+	wordRainToggle: boolean;
+	turnNetworkToggle: boolean;
+	speakerHeatmapToggle: boolean;
+	turnLengthToggle: boolean;
 	dashboardToggle: boolean;
 	flowersToggle: boolean;
 	separateToggle: boolean;
@@ -23,6 +27,10 @@ export interface ConfigStoreType {
 	wordToSearch: string;
 	hoveredSpeakerInDistributionDiagram: string | null;
 	hoveredPetalData: PetalData | null;
+	selectedWordFromWordRain: DataPoint | null;
+	selectedElementFromTurnNetwork: DataPoint | null;
+	selectedCellFromHeatmap: DataPoint | null;
+	hoveredBarFromTurnLength: DataPoint | null;
 	// Start-only mode settings
 	preserveGapsBetweenTurns: boolean;
 	speechRateWordsPerSecond: number;
@@ -34,6 +42,10 @@ export const initialConfig: ConfigStoreType = {
 	distributionDiagramToggle: true,
 	turnChartToggle: false,
 	contributionCloudToggle: false,
+	wordRainToggle: false,
+	turnNetworkToggle: false,
+	speakerHeatmapToggle: false,
+	turnLengthToggle: false,
 	dashboardToggle: false,
 	flowersToggle: true,
 	separateToggle: false,
@@ -51,6 +63,10 @@ export const initialConfig: ConfigStoreType = {
 	wordToSearch: '',
 	hoveredSpeakerInDistributionDiagram: null,
 	hoveredPetalData: null,
+	selectedWordFromWordRain: null,
+	selectedElementFromTurnNetwork: null,
+	selectedCellFromHeatmap: null,
+	hoveredBarFromTurnLength: null,
 	// Start-only mode settings (default: estimate from speech rate)
 	preserveGapsBetweenTurns: true,
 	speechRateWordsPerSecond: 3,
