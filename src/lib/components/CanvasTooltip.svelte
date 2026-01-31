@@ -1,6 +1,7 @@
 <script lang="ts">
 	import { tick } from 'svelte';
 	import TooltipStore from '../../stores/tooltipStore';
+	import { getP5ContainerRect, clamp } from '../core/layout-utils';
 
 	const TOOLTIP_MAX_WIDTH = 500;
 	const EDGE_PADDING = 20;
@@ -27,10 +28,7 @@
 
 	$effect(() => {
 		if ($TooltipStore.visible) {
-			const container = document.getElementById('p5-container');
-			if (container) {
-				containerRect = container.getBoundingClientRect();
-			}
+			containerRect = getP5ContainerRect();
 		}
 	});
 
@@ -108,7 +106,7 @@
 				if (tooltipEl) {
 					const tooltipWidth = tooltipEl.offsetWidth;
 					const tooltipLeft = containerWidth - EDGE_PADDING - tooltipWidth;
-					arrowLeftPx = Math.max(12, Math.min(tooltipWidth - 12, x - tooltipLeft));
+					arrowLeftPx = clamp(x - tooltipLeft, 12, tooltipWidth - 12);
 				}
 			});
 		}

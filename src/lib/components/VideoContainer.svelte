@@ -4,6 +4,7 @@
 	import VideoStore, { updatePosition, updateSize, setDragging, setResizing, clearSeekRequest } from '../../stores/videoStore';
 	import EditorStore from '../../stores/editorStore';
 	import { playVideo, pauseVideo, seekTo, muteVideo, unmuteVideo, type VideoPlayer } from '../video/video-service';
+	import { getP5Container, getP5ContainerRect, clamp } from '../core/layout-utils';
 	import VideoPlayerComponent from './VideoPlayer.svelte';
 	import VideoControls from './VideoControls.svelte';
 
@@ -132,11 +133,10 @@
 			let newY = dragStartPosY + dy;
 
 			// Constrain to viewport
-			const containerEl = document.getElementById('p5-container');
-			if (containerEl) {
-				const rect = containerEl.getBoundingClientRect();
-				newX = Math.max(0, Math.min(newX, rect.width - size.width));
-				newY = Math.max(0, Math.min(newY, rect.height - size.height));
+			const rect = getP5ContainerRect();
+			if (rect) {
+				newX = clamp(newX, 0, rect.width - size.width);
+				newY = clamp(newY, 0, rect.height - size.height);
 			}
 
 			updatePosition(newX, newY);
@@ -194,10 +194,8 @@
 		return player;
 	}
 
-	// Calculate fullscreen dimensions based on container size
-	function calculateFullscreenDimensions(containerEl: HTMLElement) {
-		const rect = containerEl.getBoundingClientRect();
-
+	// Calculate fullscreen dimensions based on container rect
+	function calculateFullscreenDimensions(rect: DOMRect) {
 		// Available space in the container (with padding)
 		const availableWidth = rect.width - FULLSCREEN_PADDING * 2;
 		const availableHeight = rect.height - FULLSCREEN_PADDING * 2;
@@ -230,17 +228,17 @@
 	function handleContainerResize() {
 		if (!isFullscreen) return;
 
-		const containerEl = document.getElementById('p5-container');
-		if (!containerEl) return;
+		const rect = getP5ContainerRect();
+		if (!rect) return;
 
-		const dims = calculateFullscreenDimensions(containerEl);
+		const dims = calculateFullscreenDimensions(rect);
 		updatePosition(dims.x, dims.y);
 		updateSize(dims.width, dims.height);
 	}
 
 	function handleToggleFullscreen() {
-		const containerEl = document.getElementById('p5-container');
-		if (!containerEl) return;
+		const rect = getP5ContainerRect();
+		if (!rect) return;
 
 		if (isFullscreen) {
 			// Exit fullscreen - restore previous position and size
@@ -258,16 +256,17 @@
 			preFullscreenPosition = { x: position.x, y: position.y };
 			preFullscreenSize = { width: size.width, height: size.height };
 
-			const dims = calculateFullscreenDimensions(containerEl);
+			const dims = calculateFullscreenDimensions(rect);
 			updatePosition(dims.x, dims.y);
 			updateSize(dims.width, dims.height);
 			isFullscreen = true;
 
 			// Start observing container resize to adapt fullscreen dimensions
-			resizeObserver = new ResizeObserver(() => {
-				handleContainerResize();
-			});
-			resizeObserver.observe(containerEl);
+			const container = getP5Container();
+			if (container) {
+				resizeObserver = new ResizeObserver(handleContainerResize);
+				resizeObserver.observe(container);
+			}
 		}
 	}
 

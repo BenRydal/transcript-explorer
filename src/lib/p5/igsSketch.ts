@@ -9,6 +9,7 @@ import type { VideoState } from '../../stores/videoStore';
 import { handleVisualizationClick } from '../video/video-interaction';
 import { Draw } from '../draw/draw';
 import { DynamicData } from '../core/dynamic-data';
+import { getP5ContainerRect } from '../core/layout-utils';
 
 let users: any[] = [];
 let timeline, transcript, currConfig, editorState;
@@ -70,9 +71,8 @@ export const igsSketch = (p5: any) => {
 	};
 
 	p5.getContainerSize = () => {
-		const container = document.getElementById('p5-container');
-		if (container) {
-			const rect = container.getBoundingClientRect();
+		const rect = getP5ContainerRect();
+		if (rect) {
 			return { width: rect.width, height: rect.height };
 		}
 		// Fallback to window-based calculation
