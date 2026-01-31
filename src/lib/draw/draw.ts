@@ -1,4 +1,5 @@
 import type p5 from 'p5';
+import type { DataPoint } from '../../models/dataPoint';
 import { TurnChart } from './turn-chart';
 import { ContributionCloud } from './contribution-cloud';
 import { DistributionDiagram } from './distribution-diagram';
@@ -36,27 +37,41 @@ const updateEditorSelection = (updates: Partial<EditorSelection>, source: Select
 
 export class Draw {
 	sk: p5;
+	// Previous frame's cloud hover, used for turn chart cross-highlighting in dashboard (1-frame lag)
+	private prevCloudHover: DataPoint | null = null;
 
 	constructor(sketch: p5) {
 		this.sk = sketch;
 	}
 
 	drawViz(): void {
-		// Reset tooltip state at start of each frame
 		resetTooltipFrame();
+
+		let hover: DataPoint | null = null;
 
 		if (currConfig.distributionDiagramToggle) {
 			this.updateDistributionDiagram(this.getFullScreenBounds());
 		} else if (currConfig.turnChartToggle) {
-			this.updateTurnChart(this.getFullScreenBounds());
+			hover = this.updateTurnChart(this.getFullScreenBounds());
 		} else if (currConfig.contributionCloudToggle) {
-			this.updateContributionCloud(this.getFullScreenBounds());
+			hover = this.updateContributionCloud(this.getFullScreenBounds());
 		} else {
-			this.drawDashboard();
+			hover = this.drawDashboard();
 		}
 
-		// Hide tooltip if nothing requested it this frame
+		this.syncHoverState(hover);
 		finalizeTooltipFrame();
+	}
+
+	/** Write the final hover state to stores. Single owner of hoveredDataPoint + editor selection. */
+	syncHoverState(hover: DataPoint | null): void {
+		ConfigStore.update((c) => ({ ...c, hoveredDataPoint: hover }));
+		if (hover) {
+			updateEditorSelection(
+				{ selectedTurnNumber: hover.turnNumber, highlightedSpeaker: null },
+				'visualization'
+			);
+		}
 	}
 
 	updateDistributionDiagram(pos: Bounds): void {
@@ -67,7 +82,6 @@ export class Draw {
 			arrayOfFirstWords: distributionDiagram.localArrayOfFirstWords,
 			hoveredSpeakerInDistributionDiagram: hoveredSpeaker
 		}));
-		// Sync to EditorStore - only update highlightedSpeaker if filter is locked, otherwise update both
 		EditorStore.update((state) => {
 			if (isFilterLocked(state)) {
 				return { ...state, selection: { ...state.selection, highlightedSpeaker: hoveredSpeaker } };
@@ -85,58 +99,34 @@ export class Draw {
 		});
 	}
 
-	updateTurnChart(pos: Bounds): void {
+	/** Draw turn chart and return hovered data point. Writes to ConfigStore for dashboard cross-highlighting. */
+	updateTurnChart(pos: Bounds): DataPoint | null {
 		const turnChart = new TurnChart(this.sk, pos);
 		turnChart.draw(this.sk.dynamicData.getDynamicArrayForTurnChart());
-		const selectedTurn = turnChart.userSelectedTurn;
-		ConfigStore.update((config) => ({
-			...config,
-			hoveredDataPoint: selectedTurn.turn[0]
-		}));
-		updateEditorSelection(
-			{
-				selectedTurnNumber: selectedTurn?.turn?.[0]?.turnNumber ?? null,
-				highlightedSpeaker: null
-			},
-			'visualization'
-		);
+		const hover = turnChart.userSelectedTurn.turn[0] ?? null;
+		ConfigStore.update((config) => ({ ...config, hoveredDataPoint: hover }));
+		return hover;
 	}
 
-	updateContributionCloud(pos: Bounds): void {
+	/** Draw contribution cloud and return hovered data point. Writes to ConfigStore for dashboard cross-highlighting. */
+	updateContributionCloud(pos: Bounds): DataPoint | null {
 		const contributionCloud = new ContributionCloud(this.sk, pos);
 		const { hoveredWord, hasOverflow } = contributionCloud.draw(this.sk.dynamicData.getDynamicArraySortedForContributionCloud());
-		ConfigStore.update((config) => ({
-			...config,
-			hoveredDataPoint: hoveredWord,
-			cloudHasOverflow: hasOverflow
-		}));
-		updateEditorSelection(
-			{
-				selectedTurnNumber: hoveredWord?.turnNumber ?? null,
-				highlightedSpeaker: null
-			},
-			'visualization'
-		);
+		ConfigStore.update((config) => ({ ...config, hoveredDataPoint: hoveredWord, cloudHasOverflow: hasOverflow }));
+		return hoveredWord ?? null;
 	}
 
-	drawDashboard(): void {
+	drawDashboard(): DataPoint | null {
 		const { top, bottomLeft, bottomRight } = this.getDashboardBounds();
 		this.drawDashboardDividers(top, bottomLeft);
-
-		// Each visualization sets hoveredDataPoint independently — capture after each
-		// so the last writer doesn't overwrite an earlier hover with null
-		this.updateTurnChart(top);
-		const turnChartHover = currConfig.hoveredDataPoint;
-		this.updateContributionCloud(bottomRight);
-		const cloudHover = currConfig.hoveredDataPoint;
+		// Use previous frame's cloud hover so turn chart cross-highlights from cloud
+		// without reading its own hover back (which would cause self-filtering)
+		ConfigStore.update((c) => ({ ...c, hoveredDataPoint: this.prevCloudHover }));
+		const turnHover = this.updateTurnChart(top);
+		const cloudHover = this.updateContributionCloud(bottomRight);
 		this.updateDistributionDiagram(bottomLeft);
-
-		// Re-apply the first non-null hover (turn chart takes priority over cloud)
-		const activeHover = turnChartHover ?? cloudHover;
-		if (activeHover) {
-			ConfigStore.update((config) => ({ ...config, hoveredDataPoint: activeHover }));
-			updateEditorSelection({ selectedTurnNumber: activeHover.turnNumber, highlightedSpeaker: null }, 'visualization');
-		}
+		this.prevCloudHover = cloudHover;
+		return turnHover ?? cloudHover;
 	}
 
 	drawDashboardDividers(top: Bounds, bottomLeft: Bounds): void {

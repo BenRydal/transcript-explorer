@@ -69,7 +69,7 @@ export class TurnChart {
 
 	testShouldDraw(user: User, array: DataPoint[]): boolean {
 		const isUserEnabled = user.enabled;
-		const shouldDraw = !this.config?.dashboardToggle || this.sk.shouldDraw(array[0], 'turnNumber', 'hoveredDataPoint');
+		const shouldDraw = !this.config?.dashboardToggle || this.sk.shouldDraw(array[0]);
 		let hasSearchWord = true;
 		if (this.config.wordToSearch) {
 			const combinedString = array.map(({ word }) => word).join(' ');
@@ -132,7 +132,7 @@ export class TurnChart {
 	}
 
 	drawText(turnArray: DataPoint[], speakerColor: string): void {
-		const combined = turnArray.map((e) => e.word.toString()).join(' ');
+		const combined = turnArray.map((e) => e.word).join(' ');
 		// Use Svelte tooltip instead of p5 drawing
 		showTooltip(this.sk.mouseX, this.sk.mouseY, combined, speakerColor, this.sk.height);
 	}

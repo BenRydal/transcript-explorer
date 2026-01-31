@@ -38,16 +38,6 @@ export function showTooltip(x: number, y: number, content: string, speakerColor:
 	});
 }
 
-export function hideTooltip() {
-	// Only hide if no visualization requested a tooltip this frame
-	if (!tooltipRequestedThisFrame) {
-		TooltipStore.update((state) => ({
-			...state,
-			visible: false
-		}));
-	}
-}
-
 // Call this at the start of each draw frame to reset the flag
 export function resetTooltipFrame() {
 	tooltipRequestedThisFrame = false;

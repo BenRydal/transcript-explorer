@@ -175,9 +175,7 @@ export class DistributionDiagram {
 	}
 
 	calculateNumOfTurns(objects: DataPoint[]): number {
-		return objects.reduce((count, obj, index, arr) => {
-			return index > 0 && obj.turnNumber === arr[index - 1].turnNumber ? count : count + 1;
-		}, 0);
+		return new Set(objects.map((obj) => obj.turnNumber)).size;
 	}
 
 	setColor(color: p5.Color, alpha: number): void {

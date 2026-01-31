@@ -68,5 +68,5 @@ function createHistoryStore() {
 	};
 }
 
-export const HistoryStore = createHistoryStore();
+const HistoryStore = createHistoryStore();
 export default HistoryStore;
