@@ -281,7 +281,7 @@ export class ContributionCloud {
 	}
 
 	isWordVisible(word: DataPoint): boolean {
-		if (this.config.dashboardToggle && !this.sk.shouldDraw(word, 'turnNumber', 'firstWordOfTurnSelectedInTurnChart')) return false;
+		if (this.config.dashboardToggle && !this.sk.shouldDraw(word, 'turnNumber', 'hoveredDataPoint')) return false;
 		if (this.config.repeatedWordsToggle && word.count < this.config.repeatWordSliderValue) return false;
 		return true;
 	}

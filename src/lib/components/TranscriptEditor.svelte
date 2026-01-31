@@ -99,9 +99,8 @@
 			const firstWord = turnWords[0];
 			ConfigStore.update((config) => ({
 				...config,
-				firstWordOfTurnSelectedInTurnChart: firstWord,
-				arrayOfFirstWords: [firstWord],
-				selectedWordFromContributionCloud: firstWord
+				hoveredDataPoint: firstWord,
+				arrayOfFirstWords: [firstWord]
 			}));
 		}
 	}
@@ -506,7 +505,7 @@
 						Showing turns by <strong>{$EditorStore.selection.filteredSpeaker}</strong>
 						<span class="filter-count">({displayedTurns.length} of {turns.length} turns)</span>
 					</span>
-					{#if $EditorStore.selection.selectionSource === 'distributionDiagramClick'}
+					{#if $EditorStore.selection.selectionSource === 'visualizationClick'}
 						<button class="clear-filter-btn" onclick={clearSpeakerFilter}>× Show all</button>
 					{/if}
 				</div>

@@ -69,7 +69,7 @@ export class TurnChart {
 
 	testShouldDraw(user: User, array: DataPoint[]): boolean {
 		const isUserEnabled = user.enabled;
-		const shouldDraw = !this.config?.dashboardToggle || this.sk.shouldDraw(array[0], 'turnNumber', 'selectedWordFromContributionCloud');
+		const shouldDraw = !this.config?.dashboardToggle || this.sk.shouldDraw(array[0], 'turnNumber', 'hoveredDataPoint');
 		let hasSearchWord = true;
 		if (this.config.wordToSearch) {
 			const combinedString = array.map(({ word }) => word).join(' ');

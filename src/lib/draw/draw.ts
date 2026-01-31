@@ -16,7 +16,7 @@ ConfigStore.subscribe((data) => {
 });
 
 // Helper to check if speaker filter is locked
-const isFilterLocked = (state: EditorState): boolean => state.selection.selectionSource === 'distributionDiagramClick';
+const isFilterLocked = (state: EditorState): boolean => state.selection.selectionSource === 'visualizationClick';
 
 // Helper to update editor selection while preserving locked filter
 const updateEditorSelection = (updates: Partial<EditorSelection>, source: SelectionSource): void => {
@@ -79,7 +79,7 @@ export class Draw {
 					highlightedSpeaker: hoveredSpeaker,
 					filteredSpeaker: hoveredSpeaker,
 					selectedTurnNumber: null,
-					selectionSource: 'distributionDiagram'
+					selectionSource: 'visualization'
 				}
 			};
 		});
@@ -91,14 +91,14 @@ export class Draw {
 		const selectedTurn = turnChart.userSelectedTurn;
 		ConfigStore.update((config) => ({
 			...config,
-			firstWordOfTurnSelectedInTurnChart: selectedTurn.turn[0]
+			hoveredDataPoint: selectedTurn.turn[0]
 		}));
 		updateEditorSelection(
 			{
 				selectedTurnNumber: selectedTurn?.turn?.[0]?.turnNumber ?? null,
 				highlightedSpeaker: null
 			},
-			'turnChart'
+			'visualization'
 		);
 	}
 
@@ -107,7 +107,7 @@ export class Draw {
 		const { hoveredWord, hasOverflow } = contributionCloud.draw(this.sk.dynamicData.getDynamicArraySortedForContributionCloud());
 		ConfigStore.update((config) => ({
 			...config,
-			selectedWordFromContributionCloud: hoveredWord,
+			hoveredDataPoint: hoveredWord,
 			cloudHasOverflow: hasOverflow
 		}));
 		updateEditorSelection(
@@ -115,25 +115,27 @@ export class Draw {
 				selectedTurnNumber: hoveredWord?.turnNumber ?? null,
 				highlightedSpeaker: null
 			},
-			'contributionCloud'
+			'visualization'
 		);
 	}
 
 	drawDashboard(): void {
 		const { top, bottomLeft, bottomRight } = this.getDashboardBounds();
 		this.drawDashboardDividers(top, bottomLeft);
+
+		// Each visualization sets hoveredDataPoint independently — capture after each
+		// so the last writer doesn't overwrite an earlier hover with null
 		this.updateTurnChart(top);
+		const turnChartHover = currConfig.hoveredDataPoint;
 		this.updateContributionCloud(bottomRight);
+		const cloudHover = currConfig.hoveredDataPoint;
 		this.updateDistributionDiagram(bottomLeft);
 
-		// Correct EditorStore selection: prioritize turn chart/cloud over diagram
-		// (diagram runs last and overwrites, so we re-apply if needed)
-		const turnChartWord = currConfig.firstWordOfTurnSelectedInTurnChart;
-		const cloudWord = currConfig.selectedWordFromContributionCloud;
-		if (turnChartWord) {
-			updateEditorSelection({ selectedTurnNumber: turnChartWord.turnNumber, highlightedSpeaker: null }, 'turnChart');
-		} else if (cloudWord) {
-			updateEditorSelection({ selectedTurnNumber: cloudWord.turnNumber, highlightedSpeaker: null }, 'contributionCloud');
+		// Re-apply the first non-null hover (turn chart takes priority over cloud)
+		const activeHover = turnChartHover ?? cloudHover;
+		if (activeHover) {
+			ConfigStore.update((config) => ({ ...config, hoveredDataPoint: activeHover }));
+			updateEditorSelection({ selectedTurnNumber: activeHover.turnNumber, highlightedSpeaker: null }, 'visualization');
 		}
 	}
 

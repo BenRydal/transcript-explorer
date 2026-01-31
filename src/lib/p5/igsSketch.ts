@@ -96,10 +96,9 @@ export const igsSketch = (p5: any) => {
 			return;
 		}
 
-		const { firstWordOfTurnSelectedInTurnChart, selectedWordFromContributionCloud, arrayOfFirstWords } = currConfig;
+		const { hoveredDataPoint, arrayOfFirstWords } = currConfig;
 		const hasPlayableHover =
-			firstWordOfTurnSelectedInTurnChart ||
-			selectedWordFromContributionCloud ||
+			hoveredDataPoint ||
 			arrayOfFirstWords?.length > 0;
 
 		p5.cursor(hasPlayableHover ? p5.HAND : p5.ARROW);
@@ -201,7 +200,7 @@ export const igsSketch = (p5: any) => {
 					filteredSpeaker: hoveredSpeaker,
 					highlightedSpeaker: hoveredSpeaker,
 					selectedTurnNumber: null,
-					selectionSource: 'distributionDiagramClick'
+					selectionSource: 'visualizationClick'
 				}
 			}));
 		}
@@ -226,7 +225,7 @@ export const igsSketch = (p5: any) => {
 	 * Used to highlight data in the dashboard view.
 	 * @param {Object} item - The word/item to be checked for drawing.
 	 * @param {string} comparisonProperty - The property of the word to compare (e.g., 'turnNumber').
-	 * @param {string} selectedProperty - The property name in this object for comparison (e.g., 'firstWordOfTurnSelectedInTurnChart').
+	 * @param {string} selectedProperty - The property name in this object for comparison (e.g., 'hoveredDataPoint').
 	 * @returns {boolean} - True if the item should be drawn, false otherwise.
 	 */
 	p5.shouldDraw = (item: any, comparisonProperty: string, selectedProperty: string) => {
