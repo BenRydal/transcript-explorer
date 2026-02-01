@@ -5,15 +5,51 @@ import TimelineStore from '../../stores/timelineStore';
 import UserStore from '../../stores/userStore';
 import ConfigStore, { type ConfigStoreType } from '../../stores/configStore';
 import { showTooltip } from '../../stores/tooltipStore';
+import { formatTimeCompact } from '../core/time-utils';
 import type { DataPoint } from '../../models/dataPoint';
 import type { User } from '../../models/user';
 import type { Transcript } from '../../models/transcript';
 import type { Timeline } from '../../models/timeline';
 import type { Bounds } from './types/bounds';
 
+function formatDuration(seconds: number): string {
+	return `${Math.round(seconds)}s`;
+}
+
+// Annotation strip constants
+const STRIP_HEIGHT = 28;
+const OVERLAP_COLOR = '#ef4444';
+const GAP_COLOR = '#94a3b8';
+const MARKER_HEIGHT = 8;
+const ROW_GAP = 2;
+const MIN_MARKER_WIDTH = 2;
+const LEGEND_DOT_RADIUS = 5;
+const LEGEND_DOT_LEFT_OFFSET = 8;
+
 interface SelectedTurn {
 	turn: DataPoint[] | '';
 	color: string;
+	xCenter: number;
+	yCenter: number;
+	width: number;
+	height: number;
+}
+
+interface TurnRange {
+	speaker: string;
+	startTime: number;
+	endTime: number;
+	firstDataPoint: DataPoint;
+}
+
+interface AnnotationMarker {
+	x: number;
+	w: number;
+	y: number;
+	h: number;
+	color: string;
+	firstDataPoint: DataPoint;
+	tooltipContent: string;
 }
 
 export class TurnChart {
@@ -28,18 +64,28 @@ export class TurnChart {
 	yPosHalfHeight: number;
 	userSelectedTurn: SelectedTurn;
 	yPosSeparate: number;
+	annotationHover: DataPoint | null = null;
+	private stripBounds: Bounds | null;
 
 	constructor(sk: p5, pos: Bounds) {
 		this.sk = sk;
-		this.bounds = pos;
-		this.config = get(ConfigStore);
 		this.transcript = get(TranscriptStore);
+		this.config = get(ConfigStore);
+		const showStrip = this.transcript.timingMode !== 'untimed' && this.config.silenceOverlapToggle;
+		const stripHeight = showStrip ? STRIP_HEIGHT : 0;
+		this.bounds = { ...pos, height: pos.height - stripHeight };
+		this.stripBounds = showStrip ? {
+			x: pos.x,
+			y: pos.y + this.bounds.height,
+			width: pos.width,
+			height: stripHeight
+		} : null;
 		this.users = get(UserStore);
 		this.userMap = new Map(this.users.map((user, index) => [user.name, { user, index }]));
 		this.timeline = get(TimelineStore);
-		this.verticalLayoutSpacing = this.getVerticalLayoutSpacing(pos.height);
-		this.yPosHalfHeight = pos.y + pos.height / 2;
-		this.userSelectedTurn = { turn: '', color: '' };
+		this.verticalLayoutSpacing = this.getVerticalLayoutSpacing(this.bounds.height);
+		this.yPosHalfHeight = this.bounds.y + this.bounds.height / 2;
+		this.userSelectedTurn = { turn: '', color: '', xCenter: 0, yCenter: 0, width: 0, height: 0 };
 		this.yPosSeparate = this.getYPosTopSeparate();
 	}
 
@@ -51,7 +97,8 @@ export class TurnChart {
 
 	/** Draws the main chart */
 	draw(sortedAnimationWordArray: Record<number, DataPoint[]>): void {
-		this.userSelectedTurn = { turn: '', color: '' }; // Reset each frame
+		this.userSelectedTurn = { turn: '', color: '', xCenter: 0, yCenter: 0, width: 0, height: 0 }; // Reset each frame
+		this.annotationHover = null;
 		this.drawTimeline();
 		this.sk.textSize(this.sk.toolTipTextSize);
 		for (const key in sortedAnimationWordArray) {
@@ -62,8 +109,16 @@ export class TurnChart {
 				this.drawBubs(turnArray, userData.user, userData.index);
 			}
 		}
-		if (this.userSelectedTurn && this.userSelectedTurn.turn && this.userSelectedTurn.color) {
-			this.drawText(this.userSelectedTurn.turn as DataPoint[], this.userSelectedTurn.color);
+		if (this.userSelectedTurn.turn && this.userSelectedTurn.color) {
+			const sel = this.userSelectedTurn;
+			this.sk.noFill();
+			this.sk.stroke(sel.color);
+			this.sk.strokeWeight(2);
+			this.sk.ellipse(sel.xCenter, sel.yCenter, sel.width, sel.height);
+			this.drawText(sel.turn as DataPoint[], sel.color);
+		}
+		if (this.stripBounds) {
+			this.drawAnnotationStrip(sortedAnimationWordArray);
 		}
 	}
 
@@ -108,7 +163,10 @@ export class TurnChart {
 
 		// Handle hover interaction
 		if (this.sk.overRect(xStart, yCenter - height / 2, xEnd - xStart, height)) {
-			this.userSelectedTurn = { turn: turnArray, color: user.color };
+			this.userSelectedTurn = {
+				turn: turnArray, color: user.color,
+				xCenter, yCenter, width: xEnd - xStart, height
+			};
 		}
 	}
 
@@ -132,9 +190,9 @@ export class TurnChart {
 	}
 
 	drawText(turnArray: DataPoint[], speakerColor: string): void {
+		const speaker = turnArray[0].speaker;
 		const combined = turnArray.map((e) => e.word).join(' ');
-		// Use Svelte tooltip instead of p5 drawing
-		showTooltip(this.sk.mouseX, this.sk.mouseY, combined, speakerColor, this.sk.height);
+		showTooltip(this.sk.mouseX, this.sk.mouseY, `<b>${speaker}</b>\n${combined}`, speakerColor, this.sk.height);
 	}
 
 	getVerticalLayoutSpacing(height: number): number {
@@ -143,5 +201,114 @@ export class TurnChart {
 
 	getPixelValueFromTime(timeValue: number): number {
 		return this.sk.map(timeValue, this.timeline.leftMarker, this.timeline.rightMarker, this.bounds.x, this.bounds.x + this.bounds.width);
+	}
+
+	// ---- Annotation Strip ----
+
+	private drawAnnotationStrip(turnData: Record<number, DataPoint[]>): void {
+		const strip = this.stripBounds!;
+		const topRowY = strip.y + (STRIP_HEIGHT - MARKER_HEIGHT * 2 - ROW_GAP) / 2;
+		const bottomRowY = topRowY + MARKER_HEIGHT + ROW_GAP;
+
+		// Separator line
+		this.sk.stroke(200);
+		this.sk.strokeWeight(1);
+		this.sk.line(strip.x, strip.y, strip.x + strip.width, strip.y);
+
+		// Build turn ranges from the data we already have
+		const turns = this.getTurnRanges(turnData);
+		const markers = [
+			...this.buildOverlapMarkers(turns, topRowY),
+			...this.buildGapMarkers(turns, bottomRowY)
+		];
+
+		// Legend dots
+		const dotX = strip.x + LEGEND_DOT_LEFT_OFFSET;
+		this.sk.noStroke();
+		this.sk.fill(OVERLAP_COLOR);
+		this.sk.ellipse(dotX, topRowY + MARKER_HEIGHT / 2, LEGEND_DOT_RADIUS, LEGEND_DOT_RADIUS);
+		this.sk.fill(GAP_COLOR);
+		this.sk.ellipse(dotX, bottomRowY + MARKER_HEIGHT / 2, LEGEND_DOT_RADIUS, LEGEND_DOT_RADIUS);
+
+		// Draw markers
+		this.sk.noStroke();
+		for (const m of markers) {
+			const c = this.sk.color(m.color);
+			c.setAlpha(180);
+			this.sk.fill(c);
+			this.sk.rect(m.x, m.y, m.w, m.h, 2);
+		}
+
+		// Hover
+		if (this.sk.overRect(strip.x, strip.y, strip.width, strip.height)) {
+			for (const m of markers) {
+				if (this.sk.overRect(m.x, m.y, m.w, m.h)) {
+					this.sk.noFill();
+					this.sk.stroke(m.color);
+					this.sk.strokeWeight(2);
+					this.sk.rect(m.x - 1, m.y - 1, m.w + 2, m.h + 2, 2);
+					showTooltip(this.sk.mouseX, this.sk.mouseY, m.tooltipContent, m.color, this.sk.height);
+					this.annotationHover = m.firstDataPoint;
+					break;
+				}
+			}
+		}
+	}
+
+	private getTurnRanges(turnData: Record<number, DataPoint[]>): TurnRange[] {
+		const ranges: TurnRange[] = [];
+		for (const key in turnData) {
+			const words = turnData[key];
+			if (!words.length) continue;
+			const userData = this.userMap.get(words[0].speaker);
+			if (!userData?.user.enabled) continue;
+			ranges.push({
+				speaker: words[0].speaker,
+				startTime: words[0].startTime,
+				endTime: words[words.length - 1].endTime,
+				firstDataPoint: words[0]
+			});
+		}
+		return ranges.sort((a, b) => a.startTime - b.startTime);
+	}
+
+	private buildOverlapMarkers(turns: TurnRange[], rowY: number): AnnotationMarker[] {
+		const markers: AnnotationMarker[] = [];
+		for (let i = 0; i < turns.length; i++) {
+			for (let j = i + 1; j < turns.length; j++) {
+				if (turns[j].startTime >= turns[i].endTime) break;
+				if (turns[j].speaker === turns[i].speaker) continue;
+				const start = Math.max(turns[i].startTime, turns[j].startTime);
+				const end = Math.min(turns[i].endTime, turns[j].endTime);
+				if (end <= start) continue;
+				const x = this.getPixelValueFromTime(start);
+				const xEnd = this.getPixelValueFromTime(end);
+				const duration = end - start;
+				markers.push({
+					x, w: Math.max(MIN_MARKER_WIDTH, xEnd - x), y: rowY, h: MARKER_HEIGHT,
+					color: OVERLAP_COLOR,
+					firstDataPoint: turns[j].firstDataPoint,
+					tooltipContent: `<b>Overlap · ${formatDuration(duration)}</b>\n<span style="font-size: 0.85em; opacity: 0.7">${turns[i].speaker} & ${turns[j].speaker}\n${formatTimeCompact(start)} - ${formatTimeCompact(end)}</span>`
+				});
+			}
+		}
+		return markers;
+	}
+
+	private buildGapMarkers(turns: TurnRange[], rowY: number): AnnotationMarker[] {
+		const markers: AnnotationMarker[] = [];
+		for (let i = 0; i < turns.length - 1; i++) {
+			const gapDuration = turns[i + 1].startTime - turns[i].endTime;
+			if (gapDuration <= 0) continue;
+			const x = this.getPixelValueFromTime(turns[i].endTime);
+			const xEnd = this.getPixelValueFromTime(turns[i + 1].startTime);
+			markers.push({
+				x, w: Math.max(MIN_MARKER_WIDTH, xEnd - x), y: rowY, h: MARKER_HEIGHT,
+				color: GAP_COLOR,
+				firstDataPoint: turns[i].firstDataPoint,
+				tooltipContent: `<b>Silence · ${formatDuration(gapDuration)}</b>\n<span style="font-size: 0.85em; opacity: 0.7">${turns[i].speaker} → ${turns[i + 1].speaker}\n${formatTimeCompact(turns[i].endTime)} - ${formatTimeCompact(turns[i + 1].startTime)}</span>`
+			});
+		}
+		return markers;
 	}
 }

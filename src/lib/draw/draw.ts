@@ -74,7 +74,7 @@ export class Draw {
 		const turnChart = new TurnChart(this.sk, pos);
 		turnChart.draw(this.sk.dynamicData.getDynamicArrayForTurnChart());
 		return {
-			hover: turnChart.userSelectedTurn.turn[0] ?? null,
+			hover: turnChart.userSelectedTurn.turn[0] ?? turnChart.annotationHover ?? null,
 			hoveredSpeaker: null,
 			arrayOfFirstWords: [],
 			cloudHasOverflow: false

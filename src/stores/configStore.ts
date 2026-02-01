@@ -7,6 +7,7 @@ export interface ConfigStoreType {
 	contributionCloudToggle: boolean;
 	dashboardToggle: boolean;
 	flowersToggle: boolean;
+	silenceOverlapToggle: boolean;
 	separateToggle: boolean;
 	sortToggle: boolean;
 	lastWordToggle: boolean;
@@ -33,6 +34,7 @@ export const initialConfig: ConfigStoreType = {
 	contributionCloudToggle: false,
 	dashboardToggle: false,
 	flowersToggle: true,
+	silenceOverlapToggle: true,
 	separateToggle: false,
 	sortToggle: false,
 	lastWordToggle: false,

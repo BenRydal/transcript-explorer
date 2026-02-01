@@ -43,7 +43,7 @@
 	const techniqueToggleOptions = ['distributionDiagramToggle', 'turnChartToggle', 'contributionCloudToggle', 'dashboardToggle'] as const;
 
 	const distributionDiagramInteractions = ['flowersToggle'] as const;
-	const turnChartInteractions = ['separateToggle'] as const;
+	const turnChartInteractions = ['separateToggle', 'silenceOverlapToggle'] as const;
 	const contributionCloudInteractions = [
 		'separateToggle',
 		'sortToggle',

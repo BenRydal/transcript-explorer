@@ -172,6 +172,22 @@
 		if (browser) p5Instance?.fillSelectedData();
 	});
 
+	// Sync visualization hover to editor selection (scroll editor to hovered turn)
+	// Use get() for EditorStore to avoid reactive dependency cycle (this effect writes to EditorStore)
+	$effect(() => {
+		const hovered = $ConfigStore.hoveredDataPoint;
+		if (hovered && get(EditorStore).config.isVisible) {
+			EditorStore.update((state) => ({
+				...state,
+				selection: {
+					...state.selection,
+					selectedTurnNumber: hovered.turnNumber,
+					selectionSource: 'visualization'
+				}
+			}));
+		}
+	});
+
 	// Resize canvas when editor layout changes
 	$effect(() => {
 		$editorLayoutKey;
