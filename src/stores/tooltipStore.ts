@@ -1,4 +1,5 @@
 import { writable } from 'svelte/store';
+import { DEFAULT_SPEAKER_COLOR } from '$lib/constants/ui';
 
 export interface TooltipData {
 	visible: boolean;
@@ -14,7 +15,7 @@ const initialState: TooltipData = {
 	x: 0,
 	y: 0,
 	content: '',
-	speakerColor: '#000000',
+	speakerColor: DEFAULT_SPEAKER_COLOR,
 	position: 'above'
 };
 

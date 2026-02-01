@@ -9,6 +9,7 @@ export interface ConfigStoreType {
 	wordRainToggle: boolean;
 	dashboardToggle: boolean;
 	speakerHeatmapToggle: boolean;
+	turnLengthToggle: boolean;
 	silenceOverlapToggle: boolean;
 	separateToggle: boolean;
 	sortToggle: boolean;
@@ -38,6 +39,7 @@ export const initialConfig: ConfigStoreType = {
 	wordRainToggle: false,
 	dashboardToggle: false,
 	speakerHeatmapToggle: false,
+	turnLengthToggle: false,
 	silenceOverlapToggle: true,
 	separateToggle: false,
 	sortToggle: false,

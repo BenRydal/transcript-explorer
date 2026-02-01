@@ -40,7 +40,7 @@
 
 	let mobileMenuOpen = $state(false);
 
-	const techniqueToggleOptions = ['speakerGardenToggle', 'turnChartToggle', 'contributionCloudToggle', 'turnNetworkToggle', 'wordRainToggle', 'speakerHeatmapToggle', 'dashboardToggle'] as const;
+	const techniqueToggleOptions = ['speakerGardenToggle', 'turnChartToggle', 'contributionCloudToggle', 'turnNetworkToggle', 'wordRainToggle', 'speakerHeatmapToggle', 'turnLengthToggle', 'dashboardToggle'] as const;
 
 	const speakerGardenInteractions = [] as const;
 	const turnChartInteractions = ['separateToggle', 'silenceOverlapToggle'] as const;
@@ -73,7 +73,7 @@
 					? contributionCloudInteractions
 					: $ConfigStore.wordRainToggle
 						? wordRainInteractions
-						: $ConfigStore.speakerHeatmapToggle
+						: $ConfigStore.speakerHeatmapToggle || $ConfigStore.turnLengthToggle
 							? []
 							: allInteractions);
 

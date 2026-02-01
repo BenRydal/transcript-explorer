@@ -20,6 +20,7 @@ import type { DataPoint } from '../../models/dataPoint';
 import type { User } from '../../models/user';
 import type { Bounds } from './types/bounds';
 import { calculateScaling, getWordWidth, type Scaling } from './contribution-cloud-scaling';
+import { DEFAULT_SPEAKER_COLOR } from '../constants/ui';
 
 export { clearScalingCache } from './contribution-cloud-scaling';
 
@@ -210,7 +211,7 @@ export class ContributionCloud {
 				const screenY = this.bounds.y + pos.y;
 				const isHovered = pos.word === hoveredPos.word;
 				const padding = isHovered ? 3 : 2;
-				const color = pos.user?.color || 200;
+				const color = pos.user?.color || DEFAULT_SPEAKER_COLOR;
 
 				this.sk.textSize(pos.textSize);
 				this.sk.noStroke();
@@ -256,7 +257,7 @@ export class ContributionCloud {
 
 		content += `\n<span style="font-size: 0.85em; opacity: 0.7">${details.join('  ·  ')}</span>`;
 
-		showTooltip(this.sk.mouseX, this.sk.mouseY, content, user?.color || [200, 200, 200], this.sk.height);
+		showTooltip(this.sk.mouseX, this.sk.mouseY, content, user?.color || DEFAULT_SPEAKER_COLOR, this.sk.height);
 	}
 
 	getTurnContext(word: DataPoint, allPositions: WordPosition[]): string | null {

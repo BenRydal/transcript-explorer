@@ -11,6 +11,7 @@ import type { User } from '../../models/user';
 import type { Transcript } from '../../models/transcript';
 import type { Timeline } from '../../models/timeline';
 import type { Bounds } from './types/bounds';
+import { DEFAULT_SPEAKER_COLOR } from '../constants/ui';
 
 const BAR_SECTION_RATIO = 0.12;
 const BAR_MIN_WIDTH = 2;
@@ -190,7 +191,7 @@ export class WordRain {
 			const barW = BAR_MIN_WIDTH + countRatio * (BAR_MAX_WIDTH - BAR_MIN_WIDTH);
 
 			const user = this.userMap.get(agg.dominantSpeaker);
-			const color = agg.dominantCount / agg.count > DOMINANCE_THRESHOLD ? (user?.color || '#cccccc') : SHARED_WORD_COLOR;
+			const color = agg.dominantCount / agg.count > DOMINANCE_THRESHOLD ? (user?.color || DEFAULT_SPEAKER_COLOR) : SHARED_WORD_COLOR;
 
 			placed.push({
 				agg,

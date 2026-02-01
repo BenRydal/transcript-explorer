@@ -6,6 +6,7 @@ import { SpeakerGarden } from './speaker-garden';
 import { SpeakerHeatmap } from './speaker-heatmap';
 import { TurnNetwork } from './turn-network';
 import { WordRain } from './word-rain';
+import { TurnLengthDistribution } from './turn-length-distribution';
 import ConfigStore, { type ConfigStoreType } from '../../stores/configStore';
 import { resetTooltipFrame, finalizeTooltipFrame } from '../../stores/tooltipStore';
 import type { Bounds, DashboardBounds } from './types/bounds';
@@ -49,6 +50,8 @@ export class Draw {
 			result = this.updateWordRain(this.getFullScreenBounds());
 		} else if (currConfig.speakerHeatmapToggle) {
 			result = this.updateSpeakerHeatmap(this.getFullScreenBounds());
+		} else if (currConfig.turnLengthToggle) {
+			result = this.updateTurnLengthDistribution(this.getFullScreenBounds());
 		} else {
 			result = this.drawDashboard();
 		}
@@ -99,6 +102,12 @@ export class Draw {
 			arrayOfFirstWords: [],
 			cloudHasOverflow: false
 		};
+	}
+
+	updateTurnLengthDistribution(pos: Bounds): DrawResult {
+		const viz = new TurnLengthDistribution(this.sk, pos);
+		const { snippetPoints } = viz.draw(this.sk.dynamicData.getTurnSummaries());
+		return { hover: null, hoveredSpeaker: null, arrayOfFirstWords: snippetPoints, cloudHasOverflow: false };
 	}
 
 	updateTurnNetwork(pos: Bounds): DrawResult {

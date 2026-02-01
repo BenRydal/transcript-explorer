@@ -12,7 +12,7 @@
 	import { applyTimingModeToWordArray, updateTimelineFromData, getMaxTime } from '$lib/core/timing-utils';
 	import type { Turn } from '$lib/core/turn-utils';
 	import { DataPoint } from '../../models/dataPoint';
-	import { USER_COLORS } from '$lib/constants/ui';
+	import { USER_COLORS, DEFAULT_SPEAKER_COLOR } from '$lib/constants/ui';
 	import EditorToolbar from './EditorToolbar.svelte';
 	import TranscriptEditorRow from './TranscriptEditorRow.svelte';
 	import ConfirmModal from './ConfirmModal.svelte';
@@ -63,7 +63,7 @@
 
 	// Get user color for a speaker (uses reactive map)
 	function getSpeakerColor(speakerName: string): string {
-		return speakerColorMap.get(speakerName) || '#666666';
+		return speakerColorMap.get(speakerName) || DEFAULT_SPEAKER_COLOR;
 	}
 
 	// Check if a turn is selected

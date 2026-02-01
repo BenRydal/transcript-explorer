@@ -11,6 +11,7 @@ import type { User } from '../../models/user';
 import type { Transcript } from '../../models/transcript';
 import type { Timeline } from '../../models/timeline';
 import type { Bounds } from './types/bounds';
+import { DEFAULT_SPEAKER_COLOR } from '../constants/ui';
 
 const LEFT_MARGIN = 100;
 const BOTTOM_MARGIN = 30;
@@ -96,7 +97,7 @@ export class SpeakerHeatmap {
 		this.sk.noStroke();
 		for (let row = 0; row < speakers.length; row++) {
 			const user = this.userMap.get(speakers[row]);
-			this.sk.fill(user?.color || '#cccccc');
+			this.sk.fill(user?.color || DEFAULT_SPEAKER_COLOR);
 			const label = this.truncateLabel(speakers[row], LEFT_MARGIN - 10);
 			this.sk.text(label, grid.x - 8, grid.y + row * cellHeight + cellHeight / 2);
 		}
@@ -181,7 +182,7 @@ export class SpeakerHeatmap {
 	private drawHoverEffect(hovered: HoveredCell, grid: Bounds, cellWidth: number, cellHeight: number): void {
 		const user = this.userMap.get(hovered.speaker);
 		this.sk.noFill();
-		this.sk.stroke(user?.color || '#cccccc');
+		this.sk.stroke(user?.color || DEFAULT_SPEAKER_COLOR);
 		this.sk.strokeWeight(HOVER_OUTLINE_WEIGHT);
 		this.sk.rect(grid.x + hovered.col * cellWidth, grid.y + hovered.row * cellHeight, cellWidth, cellHeight);
 	}
@@ -196,7 +197,7 @@ export class SpeakerHeatmap {
 			: `${formatTimeCompact(bin.startTime)} - ${formatTimeCompact(bin.endTime)}`;
 
 		const content = `<b>${hovered.speaker}</b>\n${text}\n<span style="font-size: 0.85em; opacity: 0.7">${timeRange}</span>`;
-		showTooltip(this.sk.mouseX, this.sk.mouseY, content, user?.color || '#cccccc', this.sk.height);
+		showTooltip(this.sk.mouseX, this.sk.mouseY, content, user?.color || DEFAULT_SPEAKER_COLOR, this.sk.height);
 	}
 
 	private cellMatchesSearch(words: DataPoint[], searchTerm: string): boolean {

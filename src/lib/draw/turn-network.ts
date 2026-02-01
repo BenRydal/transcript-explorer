@@ -15,6 +15,7 @@ import { showTooltip } from '../../stores/tooltipStore';
 import type { DataPoint } from '../../models/dataPoint';
 import type { User } from '../../models/user';
 import type { Bounds } from './types/bounds';
+import { DEFAULT_SPEAKER_COLOR } from '../constants/ui';
 
 const MIN_NODE_RADIUS = 20;
 const MAX_NODE_RADIUS = 60;
@@ -203,7 +204,7 @@ export class TurnNetwork {
 	// --- Drawing ---
 
 	private drawNode(node: NodeLayout, highlight: boolean): void {
-		const color = node.user?.color || '#cccccc';
+		const color = node.user?.color || DEFAULT_SPEAKER_COLOR;
 		const fillColor = this.sk.color(color);
 		fillColor.setAlpha(highlight ? 255 : 200);
 
@@ -228,7 +229,7 @@ export class TurnNetwork {
 		const toNode = layout.nodeMap.get(edge.to);
 		if (!fromNode || !toNode) return;
 
-		const edgeColor = this.sk.color(fromNode.user?.color || '#cccccc');
+		const edgeColor = this.sk.color(fromNode.user?.color || DEFAULT_SPEAKER_COLOR);
 		edgeColor.setAlpha(highlight ? 255 : 150);
 		const weight = this.edgeWeight(edge.count, layout.maxEdgeCount) + (highlight ? 1 : 0);
 
@@ -362,7 +363,7 @@ export class TurnNetwork {
 	// --- Tooltips ---
 
 	private showTooltipFor(hovered: HoveredElement, layout: Layout): void {
-		const color = this.userMap.get(hovered.speaker)?.color || '#cccccc';
+		const color = this.userMap.get(hovered.speaker)?.color || DEFAULT_SPEAKER_COLOR;
 		let content: string;
 
 		if (hovered.type === 'node') {
