@@ -4,36 +4,21 @@ import { TurnChart } from './turn-chart';
 import { ContributionCloud } from './contribution-cloud';
 import { DistributionDiagram } from './distribution-diagram';
 import ConfigStore, { type ConfigStoreType } from '../../stores/configStore';
-import EditorStore, { type EditorState, type EditorSelection } from '../../stores/editorStore';
 import { resetTooltipFrame, finalizeTooltipFrame } from '../../stores/tooltipStore';
 import type { Bounds, DashboardBounds } from './types/bounds';
 
-type SelectionSource = EditorSelection['selectionSource'];
+interface DrawResult {
+	hover: DataPoint | null;
+	hoveredSpeaker: string | null;
+	arrayOfFirstWords: DataPoint[];
+	cloudHasOverflow: boolean;
+}
 
 let currConfig: ConfigStoreType;
 
 ConfigStore.subscribe((data) => {
 	currConfig = data;
 });
-
-// Helper to check if speaker filter is locked
-const isFilterLocked = (state: EditorState): boolean => state.selection.selectionSource === 'visualizationClick';
-
-// Helper to update editor selection while preserving locked filter
-const updateEditorSelection = (updates: Partial<EditorSelection>, source: SelectionSource): void => {
-	EditorStore.update((state) => {
-		const locked = isFilterLocked(state);
-		return {
-			...state,
-			selection: {
-				...state.selection,
-				...updates,
-				filteredSpeaker: locked ? state.selection.filteredSpeaker : (updates.filteredSpeaker ?? null),
-				selectionSource: locked ? state.selection.selectionSource : source
-			}
-		};
-	});
-};
 
 export class Draw {
 	sk: p5;
@@ -47,86 +32,90 @@ export class Draw {
 	drawViz(): void {
 		resetTooltipFrame();
 
-		let hover: DataPoint | null = null;
+		let result: DrawResult;
 
 		if (currConfig.distributionDiagramToggle) {
-			this.updateDistributionDiagram(this.getFullScreenBounds());
+			result = this.updateDistributionDiagram(this.getFullScreenBounds());
 		} else if (currConfig.turnChartToggle) {
-			hover = this.updateTurnChart(this.getFullScreenBounds());
+			result = this.updateTurnChart(this.getFullScreenBounds());
 		} else if (currConfig.contributionCloudToggle) {
-			hover = this.updateContributionCloud(this.getFullScreenBounds());
+			result = this.updateContributionCloud(this.getFullScreenBounds());
 		} else {
-			hover = this.drawDashboard();
+			result = this.drawDashboard();
 		}
 
-		this.syncHoverState(hover);
+		this.applyDrawResult(result);
 		finalizeTooltipFrame();
 	}
 
-	/** Write the final hover state to stores. Single owner of hoveredDataPoint + editor selection. */
-	syncHoverState(hover: DataPoint | null): void {
-		ConfigStore.update((c) => ({ ...c, hoveredDataPoint: hover }));
-		if (hover) {
-			updateEditorSelection(
-				{ selectedTurnNumber: hover.turnNumber, highlightedSpeaker: null },
-				'visualization'
-			);
-		}
+	/** Write draw results to stores. Single place for all store writes in non-dashboard mode. */
+	applyDrawResult(result: DrawResult): void {
+		ConfigStore.update((c) => ({
+			...c,
+			hoveredDataPoint: result.hover,
+			cloudHasOverflow: result.cloudHasOverflow,
+			arrayOfFirstWords: result.arrayOfFirstWords,
+			hoveredSpeakerInDistributionDiagram: result.hoveredSpeaker
+		}));
 	}
 
-	updateDistributionDiagram(pos: Bounds): void {
+	updateDistributionDiagram(pos: Bounds): DrawResult {
 		const distributionDiagram = new DistributionDiagram(this.sk, pos);
 		const { hoveredSpeaker } = distributionDiagram.draw(this.sk.dynamicData.getDynamicArrayForDistributionDiagram());
-		ConfigStore.update((config) => ({
-			...config,
+		return {
+			hover: null,
+			hoveredSpeaker,
 			arrayOfFirstWords: distributionDiagram.localArrayOfFirstWords,
-			hoveredSpeakerInDistributionDiagram: hoveredSpeaker
-		}));
-		EditorStore.update((state) => {
-			if (isFilterLocked(state)) {
-				return { ...state, selection: { ...state.selection, highlightedSpeaker: hoveredSpeaker } };
-			}
-			return {
-				...state,
-				selection: {
-					...state.selection,
-					highlightedSpeaker: hoveredSpeaker,
-					filteredSpeaker: hoveredSpeaker,
-					selectedTurnNumber: null,
-					selectionSource: 'visualization'
-				}
-			};
-		});
+			cloudHasOverflow: false
+		};
 	}
 
-	/** Draw turn chart and return hovered data point. Writes to ConfigStore for dashboard cross-highlighting. */
-	updateTurnChart(pos: Bounds): DataPoint | null {
+	updateTurnChart(pos: Bounds): DrawResult {
 		const turnChart = new TurnChart(this.sk, pos);
 		turnChart.draw(this.sk.dynamicData.getDynamicArrayForTurnChart());
-		const hover = turnChart.userSelectedTurn.turn[0] ?? null;
-		ConfigStore.update((config) => ({ ...config, hoveredDataPoint: hover }));
-		return hover;
+		return {
+			hover: turnChart.userSelectedTurn.turn[0] ?? null,
+			hoveredSpeaker: null,
+			arrayOfFirstWords: [],
+			cloudHasOverflow: false
+		};
 	}
 
-	/** Draw contribution cloud and return hovered data point. Writes to ConfigStore for dashboard cross-highlighting. */
-	updateContributionCloud(pos: Bounds): DataPoint | null {
+	updateContributionCloud(pos: Bounds): DrawResult {
 		const contributionCloud = new ContributionCloud(this.sk, pos);
 		const { hoveredWord, hasOverflow } = contributionCloud.draw(this.sk.dynamicData.getDynamicArraySortedForContributionCloud());
-		ConfigStore.update((config) => ({ ...config, hoveredDataPoint: hoveredWord, cloudHasOverflow: hasOverflow }));
-		return hoveredWord ?? null;
+		return {
+			hover: hoveredWord ?? null,
+			hoveredSpeaker: null,
+			arrayOfFirstWords: [],
+			cloudHasOverflow: hasOverflow
+		};
 	}
 
-	drawDashboard(): DataPoint | null {
+	drawDashboard(): DrawResult {
 		const { top, bottomLeft, bottomRight } = this.getDashboardBounds();
 		this.drawDashboardDividers(top, bottomLeft);
-		// Use previous frame's cloud hover so turn chart cross-highlights from cloud
-		// without reading its own hover back (which would cause self-filtering)
+
+		// Seed hoveredDataPoint with previous frame's cloud hover for cross-highlighting
 		ConfigStore.update((c) => ({ ...c, hoveredDataPoint: this.prevCloudHover }));
-		const turnHover = this.updateTurnChart(top);
-		const cloudHover = this.updateContributionCloud(bottomRight);
-		this.updateDistributionDiagram(bottomLeft);
-		this.prevCloudHover = cloudHover;
-		return turnHover ?? cloudHover;
+		const turnResult = this.updateTurnChart(top);
+
+		// Write turn hover so cloud can cross-highlight
+		ConfigStore.update((c) => ({ ...c, hoveredDataPoint: turnResult.hover }));
+		const cloudResult = this.updateContributionCloud(bottomRight);
+
+		// Write cloud hover so distribution diagram can cross-highlight
+		ConfigStore.update((c) => ({ ...c, hoveredDataPoint: cloudResult.hover }));
+		const diagramResult = this.updateDistributionDiagram(bottomLeft);
+
+		this.prevCloudHover = cloudResult.hover;
+
+		return {
+			hover: turnResult.hover ?? cloudResult.hover,
+			hoveredSpeaker: diagramResult.hoveredSpeaker,
+			arrayOfFirstWords: diagramResult.arrayOfFirstWords,
+			cloudHasOverflow: cloudResult.cloudHasOverflow
+		};
 	}
 
 	drawDashboardDividers(top: Bounds, bottomLeft: Bounds): void {
