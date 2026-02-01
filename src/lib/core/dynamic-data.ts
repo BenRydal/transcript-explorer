@@ -166,12 +166,9 @@ export class DynamicData {
 
 	getTurnSummaries(): { speaker: string; wordCount: number; firstDataPoint: DataPoint }[] {
 		const words = this.getProcessedWords(true);
-		const users = get(UserStore);
-		const enabledSpeakers = new Set(users.filter((u) => u.enabled).map((u) => u.name));
 		const turnMap = new Map<number, { speaker: string; wordCount: number; firstDataPoint: DataPoint }>();
 
 		for (const word of words) {
-			if (!enabledSpeakers.has(word.speaker)) continue;
 			const existing = turnMap.get(word.turnNumber);
 			if (existing) {
 				existing.wordCount++;
