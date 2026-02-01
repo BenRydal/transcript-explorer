@@ -141,7 +141,7 @@ export class SpeakerHeatmap {
 
 		const labelStep = Math.max(1, Math.floor(numBins / TIME_LABEL_COUNT));
 		this.sk.textAlign(this.sk.CENTER, this.sk.TOP);
-		for (let col = 0; col < numBins; col += labelStep) {
+		for (let col = 0; col < numBins - labelStep / 2; col += labelStep) {
 			const bin = binnedData.bins[col];
 			const label = isUntimed ? String(Math.round(bin.startTime)) : formatTimeCompact(bin.startTime);
 			this.sk.text(label, grid.x + col * cellWidth + cellWidth / 2, grid.y + grid.height + 5);
