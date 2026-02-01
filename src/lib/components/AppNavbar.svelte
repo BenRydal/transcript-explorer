@@ -40,7 +40,7 @@
 
 	let mobileMenuOpen = $state(false);
 
-	const techniqueToggleOptions = ['distributionDiagramToggle', 'turnChartToggle', 'contributionCloudToggle', 'dashboardToggle'] as const;
+	const techniqueToggleOptions = ['distributionDiagramToggle', 'turnChartToggle', 'contributionCloudToggle', 'speakerHeatmapToggle', 'dashboardToggle'] as const;
 
 	const distributionDiagramInteractions = ['flowersToggle'] as const;
 	const turnChartInteractions = ['separateToggle', 'silenceOverlapToggle'] as const;
@@ -70,7 +70,9 @@
 				? turnChartInteractions
 				: $ConfigStore.contributionCloudToggle
 					? contributionCloudInteractions
-					: allInteractions);
+					: $ConfigStore.speakerHeatmapToggle
+						? []
+						: allInteractions);
 
 	let showRepeatedWordsSlider = $derived($ConfigStore.contributionCloudToggle || $ConfigStore.dashboardToggle);
 

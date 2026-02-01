@@ -3,6 +3,7 @@ import type { DataPoint } from '../../models/dataPoint';
 import { TurnChart } from './turn-chart';
 import { ContributionCloud } from './contribution-cloud';
 import { DistributionDiagram } from './distribution-diagram';
+import { SpeakerHeatmap } from './speaker-heatmap';
 import ConfigStore, { type ConfigStoreType } from '../../stores/configStore';
 import { resetTooltipFrame, finalizeTooltipFrame } from '../../stores/tooltipStore';
 import type { Bounds, DashboardBounds } from './types/bounds';
@@ -40,6 +41,8 @@ export class Draw {
 			result = this.updateTurnChart(this.getFullScreenBounds());
 		} else if (currConfig.contributionCloudToggle) {
 			result = this.updateContributionCloud(this.getFullScreenBounds());
+		} else if (currConfig.speakerHeatmapToggle) {
+			result = this.updateSpeakerHeatmap(this.getFullScreenBounds());
 		} else {
 			result = this.drawDashboard();
 		}
@@ -75,6 +78,17 @@ export class Draw {
 		turnChart.draw(this.sk.dynamicData.getDynamicArrayForTurnChart());
 		return {
 			hover: turnChart.userSelectedTurn.turn[0] ?? turnChart.annotationHover ?? null,
+			hoveredSpeaker: null,
+			arrayOfFirstWords: [],
+			cloudHasOverflow: false
+		};
+	}
+
+	updateSpeakerHeatmap(pos: Bounds): DrawResult {
+		const heatmap = new SpeakerHeatmap(this.sk, pos);
+		const { hoveredCell } = heatmap.draw(this.sk.dynamicData.getProcessedWords(true));
+		return {
+			hover: hoveredCell,
 			hoveredSpeaker: null,
 			arrayOfFirstWords: [],
 			cloudHasOverflow: false
