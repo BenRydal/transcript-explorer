@@ -6,6 +6,7 @@
 import { get } from 'svelte/store';
 import VideoStore, { stopPlayback, playFrom, playSnippets } from '../../stores/videoStore';
 import ConfigStore from '../../stores/configStore';
+import TranscriptStore from '../../stores/transcriptStore';
 
 /**
  * Handle a click on the visualization canvas.
@@ -25,6 +26,8 @@ export function handleVisualizationClick(): void {
 		stopPlayback();
 		return;
 	}
+
+	if (get(TranscriptStore).timingMode === 'untimed') return;
 
 	const config = get(ConfigStore);
 	const { hoveredDataPoint, arrayOfFirstWords } = config;

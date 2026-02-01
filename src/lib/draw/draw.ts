@@ -100,11 +100,11 @@ export class Draw {
 
 	updateTurnNetwork(pos: Bounds): DrawResult {
 		const turnNetwork = new TurnNetwork(this.sk, pos);
-		const { hoveredElement } = turnNetwork.draw(this.sk.dynamicData.getDynamicArrayForTurnNetwork());
+		const { snippetPoints } = turnNetwork.draw(this.sk.dynamicData.getDynamicArrayForTurnNetwork());
 		return {
-			hover: hoveredElement,
+			hover: null,
 			hoveredSpeaker: null,
-			arrayOfFirstWords: [],
+			arrayOfFirstWords: snippetPoints,
 			cloudHasOverflow: false
 		};
 	}

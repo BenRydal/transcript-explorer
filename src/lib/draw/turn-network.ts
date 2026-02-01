@@ -34,8 +34,8 @@ const LAYOUT_RADIUS_FACTOR = 0.33;
 // --- Types ---
 
 export interface NetworkData {
-	transitions: Map<string, Map<string, { count: number; firstDataPoint: DataPoint }>>;
-	speakerStats: Map<string, { wordCount: number; turnCount: number; firstDataPoint: DataPoint }>;
+	transitions: Map<string, Map<string, { count: number; turnStartPoints: DataPoint[] }>>;
+	speakerStats: Map<string, { wordCount: number; turnCount: number; turnStartPoints: DataPoint[] }>;
 }
 
 interface NodeLayout {
@@ -44,14 +44,14 @@ interface NodeLayout {
 	y: number;
 	radius: number;
 	user: User | undefined;
-	firstDataPoint: DataPoint;
+	turnStartPoints: DataPoint[];
 }
 
 interface EdgeLayout {
 	from: string;
 	to: string;
 	count: number;
-	firstDataPoint: DataPoint;
+	turnStartPoints: DataPoint[];
 	isSelfLoop: boolean;
 }
 
@@ -67,12 +67,12 @@ interface Layout {
 type HoveredElement = {
 	type: 'node';
 	speaker: string;
-	dataPoint: DataPoint;
+	snippetPoints: DataPoint[];
 	node: NodeLayout;
 } | {
 	type: 'edge';
 	speaker: string;
-	dataPoint: DataPoint;
+	snippetPoints: DataPoint[];
 	edge: EdgeLayout;
 };
 
@@ -131,7 +131,7 @@ export class TurnNetwork {
 		this.userMap = new Map(get(UserStore).map((u) => [u.name, u]));
 	}
 
-	draw(data: NetworkData): { hoveredElement: DataPoint | null } {
+	draw(data: NetworkData): { snippetPoints: DataPoint[] } {
 		const layout = this.buildLayout(data);
 		const hovered = this.findHovered(layout);
 
@@ -146,7 +146,7 @@ export class TurnNetwork {
 			this.showTooltipFor(hovered, layout);
 		}
 
-		return { hoveredElement: hovered?.dataPoint ?? null };
+		return { snippetPoints: hovered?.snippetPoints ?? [] };
 	}
 
 	// --- Layout ---
@@ -181,7 +181,7 @@ export class TurnNetwork {
 				y: speakers.length === 1 ? centerY : centerY + Math.sin(angle) * layoutRadius,
 				radius: this.sk.map(stats.wordCount, 0, maxWordCount, MIN_NODE_RADIUS, MAX_NODE_RADIUS, true),
 				user: this.userMap.get(speaker),
-				firstDataPoint: stats.firstDataPoint
+				turnStartPoints: stats.turnStartPoints
 			};
 			nodes.push(node);
 			nodeMap.set(speaker, node);
@@ -192,7 +192,7 @@ export class TurnNetwork {
 		for (const [from, targets] of data.transitions) {
 			for (const [to, d] of targets) {
 				if (!this.userMap.get(from)?.enabled || !this.userMap.get(to)?.enabled) continue;
-				edges.push({ from, to, count: d.count, firstDataPoint: d.firstDataPoint, isSelfLoop: from === to });
+				edges.push({ from, to, count: d.count, turnStartPoints: d.turnStartPoints, isSelfLoop: from === to });
 				if (d.count > maxEdgeCount) maxEdgeCount = d.count;
 			}
 		}
@@ -322,13 +322,13 @@ export class TurnNetwork {
 			const dx = mx - node.x;
 			const dy = my - node.y;
 			if (dx * dx + dy * dy <= node.radius * node.radius) {
-				return { type: 'node', speaker: node.speaker, dataPoint: node.firstDataPoint, node };
+				return { type: 'node', speaker: node.speaker, snippetPoints: node.turnStartPoints, node };
 			}
 		}
 
 		for (const edge of layout.edges) {
 			if (this.isNearEdge(mx, my, edge, layout)) {
-				return { type: 'edge', speaker: edge.from, dataPoint: edge.firstDataPoint, edge };
+				return { type: 'edge', speaker: edge.from, snippetPoints: edge.turnStartPoints, edge };
 			}
 		}
 
