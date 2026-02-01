@@ -4,6 +4,7 @@ import { TurnChart } from './turn-chart';
 import { ContributionCloud } from './contribution-cloud';
 import { DistributionDiagram } from './distribution-diagram';
 import { SpeakerHeatmap } from './speaker-heatmap';
+import { TurnNetwork } from './turn-network';
 import ConfigStore, { type ConfigStoreType } from '../../stores/configStore';
 import { resetTooltipFrame, finalizeTooltipFrame } from '../../stores/tooltipStore';
 import type { Bounds, DashboardBounds } from './types/bounds';
@@ -41,6 +42,8 @@ export class Draw {
 			result = this.updateTurnChart(this.getFullScreenBounds());
 		} else if (currConfig.contributionCloudToggle) {
 			result = this.updateContributionCloud(this.getFullScreenBounds());
+		} else if (currConfig.turnNetworkToggle) {
+			result = this.updateTurnNetwork(this.getFullScreenBounds());
 		} else if (currConfig.speakerHeatmapToggle) {
 			result = this.updateSpeakerHeatmap(this.getFullScreenBounds());
 		} else {
@@ -89,6 +92,17 @@ export class Draw {
 		const { hoveredCell } = heatmap.draw(this.sk.dynamicData.getProcessedWords(true));
 		return {
 			hover: hoveredCell,
+			hoveredSpeaker: null,
+			arrayOfFirstWords: [],
+			cloudHasOverflow: false
+		};
+	}
+
+	updateTurnNetwork(pos: Bounds): DrawResult {
+		const turnNetwork = new TurnNetwork(this.sk, pos);
+		const { hoveredElement } = turnNetwork.draw(this.sk.dynamicData.getDynamicArrayForTurnNetwork());
+		return {
+			hover: hoveredElement,
 			hoveredSpeaker: null,
 			arrayOfFirstWords: [],
 			cloudHasOverflow: false

@@ -5,6 +5,7 @@ import UserStore from '../../stores/userStore';
 import ConfigStore, { type ConfigStoreType } from '../../stores/configStore';
 import { get } from 'svelte/store';
 import { clearScalingCache, clearCloudBuffer } from '../draw/contribution-cloud';
+import type { NetworkData } from '../draw/turn-network';
 
 // Module-level stop words Set (created once, shared by all instances)
 const STOP_WORDS = new Set([
@@ -161,5 +162,42 @@ export class DynamicData {
 		}
 
 		return words;
+	}
+
+	getDynamicArrayForTurnNetwork(): NetworkData {
+		const words = this.getProcessedWords(true);
+		const transitions = new Map<string, Map<string, { count: number; firstDataPoint: DataPoint }>>();
+		const speakerStats = new Map<string, { wordCount: number; turnCount: number; firstDataPoint: DataPoint }>();
+		let prevSpeaker: string | null = null;
+		let prevTurn = -1;
+
+		for (const word of words) {
+			let stats = speakerStats.get(word.speaker);
+			if (!stats) {
+				stats = { wordCount: 0, turnCount: 0, firstDataPoint: word };
+				speakerStats.set(word.speaker, stats);
+			}
+			stats.wordCount++;
+
+			if (word.turnNumber !== prevTurn) {
+				stats.turnCount++;
+
+				if (prevSpeaker !== null) {
+					if (!transitions.has(prevSpeaker)) transitions.set(prevSpeaker, new Map());
+					const targets = transitions.get(prevSpeaker)!;
+					const transition = targets.get(word.speaker);
+					if (transition) {
+						transition.count++;
+					} else {
+						targets.set(word.speaker, { count: 1, firstDataPoint: word });
+					}
+				}
+
+				prevSpeaker = word.speaker;
+				prevTurn = word.turnNumber;
+			}
+		}
+
+		return { transitions, speakerStats };
 	}
 }
