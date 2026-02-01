@@ -26,7 +26,7 @@
 ## Features
 
 - **Browser-Based** — Everything runs locally in your browser with zero server dependencies
-- **Multiple Visualizations** — Distribution diagram, turn chart, contribution cloud, and flower mode
+- **Multiple Visualizations** — Speaker garden, turn chart, contribution cloud, word rain, and more
 - **Video Integration** — Sync transcripts with YouTube videos or local video files
 - **Auto-Transcription** — In-browser Whisper AI transcription (no data leaves your device)
 - **Transcribe Mode** — Dedicated workspace with keyboard shortcuts for manual video transcription
@@ -44,8 +44,8 @@ Transcript Explorer provides four visualization modes to explore your conversati
 
 |                                                                                                                                                                                      |                                                                                                                                                                |
 | :----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------: | :------------------------------------------------------------------------------------------------------------------------------------------------------------: |
-|                                                   ![Distribution Diagram](./static/images/thumbs-modes/distribution-diagram.webp)                                                    |                                                  ![Turn Chart](./static/images/thumbs-modes/turn-chart.webp)                                                   |
-|                                                                               **Distribution Diagram**                                                                               |                                                                         **Turn Chart**                                                                         |
+|                                                   ![Speaker Garden](./static/images/thumbs-modes/speaker-garden.webp)                                                    |                                                  ![Turn Chart](./static/images/thumbs-modes/turn-chart.webp)                                                   |
+|                                                                               **Speaker Garden**                                                                               |                                                                         **Turn Chart**                                                                         |
 | Each flower represents a speaker. Flower size indicates words spoken; height indicates number of turns. Hover to see the first word of each turn; click to watch video of each turn. | Each ellipse is a conversation turn, colored by speaker. Width indicates turn duration; height indicates word count. Hover to read turns; click to play video. |
 
 |                                                                                                                                                        |                                                             |

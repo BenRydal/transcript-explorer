@@ -7,7 +7,7 @@
  * - Gradient petals with natural variation
  * - Textured flower centers
  *
- * Used by distribution-diagram.ts when flower mode is enabled.
+ * Used by speaker-garden.ts for the Speaker Garden visualization.
  */
 
 import type p5 from 'p5';

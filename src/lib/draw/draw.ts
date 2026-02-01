@@ -2,7 +2,7 @@ import type p5 from 'p5';
 import type { DataPoint } from '../../models/dataPoint';
 import { TurnChart } from './turn-chart';
 import { ContributionCloud } from './contribution-cloud';
-import { DistributionDiagram } from './distribution-diagram';
+import { SpeakerGarden } from './speaker-garden';
 import { SpeakerHeatmap } from './speaker-heatmap';
 import { TurnNetwork } from './turn-network';
 import { WordRain } from './word-rain';
@@ -37,8 +37,8 @@ export class Draw {
 
 		let result: DrawResult;
 
-		if (currConfig.distributionDiagramToggle) {
-			result = this.updateDistributionDiagram(this.getFullScreenBounds());
+		if (currConfig.speakerGardenToggle) {
+			result = this.updateSpeakerGarden(this.getFullScreenBounds());
 		} else if (currConfig.turnChartToggle) {
 			result = this.updateTurnChart(this.getFullScreenBounds());
 		} else if (currConfig.contributionCloudToggle) {
@@ -64,17 +64,17 @@ export class Draw {
 			hoveredDataPoint: result.hover,
 			cloudHasOverflow: result.cloudHasOverflow,
 			arrayOfFirstWords: result.arrayOfFirstWords,
-			hoveredSpeakerInDistributionDiagram: result.hoveredSpeaker
+			hoveredSpeakerInGarden: result.hoveredSpeaker
 		}));
 	}
 
-	updateDistributionDiagram(pos: Bounds): DrawResult {
-		const distributionDiagram = new DistributionDiagram(this.sk, pos);
-		const { hoveredSpeaker } = distributionDiagram.draw(this.sk.dynamicData.getDynamicArrayForDistributionDiagram());
+	updateSpeakerGarden(pos: Bounds): DrawResult {
+		const garden = new SpeakerGarden(this.sk, pos);
+		const { hoveredSpeaker } = garden.draw(this.sk.dynamicData.getDynamicArrayForSpeakerGarden());
 		return {
 			hover: null,
 			hoveredSpeaker,
-			arrayOfFirstWords: distributionDiagram.localArrayOfFirstWords,
+			arrayOfFirstWords: garden.localArrayOfFirstWords,
 			cloudHasOverflow: false
 		};
 	}
@@ -146,16 +146,16 @@ export class Draw {
 		ConfigStore.update((c) => ({ ...c, hoveredDataPoint: turnResult.hover }));
 		const cloudResult = this.updateContributionCloud(bottomRight);
 
-		// Write cloud hover so distribution diagram can cross-highlight
+		// Write cloud hover so speaker garden can cross-highlight
 		ConfigStore.update((c) => ({ ...c, hoveredDataPoint: cloudResult.hover }));
-		const diagramResult = this.updateDistributionDiagram(bottomLeft);
+		const gardenResult = this.updateSpeakerGarden(bottomLeft);
 
 		this.prevCloudHover = cloudResult.hover;
 
 		return {
 			hover: turnResult.hover ?? cloudResult.hover,
-			hoveredSpeaker: diagramResult.hoveredSpeaker,
-			arrayOfFirstWords: diagramResult.arrayOfFirstWords,
+			hoveredSpeaker: gardenResult.hoveredSpeaker,
+			arrayOfFirstWords: gardenResult.arrayOfFirstWords,
 			cloudHasOverflow: cloudResult.cloudHasOverflow
 		};
 	}

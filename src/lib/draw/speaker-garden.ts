@@ -1,5 +1,5 @@
 /**
- * Distribution Diagram Visualization
+ * Speaker Garden Visualization
  *
  * Displays speaker contributions as flowers.
  * - Stalk height = number of turns
@@ -28,7 +28,7 @@ interface SpeakerMetrics {
 	scaledWordArea: number;
 }
 
-export class DistributionDiagram {
+export class SpeakerGarden {
 	sk: p5;
 	users: User[];
 	userMap: Map<string, User>;

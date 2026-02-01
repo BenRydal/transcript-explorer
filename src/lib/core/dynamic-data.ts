@@ -131,7 +131,7 @@ export class DynamicData {
 		return result;
 	}
 
-	getDynamicArrayForDistributionDiagram(): Record<string, DataPoint[]> {
+	getDynamicArrayForSpeakerGarden(): Record<string, DataPoint[]> {
 		const categorized: Record<string, DataPoint[]> = {};
 		for (const word of this.getProcessedWords(true)) {
 			if (!categorized[word.speaker]) categorized[word.speaker] = [];

@@ -190,7 +190,7 @@ export const igsSketch = (p5: any) => {
 	p5.handleSpeakerFilterClick = () => {
 		if (!editorState?.config?.isVisible) return;
 
-		const hoveredSpeaker = currConfig.hoveredSpeakerInDistributionDiagram;
+		const hoveredSpeaker = currConfig.hoveredSpeakerInGarden;
 		if (hoveredSpeaker) {
 			EditorStore.update((state) => ({
 				...state,

@@ -16,7 +16,7 @@
 		{
 			target: '[data-tour="viz-modes"]',
 			title: 'Visualization Modes',
-			content: 'Switch between Distribution Diagram, Turn Chart, Contribution Cloud, and Dashboard views.'
+			content: 'Switch between Speaker Garden, Turn Chart, Contribution Cloud, Word Rain, and other views.'
 		},
 		{
 			target: '[data-tour="interactions"]',

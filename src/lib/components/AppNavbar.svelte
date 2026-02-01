@@ -40,9 +40,9 @@
 
 	let mobileMenuOpen = $state(false);
 
-	const techniqueToggleOptions = ['distributionDiagramToggle', 'turnChartToggle', 'contributionCloudToggle', 'turnNetworkToggle', 'wordRainToggle', 'speakerHeatmapToggle', 'dashboardToggle'] as const;
+	const techniqueToggleOptions = ['speakerGardenToggle', 'turnChartToggle', 'contributionCloudToggle', 'turnNetworkToggle', 'wordRainToggle', 'speakerHeatmapToggle', 'dashboardToggle'] as const;
 
-	const distributionDiagramInteractions = [] as const;
+	const speakerGardenInteractions = [] as const;
 	const turnChartInteractions = ['separateToggle', 'silenceOverlapToggle'] as const;
 	const contributionCloudInteractions = [
 		'separateToggle',
@@ -53,7 +53,7 @@
 		'repeatedWordsToggle'
 	] as const;
 	const wordRainInteractions = ['stopWordsToggle'] as const;
-	const allInteractions = [...new Set([...distributionDiagramInteractions, ...turnChartInteractions, ...contributionCloudInteractions, ...wordRainInteractions])] as const;
+	const allInteractions = [...new Set([...speakerGardenInteractions, ...turnChartInteractions, ...contributionCloudInteractions, ...wordRainInteractions])] as const;
 
 	const exampleOptions = [
 		{ value: 'example-1', label: 'Kindergarten Activity', icon: GraduationCap },
@@ -65,8 +65,8 @@
 
 	let visibleInteractions = $derived($ConfigStore.dashboardToggle
 		? allInteractions
-		: $ConfigStore.distributionDiagramToggle
-			? distributionDiagramInteractions
+		: $ConfigStore.speakerGardenToggle
+			? speakerGardenInteractions
 			: $ConfigStore.turnChartToggle
 				? turnChartInteractions
 				: $ConfigStore.contributionCloudToggle

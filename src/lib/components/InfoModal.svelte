@@ -29,8 +29,8 @@
 
 	const visualizations = [
 		{
-			img: 'distribution-diagram',
-			title: 'Distribution Diagram',
+			img: 'speaker-garden',
+			title: 'Speaker Garden',
 			desc: 'Each flower represents a speaker. Flower size shows words spoken, stalk height shows number of turns.'
 		},
 		{

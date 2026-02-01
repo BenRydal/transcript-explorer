@@ -2,7 +2,7 @@ import { writable, derived } from 'svelte/store';
 import type { DataPoint } from '../models/dataPoint';
 
 export interface ConfigStoreType {
-	distributionDiagramToggle: boolean;
+	speakerGardenToggle: boolean;
 	turnChartToggle: boolean;
 	contributionCloudToggle: boolean;
 	turnNetworkToggle: boolean;
@@ -22,7 +22,7 @@ export interface ConfigStoreType {
 	cloudHasOverflow: boolean;
 	arrayOfFirstWords: DataPoint[];
 	wordToSearch: string;
-	hoveredSpeakerInDistributionDiagram: string | null;
+	hoveredSpeakerInGarden: string | null;
 	// Start-only mode settings
 	preserveGapsBetweenTurns: boolean;
 	speechRateWordsPerSecond: number;
@@ -31,7 +31,7 @@ export interface ConfigStoreType {
 }
 
 export const initialConfig: ConfigStoreType = {
-	distributionDiagramToggle: true,
+	speakerGardenToggle: true,
 	turnChartToggle: false,
 	contributionCloudToggle: false,
 	turnNetworkToggle: false,
@@ -51,7 +51,7 @@ export const initialConfig: ConfigStoreType = {
 	cloudHasOverflow: false,
 	arrayOfFirstWords: [],
 	wordToSearch: '',
-	hoveredSpeakerInDistributionDiagram: null,
+	hoveredSpeakerInGarden: null,
 	// Start-only mode settings (default: estimate from speech rate)
 	preserveGapsBetweenTurns: true,
 	speechRateWordsPerSecond: 3,
