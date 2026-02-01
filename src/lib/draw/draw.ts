@@ -5,6 +5,7 @@ import { ContributionCloud } from './contribution-cloud';
 import { DistributionDiagram } from './distribution-diagram';
 import { SpeakerHeatmap } from './speaker-heatmap';
 import { TurnNetwork } from './turn-network';
+import { WordRain } from './word-rain';
 import ConfigStore, { type ConfigStoreType } from '../../stores/configStore';
 import { resetTooltipFrame, finalizeTooltipFrame } from '../../stores/tooltipStore';
 import type { Bounds, DashboardBounds } from './types/bounds';
@@ -44,6 +45,8 @@ export class Draw {
 			result = this.updateContributionCloud(this.getFullScreenBounds());
 		} else if (currConfig.turnNetworkToggle) {
 			result = this.updateTurnNetwork(this.getFullScreenBounds());
+		} else if (currConfig.wordRainToggle) {
+			result = this.updateWordRain(this.getFullScreenBounds());
 		} else if (currConfig.speakerHeatmapToggle) {
 			result = this.updateSpeakerHeatmap(this.getFullScreenBounds());
 		} else {
@@ -105,6 +108,17 @@ export class Draw {
 			hover: null,
 			hoveredSpeaker: null,
 			arrayOfFirstWords: snippetPoints,
+			cloudHasOverflow: false
+		};
+	}
+
+	updateWordRain(pos: Bounds): DrawResult {
+		const wordRain = new WordRain(this.sk, pos);
+		const { hoveredOccurrences } = wordRain.draw(this.sk.dynamicData.getProcessedWords(true));
+		return {
+			hover: null,
+			hoveredSpeaker: null,
+			arrayOfFirstWords: hoveredOccurrences,
 			cloudHasOverflow: false
 		};
 	}

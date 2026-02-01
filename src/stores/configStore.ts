@@ -6,6 +6,7 @@ export interface ConfigStoreType {
 	turnChartToggle: boolean;
 	contributionCloudToggle: boolean;
 	turnNetworkToggle: boolean;
+	wordRainToggle: boolean;
 	dashboardToggle: boolean;
 	speakerHeatmapToggle: boolean;
 	flowersToggle: boolean;
@@ -35,6 +36,7 @@ export const initialConfig: ConfigStoreType = {
 	turnChartToggle: false,
 	contributionCloudToggle: false,
 	turnNetworkToggle: false,
+	wordRainToggle: false,
 	dashboardToggle: false,
 	speakerHeatmapToggle: false,
 	flowersToggle: true,

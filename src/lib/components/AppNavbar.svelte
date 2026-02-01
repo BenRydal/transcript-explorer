@@ -40,7 +40,7 @@
 
 	let mobileMenuOpen = $state(false);
 
-	const techniqueToggleOptions = ['distributionDiagramToggle', 'turnChartToggle', 'contributionCloudToggle', 'turnNetworkToggle', 'speakerHeatmapToggle', 'dashboardToggle'] as const;
+	const techniqueToggleOptions = ['distributionDiagramToggle', 'turnChartToggle', 'contributionCloudToggle', 'turnNetworkToggle', 'wordRainToggle', 'speakerHeatmapToggle', 'dashboardToggle'] as const;
 
 	const distributionDiagramInteractions = ['flowersToggle'] as const;
 	const turnChartInteractions = ['separateToggle', 'silenceOverlapToggle'] as const;
@@ -52,7 +52,8 @@
 		'stopWordsToggle',
 		'repeatedWordsToggle'
 	] as const;
-	const allInteractions = [...new Set([...distributionDiagramInteractions, ...turnChartInteractions, ...contributionCloudInteractions])] as const;
+	const wordRainInteractions = ['stopWordsToggle'] as const;
+	const allInteractions = [...new Set([...distributionDiagramInteractions, ...turnChartInteractions, ...contributionCloudInteractions, ...wordRainInteractions])] as const;
 
 	const exampleOptions = [
 		{ value: 'example-1', label: 'Kindergarten Activity', icon: GraduationCap },
@@ -70,9 +71,11 @@
 				? turnChartInteractions
 				: $ConfigStore.contributionCloudToggle
 					? contributionCloudInteractions
-					: $ConfigStore.speakerHeatmapToggle
-						? []
-						: allInteractions);
+					: $ConfigStore.wordRainToggle
+						? wordRainInteractions
+						: $ConfigStore.speakerHeatmapToggle
+							? []
+							: allInteractions);
 
 	let showRepeatedWordsSlider = $derived($ConfigStore.contributionCloudToggle || $ConfigStore.dashboardToggle);
 
