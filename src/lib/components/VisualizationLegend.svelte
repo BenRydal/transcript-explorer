@@ -149,7 +149,7 @@
 				<div class="legend-header">
 					<span class="legend-title">{legend.title}</span>
 					<button class="legend-close" onclick={() => setLegendVisible(false)} title="Close legend">
-						<X size={14} />
+						<X size={16} />
 					</button>
 				</div>
 				<div class="legend-items">
@@ -160,7 +160,7 @@
 							{:else if 'icon' in item}
 								{@const Icon = item.icon}
 								<span class="legend-icon" style={item.iconColor ? `color: ${item.iconColor}` : ''}>
-									<Icon size={12} fill={item.iconColor ? 'currentColor' : 'none'} />
+									<Icon size={14} fill={item.iconColor ? 'currentColor' : 'none'} />
 								</span>
 							{/if}
 							<span class="legend-label">{item.label}</span>
@@ -170,7 +170,7 @@
 			</div>
 		{:else}
 			<button class="legend-toggle" onclick={() => setLegendVisible(true)} title="Show legend" transition:fly={{ y: 8, duration: 150 }}>
-				<Info size={16} />
+				<Info size={18} />
 			</button>
 		{/if}
 	</div>
@@ -195,8 +195,8 @@
 	}
 
 	.legend-card {
-		padding: 6px 10px;
-		max-width: 260px;
+		padding: 8px 12px;
+		max-width: 300px;
 	}
 
 	.legend-header {
@@ -207,7 +207,7 @@
 	}
 
 	.legend-title {
-		font-size: 0.8rem;
+		font-size: 0.9rem;
 		font-weight: 600;
 		color: #374151;
 	}
@@ -232,20 +232,20 @@
 	.legend-items {
 		display: flex;
 		flex-direction: column;
-		gap: 2px;
+		gap: 3px;
 	}
 
 	.legend-item {
 		display: flex;
 		align-items: center;
-		gap: 6px;
-		font-size: 0.7rem;
+		gap: 7px;
+		font-size: 0.8rem;
 		color: #4b5563;
 		line-height: 1.3;
 	}
 
 	.legend-icon {
-		width: 14px;
+		width: 16px;
 		display: flex;
 		align-items: center;
 		justify-content: center;
@@ -254,8 +254,8 @@
 	}
 
 	.legend-gradient {
-		width: 14px;
-		height: 8px;
+		width: 16px;
+		height: 10px;
 		border-radius: 2px;
 		flex-shrink: 0;
 	}
