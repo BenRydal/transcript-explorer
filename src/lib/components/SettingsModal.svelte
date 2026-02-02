@@ -29,6 +29,17 @@
 		p5Instance?.fillAllData?.();
 	}
 
+	function setTimelineDuration(value: number) {
+		TimelineStore.update((timeline) => {
+			timeline.currTime = 0;
+			timeline.startTime = 0;
+			timeline.endTime = value;
+			timeline.leftMarker = 0;
+			timeline.rightMarker = value;
+			return timeline;
+		});
+	}
+
 	function handleKeydown(e: KeyboardEvent) {
 		if (e.key === 'Escape') isOpen = false;
 	}
@@ -50,34 +61,43 @@
 			<div class="flex flex-col space-y-6">
 				<!-- Timeline Duration -->
 				<div class="flex flex-col">
-					<label for="inputDuration" class="font-medium">Timeline Duration</label>
-					<p class="text-sm text-gray-500 mb-1">Enter as seconds, MM:SS, or HH:MM:SS</p>
-					<input
-						id="inputDuration"
-						type="text"
-						value={formatTimeAuto($TimelineStore.endTime)}
-						placeholder="e.g. 90, 1:30, or 0:01:30"
-						onchange={(e) => {
-							const input = e.target as HTMLInputElement;
-							const seconds = toSeconds(input.value);
-							if (seconds !== null && seconds > 0) {
-								TimelineStore.update((timeline) => {
-									timeline.currTime = 0;
-									timeline.startTime = 0;
-									timeline.endTime = seconds;
-									timeline.leftMarker = 0;
-									timeline.rightMarker = seconds;
-									return timeline;
-								});
-							}
-							// Always reset to formatted value (normalizes valid input, reverts invalid)
-							input.value = formatTimeAuto($TimelineStore.endTime);
-						}}
-						class="input input-bordered"
-					/>
+					{#if $TranscriptStore.timingMode === 'untimed'}
+						<label for="inputDuration" class="font-medium">Total Words</label>
+						<p class="text-sm text-gray-500 mb-1">Total word count for the timeline range</p>
+						<input
+							id="inputDuration"
+							type="text"
+							value={Math.round($TimelineStore.endTime)}
+							placeholder="e.g. 500"
+							onchange={(e) => {
+								const input = e.target as HTMLInputElement;
+								const val = parseInt(input.value);
+								if (!isNaN(val) && val > 0) setTimelineDuration(val);
+								input.value = String(Math.round($TimelineStore.endTime));
+							}}
+							class="input input-bordered"
+						/>
+					{:else}
+						<label for="inputDuration" class="font-medium">Timeline Duration</label>
+						<p class="text-sm text-gray-500 mb-1">Enter as seconds, MM:SS, or HH:MM:SS</p>
+						<input
+							id="inputDuration"
+							type="text"
+							value={formatTimeAuto($TimelineStore.endTime)}
+							placeholder="e.g. 90, 1:30, or 0:01:30"
+							onchange={(e) => {
+								const input = e.target as HTMLInputElement;
+								const seconds = toSeconds(input.value);
+								if (seconds !== null && seconds > 0) setTimelineDuration(seconds);
+								input.value = formatTimeAuto($TimelineStore.endTime);
+							}}
+							class="input input-bordered"
+						/>
+					{/if}
 				</div>
 
 				<!-- Start-Only Mode Settings -->
+				{#if $TranscriptStore.timingMode === 'startOnly'}
 				<div class="flex flex-col border-t pt-4">
 					<p class="font-medium mb-2">Turn End Time Calculation:</p>
 					<p class="text-sm text-gray-600 mb-3">For transcripts with only start times</p>
@@ -128,6 +148,7 @@
 						/>
 					</div>
 				</div>
+				{/if}
 
 				<!-- Video Playback Settings -->
 				<div class="flex flex-col border-t pt-4">
