@@ -12,7 +12,7 @@ import type { Transcript } from '../../models/transcript';
 import type { Timeline } from '../../models/timeline';
 import type { Bounds } from './types/bounds';
 import { DEFAULT_SPEAKER_COLOR } from '../constants/ui';
-import { withDimming } from './draw-utils';
+import { withDimming, formatTurnPreviewLines } from './draw-utils';
 import { normalizeWord } from '../core/string-utils';
 
 const LEFT_MARGIN = 100;
@@ -65,7 +65,9 @@ export class SpeakerHeatmap {
 	draw(words: DataPoint[]): { hoveredCell: DataPoint | null; hoveredSpeaker: string | null } {
 		const speakers = this.users.filter((u) => u.enabled).map((u) => u.name);
 		const grid = this.getGridBounds();
-		const numBins = Math.max(1, Math.floor(grid.width / TARGET_CELL_WIDTH));
+		const numBins = this.config.heatmapBinCount > 0
+			? this.config.heatmapBinCount
+			: Math.max(1, Math.floor(grid.width / TARGET_CELL_WIDTH));
 
 		if (speakers.length === 0) return { hoveredCell: null, hoveredSpeaker: null };
 
@@ -211,13 +213,25 @@ export class SpeakerHeatmap {
 	private showCellTooltip(hovered: HoveredCell, binnedData: BinnedData): void {
 		const bin = binnedData.bins[hovered.col];
 		const user = this.userMap.get(hovered.speaker);
-		const text = hovered.words.map((w) => w.word).join(' ');
 		const isUntimed = this.transcript.timingMode === 'untimed';
 		const timeRange = isUntimed
 			? `Words ${Math.round(bin.startTime)}-${Math.round(bin.endTime)}`
 			: `${formatTimeCompact(bin.startTime)} - ${formatTimeCompact(bin.endTime)}`;
 
-		const content = `<b>${hovered.speaker}</b>\n${text}\n<span style="font-size: 0.85em; opacity: 0.7">${timeRange}</span>`;
+		// Group words by turn into TurnPreview format
+		const turnMap = new Map<number, DataPoint[]>();
+		for (const w of hovered.words) {
+			const arr = turnMap.get(w.turnNumber);
+			if (arr) arr.push(w);
+			else turnMap.set(w.turnNumber, [w]);
+		}
+		const turns = [...turnMap.values()].map((words) => ({
+			wordCount: words.length,
+			content: words.map((w) => w.word).join(' ')
+		}));
+		const multiTurn = turns.length > 1;
+
+		const content = `<b>${hovered.speaker}</b> · ${turns.length} turn${multiTurn ? 's' : ''} · ${timeRange}\n${formatTurnPreviewLines(turns)}`;
 		showTooltip(this.sk.mouseX, this.sk.mouseY, content, user?.color || DEFAULT_SPEAKER_COLOR, this.bounds.y + this.bounds.height);
 	}
 

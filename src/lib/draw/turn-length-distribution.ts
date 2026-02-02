@@ -6,7 +6,7 @@ import { showTooltip } from '../../stores/tooltipStore';
 import type { DataPoint } from '../../models/dataPoint';
 import type { User } from '../../models/user';
 import type { Bounds } from './types/bounds';
-import { withDimming } from './draw-utils';
+import { withDimming, formatTurnPreviewLines } from './draw-utils';
 
 const LEFT_MARGIN = 60;
 const BOTTOM_MARGIN = 40;
@@ -15,8 +15,6 @@ const BAR_PADDING = 2;
 const HOVER_OUTLINE_WEIGHT = 2;
 const TARGET_BIN_COUNT = 15;
 const Y_TICKS = 5;
-const TOOLTIP_MAX_TURNS = 4;
-const TOOLTIP_PREVIEW_WORDS = 8;
 
 interface TurnSummary {
 	speaker: string;
@@ -199,22 +197,7 @@ export class TurnLengthDistribution {
 		const turns = bin.speakers.get(hovered.speaker)!;
 		const user = this.userMap.get(hovered.speaker);
 		const multiTurn = turns.length > 1;
-		const separator = '<span style="opacity: 0.2">———</span>';
-		const turnLines = turns.slice(0, TOOLTIP_MAX_TURNS).map((t) => {
-			let text = t.content;
-			if (multiTurn) {
-				const words = t.content.split(' ');
-				if (words.length > TOOLTIP_PREVIEW_WORDS) {
-					text = words.slice(0, TOOLTIP_PREVIEW_WORDS).join(' ') + `... (${words.length - TOOLTIP_PREVIEW_WORDS} more words)`;
-				}
-			}
-			return `<span style="font-size: 0.85em; opacity: 0.6">${t.wordCount} words</span>\n${text}`;
-		});
-		const remaining = turns.length - TOOLTIP_MAX_TURNS;
-		if (remaining > 0) {
-			turnLines.push(`<span style="font-size: 0.85em; opacity: 0.5">...and ${remaining} more turn${remaining !== 1 ? 's' : ''}</span>`);
-		}
-		const content = `<b>${hovered.speaker}</b> · ${turns.length} turn${multiTurn ? 's' : ''}\n${turnLines.join('\n' + separator + '\n')}`;
+		const content = `<b>${hovered.speaker}</b> · ${turns.length} turn${multiTurn ? 's' : ''}\n${formatTurnPreviewLines(turns)}`;
 		showTooltip(this.sk.mouseX, this.sk.mouseY, content, user?.color || '#cccccc', this.bounds.y + this.bounds.height);
 	}
 

@@ -166,6 +166,11 @@
 		});
 	}
 
+	let showHeatmapOptions = $derived(
+		$ConfigStore.speakerHeatmapToggle ||
+		($ConfigStore.dashboardToggle && $ConfigStore.dashboardPanels.includes('speakerHeatmap'))
+	);
+
 	function handleConfigChangeFromInput(e: Event, key: keyof ConfigStoreType) {
 		const target = e.target as HTMLInputElement;
 		onconfigChange?.({ key, value: parseFloat(target.value) });
@@ -303,6 +308,23 @@
 							<button onclick={cycleGardenSort} class="w-full text-left flex items-center">
 								{GARDEN_SORT_LABELS[$ConfigStore.gardenSortOrder]}
 							</button>
+						</li>
+					{/if}
+					{#if showHeatmapOptions}
+						<li class="cursor-default">
+							<p>Bin Count: {$ConfigStore.heatmapBinCount === 0 ? 'Auto' : $ConfigStore.heatmapBinCount}</p>
+						</li>
+						<li>
+							<label for="heatmapBinCount" class="sr-only">Heatmap bin count</label>
+							<input
+								id="heatmapBinCount"
+								type="range"
+								min="0"
+								max="60"
+								value={$ConfigStore.heatmapBinCount}
+								class="range"
+								oninput={(e) => handleConfigChangeFromInput(e, 'heatmapBinCount')}
+							/>
 						</li>
 					{/if}
 					{#if showRepeatedWordsSlider}
@@ -486,6 +508,20 @@
 					<button class="btn btn-sm {$ConfigStore.gardenSortOrder !== 'default' ? 'btn-primary' : 'btn-ghost'}" onclick={cycleGardenSort}>
 						{GARDEN_SORT_LABELS[$ConfigStore.gardenSortOrder]}
 					</button>
+				{/if}
+				{#if showHeatmapOptions}
+					<div class="mt-2">
+						<label for="heatmapBinCountMobile" class="text-sm">Bin Count: {$ConfigStore.heatmapBinCount === 0 ? 'Auto' : $ConfigStore.heatmapBinCount}</label>
+						<input
+							id="heatmapBinCountMobile"
+							type="range"
+							min="0"
+							max="60"
+							value={$ConfigStore.heatmapBinCount}
+							class="range range-sm w-full"
+							oninput={(e) => handleConfigChangeFromInput(e, 'heatmapBinCount')}
+						/>
+					</div>
 				{/if}
 				{#if showRepeatedWordsSlider}
 					<div class="mt-2">

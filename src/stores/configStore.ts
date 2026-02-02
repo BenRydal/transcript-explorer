@@ -48,6 +48,8 @@ export interface ConfigStoreType {
 	turnNetworkWeightByWords: boolean;
 	turnNetworkHideSelfLoops: boolean;
 	turnNetworkMinTransitions: number;
+	// Speaker Heatmap settings
+	heatmapBinCount: number;
 	// Legend overlay
 	legendVisible: boolean;
 }
@@ -103,6 +105,7 @@ export const initialConfig: ConfigStoreType = {
 	turnNetworkWeightByWords: false,
 	turnNetworkHideSelfLoops: false,
 	turnNetworkMinTransitions: 1,
+	heatmapBinCount: 0,
 	legendVisible: true
 };
 
