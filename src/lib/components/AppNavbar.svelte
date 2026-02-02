@@ -38,7 +38,6 @@
 	}: Props = $props();
 
 	let mobileMenuOpen = $state(false);
-	let searchValue = $state('');
 	let optionsFlyoutPanel = $state<string | null>(null);
 	let vizDropdownOpen = $state(false);
 
@@ -126,7 +125,7 @@
 	});
 
 	let activeVisualizationName = $derived(
-		activePanelKey ? (PANEL_LABELS[activePanelKey] ?? (activePanelKey === 'dashboard' ? 'Dashboard' : 'Select')) : 'Select'
+		activePanelKey ? PANEL_LABELS[activePanelKey] ?? 'Dashboard' : 'Select'
 	);
 
 	let hiddenSliderKeys = $derived.by(() => {
@@ -181,7 +180,6 @@
 
 	function handleWordSearch(event: Event) {
 		const value = (event.target as HTMLInputElement).value;
-		searchValue = value;
 		onwordSearch?.(value.trim());
 	}
 
@@ -340,8 +338,9 @@
 									</button>
 								{:else if option.type === 'slider'}
 									<div class="py-1 px-1">
-										<p class="text-sm text-gray-600">{option.label}: {option.formatValue ? option.formatValue($ConfigStore[option.key] as number) : $ConfigStore[option.key]}</p>
+										<label for={option.key} class="text-sm text-gray-600">{option.label}: {option.formatValue ? option.formatValue($ConfigStore[option.key] as number) : $ConfigStore[option.key]}</label>
 										<input
+											id={option.key}
 											type="range"
 											min={option.min}
 											max={option.max}
@@ -386,7 +385,7 @@
 			<input
 				type="text"
 				placeholder="Filter words..."
-				value={searchValue}
+				value={$ConfigStore.wordToSearch}
 				oninput={handleWordSearch}
 				class="input input-sm input-bordered pl-7 w-36 focus:w-48 transition-all duration-200"
 			/>
@@ -486,7 +485,7 @@
 			<!-- Search -->
 			<div>
 				<p class="text-xs uppercase tracking-wider text-gray-500 mb-2">Search</p>
-				<input type="text" placeholder="Filter words..." value={searchValue} oninput={handleWordSearch} class="input input-bordered input-sm w-full" />
+				<input type="text" placeholder="Filter words..." value={$ConfigStore.wordToSearch} oninput={handleWordSearch} class="input input-bordered input-sm w-full" />
 			</div>
 
 			<!-- Options -->
@@ -499,8 +498,9 @@
 							</button>
 						{:else if option.type === 'slider'}
 							<div class="w-full mt-1">
-								<label class="text-sm">{option.label}: {option.formatValue ? option.formatValue($ConfigStore[option.key] as number) : $ConfigStore[option.key]}</label>
+								<label for={option.key} class="text-sm">{option.label}: {option.formatValue ? option.formatValue($ConfigStore[option.key] as number) : $ConfigStore[option.key]}</label>
 								<input
+									id={option.key}
 									type="range"
 									min={option.min}
 									max={option.max}

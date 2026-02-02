@@ -97,7 +97,7 @@
 	{@const tooltipLeft = rect ? Math.max(16, Math.min(rect.left + rect.width / 2 - 160, window.innerWidth - 336)) : window.innerWidth / 2 - 160}
 
 	<div class="fixed inset-0 z-[9999] pointer-events-none">
-		<button class="absolute inset-0 bg-black/50 pointer-events-auto cursor-default" onclick={end}></button>
+		<button class="absolute inset-0 bg-black/50 pointer-events-auto cursor-default" onclick={end} aria-label="Close tour"></button>
 
 		{#if rect}
 			<div
