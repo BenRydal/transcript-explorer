@@ -134,9 +134,11 @@ export class WordRain {
 	}
 
 	private filterAndSort(aggregated: AggregatedWord[]): AggregatedWord[] {
-		const filtered = this.searchTerm
-			? aggregated.filter((a) => a.word.includes(this.searchTerm))
-			: aggregated;
+		const minFreq = this.config.wordRainMinFrequency;
+		const search = this.searchTerm;
+		const filtered = aggregated.filter((a) =>
+			a.count >= minFreq && (!search || a.word.includes(search))
+		);
 		filtered.sort((a, b) => b.count - a.count);
 		return filtered;
 	}

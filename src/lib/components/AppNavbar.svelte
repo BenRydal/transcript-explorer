@@ -84,6 +84,11 @@
 		($ConfigStore.dashboardToggle && $ConfigStore.dashboardPanels.includes('contributionCloud'))
 	);
 
+	let showWordRainMinFreqSlider = $derived(
+		$ConfigStore.wordRainToggle ||
+		($ConfigStore.dashboardToggle && $ConfigStore.dashboardPanels.includes('wordRain'))
+	);
+
 	const TOGGLE_LABELS: Record<string, string> = {
 		// Visualizations
 		speakerGardenToggle: 'Speaker Garden',
@@ -305,6 +310,23 @@
 							/>
 						</li>
 					{/if}
+					{#if showWordRainMinFreqSlider}
+						<li class="cursor-default">
+							<p>Min Frequency: {$ConfigStore.wordRainMinFrequency}</p>
+						</li>
+						<li>
+							<label for="wordRainMinFreq" class="sr-only">Minimum word frequency</label>
+							<input
+								id="wordRainMinFreq"
+								type="range"
+								min="1"
+								max="10"
+								value={$ConfigStore.wordRainMinFrequency}
+								class="range"
+								oninput={(e) => handleConfigChangeFromInput(e, 'wordRainMinFrequency')}
+							/>
+						</li>
+					{/if}
 					<hr class="my-4 border-t border-gray-300" />
 					<input type="text" placeholder="Filter words..." oninput={handleWordSearch} class="input input-bordered w-full" />
 				</ul>
@@ -433,7 +455,21 @@
 						/>
 					</div>
 				{/if}
-				<input type="text" placeholder="Filter words..." oninput={handleWordSearch} class="input input-bordered input-sm w-full mt-2" />
+				{#if showWordRainMinFreqSlider}
+				<div class="mt-2">
+					<label for="wordRainMinFreqMobile" class="text-sm">Min Frequency: {$ConfigStore.wordRainMinFrequency}</label>
+					<input
+						id="wordRainMinFreqMobile"
+						type="range"
+						min="1"
+						max="10"
+						value={$ConfigStore.wordRainMinFrequency}
+						class="range range-sm w-full"
+						oninput={(e) => handleConfigChangeFromInput(e, 'wordRainMinFrequency')}
+					/>
+				</div>
+			{/if}
+			<input type="text" placeholder="Filter words..." oninput={handleWordSearch} class="input input-bordered input-sm w-full mt-2" />
 			</div>
 
 			<!-- Quick Actions -->

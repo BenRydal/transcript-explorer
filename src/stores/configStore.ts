@@ -39,6 +39,8 @@ export interface ConfigStoreType {
 	// Dashboard cross-highlighting (written by previous frame's applyDrawResult)
 	dashboardHighlightSpeaker: string | null;
 	dashboardHighlightTurn: number | null;
+	// Word Rain settings
+	wordRainMinFrequency: number;
 	// Legend overlay
 	legendVisible: boolean;
 }
@@ -87,6 +89,7 @@ export const initialConfig: ConfigStoreType = {
 	dashboardPanels: ['turnChart', 'contributionCloud', 'speakerGarden'],
 	dashboardHighlightSpeaker: null,
 	dashboardHighlightTurn: null,
+	wordRainMinFrequency: 1,
 	legendVisible: true
 };
 
