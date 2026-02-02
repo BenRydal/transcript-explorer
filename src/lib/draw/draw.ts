@@ -19,6 +19,8 @@ interface DrawResult {
 	overflowBounds: Bounds[];
 	/** Panel key that produced the hover (for turn-level cross-highlight) */
 	hoverSource?: string;
+	/** Turn numbers involved in a turn-network edge hover */
+	edgeTurns?: number[] | null;
 }
 
 const emptyResult: DrawResult = { hover: null, hoveredSpeaker: null, arrayOfFirstWords: [], overflowBounds: [] };
@@ -74,10 +76,15 @@ export class Draw {
 		// Compute cross-highlight fields for next frame
 		let highlightSpeaker: string | null = null;
 		let highlightTurn: number | null = null;
+		let highlightTurns: number[] | null = null;
 
 		if (isDashboard) {
 			highlightSpeaker = r.hoveredSpeaker ?? null;
-			if (highlightSpeaker && r.hoverSource && TURN_LEVEL_SOURCES.has(r.hoverSource) && r.hover) {
+			if (r.edgeTurns && r.edgeTurns.length > 0) {
+				// Edge hover in turn network: highlight specific turns, not speaker
+				highlightTurns = r.edgeTurns;
+				highlightSpeaker = null;
+			} else if (highlightSpeaker && r.hoverSource && TURN_LEVEL_SOURCES.has(r.hoverSource) && r.hover) {
 				highlightTurn = r.hover.turnNumber;
 			}
 		}
@@ -89,7 +96,8 @@ export class Draw {
 			arrayOfFirstWords: r.arrayOfFirstWords,
 			hoveredSpeakerInGarden: r.hoveredSpeaker,
 			dashboardHighlightSpeaker: highlightSpeaker,
-			dashboardHighlightTurn: highlightTurn
+			dashboardHighlightTurn: highlightTurn,
+			dashboardHighlightAllTurns: highlightTurns
 		}));
 	}
 
@@ -140,8 +148,8 @@ export class Draw {
 
 	updateTurnNetwork(pos: Bounds): DrawResult {
 		const turnNetwork = new TurnNetwork(this.sk, pos);
-		const { snippetPoints, hoveredSpeaker } = turnNetwork.draw(this.sk.dynamicData.getDynamicArrayForTurnNetwork());
-		return result({ arrayOfFirstWords: snippetPoints, hoveredSpeaker });
+		const { snippetPoints, hoveredSpeaker, edgeTurns } = turnNetwork.draw(this.sk.dynamicData.getDynamicArrayForTurnNetwork());
+		return result({ arrayOfFirstWords: snippetPoints, hoveredSpeaker, edgeTurns });
 	}
 
 	updateWordRain(pos: Bounds): DrawResult {
@@ -164,6 +172,7 @@ export class Draw {
 		let mergedHover: DataPoint | null = null;
 		let mergedHoveredSpeaker: string | null = null;
 		let hoverSource: string | undefined;
+		let mergedEdgeTurns: number[] | null | undefined;
 		const mergedArrayOfFirstWords: DataPoint[] = [];
 		const mergedOverflowBounds: Bounds[] = [];
 
@@ -176,6 +185,7 @@ export class Draw {
 			}
 			mergedHover ??= panelResult.hover;
 			mergedHoveredSpeaker ??= panelResult.hoveredSpeaker;
+			mergedEdgeTurns ??= panelResult.edgeTurns;
 			mergedArrayOfFirstWords.push(...panelResult.arrayOfFirstWords);
 			mergedOverflowBounds.push(...panelResult.overflowBounds);
 		}
@@ -185,7 +195,8 @@ export class Draw {
 			hoveredSpeaker: mergedHoveredSpeaker,
 			arrayOfFirstWords: mergedArrayOfFirstWords,
 			overflowBounds: mergedOverflowBounds,
-			hoverSource
+			hoverSource,
+			edgeTurns: mergedEdgeTurns ?? null
 		};
 	}
 

@@ -57,6 +57,12 @@ interface WordRainResult {
 
 const EMPTY_RAIN_RESULT: WordRainResult = { hoveredOccurrences: [], hoveredSpeaker: null, hasOverflow: false };
 
+interface CrossHighlight {
+	active: boolean;
+	speaker: string;
+	turns: number[] | null;
+}
+
 interface PlacedWord {
 	agg: AggregatedWord;
 	x: number;
@@ -92,11 +98,15 @@ export class WordRain {
 		this.searchTerm = this.config.wordToSearch ? normalizeWord(this.config.wordToSearch) : '';
 	}
 
-	private getCrossHighlight(): { active: boolean; speaker: string } {
+	private static readonly NO_HIGHLIGHT: CrossHighlight = { active: false, speaker: '', turns: null };
+
+	private getCrossHighlight(): CrossHighlight {
+		if (!this.config.dashboardToggle) return WordRain.NO_HIGHLIGHT;
 		const hl = this.config.dashboardHighlightSpeaker;
-		if (!hl || !this.config.dashboardToggle) return { active: false, speaker: '' };
+		const hlTurns = this.config.dashboardHighlightAllTurns;
+		if (!hl && !hlTurns) return WordRain.NO_HIGHLIGHT;
 		const mouseInPanel = this.sk.overRect(this.bounds.x, this.bounds.y, this.bounds.width, this.bounds.height);
-		return { active: !mouseInPanel, speaker: hl };
+		return { active: !mouseInPanel, speaker: hl ?? '', turns: hlTurns };
 	}
 
 	draw(words: DataPoint[]): WordRainResult {
@@ -492,10 +502,16 @@ export class WordRain {
 		}));
 	}
 
-	private renderBars(placed: PlacedWord[], xhl: { active: boolean; speaker: string }): void {
+	private shouldDimWord(xhl: CrossHighlight, pw: PlacedWord): boolean {
+		if (!xhl.active) return false;
+		if (xhl.turns) return !pw.agg.occurrences.some((o) => xhl.turns!.includes(o.turnNumber));
+		return pw.agg.dominantSpeaker !== xhl.speaker;
+	}
+
+	private renderBars(placed: PlacedWord[], xhl: CrossHighlight): void {
 		this.sk.noStroke();
 		for (const pw of placed) {
-			withDimming(this.sk.drawingContext, xhl.active && pw.agg.dominantSpeaker !== xhl.speaker, () => {
+			withDimming(this.sk.drawingContext, this.shouldDimWord(xhl, pw), () => {
 				const c = this.sk.color(pw.color);
 				c.setAlpha(180);
 				this.sk.fill(c);
@@ -505,9 +521,9 @@ export class WordRain {
 		}
 	}
 
-	private renderConnectors(placed: PlacedWord[], xhl: { active: boolean; speaker: string }): void {
+	private renderConnectors(placed: PlacedWord[], xhl: CrossHighlight): void {
 		for (const pw of placed) {
-			withDimming(this.sk.drawingContext, xhl.active && pw.agg.dominantSpeaker !== xhl.speaker, () => {
+			withDimming(this.sk.drawingContext, this.shouldDimWord(xhl, pw), () => {
 				const alpha = CONNECTOR_MIN_ALPHA + pw.countRatio * (CONNECTOR_MAX_ALPHA - CONNECTOR_MIN_ALPHA);
 				const weight = CONNECTOR_MIN_WEIGHT + pw.countRatio * (CONNECTOR_MAX_WEIGHT - CONNECTOR_MIN_WEIGHT);
 				const c = this.sk.color(pw.color);
@@ -520,11 +536,11 @@ export class WordRain {
 		}
 	}
 
-	private renderWords(placed: PlacedWord[], xhl: { active: boolean; speaker: string }): void {
+	private renderWords(placed: PlacedWord[], xhl: CrossHighlight): void {
 		this.sk.noStroke();
 		this.sk.textAlign(this.sk.LEFT, this.sk.BASELINE);
 		for (const pw of placed) {
-			withDimming(this.sk.drawingContext, xhl.active && pw.agg.dominantSpeaker !== xhl.speaker, () => {
+			withDimming(this.sk.drawingContext, this.shouldDimWord(xhl, pw), () => {
 				this.sk.textSize(pw.textSize);
 				this.sk.fill(pw.color);
 				this.sk.text(pw.agg.word, pw.x, pw.y);

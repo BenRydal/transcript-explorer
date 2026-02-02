@@ -143,21 +143,30 @@ export class TurnNetwork {
 		this.selfLoopRadius = Math.max(15, this.minDim * SELF_LOOP_RADIUS_RATIO);
 	}
 
-	draw(data: NetworkData): { snippetPoints: DataPoint[]; hoveredSpeaker: string | null } {
+	draw(data: NetworkData): { snippetPoints: DataPoint[]; hoveredSpeaker: string | null; edgeTurns: number[] | null } {
 		const layout = this.buildLayout(data);
 		const hovered = this.findHovered(layout);
 
 		const hl = this.config.dashboardHighlightSpeaker;
+		const hlTurns = this.config.dashboardHighlightAllTurns;
 		const mouseInPanel = this.sk.overRect(this.bounds.x, this.bounds.y, this.bounds.width, this.bounds.height);
-		const crossHighlightActive = this.config.dashboardToggle && hl != null && !mouseInPanel;
+		const crossHighlightActive = this.config.dashboardToggle && (hl != null || hlTurns != null) && !mouseInPanel;
 
 		for (const edge of layout.edges) {
-			withDimming(this.sk.drawingContext, crossHighlightActive && edge.from !== hl && edge.to !== hl, () => {
+			const shouldDim = crossHighlightActive && (
+				(hlTurns != null && !edge.turnStartPoints.some((p) => hlTurns.includes(p.turnNumber))) ||
+				(hl != null && edge.from !== hl && edge.to !== hl)
+			);
+			withDimming(this.sk.drawingContext, shouldDim, () => {
 				this.drawEdge(edge, layout, false);
 			});
 		}
 		for (const node of layout.nodes) {
-			withDimming(this.sk.drawingContext, crossHighlightActive && node.speaker !== hl, () => {
+			const shouldDim = crossHighlightActive && (
+				(hlTurns != null && !node.turnStartPoints.some((p) => hlTurns.includes(p.turnNumber))) ||
+				(hl != null && node.speaker !== hl)
+			);
+			withDimming(this.sk.drawingContext, shouldDim, () => {
 				this.drawNode(node, false);
 			});
 		}
@@ -170,7 +179,10 @@ export class TurnNetwork {
 			this.showTooltipFor(hovered, layout);
 		}
 
-		return { snippetPoints: hovered?.snippetPoints ?? [], hoveredSpeaker: hovered?.speaker ?? null };
+		const edgeTurns = hovered?.type === 'edge'
+			? hovered.edge.turnStartPoints.flatMap((p) => [p.turnNumber - 1, p.turnNumber])
+			: null;
+		return { snippetPoints: hovered?.snippetPoints ?? [], hoveredSpeaker: hovered?.speaker ?? null, edgeTurns };
 	}
 
 	// --- Layout ---

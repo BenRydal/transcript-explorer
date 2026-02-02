@@ -124,8 +124,9 @@ export class TurnLengthDistribution {
 		let hoveredSegment: HoveredSegment | null = null;
 
 		const hl = this.config.dashboardHighlightSpeaker;
+		const hlTurns = this.config.dashboardHighlightAllTurns;
 		const mouseInPanel = this.sk.overRect(this.bounds.x, this.bounds.y, this.bounds.width, this.bounds.height);
-		const crossHighlightActive = this.config.dashboardToggle && hl != null && !mouseInPanel;
+		const crossHighlightActive = this.config.dashboardToggle && (hl != null || hlTurns != null) && !mouseInPanel;
 
 		for (let b = 0; b < bins.length; b++) {
 			const bin = bins[b];
@@ -140,7 +141,11 @@ export class TurnLengthDistribution {
 				const h = (turns.length / maxCount) * this.gh;
 				const y = this.gy + this.gh - yOffset - h;
 
-				withDimming(this.sk.drawingContext, crossHighlightActive && speaker !== hl, () => {
+				const shouldDim = crossHighlightActive && (
+					(hlTurns != null && !turns.some((t) => hlTurns.includes(t.dataPoint.turnNumber))) ||
+					(hl != null && speaker !== hl)
+				);
+				withDimming(this.sk.drawingContext, shouldDim, () => {
 					const user = this.userMap.get(speaker);
 					const c = this.sk.color(user!.color);
 					c.setAlpha(200);

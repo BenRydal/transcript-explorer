@@ -222,6 +222,8 @@ export const igsSketch = (p5: any) => {
 	 * Returns false to dim items that don't match the highlighted turn/speaker.
 	 */
 	p5.shouldDraw = (item: any) => {
+		const turns = currConfig.dashboardHighlightAllTurns;
+		if (turns) return turns.includes(item.turnNumber);
 		const turn = currConfig.dashboardHighlightTurn;
 		const speaker = currConfig.dashboardHighlightSpeaker;
 		const matchesTurn = turn != null ? item.turnNumber === turn : true;

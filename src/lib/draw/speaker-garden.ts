@@ -72,8 +72,9 @@ export class SpeakerGarden {
 		this.hoveredSpeaker = null;
 
 		const hl = this.config.dashboardHighlightSpeaker;
+		const hlTurns = this.config.dashboardHighlightAllTurns;
 		const mouseInPanel = this.sk.overRect(this.bounds.x, this.bounds.y, this.bounds.width, this.bounds.height);
-		const crossHighlightActive = this.config.dashboardToggle && hl != null && !mouseInPanel;
+		const crossHighlightActive = this.config.dashboardToggle && (hl != null || hlTurns != null) && !mouseInPanel;
 
 		this.drawFlowerGuideLines();
 
@@ -87,7 +88,11 @@ export class SpeakerGarden {
 					}
 
 					if (wordsToVisualize.length > 0) {
-						withDimming(this.sk.drawingContext, crossHighlightActive && wordsToVisualize[0].speaker !== hl, () => {
+						const shouldDim = crossHighlightActive && (
+							(hl != null && wordsToVisualize[0].speaker !== hl) ||
+							(hlTurns != null && !wordsToVisualize.some((w) => hlTurns.includes(w.turnNumber)))
+						);
+						withDimming(this.sk.drawingContext, shouldDim, () => {
 							this.drawViz(wordsToVisualize);
 						});
 					}

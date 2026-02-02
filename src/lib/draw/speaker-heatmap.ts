@@ -114,8 +114,9 @@ export class SpeakerHeatmap {
 	private drawCells(binnedData: BinnedData, speakers: string[], grid: Bounds, cellWidth: number, cellHeight: number, searchTerm: string): void {
 		const hl = this.config.dashboardHighlightSpeaker;
 		const hlTurn = this.config.dashboardHighlightTurn;
+		const hlTurns = this.config.dashboardHighlightAllTurns;
 		const mouseInPanel = this.sk.overRect(this.bounds.x, this.bounds.y, this.bounds.width, this.bounds.height);
-		const crossHighlightActive = this.config.dashboardToggle && (hl != null || hlTurn != null) && !mouseInPanel;
+		const crossHighlightActive = this.config.dashboardToggle && (hl != null || hlTurn != null || hlTurns != null) && !mouseInPanel;
 
 		this.sk.noStroke();
 		for (let col = 0; col < binnedData.bins.length; col++) {
@@ -128,6 +129,7 @@ export class SpeakerHeatmap {
 				const ch = cellHeight - CELL_PADDING * 2;
 
 				const shouldDim = crossHighlightActive && (
+					(hlTurns != null && !cellWords.some((w) => hlTurns.includes(w.turnNumber))) ||
 					(hl != null && speakers[row] !== hl) ||
 					(hlTurn != null && !cellWords.some((w) => w.turnNumber === hlTurn))
 				);
