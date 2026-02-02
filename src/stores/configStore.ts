@@ -1,5 +1,6 @@
 import { writable, derived } from 'svelte/store';
 import type { DataPoint } from '../models/dataPoint';
+import type { Bounds } from '../lib/draw/types/bounds';
 
 export interface ConfigStoreType {
 	speakerGardenToggle: boolean;
@@ -20,7 +21,7 @@ export interface ConfigStoreType {
 	animationRate: number;
 	repeatWordSliderValue: number;
 	hoveredDataPoint: DataPoint | null;
-	cloudHasOverflow: boolean;
+	cloudOverflowBounds: Bounds | null;
 	arrayOfFirstWords: DataPoint[];
 	wordToSearch: string;
 	hoveredSpeakerInGarden: string | null;
@@ -65,7 +66,7 @@ export const initialConfig: ConfigStoreType = {
 	animationRate: 3,
 	repeatWordSliderValue: 5,
 	hoveredDataPoint: null,
-	cloudHasOverflow: false,
+	cloudOverflowBounds: null,
 	arrayOfFirstWords: [],
 	wordToSearch: '',
 	hoveredSpeakerInGarden: null,

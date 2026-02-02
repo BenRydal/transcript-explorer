@@ -7,17 +7,13 @@
 	const EDGE_PADDING = 20;
 	const MAX_PREVIEW_WORDS = 100;
 
-	// Format content - truncate long content and show word count
+	// Truncate long plain-text content; HTML-structured content is already
+	// truncated by the visualization so we leave it alone.
 	function formatContent(content: string): string {
+		if (content.includes('<')) return content;
 		const words = content.split(/\s+/).filter((w) => w.length > 0);
-		const wordCount = words.length;
-
-		if (wordCount <= MAX_PREVIEW_WORDS) {
-			return content;
-		}
-
-		const preview = words.slice(0, MAX_PREVIEW_WORDS).join(' ');
-		return `${preview}... (${wordCount} words)`;
+		if (words.length <= MAX_PREVIEW_WORDS) return content;
+		return `${words.slice(0, MAX_PREVIEW_WORDS).join(' ')}... (${words.length} words)`;
 	}
 
 	let displayContent = $derived(formatContent($TooltipStore.content));

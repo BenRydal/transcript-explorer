@@ -164,16 +164,17 @@ export class DynamicData {
 		return words;
 	}
 
-	getTurnSummaries(): { speaker: string; wordCount: number; firstDataPoint: DataPoint }[] {
+	getTurnSummaries(): { speaker: string; wordCount: number; firstDataPoint: DataPoint; content: string }[] {
 		const words = this.getProcessedWords(true);
-		const turnMap = new Map<number, { speaker: string; wordCount: number; firstDataPoint: DataPoint }>();
+		const turnMap = new Map<number, { speaker: string; wordCount: number; firstDataPoint: DataPoint; content: string }>();
 
 		for (const word of words) {
 			const existing = turnMap.get(word.turnNumber);
 			if (existing) {
 				existing.wordCount++;
+				existing.content += ' ' + word.word;
 			} else {
-				turnMap.set(word.turnNumber, { speaker: word.speaker, wordCount: 1, firstDataPoint: word });
+				turnMap.set(word.turnNumber, { speaker: word.speaker, wordCount: 1, firstDataPoint: word, content: word.word });
 			}
 		}
 

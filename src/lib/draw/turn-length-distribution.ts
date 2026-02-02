@@ -15,17 +15,26 @@ const BAR_PADDING = 2;
 const HOVER_OUTLINE_WEIGHT = 2;
 const TARGET_BIN_COUNT = 15;
 const Y_TICKS = 5;
+const TOOLTIP_MAX_TURNS = 4;
+const TOOLTIP_PREVIEW_WORDS = 8;
 
 interface TurnSummary {
 	speaker: string;
 	wordCount: number;
 	firstDataPoint: DataPoint;
+	content: string;
+}
+
+interface BinTurn {
+	dataPoint: DataPoint;
+	content: string;
+	wordCount: number;
 }
 
 interface Bin {
 	minLength: number;
 	maxLength: number;
-	speakers: Map<string, DataPoint[]>;
+	speakers: Map<string, BinTurn[]>;
 	totalCount: number;
 }
 
@@ -87,7 +96,8 @@ export class TurnLengthDistribution {
 		if (hoveredSegment) {
 			this.drawHoverEffect(hoveredSegment, barWidth);
 			this.showSegmentTooltip(hoveredSegment, bins);
-			return { snippetPoints: bins[hoveredSegment.binIndex].speakers.get(hoveredSegment.speaker)!, hoveredSpeaker: hoveredSegment.speaker };
+			const binTurns = bins[hoveredSegment.binIndex].speakers.get(hoveredSegment.speaker)!;
+			return { snippetPoints: binTurns.map((t) => t.dataPoint), hoveredSpeaker: hoveredSegment.speaker };
 		}
 
 		return { snippetPoints: [], hoveredSpeaker: null };
@@ -183,8 +193,23 @@ export class TurnLengthDistribution {
 		const bin = bins[hovered.binIndex];
 		const turns = bin.speakers.get(hovered.speaker)!;
 		const user = this.userMap.get(hovered.speaker);
-		const range = bin.minLength === bin.maxLength ? `${bin.minLength} words` : `${bin.minLength}-${bin.maxLength} words`;
-		const content = `<b>${hovered.speaker}</b>\n<span style="font-size: 0.85em; opacity: 0.7">${range}  ·  ${turns.length} turn${turns.length !== 1 ? 's' : ''}</span>`;
+		const multiTurn = turns.length > 1;
+		const separator = '<span style="opacity: 0.2">———</span>';
+		const turnLines = turns.slice(0, TOOLTIP_MAX_TURNS).map((t) => {
+			let text = t.content;
+			if (multiTurn) {
+				const words = t.content.split(' ');
+				if (words.length > TOOLTIP_PREVIEW_WORDS) {
+					text = words.slice(0, TOOLTIP_PREVIEW_WORDS).join(' ') + `... (${words.length - TOOLTIP_PREVIEW_WORDS} more words)`;
+				}
+			}
+			return `<span style="font-size: 0.85em; opacity: 0.6">${t.wordCount} words</span>\n${text}`;
+		});
+		const remaining = turns.length - TOOLTIP_MAX_TURNS;
+		if (remaining > 0) {
+			turnLines.push(`<span style="font-size: 0.85em; opacity: 0.5">...and ${remaining} more turn${remaining !== 1 ? 's' : ''}</span>`);
+		}
+		const content = `<b>${hovered.speaker}</b> · ${turns.length} turn${multiTurn ? 's' : ''}\n${turnLines.join('\n' + separator + '\n')}`;
 		showTooltip(this.sk.mouseX, this.sk.mouseY, content, user?.color || '#cccccc', this.bounds.y + this.bounds.height);
 	}
 
@@ -217,11 +242,12 @@ export class TurnLengthDistribution {
 		for (const turn of turns) {
 			const binIndex = Math.min(numBins - 1, Math.floor((turn.wordCount - minWordCount) / binSize));
 			const bin = bins[binIndex];
+			const binTurn: BinTurn = { dataPoint: turn.firstDataPoint, content: turn.content, wordCount: turn.wordCount };
 			const existing = bin.speakers.get(turn.speaker);
 			if (existing) {
-				existing.push(turn.firstDataPoint);
+				existing.push(binTurn);
 			} else {
-				bin.speakers.set(turn.speaker, [turn.firstDataPoint]);
+				bin.speakers.set(turn.speaker, [binTurn]);
 			}
 			bin.totalCount++;
 		}

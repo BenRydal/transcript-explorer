@@ -17,6 +17,9 @@ function formatDuration(seconds: number): string {
 	return `${Math.round(seconds)}s`;
 }
 
+// Vertical padding so bubbles don't touch the top/bottom edges
+const VERTICAL_PADDING = 12;
+
 // Annotation strip constants
 const STRIP_HEIGHT_RATIO = 0.1;
 const MIN_STRIP_HEIGHT = 20;
@@ -77,10 +80,15 @@ export class TurnChart {
 		this.config = get(ConfigStore);
 		const showStrip = this.transcript.timingMode !== 'untimed' && this.config.silenceOverlapToggle;
 		const stripHeight = showStrip ? Math.max(MIN_STRIP_HEIGHT, Math.min(MAX_STRIP_HEIGHT, pos.height * STRIP_HEIGHT_RATIO)) : 0;
-		this.bounds = { ...pos, height: pos.height - stripHeight };
+		this.bounds = {
+			x: pos.x,
+			y: pos.y + VERTICAL_PADDING,
+			width: pos.width,
+			height: pos.height - stripHeight - VERTICAL_PADDING * 2
+		};
 		this.stripBounds = showStrip ? {
 			x: pos.x,
-			y: pos.y + this.bounds.height,
+			y: pos.y + pos.height - stripHeight,
 			width: pos.width,
 			height: stripHeight
 		} : null;
