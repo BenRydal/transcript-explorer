@@ -44,6 +44,8 @@ interface PlacedWord {
 	y: number;
 	textSize: number;
 	width: number;
+	ascent: number;
+	descent: number;
 	barY: number;
 	barH: number;
 	barW: number;
@@ -213,6 +215,8 @@ export class WordRain {
 				y: wordY,
 				textSize,
 				width: wordWidth,
+				ascent: this.sk.textAscent(),
+				descent: this.sk.textDescent(),
 				barY,
 				barH,
 				barW,
@@ -293,7 +297,7 @@ export class WordRain {
 		}
 
 		for (const pw of placed) {
-			if (this.sk.overRect(pw.x, pw.y - pw.textSize, pw.width, pw.textSize)) {
+			if (this.sk.overRect(pw.x, pw.y - pw.ascent, pw.width, pw.ascent + pw.descent)) {
 				return pw;
 			}
 		}
@@ -333,7 +337,7 @@ export class WordRain {
 		this.sk.noFill();
 		this.sk.stroke(hovered.color);
 		this.sk.strokeWeight(1.5);
-		this.sk.rect(hovered.x - 2, hovered.y - hovered.textSize - 2, hovered.width + 4, hovered.textSize + 4, 2);
+		this.sk.rect(hovered.x - 2, hovered.y - hovered.ascent - 2, hovered.width + 4, hovered.ascent + hovered.descent + 4, 2);
 	}
 
 	private showWordTooltip(hovered: PlacedWord): void {

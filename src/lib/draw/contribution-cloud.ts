@@ -30,6 +30,8 @@ interface WordPosition {
 	y: number;
 	textSize: number;
 	width: number;
+	ascent: number;
+	descent: number;
 	user: User | undefined;
 	isNewSpeaker: boolean;
 }
@@ -157,12 +159,15 @@ export class ContributionCloud {
 			}
 
 			if (this.passesSearchFilter(word)) {
+				this.sk.textSize(textSize);
 				positions.push({
 					word,
 					x,
 					y,
 					textSize,
 					width,
+					ascent: this.sk.textAscent(),
+					descent: this.sk.textDescent(),
 					user: this.userMap.get(word.speaker),
 					isNewSpeaker
 				});
@@ -222,7 +227,7 @@ export class ContributionCloud {
 				this.sk.noFill();
 				this.sk.stroke(color);
 				this.sk.strokeWeight(isHovered ? HOVER_OUTLINE_WEIGHT : 1);
-				this.sk.rect(screenX - padding, screenY - pos.textSize - padding, pos.width + padding * 2, pos.textSize + padding * 2, isHovered ? 4 : 3);
+				this.sk.rect(screenX - padding, screenY - pos.ascent - padding, pos.width + padding * 2, pos.ascent + pos.descent + padding * 2, isHovered ? 4 : 3);
 			}
 		}
 	}
@@ -235,7 +240,7 @@ export class ContributionCloud {
 			if (pos.user?.enabled) {
 				const screenX = this.bounds.x + pos.x;
 				const screenY = this.bounds.y + pos.y;
-				if (this.sk.overRect(screenX, screenY - pos.textSize, pos.width, pos.textSize)) {
+				if (this.sk.overRect(screenX, screenY - pos.ascent, pos.width, pos.ascent + pos.descent)) {
 					return pos;
 				}
 			}
