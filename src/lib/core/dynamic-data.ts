@@ -220,7 +220,14 @@ export class DynamicData {
 
 	getDynamicArrayForTurnNetwork(): NetworkData {
 		const words = this.getProcessedWords(true);
-		const transitions = new Map<string, Map<string, { count: number; turnStartPoints: DataPoint[] }>>();
+
+		// Pre-compute per-turn word counts
+		const turnWordCounts = new Map<number, number>();
+		for (const word of words) {
+			turnWordCounts.set(word.turnNumber, (turnWordCounts.get(word.turnNumber) ?? 0) + 1);
+		}
+
+		const transitions = new Map<string, Map<string, { count: number; wordCount: number; turnStartPoints: DataPoint[] }>>();
 		const speakerStats = new Map<string, { wordCount: number; turnCount: number; turnStartPoints: DataPoint[] }>();
 		let prevSpeaker: string | null = null;
 		let prevTurn = -1;
@@ -243,9 +250,10 @@ export class DynamicData {
 					const transition = targets.get(word.speaker);
 					if (transition) {
 						transition.count++;
+						transition.wordCount += turnWordCounts.get(word.turnNumber) ?? 0;
 						transition.turnStartPoints.push(word);
 					} else {
-						targets.set(word.speaker, { count: 1, turnStartPoints: [word] });
+						targets.set(word.speaker, { count: 1, wordCount: turnWordCounts.get(word.turnNumber) ?? 0, turnStartPoints: [word] });
 					}
 				}
 

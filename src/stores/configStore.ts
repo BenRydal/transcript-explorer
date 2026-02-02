@@ -43,6 +43,10 @@ export interface ConfigStoreType {
 	wordRainMinFrequency: number;
 	wordRainTemporalBinning: boolean;
 	wordRainBinCount: number;
+	// Turn Network settings
+	turnNetworkWeightByWords: boolean;
+	turnNetworkHideSelfLoops: boolean;
+	turnNetworkMinTransitions: number;
 	// Legend overlay
 	legendVisible: boolean;
 }
@@ -94,6 +98,9 @@ export const initialConfig: ConfigStoreType = {
 	wordRainMinFrequency: 1,
 	wordRainTemporalBinning: false,
 	wordRainBinCount: 8,
+	turnNetworkWeightByWords: false,
+	turnNetworkHideSelfLoops: false,
+	turnNetworkMinTransitions: 1,
 	legendVisible: true
 };
 

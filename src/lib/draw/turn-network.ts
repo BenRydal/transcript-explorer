@@ -37,7 +37,7 @@ const LAYOUT_RADIUS_FACTOR = 0.33;
 // --- Types ---
 
 export interface NetworkData {
-	transitions: Map<string, Map<string, { count: number; turnStartPoints: DataPoint[] }>>;
+	transitions: Map<string, Map<string, { count: number; wordCount: number; turnStartPoints: DataPoint[] }>>;
 	speakerStats: Map<string, { wordCount: number; turnCount: number; turnStartPoints: DataPoint[] }>;
 }
 
@@ -54,6 +54,8 @@ interface EdgeLayout {
 	from: string;
 	to: string;
 	count: number;
+	wordCount: number;
+	weight: number;
 	turnStartPoints: DataPoint[];
 	isSelfLoop: boolean;
 }
@@ -62,7 +64,7 @@ interface Layout {
 	nodes: NodeLayout[];
 	nodeMap: Map<string, NodeLayout>;
 	edges: EdgeLayout[];
-	maxEdgeCount: number;
+	maxWeight: number;
 	centerX: number;
 	centerY: number;
 }
@@ -181,7 +183,7 @@ export class TurnNetwork {
 			(s) => this.userMap.get(s)?.enabled
 		);
 		if (speakers.length === 0) {
-			return { nodes: [], nodeMap: new Map(), edges: [], maxEdgeCount: 0, centerX, centerY };
+			return { nodes: [], nodeMap: new Map(), edges: [], maxWeight: 0, centerX, centerY };
 		}
 
 		let maxWordCount = 0;
@@ -211,17 +213,29 @@ export class TurnNetwork {
 			nodeMap.set(speaker, node);
 		}
 
-		const edges: EdgeLayout[] = [];
-		let maxEdgeCount = 0;
+		let edges: EdgeLayout[] = [];
 		for (const [from, targets] of data.transitions) {
 			for (const [to, d] of targets) {
 				if (!this.userMap.get(from)?.enabled || !this.userMap.get(to)?.enabled) continue;
-				edges.push({ from, to, count: d.count, turnStartPoints: d.turnStartPoints, isSelfLoop: from === to });
-				if (d.count > maxEdgeCount) maxEdgeCount = d.count;
+				edges.push({ from, to, count: d.count, wordCount: d.wordCount, weight: 0, turnStartPoints: d.turnStartPoints, isSelfLoop: from === to });
 			}
 		}
 
-		return { nodes, nodeMap, edges, maxEdgeCount, centerX, centerY };
+		if (this.config.turnNetworkHideSelfLoops) {
+			edges = edges.filter((e) => !e.isSelfLoop);
+		}
+		if (this.config.turnNetworkMinTransitions > 1) {
+			edges = edges.filter((e) => e.count >= this.config.turnNetworkMinTransitions);
+		}
+
+		const weightByWords = this.config.turnNetworkWeightByWords;
+		let maxWeight = 0;
+		for (const edge of edges) {
+			edge.weight = weightByWords ? edge.wordCount : edge.count;
+			if (edge.weight > maxWeight) maxWeight = edge.weight;
+		}
+
+		return { nodes, nodeMap, edges, maxWeight, centerX, centerY };
 	}
 
 	// --- Drawing ---
@@ -254,7 +268,7 @@ export class TurnNetwork {
 
 		const edgeColor = this.sk.color(fromNode.user?.color || DEFAULT_SPEAKER_COLOR);
 		edgeColor.setAlpha(highlight ? 255 : 150);
-		const weight = this.edgeWeight(edge.count, layout.maxEdgeCount) + (highlight ? 1 : 0);
+		const weight = this.edgeWeight(edge.weight, layout.maxWeight) + (highlight ? 1 : 0);
 
 		this.sk.stroke(edgeColor);
 		this.sk.strokeWeight(weight);
@@ -289,7 +303,7 @@ export class TurnNetwork {
 			this.sk.fill(80);
 			this.sk.textSize(Math.max(7, this.minDim * EDGE_LABEL_RATIO));
 			this.sk.textAlign(this.sk.CENTER, this.sk.CENTER);
-			this.sk.text(String(edge.count), lx, ly);
+			this.sk.text(String(edge.weight), lx, ly);
 		}
 	}
 
@@ -322,8 +336,8 @@ export class TurnNetwork {
 		}
 	}
 
-	private edgeWeight(count: number, maxEdgeCount: number): number {
-		return this.sk.map(count, 1, Math.max(maxEdgeCount, 1), MIN_EDGE_WIDTH, MAX_EDGE_WIDTH, true);
+	private edgeWeight(weight: number, maxWeight: number): number {
+		return this.sk.map(weight, 1, Math.max(maxWeight, 1), MIN_EDGE_WIDTH, MAX_EDGE_WIDTH, true);
 	}
 
 	private truncateLabel(text: string, maxWidth: number): string {
@@ -389,23 +403,24 @@ export class TurnNetwork {
 		const color = this.userMap.get(hovered.speaker)?.color || DEFAULT_SPEAKER_COLOR;
 		let content: string;
 
+		const unit = this.config.turnNetworkWeightByWords ? 'word' : 'transition';
+		const plural = (n: number) => `${n} ${unit}${n !== 1 ? 's' : ''}`;
+
 		if (hovered.type === 'node') {
 			let initiated = 0;
 			let received = 0;
 			for (const edge of layout.edges) {
-				if (edge.from === hovered.speaker) initiated += edge.count;
-				if (edge.to === hovered.speaker) received += edge.count;
+				if (edge.from === hovered.speaker) initiated += edge.weight;
+				if (edge.to === hovered.speaker) received += edge.weight;
 			}
 			content =
 				`<b>${hovered.speaker}</b>\n` +
 				`<span style="font-size: 0.85em; opacity: 0.7">` +
-				`Initiated ${initiated} transition${initiated !== 1 ? 's' : ''}  ·  ` +
-				`Received ${received} transition${received !== 1 ? 's' : ''}</span>`;
+				`Initiated ${plural(initiated)}  ·  Received ${plural(received)}</span>`;
 		} else {
 			content =
 				`<b>${hovered.edge.from} → ${hovered.edge.to}</b>\n` +
-				`<span style="font-size: 0.85em; opacity: 0.7">` +
-				`${hovered.edge.count} transition${hovered.edge.count !== 1 ? 's' : ''}</span>`;
+				`<span style="font-size: 0.85em; opacity: 0.7">${plural(hovered.edge.weight)}</span>`;
 		}
 
 		showTooltip(this.sk.mouseX, this.sk.mouseY, content, color, this.bounds.y + this.bounds.height);

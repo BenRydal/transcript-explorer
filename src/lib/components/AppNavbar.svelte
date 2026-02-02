@@ -46,7 +46,7 @@
 		turnChart: ['separateToggle', 'silenceOverlapToggle'],
 		contributionCloud: ['separateToggle', 'sortToggle', 'lastWordToggle', 'echoWordsToggle', 'stopWordsToggle', 'repeatedWordsToggle'],
 		wordRain: ['separateToggle', 'stopWordsToggle', 'wordRainTemporalBinning'],
-		turnNetwork: [],
+		turnNetwork: ['turnNetworkHideSelfLoops', 'turnNetworkWeightByWords'],
 		speakerHeatmap: [],
 		turnLength: []
 	};
@@ -93,6 +93,11 @@
 		showWordRainMinFreqSlider && $ConfigStore.wordRainTemporalBinning
 	);
 
+	let showTurnNetworkMinTransSlider = $derived(
+		$ConfigStore.turnNetworkToggle ||
+		($ConfigStore.dashboardToggle && $ConfigStore.dashboardPanels.includes('turnNetwork'))
+	);
+
 	const TOGGLE_LABELS: Record<string, string> = {
 		// Visualizations
 		speakerGardenToggle: 'Speaker Garden',
@@ -111,7 +116,9 @@
 		echoWordsToggle: 'Echo Last Words',
 		stopWordsToggle: 'Hide Stop Words',
 		repeatedWordsToggle: 'Only Repeated Words',
-		wordRainTemporalBinning: 'Temporal Binning'
+		wordRainTemporalBinning: 'Temporal Binning',
+		turnNetworkHideSelfLoops: 'Hide Self-Loops',
+		turnNetworkWeightByWords: 'Weight by Words'
 	};
 
 	function formatToggleName(toggle: string) {
@@ -349,6 +356,23 @@
 							/>
 						</li>
 					{/if}
+					{#if showTurnNetworkMinTransSlider}
+						<li class="cursor-default">
+							<p>Min Transitions: {$ConfigStore.turnNetworkMinTransitions}</p>
+						</li>
+						<li>
+							<label for="turnNetworkMinTrans" class="sr-only">Minimum transitions</label>
+							<input
+								id="turnNetworkMinTrans"
+								type="range"
+								min="1"
+								max="20"
+								value={$ConfigStore.turnNetworkMinTransitions}
+								class="range"
+								oninput={(e) => handleConfigChangeFromInput(e, 'turnNetworkMinTransitions')}
+							/>
+						</li>
+					{/if}
 					<hr class="my-4 border-t border-gray-300" />
 					<input type="text" placeholder="Filter words..." oninput={handleWordSearch} class="input input-bordered w-full" />
 				</ul>
@@ -502,6 +526,20 @@
 						value={$ConfigStore.wordRainBinCount}
 						class="range range-sm w-full"
 						oninput={(e) => handleConfigChangeFromInput(e, 'wordRainBinCount')}
+					/>
+				</div>
+			{/if}
+			{#if showTurnNetworkMinTransSlider}
+				<div class="mt-2">
+					<label for="turnNetworkMinTransMobile" class="text-sm">Min Transitions: {$ConfigStore.turnNetworkMinTransitions}</label>
+					<input
+						id="turnNetworkMinTransMobile"
+						type="range"
+						min="1"
+						max="20"
+						value={$ConfigStore.turnNetworkMinTransitions}
+						class="range range-sm w-full"
+						oninput={(e) => handleConfigChangeFromInput(e, 'turnNetworkMinTransitions')}
 					/>
 				</div>
 			{/if}
