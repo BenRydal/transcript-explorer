@@ -50,6 +50,7 @@
 	import TranscribeModeLayout from '$lib/components/TranscribeModeLayout.svelte';
 	import RecoveryModal from '$lib/components/RecoveryModal.svelte';
 	import DashboardOverlay from '$lib/components/DashboardOverlay.svelte';
+	import VisualizationLegend from '$lib/components/VisualizationLegend.svelte';
 
 	import type { TranscriptionResult } from '$lib/core/transcription-service';
 
@@ -578,6 +579,7 @@
 					<div class="h-full relative" id="p5-container" data-tour="visualization">
 						<P5 {sketch} />
 						<CanvasTooltip />
+						<VisualizationLegend />
 						{#if $ConfigStore.dashboardToggle}
 							<DashboardOverlay />
 						{/if}

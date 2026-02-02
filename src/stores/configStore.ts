@@ -35,6 +35,8 @@ export interface ConfigStoreType {
 	// Dashboard cross-highlighting (written by previous frame's applyDrawResult)
 	dashboardHighlightSpeaker: string | null;
 	dashboardHighlightTurn: number | null;
+	// Legend overlay
+	legendVisible: boolean;
 }
 
 export const DASHBOARD_PANEL_OPTIONS = [
@@ -78,7 +80,8 @@ export const initialConfig: ConfigStoreType = {
 	// Dashboard panel selection
 	dashboardPanels: ['turnChart', 'contributionCloud', 'speakerGarden'],
 	dashboardHighlightSpeaker: null,
-	dashboardHighlightTurn: null
+	dashboardHighlightTurn: null,
+	legendVisible: true
 };
 
 const ConfigStore = writable<ConfigStoreType>(initialConfig);
