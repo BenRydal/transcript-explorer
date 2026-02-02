@@ -212,7 +212,7 @@ export class ContributionCloud {
 
 		this.sk.textAlign(this.sk.LEFT, this.sk.BASELINE);
 		for (const pos of positions) {
-			if (pos.word.word === hoveredWordText) {
+			if (pos.word.word.toLowerCase() === hoveredWordText.toLowerCase()) {
 				const screenX = this.bounds.x + pos.x;
 				const screenY = this.bounds.y + pos.y;
 				const isHovered = pos.word === hoveredPos.word;
@@ -253,7 +253,7 @@ export class ContributionCloud {
 		const turnContext = this.getTurnContext(word, allPositions);
 		let totalCount = 1;
 		for (const p of allPositions) {
-			if (p.word.word === word.word && p.word.speaker === word.speaker && p.word.count > totalCount) {
+			if (p.word.word.toLowerCase() === word.word.toLowerCase() && p.word.speaker === word.speaker && p.word.count > totalCount) {
 				totalCount = p.word.count;
 			}
 		}

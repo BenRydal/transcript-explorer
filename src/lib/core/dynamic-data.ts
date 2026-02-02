@@ -106,7 +106,7 @@ export class DynamicData {
 			if (config.stopWordsToggle && this.isStopWord(word.word)) continue;
 
 			const copy = new DataPoint(word.speaker, word.turnNumber, word.word, word.startTime, word.endTime);
-			const countKey = `${word.speaker}\0${word.word}`;
+			const countKey = `${word.speaker}\0${word.word.toLowerCase()}`;
 			const existing = countMap.get(countKey);
 
 			if (existing) {
