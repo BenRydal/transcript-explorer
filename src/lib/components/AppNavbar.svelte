@@ -1,5 +1,5 @@
 <script lang="ts">
-	import { CircleHelp, CloudUpload, FilePlus, Video, VideoOff, Check, Settings, Text, ChartBar, SlidersHorizontal, Menu, X, Keyboard, GraduationCap, Landmark, Mic } from '@lucide/svelte';
+	import { CircleHelp, CloudUpload, FilePlus, Video, VideoOff, Check, Settings as SettingsIcon, Text, ChartBar, Menu, X, Keyboard, GraduationCap, Landmark, Mic, Search, Settings2 } from '@lucide/svelte';
 	import IconButton from './IconButton.svelte';
 	import ConfigStore, { type ConfigStoreType, type GardenSortOrder } from '../../stores/configStore';
 
@@ -38,18 +38,14 @@
 	}: Props = $props();
 
 	let mobileMenuOpen = $state(false);
+	let searchValue = $state('');
+	let optionsFlyoutPanel = $state<string | null>(null);
+	let vizDropdownOpen = $state(false);
+
+	// --- Data ---
 
 	const techniqueToggleOptions = ['speakerGardenToggle', 'turnChartToggle', 'contributionCloudToggle', 'turnNetworkToggle', 'wordRainToggle', 'speakerHeatmapToggle', 'turnLengthToggle', 'dashboardToggle'] as const;
-
-	const panelInteractionMap: Record<string, readonly (keyof ConfigStoreType)[]> = {
-		speakerGarden: [],
-		turnChart: ['separateToggle', 'silenceOverlapToggle'],
-		contributionCloud: ['separateToggle', 'sortToggle', 'lastWordToggle', 'echoWordsToggle', 'stopWordsToggle', 'repeatedWordsToggle'],
-		wordRain: ['separateToggle', 'stopWordsToggle', 'wordRainTemporalBinning'],
-		turnNetwork: ['turnNetworkHideSelfLoops', 'turnNetworkWeightByWords'],
-		speakerHeatmap: [],
-		turnLength: []
-	};
+	const regularVisualizationToggles = techniqueToggleOptions.filter((t) => t !== 'dashboardToggle');
 
 	const exampleOptions = [
 		{ value: 'example-1', label: 'Kindergarten Activity', icon: GraduationCap },
@@ -59,76 +55,109 @@
 		{ value: 'example-5', label: 'Biden-Trump 2020 Debate', icon: Mic }
 	];
 
-	function getInteractionsForPanels(panelKeys: string[]): (keyof ConfigStoreType)[] {
-		const set = new Set<keyof ConfigStoreType>();
-		for (const key of panelKeys) {
-			for (const interaction of (panelInteractionMap[key] ?? [])) {
-				set.add(interaction);
-			}
-		}
-		return [...set];
-	}
-
-	let visibleInteractions = $derived.by(() => {
-		if ($ConfigStore.dashboardToggle) {
-			return getInteractionsForPanels($ConfigStore.dashboardPanels);
-		}
-		const activeToggle = techniqueToggleOptions.find((t) => $ConfigStore[t]);
-		if (!activeToggle) return getInteractionsForPanels(Object.keys(panelInteractionMap));
-		const panelKey = activeToggle.replace('Toggle', '');
-		return panelKey in panelInteractionMap ? getInteractionsForPanels([panelKey]) : [];
-	});
-
-	let showRepeatedWordsSlider = $derived(
-		$ConfigStore.contributionCloudToggle ||
-		($ConfigStore.dashboardToggle && $ConfigStore.dashboardPanels.includes('contributionCloud'))
-	);
-
-	let showWordRainMinFreqSlider = $derived(
-		$ConfigStore.wordRainToggle ||
-		($ConfigStore.dashboardToggle && $ConfigStore.dashboardPanels.includes('wordRain'))
-	);
-
-	let showWordRainBinCountSlider = $derived(
-		showWordRainMinFreqSlider && $ConfigStore.wordRainTemporalBinning
-	);
-
-	let showTurnNetworkMinTransSlider = $derived(
-		$ConfigStore.turnNetworkToggle ||
-		($ConfigStore.dashboardToggle && $ConfigStore.dashboardPanels.includes('turnNetwork'))
-	);
-
-	const TOGGLE_LABELS: Record<string, string> = {
-		// Visualizations
-		speakerGardenToggle: 'Speaker Garden',
-		turnChartToggle: 'Turn Chart',
-		contributionCloudToggle: 'Contribution Cloud',
-		turnNetworkToggle: 'Turn Network',
-		wordRainToggle: 'Word Rain',
-		speakerHeatmapToggle: 'Speaker Heatmap',
-		turnLengthToggle: 'Turn Length',
-		dashboardToggle: 'Dashboard',
-		// Options
-		separateToggle: 'Group by Speaker',
-		silenceOverlapToggle: 'Silence Overlap',
-		sortToggle: 'Sort by Frequency',
-		lastWordToggle: 'Emphasize Last Word',
-		echoWordsToggle: 'Echo Last Words',
-		stopWordsToggle: 'Hide Stop Words',
-		repeatedWordsToggle: 'Only Repeated Words',
-		wordRainTemporalBinning: 'Temporal Binning',
-		turnNetworkHideSelfLoops: 'Hide Self-Loops',
-		turnNetworkWeightByWords: 'Weight by Words'
+	const PANEL_LABELS: Record<string, string> = {
+		speakerGarden: 'Speaker Garden',
+		turnChart: 'Turn Chart',
+		contributionCloud: 'Contribution Cloud',
+		turnNetwork: 'Turn Network',
+		wordRain: 'Word Rain',
+		speakerHeatmap: 'Speaker Heatmap',
+		turnLength: 'Turn Length'
 	};
 
+	const GARDEN_SORT_OPTIONS: { order: GardenSortOrder; label: string }[] = [
+		{ order: 'default', label: 'Appearance' },
+		{ order: 'words', label: 'Word Count' },
+		{ order: 'turns', label: 'Turn Count' },
+		{ order: 'alpha', label: 'A–Z' }
+	];
+
+	// --- Panel options config ---
+
+	type PanelToggle = { type: 'toggle'; key: keyof ConfigStoreType; label: string };
+	type PanelSlider = { type: 'slider'; key: keyof ConfigStoreType; label: string; min: number; max: number; formatValue?: (v: number) => string };
+	type PanelGardenSort = { type: 'gardenSort' };
+	type PanelOption = PanelToggle | PanelSlider | PanelGardenSort;
+
+	const formatBinCount = (v: number) => v === 0 ? 'Auto' : String(v);
+
+	const panelOptionsMap: Record<string, PanelOption[]> = {
+		speakerGarden: [
+			{ type: 'gardenSort' }
+		],
+		turnChart: [
+			{ type: 'toggle', key: 'separateToggle', label: 'Group by Speaker' },
+			{ type: 'toggle', key: 'silenceOverlapToggle', label: 'Silence Overlap' }
+		],
+		contributionCloud: [
+			{ type: 'toggle', key: 'separateToggle', label: 'Group by Speaker' },
+			{ type: 'toggle', key: 'sortToggle', label: 'Sort by Frequency' },
+			{ type: 'toggle', key: 'lastWordToggle', label: 'Emphasize Last Word' },
+			{ type: 'toggle', key: 'echoWordsToggle', label: 'Echo Last Words' },
+			{ type: 'toggle', key: 'stopWordsToggle', label: 'Hide Stop Words' },
+			{ type: 'toggle', key: 'repeatedWordsToggle', label: 'Only Repeated Words' },
+			{ type: 'slider', key: 'repeatWordSliderValue', label: 'Size Range', min: 2, max: 30 }
+		],
+		wordRain: [
+			{ type: 'toggle', key: 'separateToggle', label: 'Group by Speaker' },
+			{ type: 'toggle', key: 'stopWordsToggle', label: 'Hide Stop Words' },
+			{ type: 'toggle', key: 'wordRainTemporalBinning', label: 'Temporal Binning' },
+			{ type: 'slider', key: 'wordRainMinFrequency', label: 'Min Frequency', min: 1, max: 10 },
+			{ type: 'slider', key: 'wordRainBinCount', label: 'Bin Count', min: 4, max: 20 }
+		],
+		turnNetwork: [
+			{ type: 'toggle', key: 'turnNetworkHideSelfLoops', label: 'Hide Self-Loops' },
+			{ type: 'toggle', key: 'turnNetworkWeightByWords', label: 'Weight by Words' },
+			{ type: 'slider', key: 'turnNetworkMinTransitions', label: 'Min Transitions', min: 1, max: 20 }
+		],
+		speakerHeatmap: [
+			{ type: 'slider', key: 'heatmapBinCount', label: 'Bin Count', min: 0, max: 60, formatValue: formatBinCount }
+		],
+		turnLength: [
+			{ type: 'slider', key: 'turnLengthBinCount', label: 'Bin Count', min: 0, max: 60, formatValue: formatBinCount }
+		]
+	};
+
+	// --- Derived state ---
+
+	let activePanelKey = $derived.by(() => {
+		const activeToggle = techniqueToggleOptions.find((t) => $ConfigStore[t]);
+		return activeToggle ? activeToggle.replace('Toggle', '') : '';
+	});
+
+	let activeVisualizationName = $derived(
+		activePanelKey ? (PANEL_LABELS[activePanelKey] ?? (activePanelKey === 'dashboard' ? 'Dashboard' : 'Select')) : 'Select'
+	);
+
+	let hiddenSliderKeys = $derived.by(() => {
+		const hidden = new Set<keyof ConfigStoreType>();
+		if (!$ConfigStore.wordRainTemporalBinning) hidden.add('wordRainBinCount');
+		if (!$ConfigStore.repeatedWordsToggle) hidden.add('repeatWordSliderValue');
+		return hidden;
+	});
+
+	let dashboardOptionsByPanel = $derived.by(() => {
+		return $ConfigStore.dashboardPanels
+			.filter((key) => key in panelOptionsMap)
+			.map((key) => ({ key, label: PANEL_LABELS[key] ?? key, options: panelOptionsMap[key] }));
+	});
+
+	// --- Functions ---
+
 	function formatToggleName(toggle: string) {
-		return TOGGLE_LABELS[toggle] ?? toggle;
+		if (toggle === 'dashboardToggle') return 'Dashboard';
+		return PANEL_LABELS[toggle.replace('Toggle', '')] ?? toggle;
 	}
 
-	let activeVisualization = $derived(techniqueToggleOptions.find((t) => $ConfigStore[t]) || '');
-	let activeVisualizationName = $derived(activeVisualization ? formatToggleName(activeVisualization) : 'Select');
+	function isOptionVisible(option: PanelOption): boolean {
+		return option.type !== 'slider' || !hiddenSliderKeys.has(option.key);
+	}
 
 	function toggleSelection(selection: string, toggleOptions: readonly string[]) {
+		if (optionsFlyoutPanel !== null) {
+			const panelKey = selection === 'dashboardToggle' ? 'dashboard' : selection.replace('Toggle', '');
+			optionsFlyoutPanel = panelKey === 'dashboard' || panelOptionsMap[panelKey]?.length ? panelKey : null;
+		}
 		ConfigStore.update((store) => {
 			const updates: Record<string, boolean> = {};
 			toggleOptions.forEach((key) => {
@@ -139,60 +168,49 @@
 	}
 
 	function toggleSelectionOnly(selection: string) {
-		ConfigStore.update((store) => ({
-			...store,
-			[selection]: !store[selection]
-		}));
+		ConfigStore.update((store) => ({ ...store, [selection]: !store[selection] }));
 	}
 
-	const GARDEN_SORT_CYCLE: GardenSortOrder[] = ['default', 'words', 'turns', 'alpha'];
-	const GARDEN_SORT_LABELS: Record<GardenSortOrder, string> = {
-		default: 'Sort by Appearance',
-		words: 'Sort by Word Count',
-		turns: 'Sort by Turn Count',
-		alpha: 'Sort by A–Z'
-	};
-
-	let showGardenSort = $derived(
-		$ConfigStore.speakerGardenToggle ||
-		($ConfigStore.dashboardToggle && $ConfigStore.dashboardPanels.includes('speakerGarden'))
-	);
-
-	function cycleGardenSort() {
-		ConfigStore.update((store) => {
-			const idx = GARDEN_SORT_CYCLE.indexOf(store.gardenSortOrder);
-			const next = GARDEN_SORT_CYCLE[(idx + 1) % GARDEN_SORT_CYCLE.length];
-			return { ...store, gardenSortOrder: next };
-		});
+	function setGardenSort(order: GardenSortOrder) {
+		ConfigStore.update((store) => ({ ...store, gardenSortOrder: order }));
 	}
-
-	let showHeatmapOptions = $derived(
-		$ConfigStore.speakerHeatmapToggle ||
-		($ConfigStore.dashboardToggle && $ConfigStore.dashboardPanels.includes('speakerHeatmap'))
-	);
-
-	let showTurnLengthOptions = $derived(
-		$ConfigStore.turnLengthToggle ||
-		($ConfigStore.dashboardToggle && $ConfigStore.dashboardPanels.includes('turnLength'))
-	);
 
 	function handleConfigChangeFromInput(e: Event, key: keyof ConfigStoreType) {
-		const target = e.target as HTMLInputElement;
-		onconfigChange?.({ key, value: parseFloat(target.value) });
+		onconfigChange?.({ key, value: parseFloat((e.target as HTMLInputElement).value) });
 	}
 
 	function handleWordSearch(event: Event) {
-		const target = event.target as HTMLInputElement;
-		onwordSearch?.(target.value.trim());
-	}
-
-	function loadExample(exampleId: string) {
-		onloadExample?.(exampleId);
+		const value = (event.target as HTMLInputElement).value;
+		searchValue = value;
+		onwordSearch?.(value.trim());
 	}
 
 	function truncateExample(name: string): string {
 		if (!name) return 'Examples';
 		return name.length > 8 ? name.slice(0, 5) + '...' : name;
+	}
+
+	function toggleFlyout(panelKey: string, event: MouseEvent) {
+		event.stopPropagation();
+		optionsFlyoutPanel = optionsFlyoutPanel === panelKey ? null : panelKey;
+	}
+
+	function toggleVizDropdown() {
+		vizDropdownOpen = !vizDropdownOpen;
+		if (!vizDropdownOpen) optionsFlyoutPanel = null;
+	}
+
+	// --- Svelte actions ---
+
+	function clickOutsideViz(node: HTMLElement) {
+		const handleClick = (event: MouseEvent) => {
+			if (!node.contains(event.target as Node)) {
+				vizDropdownOpen = false;
+				optionsFlyoutPanel = null;
+			}
+		};
+		document.addEventListener('click', handleClick, true);
+		return { destroy() { document.removeEventListener('click', handleClick, true); } };
 	}
 
 	function clickOutside(node: HTMLElement) {
@@ -201,14 +219,8 @@
 				node.removeAttribute('open');
 			}
 		};
-
 		document.addEventListener('click', handleClick, true);
-
-		return {
-			destroy() {
-				document.removeEventListener('click', handleClick, true);
-			}
-		};
+		return { destroy() { document.removeEventListener('click', handleClick, true); } };
 	}
 </script>
 
@@ -244,7 +256,7 @@
 					{@const Icon = item.icon}
 					<li class="w-full">
 						<button
-							onclick={() => loadExample(item.value)}
+							onclick={() => onloadExample?.(item.value)}
 							class="text-sm w-full flex items-center gap-2 {selectedExample === item.label ? 'active' : ''}"
 							title={item.label}
 						>
@@ -256,174 +268,130 @@
 			</ul>
 		</details>
 
-		<!-- Divider -->
 		<div class="divider divider-horizontal mx-1 h-8"></div>
 
-		<!-- Visualization Settings -->
-		<div class="flex items-center gap-2" data-tour="viz-modes">
-			<!-- Visualizations Dropdown -->
-			<details class="dropdown" use:clickOutside>
-				<summary class="btn btn-sm gap-1 flex items-center" title={activeVisualizationName}>
-					<ChartBar size={16} />
-					<span class="max-w-[4rem] truncate">{activeVisualizationName}</span>
-					<svg class="w-3 h-3 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-						<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" />
-					</svg>
-				</summary>
-				<ul class="menu dropdown-content rounded-box z-[1] w-52 p-2 shadow bg-base-100">
-					{#each techniqueToggleOptions as toggle}
-						<li>
-							<button onclick={() => toggleSelection(toggle, techniqueToggleOptions)} class="w-full text-left flex items-center">
-								<span class="w-4 h-4 mr-2 inline-flex items-center justify-center">
-									{#if $ConfigStore[toggle]}
-										<Check size={16} />
+		<!-- Visualization Dropdown with Options Flyout -->
+		<div class="relative" use:clickOutsideViz data-tour="viz-modes">
+			<button class="btn btn-sm gap-1 flex items-center" title={activeVisualizationName} onclick={toggleVizDropdown}>
+				<ChartBar size={16} />
+				<span class="max-w-[6rem] truncate">{activeVisualizationName}</span>
+				<svg class="w-3 h-3 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+					<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" />
+				</svg>
+			</button>
+			{#if vizDropdownOpen}
+				<div class="absolute top-full left-0 mt-1 z-[1] flex">
+					<ul class="menu rounded-box w-52 p-2 shadow bg-base-100">
+						{#each regularVisualizationToggles as toggle}
+							{@const isActive = $ConfigStore[toggle]}
+							{@const panelKey = toggle.replace('Toggle', '')}
+							{@const hasOptions = panelOptionsMap[panelKey]?.length > 0}
+							<li>
+								<div class="flex items-center w-full p-0 rounded {isActive ? 'bg-success/15' : ''}">
+									<button onclick={() => toggleSelection(toggle, techniqueToggleOptions)} class="flex-1 text-left flex items-center px-3 py-1.5">
+										<span class="w-4 h-4 mr-2 inline-flex items-center justify-center flex-shrink-0">
+											{#if isActive}<Check size={16} />{/if}
+										</span>
+										{formatToggleName(toggle)}
+									</button>
+									{#if hasOptions}
+										<button
+											class="px-2 py-1.5 rounded hover:bg-base-200 flex-shrink-0 text-gray-400"
+											onclick={(e) => toggleFlyout(panelKey, e)}
+											title="Options"
+										>
+											<Settings2 size={14} />
+										</button>
 									{/if}
-								</span>
-								{formatToggleName(toggle)}
-							</button>
+								</div>
+							</li>
+						{/each}
+						<hr class="my-1 border-t border-gray-200" />
+						<li>
+							<div class="flex items-center w-full p-0 rounded {$ConfigStore.dashboardToggle ? 'bg-success/15' : ''}">
+								<button onclick={() => toggleSelection('dashboardToggle', techniqueToggleOptions)} class="flex-1 text-left flex items-center px-3 py-1.5">
+									<span class="w-4 h-4 mr-2 inline-flex items-center justify-center flex-shrink-0">
+										{#if $ConfigStore.dashboardToggle}<Check size={16} />{/if}
+									</span>
+									Dashboard
+								</button>
+								{#if $ConfigStore.dashboardToggle && dashboardOptionsByPanel.length > 0}
+									<button
+										class="px-2 py-1.5 rounded hover:bg-base-200 flex-shrink-0 text-gray-400"
+										onclick={(e) => toggleFlyout('dashboard', e)}
+										title="Options"
+									>
+										<Settings2 size={14} />
+									</button>
+								{/if}
+							</div>
 						</li>
-					{/each}
-				</ul>
-			</details>
+					</ul>
 
-			<!-- Options Dropdown -->
-			<details class="dropdown" use:clickOutside data-tour="interactions">
-				<summary class="btn btn-sm gap-1 flex items-center">
-					<SlidersHorizontal size={16} />
-					Options
-					<svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-						<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" />
-					</svg>
-				</summary>
-				<ul class="menu dropdown-content rounded-box z-[1] w-52 p-2 shadow bg-base-100 max-h-[70vh] overflow-y-auto">
-					{#each visibleInteractions as toggle}
-						<li>
-							<button onclick={() => toggleSelectionOnly(toggle)} class="w-full text-left flex items-center">
-								<span class="w-4 h-4 mr-2 inline-flex items-center justify-center">
-									{#if $ConfigStore[toggle]}
-										<Check size={16} />
-									{/if}
-								</span>
-								{formatToggleName(toggle)}
-							</button>
-						</li>
-					{/each}
-					{#if showGardenSort}
-						<li>
-							<button onclick={cycleGardenSort} class="w-full text-left flex items-center">
-								{GARDEN_SORT_LABELS[$ConfigStore.gardenSortOrder]}
-							</button>
-						</li>
+					{#snippet optionsList(options: PanelOption[])}
+						{#each options as option}
+							{#if isOptionVisible(option)}
+								{#if option.type === 'toggle'}
+									<button onclick={() => toggleSelectionOnly(option.key)} class="w-full text-left flex items-center text-sm py-1 px-1 rounded hover:bg-base-200">
+										<span class="w-4 h-4 mr-2 inline-flex items-center justify-center flex-shrink-0">
+											{#if $ConfigStore[option.key]}<Check size={14} />{/if}
+										</span>
+										{option.label}
+									</button>
+								{:else if option.type === 'slider'}
+									<div class="py-1 px-1">
+										<p class="text-sm text-gray-600">{option.label}: {option.formatValue ? option.formatValue($ConfigStore[option.key] as number) : $ConfigStore[option.key]}</p>
+										<input
+											type="range"
+											min={option.min}
+											max={option.max}
+											value={$ConfigStore[option.key]}
+											class="range range-sm w-full"
+											oninput={(e) => handleConfigChangeFromInput(e, option.key)}
+										/>
+									</div>
+								{:else if option.type === 'gardenSort'}
+									{#each GARDEN_SORT_OPTIONS as sortOpt}
+										<button onclick={() => setGardenSort(sortOpt.order)} class="w-full text-left flex items-center text-sm py-1 px-1 rounded hover:bg-base-200">
+											<span class="w-4 h-4 mr-2 inline-flex items-center justify-center flex-shrink-0">
+												{#if $ConfigStore.gardenSortOrder === sortOpt.order}<Check size={14} />{/if}
+											</span>
+											{sortOpt.label}
+										</button>
+									{/each}
+								{/if}
+							{/if}
+						{/each}
+					{/snippet}
+
+					{#if optionsFlyoutPanel}
+						<div class="rounded-box w-56 p-3 shadow bg-base-100 ml-1 max-h-[70vh] overflow-y-auto">
+							{#if optionsFlyoutPanel === 'dashboard'}
+								{#each dashboardOptionsByPanel as panel, i}
+									<p class="text-xs uppercase tracking-wider text-gray-500 font-semibold mb-1 {i > 0 ? 'mt-3' : ''}">{panel.label}</p>
+									{@render optionsList(panel.options)}
+								{/each}
+							{:else if panelOptionsMap[optionsFlyoutPanel]}
+								{@render optionsList(panelOptionsMap[optionsFlyoutPanel])}
+							{/if}
+						</div>
 					{/if}
-					{#if showHeatmapOptions}
-						<li class="cursor-default">
-							<p>Bin Count: {$ConfigStore.heatmapBinCount === 0 ? 'Auto' : $ConfigStore.heatmapBinCount}</p>
-						</li>
-						<li>
-							<label for="heatmapBinCount" class="sr-only">Heatmap bin count</label>
-							<input
-								id="heatmapBinCount"
-								type="range"
-								min="0"
-								max="60"
-								value={$ConfigStore.heatmapBinCount}
-								class="range"
-								oninput={(e) => handleConfigChangeFromInput(e, 'heatmapBinCount')}
-							/>
-						</li>
-					{/if}
-					{#if showTurnLengthOptions}
-						<li class="cursor-default">
-							<p>Bin Count: {$ConfigStore.turnLengthBinCount === 0 ? 'Auto' : $ConfigStore.turnLengthBinCount}</p>
-						</li>
-						<li>
-							<label for="turnLengthBinCount" class="sr-only">Turn length bin count</label>
-							<input
-								id="turnLengthBinCount"
-								type="range"
-								min="0"
-								max="60"
-								value={$ConfigStore.turnLengthBinCount}
-								class="range"
-								oninput={(e) => handleConfigChangeFromInput(e, 'turnLengthBinCount')}
-							/>
-						</li>
-					{/if}
-					{#if showRepeatedWordsSlider}
-						<li class="cursor-default">
-							<p>Size Range: {$ConfigStore.repeatWordSliderValue}</p>
-						</li>
-						<li>
-							<label for="repeatWordRange" class="sr-only">Word size range</label>
-							<input
-								id="repeatWordRange"
-								type="range"
-								min="2"
-								max="30"
-								value={$ConfigStore.repeatWordSliderValue}
-								class="range"
-								oninput={(e) => handleConfigChangeFromInput(e, 'repeatWordSliderValue')}
-							/>
-						</li>
-					{/if}
-					{#if showWordRainMinFreqSlider}
-						<li class="cursor-default">
-							<p>Min Frequency: {$ConfigStore.wordRainMinFrequency}</p>
-						</li>
-						<li>
-							<label for="wordRainMinFreq" class="sr-only">Minimum word frequency</label>
-							<input
-								id="wordRainMinFreq"
-								type="range"
-								min="1"
-								max="10"
-								value={$ConfigStore.wordRainMinFrequency}
-								class="range"
-								oninput={(e) => handleConfigChangeFromInput(e, 'wordRainMinFrequency')}
-							/>
-						</li>
-					{/if}
-					{#if showWordRainBinCountSlider}
-						<li class="cursor-default">
-							<p>Bin Count: {$ConfigStore.wordRainBinCount}</p>
-						</li>
-						<li>
-							<label for="wordRainBinCount" class="sr-only">Temporal bin count</label>
-							<input
-								id="wordRainBinCount"
-								type="range"
-								min="4"
-								max="20"
-								value={$ConfigStore.wordRainBinCount}
-								class="range"
-								oninput={(e) => handleConfigChangeFromInput(e, 'wordRainBinCount')}
-							/>
-						</li>
-					{/if}
-					{#if showTurnNetworkMinTransSlider}
-						<li class="cursor-default">
-							<p>Min Transitions: {$ConfigStore.turnNetworkMinTransitions}</p>
-						</li>
-						<li>
-							<label for="turnNetworkMinTrans" class="sr-only">Minimum transitions</label>
-							<input
-								id="turnNetworkMinTrans"
-								type="range"
-								min="1"
-								max="20"
-								value={$ConfigStore.turnNetworkMinTransitions}
-								class="range"
-								oninput={(e) => handleConfigChangeFromInput(e, 'turnNetworkMinTransitions')}
-							/>
-						</li>
-					{/if}
-					<hr class="my-4 border-t border-gray-300" />
-					<input type="text" placeholder="Filter words..." oninput={handleWordSearch} class="input input-bordered w-full" />
-				</ul>
-			</details>
+				</div>
+			{/if}
 		</div>
 
-		<!-- Divider -->
+		<!-- Word Search -->
+		<div class="relative flex items-center">
+			<Search size={14} class="absolute left-2 text-gray-400 pointer-events-none" />
+			<input
+				type="text"
+				placeholder="Filter words..."
+				value={searchValue}
+				oninput={handleWordSearch}
+				class="input input-sm input-bordered pl-7 w-36 focus:w-48 transition-all duration-200"
+			/>
+		</div>
+
 		<div class="divider divider-horizontal mx-1 h-8"></div>
 
 		<!-- Panel Toggles -->
@@ -450,7 +418,6 @@
 			</button>
 		</div>
 
-		<!-- Divider -->
 		<div class="divider divider-horizontal mx-1 h-8"></div>
 
 		<!-- Transcribe Mode -->
@@ -464,7 +431,6 @@
 			Transcribe
 		</button>
 
-		<!-- Divider -->
 		<div class="divider divider-horizontal mx-1 h-8"></div>
 
 		<!-- File & Settings Group -->
@@ -472,7 +438,7 @@
 			<IconButton icon={CloudUpload} tooltip={'Upload Files'} onclick={() => onopenUpload?.()} />
 			<IconButton icon={FilePlus} tooltip={'Create New Transcript'} onclick={() => oncreateNewTranscript?.()} />
 			<IconButton icon={CircleHelp} tooltip={'Help'} onclick={() => onopenHelp?.()} />
-			<IconButton icon={Settings} tooltip={'Settings'} onclick={() => onopenSettings?.()} />
+			<IconButton icon={SettingsIcon} tooltip={'Settings'} onclick={() => onopenSettings?.()} />
 		</div>
 	</div>
 </div>
@@ -481,15 +447,12 @@
 {#if mobileMenuOpen}
 	<div class="xl:hidden bg-white border-b border-gray-200 shadow-lg">
 		<div class="p-4 space-y-4">
-			<!-- Example Data Section -->
+			<!-- Example Data -->
 			<div>
 				<p class="text-xs uppercase tracking-wider text-gray-500 mb-2">Example Data</p>
 				<select
 					class="select select-bordered w-full"
-					onchange={(e) => {
-						loadExample(e.currentTarget.value);
-						mobileMenuOpen = false;
-					}}
+					onchange={(e) => { onloadExample?.(e.currentTarget.value); mobileMenuOpen = false; }}
 				>
 					<option value="" disabled selected={!selectedExample}>Examples</option>
 					{#each exampleOptions as item}
@@ -502,120 +465,79 @@
 			<div>
 				<p class="text-xs uppercase tracking-wider text-gray-500 mb-2">Visualization</p>
 				<div class="flex flex-wrap gap-2">
-					{#each techniqueToggleOptions as toggle}
+					{#each regularVisualizationToggles as toggle}
 						<button
 							class="btn btn-sm {$ConfigStore[toggle] ? 'btn-primary' : 'btn-ghost'}"
-							onclick={() => {
-								toggleSelection(toggle, techniqueToggleOptions);
-								mobileMenuOpen = false;
-							}}
+							onclick={() => { toggleSelection(toggle, techniqueToggleOptions); mobileMenuOpen = false; }}
 						>
 							{formatToggleName(toggle)}
 						</button>
 					{/each}
+					<div class="w-full border-t border-gray-200 my-1"></div>
+					<button
+						class="btn btn-sm {$ConfigStore.dashboardToggle ? 'btn-primary' : 'btn-ghost'}"
+						onclick={() => { toggleSelection('dashboardToggle', techniqueToggleOptions); mobileMenuOpen = false; }}
+					>
+						Dashboard
+					</button>
 				</div>
 			</div>
 
+			<!-- Search -->
+			<div>
+				<p class="text-xs uppercase tracking-wider text-gray-500 mb-2">Search</p>
+				<input type="text" placeholder="Filter words..." value={searchValue} oninput={handleWordSearch} class="input input-bordered input-sm w-full" />
+			</div>
+
 			<!-- Options -->
+			{#snippet mobileOptionsList(options: PanelOption[])}
+				{#each options as option}
+					{#if isOptionVisible(option)}
+						{#if option.type === 'toggle'}
+							<button class="btn btn-xs {$ConfigStore[option.key] ? 'btn-primary' : 'btn-ghost'}" onclick={() => toggleSelectionOnly(option.key)}>
+								{option.label}
+							</button>
+						{:else if option.type === 'slider'}
+							<div class="w-full mt-1">
+								<label class="text-sm">{option.label}: {option.formatValue ? option.formatValue($ConfigStore[option.key] as number) : $ConfigStore[option.key]}</label>
+								<input
+									type="range"
+									min={option.min}
+									max={option.max}
+									value={$ConfigStore[option.key]}
+									class="range range-sm w-full"
+									oninput={(e) => handleConfigChangeFromInput(e, option.key)}
+								/>
+							</div>
+						{:else if option.type === 'gardenSort'}
+							<div class="flex flex-wrap gap-1 w-full">
+								{#each GARDEN_SORT_OPTIONS as sortOpt}
+									<button
+										class="btn btn-xs {$ConfigStore.gardenSortOrder === sortOpt.order ? 'btn-primary' : 'btn-ghost'}"
+										onclick={() => setGardenSort(sortOpt.order)}
+									>
+										{sortOpt.label}
+									</button>
+								{/each}
+							</div>
+						{/if}
+					{/if}
+				{/each}
+			{/snippet}
 			<div>
 				<p class="text-xs uppercase tracking-wider text-gray-500 mb-2">Options</p>
-				<div class="flex flex-wrap gap-2">
-					{#each visibleInteractions as toggle}
-						<button class="btn btn-sm {$ConfigStore[toggle] ? 'btn-primary' : 'btn-ghost'}" onclick={() => toggleSelectionOnly(toggle)}>
-							{formatToggleName(toggle)}
-						</button>
+				{#if $ConfigStore.dashboardToggle}
+					{#each dashboardOptionsByPanel as panel}
+						<p class="text-xs uppercase tracking-wider text-gray-400 mt-2 mb-1">{panel.label}</p>
+						<div class="flex flex-wrap gap-2">
+							{@render mobileOptionsList(panel.options)}
+						</div>
 					{/each}
-				</div>
-				{#if showGardenSort}
-					<button class="btn btn-sm {$ConfigStore.gardenSortOrder !== 'default' ? 'btn-primary' : 'btn-ghost'}" onclick={cycleGardenSort}>
-						{GARDEN_SORT_LABELS[$ConfigStore.gardenSortOrder]}
-					</button>
-				{/if}
-				{#if showHeatmapOptions}
-					<div class="mt-2">
-						<label for="heatmapBinCountMobile" class="text-sm">Bin Count: {$ConfigStore.heatmapBinCount === 0 ? 'Auto' : $ConfigStore.heatmapBinCount}</label>
-						<input
-							id="heatmapBinCountMobile"
-							type="range"
-							min="0"
-							max="60"
-							value={$ConfigStore.heatmapBinCount}
-							class="range range-sm w-full"
-							oninput={(e) => handleConfigChangeFromInput(e, 'heatmapBinCount')}
-						/>
+				{:else if activePanelKey && panelOptionsMap[activePanelKey]}
+					<div class="flex flex-wrap gap-2">
+						{@render mobileOptionsList(panelOptionsMap[activePanelKey])}
 					</div>
 				{/if}
-				{#if showTurnLengthOptions}
-					<div class="mt-2">
-						<label for="turnLengthBinCountMobile" class="text-sm">Bin Count: {$ConfigStore.turnLengthBinCount === 0 ? 'Auto' : $ConfigStore.turnLengthBinCount}</label>
-						<input
-							id="turnLengthBinCountMobile"
-							type="range"
-							min="0"
-							max="60"
-							value={$ConfigStore.turnLengthBinCount}
-							class="range range-sm w-full"
-							oninput={(e) => handleConfigChangeFromInput(e, 'turnLengthBinCount')}
-						/>
-					</div>
-				{/if}
-				{#if showRepeatedWordsSlider}
-					<div class="mt-2">
-						<label for="repeatWordRangeMobile" class="text-sm">Size Range: {$ConfigStore.repeatWordSliderValue}</label>
-						<input
-							id="repeatWordRangeMobile"
-							type="range"
-							min="2"
-							max="30"
-							value={$ConfigStore.repeatWordSliderValue}
-							class="range range-sm w-full"
-							oninput={(e) => handleConfigChangeFromInput(e, 'repeatWordSliderValue')}
-						/>
-					</div>
-				{/if}
-				{#if showWordRainMinFreqSlider}
-				<div class="mt-2">
-					<label for="wordRainMinFreqMobile" class="text-sm">Min Frequency: {$ConfigStore.wordRainMinFrequency}</label>
-					<input
-						id="wordRainMinFreqMobile"
-						type="range"
-						min="1"
-						max="10"
-						value={$ConfigStore.wordRainMinFrequency}
-						class="range range-sm w-full"
-						oninput={(e) => handleConfigChangeFromInput(e, 'wordRainMinFrequency')}
-					/>
-				</div>
-			{/if}
-				{#if showWordRainBinCountSlider}
-				<div class="mt-2">
-					<label for="wordRainBinCountMobile" class="text-sm">Bin Count: {$ConfigStore.wordRainBinCount}</label>
-					<input
-						id="wordRainBinCountMobile"
-						type="range"
-						min="4"
-						max="20"
-						value={$ConfigStore.wordRainBinCount}
-						class="range range-sm w-full"
-						oninput={(e) => handleConfigChangeFromInput(e, 'wordRainBinCount')}
-					/>
-				</div>
-			{/if}
-			{#if showTurnNetworkMinTransSlider}
-				<div class="mt-2">
-					<label for="turnNetworkMinTransMobile" class="text-sm">Min Transitions: {$ConfigStore.turnNetworkMinTransitions}</label>
-					<input
-						id="turnNetworkMinTransMobile"
-						type="range"
-						min="1"
-						max="20"
-						value={$ConfigStore.turnNetworkMinTransitions}
-						class="range range-sm w-full"
-						oninput={(e) => handleConfigChangeFromInput(e, 'turnNetworkMinTransitions')}
-					/>
-				</div>
-			{/if}
-			<input type="text" placeholder="Filter words..." oninput={handleWordSearch} class="input input-bordered input-sm w-full mt-2" />
 			</div>
 
 			<!-- Quick Actions -->
@@ -624,20 +546,14 @@
 				<div class="flex flex-wrap gap-2">
 					<button
 						class="btn btn-sm {isEditorVisible ? 'btn-primary' : 'btn-ghost'}"
-						onclick={() => {
-							ontoggleEditor?.();
-							mobileMenuOpen = false;
-						}}
+						onclick={() => { ontoggleEditor?.(); mobileMenuOpen = false; }}
 					>
 						<Text size={16} class="mr-1" />
 						Editor
 					</button>
 					<button
 						class="btn btn-sm {isVideoVisible ? 'btn-primary' : 'btn-ghost'}"
-						onclick={() => {
-							ontoggleVideo?.();
-							mobileMenuOpen = false;
-						}}
+						onclick={() => { ontoggleVideo?.(); mobileMenuOpen = false; }}
 						disabled={!isVideoLoaded}
 					>
 						{#if isVideoVisible}
@@ -649,53 +565,26 @@
 					</button>
 					<button
 						class="btn btn-sm btn-outline border-gray-400 disabled:opacity-50"
-						onclick={() => {
-							ontoggleTranscribeMode?.();
-							mobileMenuOpen = false;
-						}}
+						onclick={() => { ontoggleTranscribeMode?.(); mobileMenuOpen = false; }}
 						disabled={!isVideoLoaded}
 					>
 						<Keyboard size={16} class="mr-1" />
 						Transcribe
 					</button>
-					<button
-						class="btn btn-sm btn-ghost"
-						onclick={() => {
-							onopenUpload?.();
-							mobileMenuOpen = false;
-						}}
-					>
+					<button class="btn btn-sm btn-ghost" onclick={() => { onopenUpload?.(); mobileMenuOpen = false; }}>
 						<CloudUpload size={16} class="mr-1" />
 						Upload
 					</button>
-					<button
-						class="btn btn-sm btn-ghost"
-						onclick={() => {
-							oncreateNewTranscript?.();
-							mobileMenuOpen = false;
-						}}
-					>
+					<button class="btn btn-sm btn-ghost" onclick={() => { oncreateNewTranscript?.(); mobileMenuOpen = false; }}>
 						<FilePlus size={16} class="mr-1" />
 						New
 					</button>
-					<button
-						class="btn btn-sm btn-ghost"
-						onclick={() => {
-							onopenHelp?.();
-							mobileMenuOpen = false;
-						}}
-					>
+					<button class="btn btn-sm btn-ghost" onclick={() => { onopenHelp?.(); mobileMenuOpen = false; }}>
 						<CircleHelp size={16} class="mr-1" />
 						Help
 					</button>
-					<button
-						class="btn btn-sm btn-ghost"
-						onclick={() => {
-							onopenSettings?.();
-							mobileMenuOpen = false;
-						}}
-					>
-						<Settings size={16} class="mr-1" />
+					<button class="btn btn-sm btn-ghost" onclick={() => { onopenSettings?.(); mobileMenuOpen = false; }}>
+						<SettingsIcon size={16} class="mr-1" />
 						Settings
 					</button>
 				</div>

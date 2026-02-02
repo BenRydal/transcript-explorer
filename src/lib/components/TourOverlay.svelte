@@ -15,13 +15,8 @@
 		},
 		{
 			target: '[data-tour="viz-modes"]',
-			title: 'Visualization Modes',
-			content: 'Switch between Speaker Garden, Turn Chart, Contribution Cloud, Word Rain, and other views.'
-		},
-		{
-			target: '[data-tour="interactions"]',
-			title: 'Interactions & Editor',
-			content: 'Toggle visualization options like speaker separation and search transcripts. Open the transcript editor to view and edit text.'
+			title: 'Visualizations & Options',
+			content: 'Switch between visualizations and configure their options. Options appear below the active visualization.'
 		},
 		{
 			target: '[data-tour="visualization"]',
