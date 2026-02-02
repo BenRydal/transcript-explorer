@@ -264,7 +264,7 @@ export class ContributionCloud {
 			}
 		}
 
-		let content = `<b>${word.speaker}:</b> ${turnContext || word.word}`;
+		let content = `<b>${word.speaker}</b>\n${turnContext || word.word}`;
 
 		const details = [`×${totalCount}`, `Turn ${word.turnNumber}`];
 		const transcript = get(TranscriptStore);
