@@ -24,6 +24,7 @@ export interface ConfigStoreType {
 	repeatWordSliderValue: number;
 	hoveredDataPoint: DataPoint | null;
 	cloudOverflowBounds: Bounds | null;
+	wordRainOverflowBounds: Bounds | null;
 	arrayOfFirstWords: DataPoint[];
 	wordToSearch: string;
 	hoveredSpeakerInGarden: string | null;
@@ -75,6 +76,7 @@ export const initialConfig: ConfigStoreType = {
 	repeatWordSliderValue: 5,
 	hoveredDataPoint: null,
 	cloudOverflowBounds: null,
+	wordRainOverflowBounds: null,
 	arrayOfFirstWords: [],
 	wordToSearch: '',
 	hoveredSpeakerInGarden: null,

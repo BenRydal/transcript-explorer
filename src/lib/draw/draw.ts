@@ -17,11 +17,12 @@ interface DrawResult {
 	hoveredSpeaker: string | null;
 	arrayOfFirstWords: DataPoint[];
 	cloudOverflowBounds: Bounds | null;
+	wordRainOverflowBounds: Bounds | null;
 	/** Panel key that produced the hover (for turn-level cross-highlight) */
 	hoverSource?: string;
 }
 
-const emptyResult: DrawResult = { hover: null, hoveredSpeaker: null, arrayOfFirstWords: [], cloudOverflowBounds: null };
+const emptyResult: DrawResult = { hover: null, hoveredSpeaker: null, arrayOfFirstWords: [], cloudOverflowBounds: null, wordRainOverflowBounds: null };
 
 function result(overrides: Partial<DrawResult>): DrawResult {
 	return { ...emptyResult, ...overrides };
@@ -86,6 +87,7 @@ export class Draw {
 			...c,
 			hoveredDataPoint: r.hover,
 			cloudOverflowBounds: r.cloudOverflowBounds,
+			wordRainOverflowBounds: r.wordRainOverflowBounds,
 			arrayOfFirstWords: r.arrayOfFirstWords,
 			hoveredSpeakerInGarden: r.hoveredSpeaker,
 			dashboardHighlightSpeaker: highlightSpeaker,
@@ -146,8 +148,8 @@ export class Draw {
 
 	updateWordRain(pos: Bounds): DrawResult {
 		const wordRain = new WordRain(this.sk, pos);
-		const { hoveredOccurrences, hoveredSpeaker } = wordRain.draw(this.sk.dynamicData.getProcessedWords(true));
-		return result({ arrayOfFirstWords: hoveredOccurrences, hoveredSpeaker });
+		const { hoveredOccurrences, hoveredSpeaker, hasOverflow } = wordRain.draw(this.sk.dynamicData.getProcessedWords(true));
+		return result({ arrayOfFirstWords: hoveredOccurrences, hoveredSpeaker, wordRainOverflowBounds: hasOverflow ? pos : null });
 	}
 
 	updateContributionCloud(pos: Bounds): DrawResult {
@@ -166,6 +168,7 @@ export class Draw {
 		let hoverSource: string | undefined;
 		const mergedArrayOfFirstWords: DataPoint[] = [];
 		let mergedCloudOverflowBounds: Bounds | null = null;
+		let mergedWordRainOverflowBounds: Bounds | null = null;
 
 		for (let i = 0; i < panels.length; i++) {
 			const panelResult = this.updatePanel(panels[i], boundsArray[i]);
@@ -178,6 +181,7 @@ export class Draw {
 			mergedHoveredSpeaker ??= panelResult.hoveredSpeaker;
 			mergedArrayOfFirstWords.push(...panelResult.arrayOfFirstWords);
 			mergedCloudOverflowBounds ??= panelResult.cloudOverflowBounds;
+			mergedWordRainOverflowBounds ??= panelResult.wordRainOverflowBounds;
 		}
 
 		return {
@@ -185,6 +189,7 @@ export class Draw {
 			hoveredSpeaker: mergedHoveredSpeaker,
 			arrayOfFirstWords: mergedArrayOfFirstWords,
 			cloudOverflowBounds: mergedCloudOverflowBounds,
+			wordRainOverflowBounds: mergedWordRainOverflowBounds,
 			hoverSource
 		};
 	}

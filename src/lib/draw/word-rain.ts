@@ -15,6 +15,10 @@ import { DEFAULT_SPEAKER_COLOR } from '../constants/ui';
 import { withDimming } from './draw-utils';
 import { normalizeWord, toTitleCase } from '../core/string-utils';
 
+const MAX_SAMPLE_TURNS = 4;
+const CONTEXT_WORDS_BEFORE = 4;
+const CONTEXT_WORDS_AFTER = 6;
+
 const BAR_SECTION_RATIO = 0.12;
 const BAR_MIN_WIDTH = 2;
 const BAR_MAX_WIDTH = 10;
@@ -40,6 +44,12 @@ interface AggregatedWord {
 	dominantSpeaker: string;
 	dominantCount: number;
 	occurrences: DataPoint[];
+}
+
+interface WordRainResult {
+	hoveredOccurrences: DataPoint[];
+	hoveredSpeaker: string | null;
+	hasOverflow: boolean;
 }
 
 interface PlacedWord {
@@ -84,31 +94,32 @@ export class WordRain {
 		return { active: !mouseInPanel, speaker: hl };
 	}
 
-	draw(words: DataPoint[]): { hoveredOccurrences: DataPoint[]; hoveredSpeaker: string | null } {
+	draw(words: DataPoint[]): WordRainResult {
 		if (this.config.separateToggle) {
 			return this.drawSeparate(words);
 		}
 		return this.drawCombined(words);
 	}
 
-	private drawCombined(words: DataPoint[]): { hoveredOccurrences: DataPoint[]; hoveredSpeaker: string | null } {
+	private drawCombined(words: DataPoint[]): WordRainResult {
 		const visibleWords = words.filter((w) => this.userMap.get(w.speaker)?.enabled !== false);
 		const aggregated = this.aggregateWords(visibleWords);
 		const filtered = this.filterAndSort(aggregated);
-		if (filtered.length === 0) return { hoveredOccurrences: [], hoveredSpeaker: null };
+		if (filtered.length === 0) return { hoveredOccurrences: [], hoveredSpeaker: null, hasOverflow: false };
 
 		const placed = this.placeWordsInRegion(filtered, this.bounds, null);
-		return this.renderAndHandleHover(placed);
+		return this.renderAndHandleHover(placed, filtered.length > placed.length);
 	}
 
-	private drawSeparate(words: DataPoint[]): { hoveredOccurrences: DataPoint[]; hoveredSpeaker: string | null } {
+	private drawSeparate(words: DataPoint[]): WordRainResult {
 		const enabledUsers = get(UserStore).filter((u) => u.enabled);
-		if (enabledUsers.length === 0) return { hoveredOccurrences: [], hoveredSpeaker: null };
+		if (enabledUsers.length === 0) return { hoveredOccurrences: [], hoveredSpeaker: null, hasOverflow: false };
 
 		const bySpeaker = this.aggregateWordsBySpeaker(words, enabledUsers);
 		const bandHeight = this.bounds.height / enabledUsers.length;
 		const xhl = this.getCrossHighlight();
 		const allPlaced: PlacedWord[] = [];
+		let totalFiltered = 0;
 
 		for (let i = 0; i < enabledUsers.length; i++) {
 			const user = enabledUsers[i];
@@ -118,6 +129,7 @@ export class WordRain {
 
 			const filtered = this.filterAndSort(bySpeaker.get(user.name) ?? []);
 			if (filtered.length === 0) continue;
+			totalFiltered += filtered.length;
 
 			const bandBounds: Bounds = { x: this.bounds.x, y: bandY, width: this.bounds.width, height: bandHeight };
 			const placed = this.placeWordsInRegion(filtered, bandBounds, user.color);
@@ -130,7 +142,7 @@ export class WordRain {
 
 		this.drawTimeLabels();
 
-		return this.handleHover(allPlaced);
+		return this.handleHover(allPlaced, totalFiltered > allPlaced.length);
 	}
 
 	private filterAndSort(aggregated: AggregatedWord[]): AggregatedWord[] {
@@ -143,22 +155,22 @@ export class WordRain {
 		return filtered;
 	}
 
-	private renderAndHandleHover(placed: PlacedWord[]): { hoveredOccurrences: DataPoint[]; hoveredSpeaker: string | null } {
+	private renderAndHandleHover(placed: PlacedWord[], hasOverflow: boolean): WordRainResult {
 		const xhl = this.getCrossHighlight();
 		this.renderBars(placed, xhl);
 		this.renderConnectors(placed, xhl);
 		this.renderWords(placed, xhl);
 		this.drawTimeLabels();
-		return this.handleHover(placed);
+		return this.handleHover(placed, hasOverflow);
 	}
 
-	private handleHover(placed: PlacedWord[]): { hoveredOccurrences: DataPoint[]; hoveredSpeaker: string | null } {
+	private handleHover(placed: PlacedWord[], hasOverflow: boolean): WordRainResult {
 		const hovered = this.findHoveredWord(placed);
 		if (hovered) {
 			this.drawHoverEffect(hovered);
 			this.showWordTooltip(hovered);
 		}
-		return { hoveredOccurrences: hovered?.agg.occurrences ?? [], hoveredSpeaker: hovered?.agg.dominantSpeaker ?? null };
+		return { hoveredOccurrences: hovered?.agg.occurrences ?? [], hoveredSpeaker: hovered?.agg.dominantSpeaker ?? null, hasOverflow };
 	}
 
 	private drawBandChrome(index: number, bandY: number, bandHeight: number, user: User): void {
@@ -461,9 +473,55 @@ export class WordRain {
 
 	private showWordTooltip(hovered: PlacedWord): void {
 		const agg = hovered.agg;
-		const isUntimed = this.transcript.timingMode === 'untimed';
-		const timestamp = isUntimed ? '' : `\n<span style="font-size: 0.85em; opacity: 0.7">${formatTimeCompact(agg.meanTime)}</span>`;
-		const content = `<b>${agg.dominantSpeaker}</b>\n"${agg.word}" \u00d7${agg.count}${timestamp}`;
+
+		// Title: word and total count
+		let content = `<b>"${agg.word}" spoken ${agg.count} time${agg.count === 1 ? '' : 's'}</b>`;
+
+		// Per-speaker breakdown
+		const speakerCounts = new Map<string, number>();
+		for (const dp of agg.occurrences) {
+			speakerCounts.set(dp.speaker, (speakerCounts.get(dp.speaker) || 0) + 1);
+		}
+		const sorted = [...speakerCounts.entries()].sort((a, b) => b[1] - a[1]);
+		const breakdown = sorted.map(([speaker, count]) => {
+			const user = this.userMap.get(speaker);
+			const color = user?.color || DEFAULT_SPEAKER_COLOR;
+			return `<span style="color:${color}">${toTitleCase(speaker)}: ${count}</span>`;
+		}).join('  ·  ');
+		content += `\n${breakdown}`;
+
+		// Sample turn contexts
+		const samples = this.getSampleContexts(agg);
+		if (samples.length > 0) {
+			content += `\n<span style="opacity: 0.5">Sample turns:</span>\n<span style="opacity: 0.7">${samples.join('\n')}</span>`;
+		}
+
 		showTooltip(this.sk.mouseX, this.sk.mouseY, content, hovered.color, this.bounds.y + this.bounds.height);
+	}
+
+	private getSampleContexts(agg: AggregatedWord): string[] {
+		const allWords = this.transcript.wordArray;
+		const seenTurns = new Set<number>();
+		const samples: string[] = [];
+
+		for (const dp of agg.occurrences) {
+			if (seenTurns.has(dp.turnNumber)) continue;
+			seenTurns.add(dp.turnNumber);
+
+			const turnWords = allWords.filter((w) => w.turnNumber === dp.turnNumber);
+			const idx = turnWords.findIndex((w) => normalizeWord(w.word) === agg.word);
+			if (idx < 0) continue;
+
+			const start = Math.max(0, idx - CONTEXT_WORDS_BEFORE);
+			const end = Math.min(turnWords.length, idx + CONTEXT_WORDS_AFTER + 1);
+			const snippet = turnWords.slice(start, end)
+				.map((w, i) => i + start === idx ? `<b>${w.word}</b>` : w.word)
+				.join(' ');
+			samples.push(`"${start > 0 ? '...' : ''}${snippet}${end < turnWords.length ? '...' : ''}"`);
+
+			if (samples.length >= MAX_SAMPLE_TURNS) break;
+		}
+
+		return samples;
 	}
 }

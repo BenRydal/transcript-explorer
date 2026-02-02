@@ -587,6 +587,10 @@
 							{@const b = $ConfigStore.cloudOverflowBounds}
 							<div class="badge badge-neutral absolute" style="left: {b.x + b.width - 12}px; top: {b.y + b.height - 12}px; transform: translate(-100%, -100%);">Some content not shown</div>
 						{/if}
+						{#if $ConfigStore.wordRainOverflowBounds && ($ConfigStore.wordRainToggle || $ConfigStore.dashboardToggle)}
+							{@const b = $ConfigStore.wordRainOverflowBounds}
+							<div class="badge badge-neutral absolute" style="left: {b.x + b.width - 12}px; top: {b.y + b.height - 12}px; transform: translate(-100%, -100%);">Some content not shown</div>
+						{/if}
 						{#if hasVideoSource}
 							<VideoContainer />
 						{/if}
