@@ -16,13 +16,12 @@ interface DrawResult {
 	hover: DataPoint | null;
 	hoveredSpeaker: string | null;
 	arrayOfFirstWords: DataPoint[];
-	cloudOverflowBounds: Bounds | null;
-	wordRainOverflowBounds: Bounds | null;
+	overflowBounds: Bounds[];
 	/** Panel key that produced the hover (for turn-level cross-highlight) */
 	hoverSource?: string;
 }
 
-const emptyResult: DrawResult = { hover: null, hoveredSpeaker: null, arrayOfFirstWords: [], cloudOverflowBounds: null, wordRainOverflowBounds: null };
+const emptyResult: DrawResult = { hover: null, hoveredSpeaker: null, arrayOfFirstWords: [], overflowBounds: [] };
 
 function result(overrides: Partial<DrawResult>): DrawResult {
 	return { ...emptyResult, ...overrides };
@@ -86,8 +85,7 @@ export class Draw {
 		ConfigStore.update((c) => ({
 			...c,
 			hoveredDataPoint: r.hover,
-			cloudOverflowBounds: r.cloudOverflowBounds,
-			wordRainOverflowBounds: r.wordRainOverflowBounds,
+			overflowBounds: r.overflowBounds,
 			arrayOfFirstWords: r.arrayOfFirstWords,
 			hoveredSpeakerInGarden: r.hoveredSpeaker,
 			dashboardHighlightSpeaker: highlightSpeaker,
@@ -149,13 +147,13 @@ export class Draw {
 	updateWordRain(pos: Bounds): DrawResult {
 		const wordRain = new WordRain(this.sk, pos);
 		const { hoveredOccurrences, hoveredSpeaker, hasOverflow } = wordRain.draw(this.sk.dynamicData.getProcessedWords(true));
-		return result({ arrayOfFirstWords: hoveredOccurrences, hoveredSpeaker, wordRainOverflowBounds: hasOverflow ? pos : null });
+		return result({ arrayOfFirstWords: hoveredOccurrences, hoveredSpeaker, overflowBounds: hasOverflow ? [pos] : [] });
 	}
 
 	updateContributionCloud(pos: Bounds): DrawResult {
 		const contributionCloud = new ContributionCloud(this.sk, pos);
 		const { hoveredWord, hasOverflow, hoveredSpeaker } = contributionCloud.draw(this.sk.dynamicData.getDynamicArraySortedForContributionCloud());
-		return result({ hover: hoveredWord ?? null, cloudOverflowBounds: hasOverflow ? pos : null, hoveredSpeaker });
+		return result({ hover: hoveredWord ?? null, overflowBounds: hasOverflow ? [pos] : [], hoveredSpeaker });
 	}
 
 	drawDashboard(): DrawResult {
@@ -167,8 +165,7 @@ export class Draw {
 		let mergedHoveredSpeaker: string | null = null;
 		let hoverSource: string | undefined;
 		const mergedArrayOfFirstWords: DataPoint[] = [];
-		let mergedCloudOverflowBounds: Bounds | null = null;
-		let mergedWordRainOverflowBounds: Bounds | null = null;
+		const mergedOverflowBounds: Bounds[] = [];
 
 		for (let i = 0; i < panels.length; i++) {
 			const panelResult = this.updatePanel(panels[i], boundsArray[i]);
@@ -180,16 +177,14 @@ export class Draw {
 			mergedHover ??= panelResult.hover;
 			mergedHoveredSpeaker ??= panelResult.hoveredSpeaker;
 			mergedArrayOfFirstWords.push(...panelResult.arrayOfFirstWords);
-			mergedCloudOverflowBounds ??= panelResult.cloudOverflowBounds;
-			mergedWordRainOverflowBounds ??= panelResult.wordRainOverflowBounds;
+			mergedOverflowBounds.push(...panelResult.overflowBounds);
 		}
 
 		return {
 			hover: mergedHover,
 			hoveredSpeaker: mergedHoveredSpeaker,
 			arrayOfFirstWords: mergedArrayOfFirstWords,
-			cloudOverflowBounds: mergedCloudOverflowBounds,
-			wordRainOverflowBounds: mergedWordRainOverflowBounds,
+			overflowBounds: mergedOverflowBounds,
 			hoverSource
 		};
 	}

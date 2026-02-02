@@ -23,8 +23,7 @@ export interface ConfigStoreType {
 	animationRate: number;
 	repeatWordSliderValue: number;
 	hoveredDataPoint: DataPoint | null;
-	cloudOverflowBounds: Bounds | null;
-	wordRainOverflowBounds: Bounds | null;
+	overflowBounds: Bounds[];
 	arrayOfFirstWords: DataPoint[];
 	wordToSearch: string;
 	hoveredSpeakerInGarden: string | null;
@@ -75,8 +74,7 @@ export const initialConfig: ConfigStoreType = {
 	animationRate: 3,
 	repeatWordSliderValue: 5,
 	hoveredDataPoint: null,
-	cloudOverflowBounds: null,
-	wordRainOverflowBounds: null,
+	overflowBounds: [],
 	arrayOfFirstWords: [],
 	wordToSearch: '',
 	hoveredSpeakerInGarden: null,

@@ -52,6 +52,8 @@ interface WordRainResult {
 	hasOverflow: boolean;
 }
 
+const EMPTY_RAIN_RESULT: WordRainResult = { hoveredOccurrences: [], hoveredSpeaker: null, hasOverflow: false };
+
 interface PlacedWord {
 	agg: AggregatedWord;
 	x: number;
@@ -105,7 +107,7 @@ export class WordRain {
 		const visibleWords = words.filter((w) => this.userMap.get(w.speaker)?.enabled !== false);
 		const aggregated = this.aggregateWords(visibleWords);
 		const filtered = this.filterAndSort(aggregated);
-		if (filtered.length === 0) return { hoveredOccurrences: [], hoveredSpeaker: null, hasOverflow: false };
+		if (filtered.length === 0) return EMPTY_RAIN_RESULT;
 
 		const placed = this.placeWordsInRegion(filtered, this.bounds, null);
 		return this.renderAndHandleHover(placed, filtered.length > placed.length);
@@ -113,13 +115,13 @@ export class WordRain {
 
 	private drawSeparate(words: DataPoint[]): WordRainResult {
 		const enabledUsers = get(UserStore).filter((u) => u.enabled);
-		if (enabledUsers.length === 0) return { hoveredOccurrences: [], hoveredSpeaker: null, hasOverflow: false };
+		if (enabledUsers.length === 0) return EMPTY_RAIN_RESULT;
 
 		const bySpeaker = this.aggregateWordsBySpeaker(words, enabledUsers);
 		const bandHeight = this.bounds.height / enabledUsers.length;
 		const xhl = this.getCrossHighlight();
 		const allPlaced: PlacedWord[] = [];
-		let totalFiltered = 0;
+		let hasOverflow = false;
 
 		for (let i = 0; i < enabledUsers.length; i++) {
 			const user = enabledUsers[i];
@@ -129,10 +131,10 @@ export class WordRain {
 
 			const filtered = this.filterAndSort(bySpeaker.get(user.name) ?? []);
 			if (filtered.length === 0) continue;
-			totalFiltered += filtered.length;
 
 			const bandBounds: Bounds = { x: this.bounds.x, y: bandY, width: this.bounds.width, height: bandHeight };
 			const placed = this.placeWordsInRegion(filtered, bandBounds, user.color);
+			if (placed.length < filtered.length) hasOverflow = true;
 			allPlaced.push(...placed);
 
 			this.renderBars(placed, xhl);
@@ -142,7 +144,7 @@ export class WordRain {
 
 		this.drawTimeLabels();
 
-		return this.handleHover(allPlaced, totalFiltered > allPlaced.length);
+		return this.handleHover(allPlaced, hasOverflow);
 	}
 
 	private filterAndSort(aggregated: AggregatedWord[]): AggregatedWord[] {
