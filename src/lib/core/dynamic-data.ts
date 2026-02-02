@@ -221,6 +221,18 @@ export class DynamicData {
 	getDynamicArrayForTurnNetwork(): NetworkData {
 		const words = this.getProcessedWords(true);
 
+		// Compute which turns match the search term (null if no search active)
+		let searchMatchingTurns: Set<number> | null = null;
+		if (config.wordToSearch) {
+			const searchTerm = normalizeWord(config.wordToSearch);
+			searchMatchingTurns = new Set<number>();
+			for (const word of words) {
+				if (!searchMatchingTurns.has(word.turnNumber) && normalizeWord(word.word).includes(searchTerm)) {
+					searchMatchingTurns.add(word.turnNumber);
+				}
+			}
+		}
+
 		// Pre-compute per-turn word counts
 		const turnWordCounts = new Map<number, number>();
 		for (const word of words) {
@@ -262,6 +274,6 @@ export class DynamicData {
 			}
 		}
 
-		return { transitions, speakerStats };
+		return { transitions, speakerStats, searchMatchingTurns, turnWordCounts };
 	}
 }

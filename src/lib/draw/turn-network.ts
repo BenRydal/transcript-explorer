@@ -39,6 +39,10 @@ const LAYOUT_RADIUS_FACTOR = 0.33;
 export interface NetworkData {
 	transitions: Map<string, Map<string, { count: number; wordCount: number; turnStartPoints: DataPoint[] }>>;
 	speakerStats: Map<string, { wordCount: number; turnCount: number; turnStartPoints: DataPoint[] }>;
+	/** Turn numbers containing the search word (null when no search is active) */
+	searchMatchingTurns: Set<number> | null;
+	/** Word count per turn number, used to recompute edge wordCount after search filtering */
+	turnWordCounts: Map<number, number>;
 }
 
 interface NodeLayout {
@@ -245,6 +249,21 @@ export class TurnNetwork {
 		for (const edge of edges) {
 			edge.weight = weightByWords ? edge.wordCount : edge.count;
 			if (edge.weight > maxWeight) maxWeight = edge.weight;
+		}
+
+		// Filter edges by search term (after maxWeight is locked in for stable scaling)
+		if (data.searchMatchingTurns) {
+			const matching = data.searchMatchingTurns;
+			const filteredEdges: EdgeLayout[] = [];
+			for (const edge of edges) {
+				edge.turnStartPoints = edge.turnStartPoints.filter((p) => matching.has(p.turnNumber));
+				if (edge.turnStartPoints.length === 0) continue;
+				edge.count = edge.turnStartPoints.length;
+				edge.wordCount = edge.turnStartPoints.reduce((sum, p) => sum + (data.turnWordCounts.get(p.turnNumber) ?? 0), 0);
+				edge.weight = weightByWords ? edge.wordCount : edge.count;
+				filteredEdges.push(edge);
+			}
+			edges = filteredEdges;
 		}
 
 		return { nodes, nodeMap, edges, maxWeight, centerX, centerY };

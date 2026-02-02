@@ -7,6 +7,7 @@ import type { DataPoint } from '../../models/dataPoint';
 import type { User } from '../../models/user';
 import type { Bounds } from './types/bounds';
 import { withDimming, formatTurnPreviewLines } from './draw-utils';
+import { normalizeWord } from '../core/string-utils';
 
 const LEFT_MARGIN = 60;
 const BOTTOM_MARGIN = 40;
@@ -78,6 +79,24 @@ export class TurnLengthDistribution {
 
 		const maxCount = Math.max(...bins.map((b) => b.totalCount));
 		if (maxCount === 0) return { snippetPoints: [], hoveredSpeaker: null };
+
+		// Filter bin contents by search term while keeping axes stable
+		if (this.config.wordToSearch) {
+			const searchTerm = normalizeWord(this.config.wordToSearch);
+			for (const bin of bins) {
+				for (const [speaker, binTurns] of bin.speakers) {
+					const filtered = binTurns.filter((t) => t.content.toLowerCase().includes(searchTerm));
+					if (filtered.length === 0) {
+						bin.speakers.delete(speaker);
+					} else {
+						bin.speakers.set(speaker, filtered);
+					}
+				}
+				let count = 0;
+				for (const t of bin.speakers.values()) count += t.length;
+				bin.totalCount = count;
+			}
+		}
 
 		const barWidth = this.gw / bins.length;
 
