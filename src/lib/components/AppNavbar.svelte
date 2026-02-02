@@ -45,7 +45,7 @@
 		speakerGarden: [],
 		turnChart: ['separateToggle', 'silenceOverlapToggle'],
 		contributionCloud: ['separateToggle', 'sortToggle', 'lastWordToggle', 'echoWordsToggle', 'stopWordsToggle', 'repeatedWordsToggle'],
-		wordRain: ['separateToggle', 'stopWordsToggle'],
+		wordRain: ['separateToggle', 'stopWordsToggle', 'wordRainTemporalBinning'],
 		turnNetwork: [],
 		speakerHeatmap: [],
 		turnLength: []
@@ -89,6 +89,10 @@
 		($ConfigStore.dashboardToggle && $ConfigStore.dashboardPanels.includes('wordRain'))
 	);
 
+	let showWordRainBinCountSlider = $derived(
+		showWordRainMinFreqSlider && $ConfigStore.wordRainTemporalBinning
+	);
+
 	const TOGGLE_LABELS: Record<string, string> = {
 		// Visualizations
 		speakerGardenToggle: 'Speaker Garden',
@@ -106,7 +110,8 @@
 		lastWordToggle: 'Emphasize Last Word',
 		echoWordsToggle: 'Echo Last Words',
 		stopWordsToggle: 'Hide Stop Words',
-		repeatedWordsToggle: 'Only Repeated Words'
+		repeatedWordsToggle: 'Only Repeated Words',
+		wordRainTemporalBinning: 'Temporal Binning'
 	};
 
 	function formatToggleName(toggle: string) {
@@ -327,6 +332,23 @@
 							/>
 						</li>
 					{/if}
+					{#if showWordRainBinCountSlider}
+						<li class="cursor-default">
+							<p>Bin Count: {$ConfigStore.wordRainBinCount}</p>
+						</li>
+						<li>
+							<label for="wordRainBinCount" class="sr-only">Temporal bin count</label>
+							<input
+								id="wordRainBinCount"
+								type="range"
+								min="4"
+								max="20"
+								value={$ConfigStore.wordRainBinCount}
+								class="range"
+								oninput={(e) => handleConfigChangeFromInput(e, 'wordRainBinCount')}
+							/>
+						</li>
+					{/if}
 					<hr class="my-4 border-t border-gray-300" />
 					<input type="text" placeholder="Filter words..." oninput={handleWordSearch} class="input input-bordered w-full" />
 				</ul>
@@ -466,6 +488,20 @@
 						value={$ConfigStore.wordRainMinFrequency}
 						class="range range-sm w-full"
 						oninput={(e) => handleConfigChangeFromInput(e, 'wordRainMinFrequency')}
+					/>
+				</div>
+			{/if}
+				{#if showWordRainBinCountSlider}
+				<div class="mt-2">
+					<label for="wordRainBinCountMobile" class="text-sm">Bin Count: {$ConfigStore.wordRainBinCount}</label>
+					<input
+						id="wordRainBinCountMobile"
+						type="range"
+						min="4"
+						max="20"
+						value={$ConfigStore.wordRainBinCount}
+						class="range range-sm w-full"
+						oninput={(e) => handleConfigChangeFromInput(e, 'wordRainBinCount')}
 					/>
 				</div>
 			{/if}

@@ -36,6 +36,8 @@ const SHARED_WORD_COLOR = '#aaaaaa';
 const SPEAKER_LABEL_SIZE = 10;
 const SPEAKER_BAND_BG_ALPHA = 15;
 const SPEAKER_BAND_DIVIDER_ALPHA = 40;
+const BIN_DIVIDER_ALPHA = 35;
+const BIN_DIVIDER_DASH = [4, 4];
 
 interface AggregatedWord {
 	word: string;
@@ -44,6 +46,7 @@ interface AggregatedWord {
 	dominantSpeaker: string;
 	dominantCount: number;
 	occurrences: DataPoint[];
+	binRange?: [number, number];
 }
 
 interface WordRainResult {
@@ -105,11 +108,16 @@ export class WordRain {
 
 	private drawCombined(words: DataPoint[]): WordRainResult {
 		const visibleWords = words.filter((w) => this.userMap.get(w.speaker)?.enabled !== false);
-		const aggregated = this.aggregateWords(visibleWords);
+		const aggregated = this.config.wordRainTemporalBinning
+			? this.aggregateWordsInBins(visibleWords)
+			: this.aggregateWords(visibleWords);
 		const filtered = this.filterAndSort(aggregated);
 		if (filtered.length === 0) return EMPTY_RAIN_RESULT;
 
 		const placed = this.placeWordsInRegion(filtered, this.bounds, null);
+		if (this.config.wordRainTemporalBinning) {
+			this.drawBinDividers(this.bounds);
+		}
 		return this.renderAndHandleHover(placed, filtered.length > placed.length);
 	}
 
@@ -117,7 +125,10 @@ export class WordRain {
 		const enabledUsers = get(UserStore).filter((u) => u.enabled);
 		if (enabledUsers.length === 0) return EMPTY_RAIN_RESULT;
 
-		const bySpeaker = this.aggregateWordsBySpeaker(words, enabledUsers);
+		const useBinning = this.config.wordRainTemporalBinning;
+		const bySpeaker = useBinning
+			? this.aggregateWordsBySpeakerInBins(words, enabledUsers)
+			: this.aggregateWordsBySpeaker(words, enabledUsers);
 		const bandHeight = this.bounds.height / enabledUsers.length;
 		const xhl = this.getCrossHighlight();
 		const allPlaced: PlacedWord[] = [];
@@ -136,6 +147,10 @@ export class WordRain {
 			const placed = this.placeWordsInRegion(filtered, bandBounds, user.color);
 			if (placed.length < filtered.length) hasOverflow = true;
 			allPlaced.push(...placed);
+
+			if (useBinning) {
+				this.drawBinDividers(bandBounds);
+			}
 
 			this.renderBars(placed, xhl);
 			this.renderConnectors(placed, xhl);
@@ -233,6 +248,122 @@ export class WordRain {
 			})));
 		}
 		return result;
+	}
+
+	private aggregateWordsInBins(words: DataPoint[]): AggregatedWord[] {
+		const { wordRainBinCount: binCount } = this.config;
+		const left = this.timeline.leftMarker;
+		const range = this.timeline.rightMarker - left;
+		if (range <= 0) return [];
+		const binWidth = range / binCount;
+
+		const map = new Map<string, AggregatedWord & { speakerCounts: Map<string, number> }>();
+
+		for (const dp of words) {
+			const normalized = normalizeWord(dp.word);
+			const binIndex = Math.min(Math.floor((dp.startTime - left) / binWidth), binCount - 1);
+			const key = normalized + '|' + binIndex;
+			const existing = map.get(key);
+			if (existing) {
+				existing.count++;
+				existing.occurrences.push(dp);
+				const sc = existing.speakerCounts;
+				const newCount = (sc.get(dp.speaker) || 0) + 1;
+				sc.set(dp.speaker, newCount);
+				if (newCount > existing.dominantCount) {
+					existing.dominantSpeaker = dp.speaker;
+					existing.dominantCount = newCount;
+				}
+			} else {
+				const sc = new Map<string, number>();
+				sc.set(dp.speaker, 1);
+				const binStart = left + binIndex * binWidth;
+				map.set(key, {
+					word: normalized,
+					count: 1,
+					meanTime: binStart + binWidth / 2,
+					dominantSpeaker: dp.speaker,
+					dominantCount: 1,
+					occurrences: [dp],
+					binRange: [binStart, binStart + binWidth],
+					speakerCounts: sc
+				});
+			}
+		}
+
+		return Array.from(map.values(), (entry) => ({
+			word: entry.word,
+			count: entry.count,
+			meanTime: entry.meanTime,
+			dominantSpeaker: entry.dominantSpeaker,
+			dominantCount: entry.dominantCount,
+			occurrences: entry.occurrences,
+			binRange: entry.binRange
+		}));
+	}
+
+	private aggregateWordsBySpeakerInBins(words: DataPoint[], enabledUsers: User[]): Map<string, AggregatedWord[]> {
+		const enabledNames = new Set(enabledUsers.map((u) => u.name));
+		const { wordRainBinCount: binCount } = this.config;
+		const left = this.timeline.leftMarker;
+		const range = this.timeline.rightMarker - left;
+		if (range <= 0) return new Map();
+		const binWidth = range / binCount;
+
+		const speakerMaps = new Map<string, Map<string, { word: string; count: number; occurrences: DataPoint[]; binRange: [number, number] }>>();
+
+		for (const name of enabledNames) {
+			speakerMaps.set(name, new Map());
+		}
+
+		for (const dp of words) {
+			if (!enabledNames.has(dp.speaker)) continue;
+			const speakerMap = speakerMaps.get(dp.speaker)!;
+			const normalized = normalizeWord(dp.word);
+			const binIndex = Math.min(Math.floor((dp.startTime - left) / binWidth), binCount - 1);
+			const key = normalized + '|' + binIndex;
+			const existing = speakerMap.get(key);
+			if (existing) {
+				existing.count++;
+				existing.occurrences.push(dp);
+			} else {
+				const binStart = left + binIndex * binWidth;
+				speakerMap.set(key, { word: normalized, count: 1, occurrences: [dp], binRange: [binStart, binStart + binWidth] });
+			}
+		}
+
+		const result = new Map<string, AggregatedWord[]>();
+		for (const [speaker, wordMap] of speakerMaps) {
+			result.set(speaker, Array.from(wordMap.values(), (entry) => ({
+				word: entry.word,
+				count: entry.count,
+				meanTime: (entry.binRange[0] + entry.binRange[1]) / 2,
+				dominantSpeaker: speaker,
+				dominantCount: entry.count,
+				occurrences: entry.occurrences,
+				binRange: entry.binRange
+			})));
+		}
+		return result;
+	}
+
+	private drawBinDividers(region: Bounds): void {
+		const binCount = this.config.wordRainBinCount;
+		const ctx = this.sk.drawingContext as CanvasRenderingContext2D;
+		const prevDash = ctx.getLineDash();
+
+		ctx.setLineDash(BIN_DIVIDER_DASH);
+		const c = this.sk.color(150);
+		c.setAlpha(BIN_DIVIDER_ALPHA);
+		this.sk.stroke(c);
+		this.sk.strokeWeight(1);
+
+		for (let i = 1; i < binCount; i++) {
+			const x = region.x + (i / binCount) * region.width;
+			this.sk.line(x, region.y, x, region.y + region.height);
+		}
+
+		ctx.setLineDash(prevDash);
 	}
 
 	/**
@@ -476,8 +607,16 @@ export class WordRain {
 	private showWordTooltip(hovered: PlacedWord): void {
 		const agg = hovered.agg;
 
-		// Title: word and total count
-		let content = `<b>"${agg.word}" spoken ${agg.count} time${agg.count === 1 ? '' : 's'}</b>`;
+		// Title: word and total count, with bin range if applicable
+		const isUntimed = this.transcript.timingMode === 'untimed';
+		let title = `"${agg.word}" spoken ${agg.count} time${agg.count === 1 ? '' : 's'}`;
+		if (agg.binRange) {
+			const rangeLabel = isUntimed
+				? `${Math.round(agg.binRange[0])}–${Math.round(agg.binRange[1])}`
+				: `${formatTimeCompact(agg.binRange[0])}–${formatTimeCompact(agg.binRange[1])}`;
+			title += ` in ${rangeLabel}`;
+		}
+		let content = `<b>${title}</b>`;
 
 		// Per-speaker breakdown
 		const speakerCounts = new Map<string, number>();

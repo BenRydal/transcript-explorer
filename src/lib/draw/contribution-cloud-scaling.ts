@@ -1,4 +1,6 @@
 import type p5 from 'p5';
+import { get } from 'svelte/store';
+import TimelineStore from '../../stores/timelineStore';
 import type { ConfigStoreType } from '../../stores/configStore';
 import type { DataPoint } from '../../models/dataPoint';
 import type { Bounds } from './types/bounds';
@@ -32,7 +34,8 @@ let scalingCache: ScalingCache = { key: null, scaling: null };
 const wordWidthCache = new Map<string, number>();
 
 function getCacheKey(bounds: Bounds, wordCount: number, config: ConfigStoreType): string {
-	return `${bounds.x},${bounds.y},${bounds.width},${bounds.height}|${wordCount}|${config.separateToggle}|${config.repeatedWordsToggle}|${config.repeatWordSliderValue}|${config.dashboardToggle}`;
+	const timeline = get(TimelineStore);
+	return `${bounds.x},${bounds.y},${bounds.width},${bounds.height}|${wordCount}|${config.separateToggle}|${config.repeatedWordsToggle}|${config.repeatWordSliderValue}|${config.dashboardToggle}|${timeline.leftMarker},${timeline.rightMarker}`;
 }
 
 /**

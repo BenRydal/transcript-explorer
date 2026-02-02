@@ -95,14 +95,19 @@ export class DynamicData {
 	/**
 	 * Get the current slice of words based on endIndex, with counts computed.
 	 * Filters stop words and applies count logic based on config toggles.
-	 * Note: Counts are computed for ALL words first, then filtered by time range.
+	 * When filterByTimeRange is true, time range filter is applied BEFORE counting
+	 * so that counts reflect only the visible range.
 	 */
 	getProcessedWords(filterByTimeRange = false): DataPoint[] {
-		const slice = wordArray.slice(0, this.endIndex);
+		let slice = wordArray.slice(0, this.endIndex);
+
+		if (filterByTimeRange) {
+			slice = slice.filter((word) => this.isInTimeRange(word.startTime, word.endTime));
+		}
+
 		const result: DataPoint[] = [];
 		const countMap = new Map<string, DataPoint[]>();
 
-		// First pass: compute counts for all words (stop words excluded)
 		for (const word of slice) {
 			if (config.stopWordsToggle && this.isStopWord(word.word)) continue;
 
@@ -126,10 +131,6 @@ export class DynamicData {
 			result.push(copy);
 		}
 
-		// Filter by time range after counts are computed
-		if (filterByTimeRange) {
-			return result.filter((word) => this.isInTimeRange(word.startTime, word.endTime));
-		}
 		return result;
 	}
 

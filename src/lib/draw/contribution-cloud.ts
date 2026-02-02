@@ -14,6 +14,7 @@ import { get } from 'svelte/store';
 import UserStore from '../../stores/userStore';
 import ConfigStore, { type ConfigStoreType } from '../../stores/configStore';
 import TranscriptStore from '../../stores/transcriptStore';
+import TimelineStore from '../../stores/timelineStore';
 import { showTooltip } from '../../stores/tooltipStore';
 import { formatTimeCompact } from '../core/time-utils';
 import { normalizeWord } from '../core/string-utils';
@@ -98,6 +99,7 @@ export class ContributionCloud {
 
 	getBufferCacheKey(filteredWordCount: number): string {
 		const userStates = this.users.map((u) => `${u.name}:${u.color}:${u.enabled}`).join(',');
+		const timeline = get(TimelineStore);
 		return [
 			this.bounds.x,
 			this.bounds.y,
@@ -110,7 +112,9 @@ export class ContributionCloud {
 			this.config.repeatWordSliderValue,
 			this.config.dashboardToggle,
 			this.config.wordToSearch || '',
-			userStates
+			userStates,
+			timeline.leftMarker,
+			timeline.rightMarker
 		].join('|');
 	}
 

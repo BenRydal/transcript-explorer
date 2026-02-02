@@ -41,6 +41,8 @@ export interface ConfigStoreType {
 	dashboardHighlightTurn: number | null;
 	// Word Rain settings
 	wordRainMinFrequency: number;
+	wordRainTemporalBinning: boolean;
+	wordRainBinCount: number;
 	// Legend overlay
 	legendVisible: boolean;
 }
@@ -90,6 +92,8 @@ export const initialConfig: ConfigStoreType = {
 	dashboardHighlightSpeaker: null,
 	dashboardHighlightTurn: null,
 	wordRainMinFrequency: 1,
+	wordRainTemporalBinning: false,
+	wordRainBinCount: 8,
 	legendVisible: true
 };
 
