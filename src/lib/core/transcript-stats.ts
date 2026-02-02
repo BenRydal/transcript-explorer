@@ -4,6 +4,7 @@
  */
 
 import type { DataPoint } from '../../models/dataPoint';
+import { normalizeWord } from './string-utils';
 
 export interface TranscriptStats {
 	largestTurnLength: number;
@@ -50,8 +51,8 @@ export function calculateTranscriptStats(wordArray: DataPoint[]): TranscriptStat
 
 		// Track word frequency (case-insensitive)
 		if (word) {
-			const lowerWord = word.toLowerCase();
-			wordFrequency.set(lowerWord, (wordFrequency.get(lowerWord) || 0) + 1);
+			const normalized = normalizeWord(word);
+			wordFrequency.set(normalized, (wordFrequency.get(normalized) || 0) + 1);
 		}
 	}
 

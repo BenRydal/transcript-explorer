@@ -16,6 +16,13 @@ export function normalizeSpeakerName(name: string): string {
 }
 
 /**
+ * Normalizes a word for case-insensitive grouping, counting, and comparison.
+ */
+export function normalizeWord(word: string): string {
+	return word.toLowerCase();
+}
+
+/**
  * Splits text into word tokens, stripping whitespace and punctuation (,?.!:;).
  */
 export function splitIntoWords(text: string): string[] {

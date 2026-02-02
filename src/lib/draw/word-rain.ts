@@ -13,6 +13,7 @@ import type { Timeline } from '../../models/timeline';
 import type { Bounds } from './types/bounds';
 import { DEFAULT_SPEAKER_COLOR } from '../constants/ui';
 import { withDimming } from './draw-utils';
+import { normalizeWord } from '../core/string-utils';
 
 const BAR_SECTION_RATIO = 0.12;
 const BAR_MIN_WIDTH = 2;
@@ -70,7 +71,7 @@ export class WordRain {
 		this.timeline = get(TimelineStore);
 		this.transcript = get(TranscriptStore);
 		this.config = get(ConfigStore);
-		this.searchTerm = this.config.wordToSearch?.toLowerCase() || '';
+		this.searchTerm = this.config.wordToSearch ? normalizeWord(this.config.wordToSearch) : '';
 	}
 
 	private getCrossHighlight(): { active: boolean; speaker: string } {
@@ -116,7 +117,7 @@ export class WordRain {
 		const map = new Map<string, AggregatedWord & { timeSum: number; speakerCounts: Map<string, number> }>();
 
 		for (const dp of words) {
-			const key = dp.word.toLowerCase();
+			const key = normalizeWord(dp.word);
 			const existing = map.get(key);
 			if (existing) {
 				existing.count++;

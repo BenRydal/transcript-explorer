@@ -13,6 +13,7 @@ import type { Timeline } from '../../models/timeline';
 import type { Bounds } from './types/bounds';
 import { DEFAULT_SPEAKER_COLOR } from '../constants/ui';
 import { withDimming } from './draw-utils';
+import { normalizeWord } from '../core/string-utils';
 
 const LEFT_MARGIN = 100;
 const BOTTOM_MARGIN = 30;
@@ -68,7 +69,7 @@ export class SpeakerHeatmap {
 
 		if (speakers.length === 0) return { hoveredCell: null, hoveredSpeaker: null };
 
-		const searchTerm = this.config.wordToSearch?.toLowerCase() || '';
+		const searchTerm = this.config.wordToSearch ? normalizeWord(this.config.wordToSearch) : '';
 		const binnedData = this.binWords(words, numBins, speakers);
 		const cellWidth = grid.width / numBins;
 		const cellHeight = grid.height / speakers.length;
@@ -219,7 +220,7 @@ export class SpeakerHeatmap {
 	}
 
 	private cellMatchesSearch(words: DataPoint[], searchTerm: string): boolean {
-		return words.some((dp) => dp.word.toLowerCase().includes(searchTerm));
+		return words.some((dp) => normalizeWord(dp.word).includes(searchTerm));
 	}
 
 	private truncateLabel(text: string, maxWidth: number): string {

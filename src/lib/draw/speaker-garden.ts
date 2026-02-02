@@ -18,6 +18,7 @@ import { showTooltip } from '../../stores/tooltipStore';
 import type { DataPoint } from '../../models/dataPoint';
 import type { User } from '../../models/user';
 import type { Bounds } from './types/bounds';
+import { normalizeWord } from '../core/string-utils';
 import { withDimming } from './draw-utils';
 import { CANVAS_SPACING } from '../constants/ui';
 import { drawFlower } from './flower-drawing';
@@ -67,7 +68,7 @@ export class SpeakerGarden {
 	}
 
 	draw(sortedAnimationWordArray: Record<string, DataPoint[]>): { hoveredSpeaker: string | null } {
-		const searchTerm = this.config.wordToSearch?.toLowerCase();
+		const searchTerm = this.config.wordToSearch ? normalizeWord(this.config.wordToSearch) : undefined;
 		this.hoveredSpeaker = null;
 
 		const hl = this.config.dashboardHighlightSpeaker;
@@ -82,7 +83,7 @@ export class SpeakerGarden {
 				if (user?.enabled) {
 					let wordsToVisualize = sortedAnimationWordArray[key];
 					if (searchTerm) {
-						wordsToVisualize = wordsToVisualize.filter((w) => w.word.toLowerCase().includes(searchTerm));
+						wordsToVisualize = wordsToVisualize.filter((w) => normalizeWord(w.word).includes(searchTerm));
 					}
 
 					if (wordsToVisualize.length > 0) {

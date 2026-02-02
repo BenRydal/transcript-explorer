@@ -12,6 +12,7 @@
 	import { applyTimingModeToWordArray, updateTimelineFromData, getMaxTime } from '$lib/core/timing-utils';
 	import type { Turn } from '$lib/core/turn-utils';
 	import { DataPoint } from '../../models/dataPoint';
+	import { normalizeWord } from '$lib/core/string-utils';
 	import { USER_COLORS, DEFAULT_SPEAKER_COLOR } from '$lib/constants/ui';
 	import EditorToolbar from './EditorToolbar.svelte';
 	import TranscriptEditorRow from './TranscriptEditorRow.svelte';
@@ -44,7 +45,7 @@
 	let displayedTurns = $derived(turns.filter((turn) => {
 		if (!enabledSpeakers.has(turn.speaker)) return false;
 		if ($EditorStore.selection.filteredSpeaker && turn.speaker !== $EditorStore.selection.filteredSpeaker) return false;
-		if ($ConfigStore.wordToSearch && !getTurnContent(turn).toLowerCase().includes($ConfigStore.wordToSearch.toLowerCase())) return false;
+		if ($ConfigStore.wordToSearch && !normalizeWord(getTurnContent(turn)).includes(normalizeWord($ConfigStore.wordToSearch))) return false;
 		return true;
 	}));
 
@@ -266,9 +267,9 @@
 			turnLengths.set(turnNumber, (turnLengths.get(turnNumber) || 0) + 1);
 
 			if (word) {
-				const lowerWord = word.toLowerCase();
-				const count = (wordFrequency.get(lowerWord) || 0) + 1;
-				wordFrequency.set(lowerWord, count);
+				const normalized = normalizeWord(word);
+				const count = (wordFrequency.get(normalized) || 0) + 1;
+				wordFrequency.set(normalized, count);
 				if (count > maxWordFrequency) {
 					maxWordFrequency = count;
 					mostFrequentWord = word;

@@ -16,6 +16,7 @@ import ConfigStore, { type ConfigStoreType } from '../../stores/configStore';
 import TranscriptStore from '../../stores/transcriptStore';
 import { showTooltip } from '../../stores/tooltipStore';
 import { formatTimeCompact } from '../core/time-utils';
+import { normalizeWord } from '../core/string-utils';
 import type { DataPoint } from '../../models/dataPoint';
 import type { User } from '../../models/user';
 import type { Bounds } from './types/bounds';
@@ -212,7 +213,7 @@ export class ContributionCloud {
 
 		this.sk.textAlign(this.sk.LEFT, this.sk.BASELINE);
 		for (const pos of positions) {
-			if (pos.word.word.toLowerCase() === hoveredWordText.toLowerCase()) {
+			if (normalizeWord(pos.word.word) === normalizeWord(hoveredWordText)) {
 				const screenX = this.bounds.x + pos.x;
 				const screenY = this.bounds.y + pos.y;
 				const isHovered = pos.word === hoveredPos.word;
@@ -253,7 +254,7 @@ export class ContributionCloud {
 		const turnContext = this.getTurnContext(word, allPositions);
 		let totalCount = 1;
 		for (const p of allPositions) {
-			if (p.word.word.toLowerCase() === word.word.toLowerCase() && p.word.speaker === word.speaker && p.word.count > totalCount) {
+			if (normalizeWord(p.word.word) === normalizeWord(word.word) && p.word.speaker === word.speaker && p.word.count > totalCount) {
 				totalCount = p.word.count;
 			}
 		}
@@ -303,6 +304,6 @@ export class ContributionCloud {
 	}
 
 	passesSearchFilter(word: DataPoint): boolean {
-		return !this.config.wordToSearch || word.word.toLowerCase().includes(this.config.wordToSearch.toLowerCase());
+		return !this.config.wordToSearch || normalizeWord(word.word).includes(normalizeWord(this.config.wordToSearch));
 	}
 }

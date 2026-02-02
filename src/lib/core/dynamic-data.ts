@@ -5,6 +5,7 @@ import UserStore from '../../stores/userStore';
 import ConfigStore, { type ConfigStoreType } from '../../stores/configStore';
 import { get } from 'svelte/store';
 import { clearScalingCache, clearCloudBuffer } from '../draw/contribution-cloud';
+import { normalizeWord } from './string-utils';
 import type { NetworkData } from '../draw/turn-network';
 
 // Module-level stop words Set (created once, shared by all instances)
@@ -83,7 +84,7 @@ export class DynamicData {
 	}
 
 	isStopWord(stringWord: string): boolean {
-		return STOP_WORDS.has(stringWord.toLowerCase());
+		return STOP_WORDS.has(normalizeWord(stringWord));
 	}
 
 	isInTimeRange(startTime: number, endTime: number): boolean {
@@ -106,7 +107,7 @@ export class DynamicData {
 			if (config.stopWordsToggle && this.isStopWord(word.word)) continue;
 
 			const copy = new DataPoint(word.speaker, word.turnNumber, word.word, word.startTime, word.endTime);
-			const countKey = `${word.speaker}\0${word.word.toLowerCase()}`;
+			const countKey = `${word.speaker}\0${normalizeWord(word.word)}`;
 			const existing = countMap.get(countKey);
 
 			if (existing) {
