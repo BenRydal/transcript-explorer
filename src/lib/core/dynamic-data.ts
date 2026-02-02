@@ -137,7 +137,32 @@ export class DynamicData {
 			if (!categorized[word.speaker]) categorized[word.speaker] = [];
 			categorized[word.speaker].push(word);
 		}
-		return categorized;
+
+		const sortOrder = config.gardenSortOrder;
+		if (sortOrder === 'default') return categorized;
+
+		const entries = Object.entries(categorized);
+		switch (sortOrder) {
+			case 'words':
+				entries.sort((a, b) => b[1].length - a[1].length);
+				break;
+			case 'turns':
+				entries.sort((a, b) => {
+					const turnsA = new Set(a[1].map((w) => w.turnNumber)).size;
+					const turnsB = new Set(b[1].map((w) => w.turnNumber)).size;
+					return turnsB - turnsA;
+				});
+				break;
+			case 'alpha':
+				entries.sort((a, b) => a[0].localeCompare(b[0]));
+				break;
+		}
+
+		const sorted: Record<string, DataPoint[]> = {};
+		for (const [key, value] of entries) {
+			sorted[key] = value;
+		}
+		return sorted;
 	}
 
 	getDynamicArrayForTurnChart(): Record<number, DataPoint[]> {

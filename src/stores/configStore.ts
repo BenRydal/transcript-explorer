@@ -2,6 +2,8 @@ import { writable, derived } from 'svelte/store';
 import type { DataPoint } from '../models/dataPoint';
 import type { Bounds } from '../lib/draw/types/bounds';
 
+export type GardenSortOrder = 'default' | 'words' | 'turns' | 'alpha';
+
 export interface ConfigStoreType {
 	speakerGardenToggle: boolean;
 	turnChartToggle: boolean;
@@ -32,6 +34,8 @@ export interface ConfigStoreType {
 	snippetDurationSeconds: number;
 	// Dashboard panel selection
 	dashboardPanels: string[];
+	// Speaker Garden settings
+	gardenSortOrder: GardenSortOrder;
 	// Dashboard cross-highlighting (written by previous frame's applyDrawResult)
 	dashboardHighlightSpeaker: string | null;
 	dashboardHighlightTurn: number | null;
@@ -77,6 +81,8 @@ export const initialConfig: ConfigStoreType = {
 	speechRateWordsPerSecond: 3,
 	// Video playback settings
 	snippetDurationSeconds: 2,
+	// Speaker Garden settings
+	gardenSortOrder: 'default',
 	// Dashboard panel selection
 	dashboardPanels: ['turnChart', 'contributionCloud', 'speakerGarden'],
 	dashboardHighlightSpeaker: null,

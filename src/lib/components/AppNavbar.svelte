@@ -1,8 +1,7 @@
 <script lang="ts">
 	import { CircleHelp, CloudUpload, FilePlus, Video, VideoOff, Check, Settings, Text, ChartBar, SlidersHorizontal, Menu, X, Keyboard, GraduationCap, Landmark, Mic } from '@lucide/svelte';
 	import IconButton from './IconButton.svelte';
-	import ConfigStore from '../../stores/configStore';
-	import type { ConfigStoreType } from '../../stores/configStore';
+	import ConfigStore, { type ConfigStoreType, type GardenSortOrder } from '../../stores/configStore';
 
 	interface Props {
 		selectedExample?: string;
@@ -111,6 +110,27 @@
 			...store,
 			[selection]: !store[selection]
 		}));
+	}
+
+	const GARDEN_SORT_CYCLE: GardenSortOrder[] = ['default', 'words', 'turns', 'alpha'];
+	const GARDEN_SORT_LABELS: Record<GardenSortOrder, string> = {
+		default: 'Sort by Appearance',
+		words: 'Sort by Word Count',
+		turns: 'Sort by Turn Count',
+		alpha: 'Sort by A–Z'
+	};
+
+	let showGardenSort = $derived(
+		$ConfigStore.speakerGardenToggle ||
+		($ConfigStore.dashboardToggle && $ConfigStore.dashboardPanels.includes('speakerGarden'))
+	);
+
+	function cycleGardenSort() {
+		ConfigStore.update((store) => {
+			const idx = GARDEN_SORT_CYCLE.indexOf(store.gardenSortOrder);
+			const next = GARDEN_SORT_CYCLE[(idx + 1) % GARDEN_SORT_CYCLE.length];
+			return { ...store, gardenSortOrder: next };
+		});
 	}
 
 	function handleConfigChangeFromInput(e: Event, key: keyof ConfigStoreType) {
@@ -245,6 +265,13 @@
 							</button>
 						</li>
 					{/each}
+					{#if showGardenSort}
+						<li>
+							<button onclick={cycleGardenSort} class="w-full text-left flex items-center">
+								{GARDEN_SORT_LABELS[$ConfigStore.gardenSortOrder]}
+							</button>
+						</li>
+					{/if}
 					{#if showRepeatedWordsSlider}
 						<li class="cursor-default">
 							<p>Repeated Word Filter: {$ConfigStore.repeatWordSliderValue}</p>
@@ -371,6 +398,11 @@
 						</button>
 					{/each}
 				</div>
+				{#if showGardenSort}
+					<button class="btn btn-sm {$ConfigStore.gardenSortOrder !== 'default' ? 'btn-primary' : 'btn-ghost'}" onclick={cycleGardenSort}>
+						{GARDEN_SORT_LABELS[$ConfigStore.gardenSortOrder]}
+					</button>
+				{/if}
 				{#if showRepeatedWordsSlider}
 					<div class="mt-2">
 						<label for="repeatWordRangeMobile" class="text-sm">Repeated Word Filter: {$ConfigStore.repeatWordSliderValue}</label>
