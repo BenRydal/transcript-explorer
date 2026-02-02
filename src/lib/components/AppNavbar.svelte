@@ -45,7 +45,7 @@
 		speakerGarden: [],
 		turnChart: ['separateToggle', 'silenceOverlapToggle'],
 		contributionCloud: ['separateToggle', 'sortToggle', 'lastWordToggle', 'echoWordsToggle', 'stopWordsToggle', 'repeatedWordsToggle'],
-		wordRain: ['stopWordsToggle'],
+		wordRain: ['separateToggle', 'stopWordsToggle'],
 		turnNetwork: [],
 		speakerHeatmap: [],
 		turnLength: []

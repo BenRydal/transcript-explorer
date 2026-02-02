@@ -38,7 +38,8 @@
 				{ symbol: '\u2194', label: 'Position \u2192 mean time of word' },
 				{ symbol: 'A', label: 'Text size \u2192 total occurrences' },
 				{ symbol: '\u2502', label: 'Bar height \u2192 total occurrences' },
-				{ speakerColors: true, label: 'Color \u2192 dominant speaker' }
+				{ speakerColors: true, label: 'Color \u2192 dominant speaker' },
+				{ symbol: '\u25A0', label: 'Gray \u2192 shared across speakers' }
 			]
 		},
 		speakerHeatmap: {
