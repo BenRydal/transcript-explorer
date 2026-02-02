@@ -251,7 +251,12 @@ export class ContributionCloud {
 	showWordTooltip(pos: WordPosition, allPositions: WordPosition[]): void {
 		const { word, user } = pos;
 		const turnContext = this.getTurnContext(word, allPositions);
-		const totalCount = allPositions.find((p) => p.word.word === word.word)?.word.count || 1;
+		let totalCount = 1;
+		for (const p of allPositions) {
+			if (p.word.word === word.word && p.word.speaker === word.speaker && p.word.count > totalCount) {
+				totalCount = p.word.count;
+			}
+		}
 
 		let content = `<b>${word.speaker}:</b> ${turnContext || word.word}`;
 
@@ -267,20 +272,19 @@ export class ContributionCloud {
 	}
 
 	getTurnContext(word: DataPoint, allPositions: WordPosition[]): string | null {
-		const turnWords = allPositions
+		const turnPositions = allPositions
 			.filter((p) => p.word.turnNumber === word.turnNumber)
-			.sort((a, b) => a.word.startTime - b.word.startTime)
-			.map((p) => p.word.word);
+			.sort((a, b) => a.word.startTime - b.word.startTime);
 
-		if (turnWords.length === 0) return null;
+		if (turnPositions.length === 0) return null;
 
-		const wordIndex = turnWords.findIndex((w) => w === word.word);
-		const parts = turnWords.map((w, i) => (i === wordIndex ? `<b>${w}</b>` : w));
+		const hoveredIndex = turnPositions.findIndex((p) => p.word === word);
+		const parts = turnPositions.map((p, i) => (i === hoveredIndex ? `<b>${p.word.word}</b>` : p.word.word));
 
 		let sentence = parts.join(' ');
-		if (sentence.length > MAX_TOOLTIP_LENGTH && wordIndex >= 0) {
-			const start = Math.max(0, wordIndex - 8);
-			const end = Math.min(parts.length, wordIndex + 12);
+		if (sentence.length > MAX_TOOLTIP_LENGTH && hoveredIndex >= 0) {
+			const start = Math.max(0, hoveredIndex - 8);
+			const end = Math.min(parts.length, hoveredIndex + 12);
 			sentence = (start > 0 ? '... ' : '') + parts.slice(start, end).join(' ') + (end < parts.length ? ' ...' : '');
 		}
 
@@ -288,6 +292,8 @@ export class ContributionCloud {
 	}
 
 	isWordVisible(word: DataPoint): boolean {
+		const user = this.userMap.get(word.speaker);
+		if (user && !user.enabled) return false;
 		if (this.config.dashboardToggle) {
 			const mouseInPanel = this.sk.overRect(this.bounds.x, this.bounds.y, this.bounds.width, this.bounds.height);
 			if (!mouseInPanel && !this.sk.shouldDraw(word)) return false;

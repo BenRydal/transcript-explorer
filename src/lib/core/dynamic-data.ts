@@ -106,7 +106,8 @@ export class DynamicData {
 			if (config.stopWordsToggle && this.isStopWord(word.word)) continue;
 
 			const copy = new DataPoint(word.speaker, word.turnNumber, word.word, word.startTime, word.endTime);
-			const existing = countMap.get(word.word);
+			const countKey = `${word.speaker}\0${word.word}`;
+			const existing = countMap.get(countKey);
 
 			if (existing) {
 				if (config.lastWordToggle) {
@@ -119,7 +120,7 @@ export class DynamicData {
 				}
 				existing.push(copy);
 			} else {
-				countMap.set(word.word, [copy]);
+				countMap.set(countKey, [copy]);
 			}
 			result.push(copy);
 		}
@@ -177,13 +178,22 @@ export class DynamicData {
 	getDynamicArraySortedForContributionCloud(): DataPoint[] {
 		const words = this.getProcessedWords(true);
 
-		if (config.sortToggle) {
-			words.sort((a, b) => b.count - a.count);
-		}
-		if (config.separateToggle) {
-			const users = get(UserStore);
-			const speakerOrder = new Map(users.map((u, i) => [u.name, i]));
-			words.sort((a, b) => (speakerOrder.get(a.speaker) ?? 999) - (speakerOrder.get(b.speaker) ?? 999));
+		const needsSeparate = config.separateToggle;
+		const needsSort = config.sortToggle;
+
+		if (needsSeparate || needsSort) {
+			const speakerOrder = needsSeparate
+				? new Map(get(UserStore).map((u, i) => [u.name, i]))
+				: null;
+
+			words.sort((a, b) => {
+				if (speakerOrder) {
+					const speakerDiff = (speakerOrder.get(a.speaker) ?? 999) - (speakerOrder.get(b.speaker) ?? 999);
+					if (speakerDiff !== 0) return speakerDiff;
+				}
+				if (needsSort) return b.count - a.count;
+				return 0;
+			});
 		}
 
 		return words;

@@ -84,16 +84,32 @@
 		($ConfigStore.dashboardToggle && $ConfigStore.dashboardPanels.includes('contributionCloud'))
 	);
 
-	let activeVisualization = $derived(techniqueToggleOptions.find((t) => $ConfigStore[t]) || '');
-	let activeVisualizationName = $derived(activeVisualization ? formatToggleName(activeVisualization) : 'Select');
+	const TOGGLE_LABELS: Record<string, string> = {
+		// Visualizations
+		speakerGardenToggle: 'Speaker Garden',
+		turnChartToggle: 'Turn Chart',
+		contributionCloudToggle: 'Contribution Cloud',
+		turnNetworkToggle: 'Turn Network',
+		wordRainToggle: 'Word Rain',
+		speakerHeatmapToggle: 'Speaker Heatmap',
+		turnLengthToggle: 'Turn Length',
+		dashboardToggle: 'Dashboard',
+		// Options
+		separateToggle: 'Group by Speaker',
+		silenceOverlapToggle: 'Silence Overlap',
+		sortToggle: 'Sort by Frequency',
+		lastWordToggle: 'Emphasize Last Word',
+		echoWordsToggle: 'Echo Last Words',
+		stopWordsToggle: 'Hide Stop Words',
+		repeatedWordsToggle: 'Only Repeated Words'
+	};
 
 	function formatToggleName(toggle: string) {
-		return toggle
-			.replace('Toggle', '')
-			.replace(/([A-Z])/g, ' $1')
-			.trim()
-			.replace(/^./, (str) => str.toUpperCase());
+		return TOGGLE_LABELS[toggle] ?? toggle;
 	}
+
+	let activeVisualization = $derived(techniqueToggleOptions.find((t) => $ConfigStore[t]) || '');
+	let activeVisualizationName = $derived(activeVisualization ? formatToggleName(activeVisualization) : 'Select');
 
 	function toggleSelection(selection: string, toggleOptions: readonly string[]) {
 		ConfigStore.update((store) => {
@@ -274,10 +290,10 @@
 					{/if}
 					{#if showRepeatedWordsSlider}
 						<li class="cursor-default">
-							<p>Repeated Word Filter: {$ConfigStore.repeatWordSliderValue}</p>
+							<p>Size Range: {$ConfigStore.repeatWordSliderValue}</p>
 						</li>
 						<li>
-							<label for="repeatWordRange" class="sr-only">Repeated word filter</label>
+							<label for="repeatWordRange" class="sr-only">Word size range</label>
 							<input
 								id="repeatWordRange"
 								type="range"
@@ -290,7 +306,7 @@
 						</li>
 					{/if}
 					<hr class="my-4 border-t border-gray-300" />
-					<input type="text" placeholder="Search conversations..." oninput={handleWordSearch} class="input input-bordered w-full" />
+					<input type="text" placeholder="Filter words..." oninput={handleWordSearch} class="input input-bordered w-full" />
 				</ul>
 			</details>
 		</div>
@@ -405,7 +421,7 @@
 				{/if}
 				{#if showRepeatedWordsSlider}
 					<div class="mt-2">
-						<label for="repeatWordRangeMobile" class="text-sm">Repeated Word Filter: {$ConfigStore.repeatWordSliderValue}</label>
+						<label for="repeatWordRangeMobile" class="text-sm">Size Range: {$ConfigStore.repeatWordSliderValue}</label>
 						<input
 							id="repeatWordRangeMobile"
 							type="range"
@@ -417,7 +433,7 @@
 						/>
 					</div>
 				{/if}
-				<input type="text" placeholder="Search conversations..." oninput={handleWordSearch} class="input input-bordered input-sm w-full mt-2" />
+				<input type="text" placeholder="Filter words..." oninput={handleWordSearch} class="input input-bordered input-sm w-full mt-2" />
 			</div>
 
 			<!-- Quick Actions -->
