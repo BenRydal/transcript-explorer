@@ -29,7 +29,22 @@ export interface ConfigStoreType {
 	speechRateWordsPerSecond: number;
 	// Video playback settings
 	snippetDurationSeconds: number;
+	// Dashboard panel selection
+	dashboardPanels: string[];
+	// Dashboard cross-highlighting (written by previous frame's applyDrawResult)
+	dashboardHighlightSpeaker: string | null;
+	dashboardHighlightTurn: number | null;
 }
+
+export const DASHBOARD_PANEL_OPTIONS = [
+	{ key: 'speakerGarden', label: 'Speaker Garden' },
+	{ key: 'turnChart', label: 'Turn Chart' },
+	{ key: 'contributionCloud', label: 'Contribution Cloud' },
+	{ key: 'turnNetwork', label: 'Turn Network' },
+	{ key: 'wordRain', label: 'Word Rain' },
+	{ key: 'speakerHeatmap', label: 'Speaker Heatmap' },
+	{ key: 'turnLength', label: 'Turn Length' }
+] as const;
 
 export const initialConfig: ConfigStoreType = {
 	speakerGardenToggle: true,
@@ -58,7 +73,11 @@ export const initialConfig: ConfigStoreType = {
 	preserveGapsBetweenTurns: true,
 	speechRateWordsPerSecond: 3,
 	// Video playback settings
-	snippetDurationSeconds: 2
+	snippetDurationSeconds: 2,
+	// Dashboard panel selection
+	dashboardPanels: ['turnChart', 'contributionCloud', 'speakerGarden'],
+	dashboardHighlightSpeaker: null,
+	dashboardHighlightTurn: null
 };
 
 const ConfigStore = writable<ConfigStoreType>(initialConfig);

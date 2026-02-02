@@ -1,7 +1,7 @@
 import type p5 from 'p5';
 import { get } from 'svelte/store';
 import UserStore from '../../stores/userStore';
-import ConfigStore from '../../stores/configStore';
+import ConfigStore, { type ConfigStoreType } from '../../stores/configStore';
 import TranscriptStore from '../../stores/transcriptStore';
 import TimelineStore from '../../stores/timelineStore';
 import { showTooltip } from '../../stores/tooltipStore';
@@ -12,9 +12,11 @@ import type { Transcript } from '../../models/transcript';
 import type { Timeline } from '../../models/timeline';
 import type { Bounds } from './types/bounds';
 import { DEFAULT_SPEAKER_COLOR } from '../constants/ui';
+import { withDimming } from './draw-utils';
 
 const LEFT_MARGIN = 100;
 const BOTTOM_MARGIN = 30;
+const MAX_MARGIN_RATIO = 0.3;
 const CELL_PADDING = 1;
 const MIN_OPACITY = 10;
 const MAX_OPACITY = 230;
@@ -47,6 +49,7 @@ export class SpeakerHeatmap {
 	private userMap: Map<string, User>;
 	private timeline: Timeline;
 	private transcript: Transcript;
+	private config: ConfigStoreType;
 
 	constructor(sk: p5, bounds: Bounds) {
 		this.sk = sk;
@@ -55,16 +58,17 @@ export class SpeakerHeatmap {
 		this.userMap = new Map(this.users.map((user) => [user.name, user]));
 		this.timeline = get(TimelineStore);
 		this.transcript = get(TranscriptStore);
+		this.config = get(ConfigStore);
 	}
 
-	draw(words: DataPoint[]): { hoveredCell: DataPoint | null } {
+	draw(words: DataPoint[]): { hoveredCell: DataPoint | null; hoveredSpeaker: string | null } {
 		const speakers = this.users.filter((u) => u.enabled).map((u) => u.name);
 		const grid = this.getGridBounds();
 		const numBins = Math.max(1, Math.floor(grid.width / TARGET_CELL_WIDTH));
 
-		if (speakers.length === 0) return { hoveredCell: null };
+		if (speakers.length === 0) return { hoveredCell: null, hoveredSpeaker: null };
 
-		const searchTerm = get(ConfigStore).wordToSearch?.toLowerCase() || '';
+		const searchTerm = this.config.wordToSearch?.toLowerCase() || '';
 		const binnedData = this.binWords(words, numBins, speakers);
 		const cellWidth = grid.width / numBins;
 		const cellHeight = grid.height / speakers.length;
@@ -79,15 +83,17 @@ export class SpeakerHeatmap {
 			this.showCellTooltip(hovered, binnedData);
 		}
 
-		return { hoveredCell: hovered?.words[0] || null };
+		return { hoveredCell: hovered?.words[0] || null, hoveredSpeaker: hovered?.speaker || null };
 	}
 
 	private getGridBounds(): Bounds {
+		const leftMargin = Math.min(LEFT_MARGIN, this.bounds.width * MAX_MARGIN_RATIO);
+		const bottomMargin = Math.min(BOTTOM_MARGIN, this.bounds.height * MAX_MARGIN_RATIO);
 		return {
-			x: this.bounds.x + LEFT_MARGIN,
+			x: this.bounds.x + leftMargin,
 			y: this.bounds.y,
-			width: this.bounds.width - LEFT_MARGIN,
-			height: this.bounds.height - BOTTOM_MARGIN
+			width: this.bounds.width - leftMargin,
+			height: this.bounds.height - bottomMargin
 		};
 	}
 
@@ -95,15 +101,21 @@ export class SpeakerHeatmap {
 		this.sk.textSize(Math.min(12, cellHeight * 0.7));
 		this.sk.textAlign(this.sk.RIGHT, this.sk.CENTER);
 		this.sk.noStroke();
+		const labelWidth = grid.x - this.bounds.x - 10;
 		for (let row = 0; row < speakers.length; row++) {
 			const user = this.userMap.get(speakers[row]);
 			this.sk.fill(user?.color || DEFAULT_SPEAKER_COLOR);
-			const label = this.truncateLabel(speakers[row], LEFT_MARGIN - 10);
+			const label = this.truncateLabel(speakers[row], labelWidth);
 			this.sk.text(label, grid.x - 8, grid.y + row * cellHeight + cellHeight / 2);
 		}
 	}
 
 	private drawCells(binnedData: BinnedData, speakers: string[], grid: Bounds, cellWidth: number, cellHeight: number, searchTerm: string): void {
+		const hl = this.config.dashboardHighlightSpeaker;
+		const hlTurn = this.config.dashboardHighlightTurn;
+		const mouseInPanel = this.sk.overRect(this.bounds.x, this.bounds.y, this.bounds.width, this.bounds.height);
+		const crossHighlightActive = this.config.dashboardToggle && (hl != null || hlTurn != null) && !mouseInPanel;
+
 		this.sk.noStroke();
 		for (let col = 0; col < binnedData.bins.length; col++) {
 			const bin = binnedData.bins[col];
@@ -114,19 +126,25 @@ export class SpeakerHeatmap {
 				const cw = cellWidth - CELL_PADDING * 2;
 				const ch = cellHeight - CELL_PADDING * 2;
 
-				if (cellWords.length > 0) {
-					const user = this.userMap.get(speakers[row]);
-					let alpha = this.sk.map(cellWords.length, 0, binnedData.maxCellCount, MIN_OPACITY, MAX_OPACITY);
-					if (searchTerm && !this.cellMatchesSearch(cellWords, searchTerm)) {
-						alpha *= 0.2;
+				const shouldDim = crossHighlightActive && (
+					(hl != null && speakers[row] !== hl) ||
+					(hlTurn != null && !cellWords.some((w) => w.turnNumber === hlTurn))
+				);
+				withDimming(this.sk.drawingContext, shouldDim, () => {
+					if (cellWords.length > 0) {
+						const user = this.userMap.get(speakers[row]);
+						let alpha = this.sk.map(cellWords.length, 0, binnedData.maxCellCount, MIN_OPACITY, MAX_OPACITY);
+						if (searchTerm && !this.cellMatchesSearch(cellWords, searchTerm)) {
+							alpha *= 0.2;
+						}
+						const c = this.sk.color(user!.color);
+						c.setAlpha(alpha);
+						this.sk.fill(c);
+					} else {
+						this.sk.fill(245);
 					}
-					const c = this.sk.color(user!.color);
-					c.setAlpha(alpha);
-					this.sk.fill(c);
-				} else {
-					this.sk.fill(245);
-				}
-				this.sk.rect(x, y, cw, ch);
+					this.sk.rect(x, y, cw, ch);
+				});
 			}
 		}
 	}
@@ -136,7 +154,7 @@ export class SpeakerHeatmap {
 		if (numBins === 0) return;
 
 		const isUntimed = this.transcript.timingMode === 'untimed';
-		this.sk.textSize(10);
+		this.sk.textSize(Math.max(8, Math.min(10, this.bounds.height * 0.03)));
 		this.sk.fill(120);
 		this.sk.noStroke();
 
@@ -197,7 +215,7 @@ export class SpeakerHeatmap {
 			: `${formatTimeCompact(bin.startTime)} - ${formatTimeCompact(bin.endTime)}`;
 
 		const content = `<b>${hovered.speaker}</b>\n${text}\n<span style="font-size: 0.85em; opacity: 0.7">${timeRange}</span>`;
-		showTooltip(this.sk.mouseX, this.sk.mouseY, content, user?.color || DEFAULT_SPEAKER_COLOR, this.sk.height);
+		showTooltip(this.sk.mouseX, this.sk.mouseY, content, user?.color || DEFAULT_SPEAKER_COLOR, this.bounds.y + this.bounds.height);
 	}
 
 	private cellMatchesSearch(words: DataPoint[], searchTerm: string): boolean {

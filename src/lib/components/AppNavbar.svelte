@@ -42,18 +42,15 @@
 
 	const techniqueToggleOptions = ['speakerGardenToggle', 'turnChartToggle', 'contributionCloudToggle', 'turnNetworkToggle', 'wordRainToggle', 'speakerHeatmapToggle', 'turnLengthToggle', 'dashboardToggle'] as const;
 
-	const speakerGardenInteractions = [] as const;
-	const turnChartInteractions = ['separateToggle', 'silenceOverlapToggle'] as const;
-	const contributionCloudInteractions = [
-		'separateToggle',
-		'sortToggle',
-		'lastWordToggle',
-		'echoWordsToggle',
-		'stopWordsToggle',
-		'repeatedWordsToggle'
-	] as const;
-	const wordRainInteractions = ['stopWordsToggle'] as const;
-	const allInteractions = [...new Set([...speakerGardenInteractions, ...turnChartInteractions, ...contributionCloudInteractions, ...wordRainInteractions])] as const;
+	const panelInteractionMap: Record<string, readonly (keyof ConfigStoreType)[]> = {
+		speakerGarden: [],
+		turnChart: ['separateToggle', 'silenceOverlapToggle'],
+		contributionCloud: ['separateToggle', 'sortToggle', 'lastWordToggle', 'echoWordsToggle', 'stopWordsToggle', 'repeatedWordsToggle'],
+		wordRain: ['stopWordsToggle'],
+		turnNetwork: [],
+		speakerHeatmap: [],
+		turnLength: []
+	};
 
 	const exampleOptions = [
 		{ value: 'example-1', label: 'Kindergarten Activity', icon: GraduationCap },
@@ -63,21 +60,30 @@
 		{ value: 'example-5', label: 'Biden-Trump 2020 Debate', icon: Mic }
 	];
 
-	let visibleInteractions = $derived($ConfigStore.dashboardToggle
-		? allInteractions
-		: $ConfigStore.speakerGardenToggle
-			? speakerGardenInteractions
-			: $ConfigStore.turnChartToggle
-				? turnChartInteractions
-				: $ConfigStore.contributionCloudToggle
-					? contributionCloudInteractions
-					: $ConfigStore.wordRainToggle
-						? wordRainInteractions
-						: $ConfigStore.speakerHeatmapToggle || $ConfigStore.turnLengthToggle
-							? []
-							: allInteractions);
+	function getInteractionsForPanels(panelKeys: string[]): (keyof ConfigStoreType)[] {
+		const set = new Set<keyof ConfigStoreType>();
+		for (const key of panelKeys) {
+			for (const interaction of (panelInteractionMap[key] ?? [])) {
+				set.add(interaction);
+			}
+		}
+		return [...set];
+	}
 
-	let showRepeatedWordsSlider = $derived($ConfigStore.contributionCloudToggle || $ConfigStore.dashboardToggle);
+	let visibleInteractions = $derived.by(() => {
+		if ($ConfigStore.dashboardToggle) {
+			return getInteractionsForPanels($ConfigStore.dashboardPanels);
+		}
+		const activeToggle = techniqueToggleOptions.find((t) => $ConfigStore[t]);
+		if (!activeToggle) return getInteractionsForPanels(Object.keys(panelInteractionMap));
+		const panelKey = activeToggle.replace('Toggle', '');
+		return panelKey in panelInteractionMap ? getInteractionsForPanels([panelKey]) : [];
+	});
+
+	let showRepeatedWordsSlider = $derived(
+		$ConfigStore.contributionCloudToggle ||
+		($ConfigStore.dashboardToggle && $ConfigStore.dashboardPanels.includes('contributionCloud'))
+	);
 
 	let activeVisualization = $derived(techniqueToggleOptions.find((t) => $ConfigStore[t]) || '');
 	let activeVisualizationName = $derived(activeVisualization ? formatToggleName(activeVisualization) : 'Select');
@@ -226,7 +232,7 @@
 						<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" />
 					</svg>
 				</summary>
-				<ul class="menu dropdown-content rounded-box z-[1] w-52 p-2 shadow bg-base-100">
+				<ul class="menu dropdown-content rounded-box z-[1] w-52 p-2 shadow bg-base-100 max-h-[70vh] overflow-y-auto">
 					{#each visibleInteractions as toggle}
 						<li>
 							<button onclick={() => toggleSelectionOnly(toggle)} class="w-full text-left flex items-center">

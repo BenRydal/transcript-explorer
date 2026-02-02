@@ -18,6 +18,8 @@ import { showTooltip } from '../../stores/tooltipStore';
 import type { DataPoint } from '../../models/dataPoint';
 import type { User } from '../../models/user';
 import type { Bounds } from './types/bounds';
+import { withDimming } from './draw-utils';
+import { CANVAS_SPACING } from '../constants/ui';
 import { drawFlower } from './flower-drawing';
 
 const MIN_FLOWER_SIZE = 25; // Minimum flower radius so small speakers are still visible
@@ -68,6 +70,10 @@ export class SpeakerGarden {
 		const searchTerm = this.config.wordToSearch?.toLowerCase();
 		this.hoveredSpeaker = null;
 
+		const hl = this.config.dashboardHighlightSpeaker;
+		const mouseInPanel = this.sk.overRect(this.bounds.x, this.bounds.y, this.bounds.width, this.bounds.height);
+		const crossHighlightActive = this.config.dashboardToggle && hl != null && !mouseInPanel;
+
 		this.drawFlowerGuideLines();
 
 		for (const key in sortedAnimationWordArray) {
@@ -80,7 +86,9 @@ export class SpeakerGarden {
 					}
 
 					if (wordsToVisualize.length > 0) {
-						this.drawViz(wordsToVisualize);
+						withDimming(this.sk.drawingContext, crossHighlightActive && wordsToVisualize[0].speaker !== hl, () => {
+							this.drawViz(wordsToVisualize);
+						});
 					}
 				}
 			}
@@ -140,12 +148,13 @@ export class SpeakerGarden {
 		this.sk.stroke(0);
 		this.sk.strokeWeight(2);
 		this.sk.line(xLeft, top, xLeft, bottom);
-		this.sk.line(xLeft - this.sk.SPACING / 2, top, xLeft + this.sk.SPACING / 2, top);
+		this.sk.line(xLeft - CANVAS_SPACING / 2, top, xLeft + CANVAS_SPACING / 2, top);
 
 		this.sk.fill(0);
 		this.sk.noStroke();
-		this.sk.textSize(16);
-		this.sk.text(`${this.largestNumOfTurnsByASpeaker} Turns`, xLeft - this.sk.SPACING / 2, top - this.sk.SPACING / 2);
+		this.sk.textAlign(this.sk.LEFT, this.sk.BASELINE);
+		this.sk.textSize(Math.max(10, Math.min(16, this.bounds.height * 0.04)));
+		this.sk.text(`${this.largestNumOfTurnsByASpeaker} Turns`, xLeft - CANVAS_SPACING / 2, top - CANVAS_SPACING / 2);
 	}
 
 	calculateNumOfTurns(objects: DataPoint[]): number {
@@ -183,7 +192,7 @@ export class SpeakerGarden {
 		const statsLine = `${numOfWords} total words (${wordPercent}%)\n${numOfTurns} turns (${turnPercent}%)`;
 		const tooltipContent = `<b>First word of each turn:</b>\n${firstWordsLine}\n\n${statsLine}`;
 
-		showTooltip(this.sk.mouseX, this.sk.mouseY, tooltipContent, speakerColor, this.sk.height);
+		showTooltip(this.sk.mouseX, this.sk.mouseY, tooltipContent, speakerColor, this.bounds.y + this.bounds.height);
 	}
 
 	getMaxCircleRadius(pixelWidth: number): number {

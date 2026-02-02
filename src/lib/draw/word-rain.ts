@@ -1,7 +1,7 @@
 import type p5 from 'p5';
 import { get } from 'svelte/store';
 import UserStore from '../../stores/userStore';
-import ConfigStore from '../../stores/configStore';
+import ConfigStore, { type ConfigStoreType } from '../../stores/configStore';
 import TranscriptStore from '../../stores/transcriptStore';
 import TimelineStore from '../../stores/timelineStore';
 import { showTooltip } from '../../stores/tooltipStore';
@@ -12,18 +12,19 @@ import type { Transcript } from '../../models/transcript';
 import type { Timeline } from '../../models/timeline';
 import type { Bounds } from './types/bounds';
 import { DEFAULT_SPEAKER_COLOR } from '../constants/ui';
+import { withDimming } from './draw-utils';
 
 const BAR_SECTION_RATIO = 0.12;
 const BAR_MIN_WIDTH = 2;
 const BAR_MAX_WIDTH = 10;
-const TEXT_MIN_SIZE = 10;
-const TEXT_MAX_SIZE = 28;
+const TEXT_MIN_RATIO = 0.03;
+const TEXT_MAX_RATIO = 0.09;
 const CONNECTOR_MIN_ALPHA = 40;
 const CONNECTOR_MAX_ALPHA = 150;
 const CONNECTOR_MIN_WEIGHT = 0.5;
 const CONNECTOR_MAX_WEIGHT = 2.5;
 const HOVER_OVERLAY_ALPHA = 200;
-const BOTTOM_MARGIN = 20;
+const BOTTOM_MARGIN_RATIO = 0.05;
 const TIME_LABEL_COUNT = 6;
 const DOMINANCE_THRESHOLD = 0.6;
 const SHARED_WORD_COLOR = '#aaaaaa';
@@ -57,6 +58,7 @@ export class WordRain {
 	private timeline: Timeline;
 	private transcript: Transcript;
 	private searchTerm: string;
+	private config: ConfigStoreType;
 
 	constructor(sk: p5, bounds: Bounds) {
 		this.sk = sk;
@@ -65,28 +67,38 @@ export class WordRain {
 		this.userMap = new Map(users.map((u) => [u.name, u]));
 		this.timeline = get(TimelineStore);
 		this.transcript = get(TranscriptStore);
-		this.searchTerm = get(ConfigStore).wordToSearch?.toLowerCase() || '';
+		this.config = get(ConfigStore);
+		this.searchTerm = this.config.wordToSearch?.toLowerCase() || '';
 	}
 
-	draw(words: DataPoint[]): { hoveredOccurrences: DataPoint[] } {
+	private getCrossHighlight(): { active: boolean; speaker: string } {
+		const hl = this.config.dashboardHighlightSpeaker;
+		if (!hl || !this.config.dashboardToggle) return { active: false, speaker: '' };
+		const mouseInPanel = this.sk.overRect(this.bounds.x, this.bounds.y, this.bounds.width, this.bounds.height);
+		return { active: !mouseInPanel, speaker: hl };
+	}
+
+	draw(words: DataPoint[]): { hoveredOccurrences: DataPoint[]; hoveredSpeaker: string | null } {
 		const aggregated = this.aggregateWords(words);
 		const filtered = this.searchTerm
 			? aggregated.filter((a) => a.word.includes(this.searchTerm))
 			: aggregated;
 
-		if (filtered.length === 0) return { hoveredOccurrences: [] };
+		if (filtered.length === 0) return { hoveredOccurrences: [], hoveredSpeaker: null };
 
 		filtered.sort((a, b) => b.count - a.count);
 		const maxCount = filtered[0].count;
 
 		const barSectionHeight = this.bounds.height * BAR_SECTION_RATIO;
 		const textAreaTop = this.bounds.y + barSectionHeight;
-		const textAreaBottom = this.bounds.y + this.bounds.height - BOTTOM_MARGIN;
+		const bottomMargin = Math.max(15, this.bounds.height * BOTTOM_MARGIN_RATIO);
+		const textAreaBottom = this.bounds.y + this.bounds.height - bottomMargin;
 
 		const placed = this.layoutWords(filtered, maxCount, barSectionHeight, textAreaTop, textAreaBottom);
-		this.renderBars(placed);
-		this.renderConnectors(placed);
-		this.renderWords(placed);
+		const xhl = this.getCrossHighlight();
+		this.renderBars(placed, xhl);
+		this.renderConnectors(placed, xhl);
+		this.renderWords(placed, xhl);
 		this.drawTimeLabels();
 
 		const hovered = this.findHoveredWord(placed);
@@ -95,7 +107,7 @@ export class WordRain {
 			this.showWordTooltip(hovered);
 		}
 
-		return { hoveredOccurrences: hovered?.agg.occurrences ?? [] };
+		return { hoveredOccurrences: hovered?.agg.occurrences ?? [], hoveredSpeaker: hovered?.agg.dominantSpeaker ?? null };
 	}
 
 	private aggregateWords(words: DataPoint[]): AggregatedWord[] {
@@ -161,13 +173,15 @@ export class WordRain {
 			const x = this.bounds.x + t * this.bounds.width;
 
 			const sizeT = maxCount > 1 ? (agg.count - 1) / (maxCount - 1) : 0;
-			const textSize = TEXT_MIN_SIZE + sizeT * (TEXT_MAX_SIZE - TEXT_MIN_SIZE);
+			const minSize = Math.max(8, this.bounds.height * TEXT_MIN_RATIO);
+			const maxSize = Math.max(12, this.bounds.height * TEXT_MAX_RATIO);
+			const textSize = minSize + sizeT * (maxSize - minSize);
 
 			this.sk.textSize(textSize);
 			const wordWidth = this.sk.textWidth(agg.word);
 
-			// Center word horizontally on x, clamp to bounds
-			let left = Math.round(x - wordWidth / 2);
+			// Center word horizontally on x, clamp to bounds (left is bounds-relative)
+			let left = Math.round(x - this.bounds.x - wordWidth / 2);
 			left = Math.max(0, Math.min(pixelWidth - Math.ceil(wordWidth), left));
 			const right = Math.min(pixelWidth - 1, left + Math.ceil(wordWidth));
 
@@ -210,37 +224,43 @@ export class WordRain {
 		return placed;
 	}
 
-	private renderBars(placed: PlacedWord[]): void {
+	private renderBars(placed: PlacedWord[], xhl: { active: boolean; speaker: string }): void {
 		this.sk.noStroke();
 		for (const pw of placed) {
-			const c = this.sk.color(pw.color);
-			c.setAlpha(180);
-			this.sk.fill(c);
-			const barX = pw.x + pw.width / 2 - pw.barW / 2;
-			this.sk.rect(barX, pw.barY, pw.barW, pw.barH);
+			withDimming(this.sk.drawingContext, xhl.active && pw.agg.dominantSpeaker !== xhl.speaker, () => {
+				const c = this.sk.color(pw.color);
+				c.setAlpha(180);
+				this.sk.fill(c);
+				const barX = pw.x + pw.width / 2 - pw.barW / 2;
+				this.sk.rect(barX, pw.barY, pw.barW, pw.barH);
+			});
 		}
 	}
 
-	private renderConnectors(placed: PlacedWord[]): void {
+	private renderConnectors(placed: PlacedWord[], xhl: { active: boolean; speaker: string }): void {
 		for (const pw of placed) {
-			const alpha = CONNECTOR_MIN_ALPHA + pw.countRatio * (CONNECTOR_MAX_ALPHA - CONNECTOR_MIN_ALPHA);
-			const weight = CONNECTOR_MIN_WEIGHT + pw.countRatio * (CONNECTOR_MAX_WEIGHT - CONNECTOR_MIN_WEIGHT);
-			const c = this.sk.color(pw.color);
-			c.setAlpha(alpha);
-			this.sk.stroke(c);
-			this.sk.strokeWeight(weight);
-			const centerX = pw.x + pw.width / 2;
-			this.sk.line(centerX, pw.barY + pw.barH, centerX, pw.y - pw.textSize);
+			withDimming(this.sk.drawingContext, xhl.active && pw.agg.dominantSpeaker !== xhl.speaker, () => {
+				const alpha = CONNECTOR_MIN_ALPHA + pw.countRatio * (CONNECTOR_MAX_ALPHA - CONNECTOR_MIN_ALPHA);
+				const weight = CONNECTOR_MIN_WEIGHT + pw.countRatio * (CONNECTOR_MAX_WEIGHT - CONNECTOR_MIN_WEIGHT);
+				const c = this.sk.color(pw.color);
+				c.setAlpha(alpha);
+				this.sk.stroke(c);
+				this.sk.strokeWeight(weight);
+				const centerX = pw.x + pw.width / 2;
+				this.sk.line(centerX, pw.barY + pw.barH, centerX, pw.y - pw.textSize);
+			});
 		}
 	}
 
-	private renderWords(placed: PlacedWord[]): void {
+	private renderWords(placed: PlacedWord[], xhl: { active: boolean; speaker: string }): void {
 		this.sk.noStroke();
 		this.sk.textAlign(this.sk.LEFT, this.sk.BASELINE);
 		for (const pw of placed) {
-			this.sk.textSize(pw.textSize);
-			this.sk.fill(pw.color);
-			this.sk.text(pw.agg.word, pw.x, pw.y);
+			withDimming(this.sk.drawingContext, xhl.active && pw.agg.dominantSpeaker !== xhl.speaker, () => {
+				this.sk.textSize(pw.textSize);
+				this.sk.fill(pw.color);
+				this.sk.text(pw.agg.word, pw.x, pw.y);
+			});
 		}
 	}
 
@@ -249,11 +269,12 @@ export class WordRain {
 		const range = this.timeline.rightMarker - this.timeline.leftMarker;
 		if (range <= 0) return;
 
-		this.sk.textSize(10);
+		const bottomMargin = Math.max(15, this.bounds.height * BOTTOM_MARGIN_RATIO);
+		this.sk.textSize(Math.max(8, bottomMargin * 0.5));
 		this.sk.fill(120);
 		this.sk.noStroke();
 
-		const labelY = this.bounds.y + this.bounds.height - BOTTOM_MARGIN + 5;
+		const labelY = this.bounds.y + this.bounds.height - bottomMargin + 5;
 		const step = range / TIME_LABEL_COUNT;
 
 		for (let i = 0; i <= TIME_LABEL_COUNT; i++) {
@@ -320,6 +341,6 @@ export class WordRain {
 		const isUntimed = this.transcript.timingMode === 'untimed';
 		const timestamp = isUntimed ? '' : `\n<span style="font-size: 0.85em; opacity: 0.7">${formatTimeCompact(agg.meanTime)}</span>`;
 		const content = `<b>${agg.dominantSpeaker}</b>\n"${agg.word}" \u00d7${agg.count}${timestamp}`;
-		showTooltip(this.sk.mouseX, this.sk.mouseY, content, hovered.color, this.sk.height);
+		showTooltip(this.sk.mouseX, this.sk.mouseY, content, hovered.color, this.bounds.y + this.bounds.height);
 	}
 }

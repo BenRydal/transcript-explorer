@@ -1,13 +1,16 @@
 import type p5 from 'p5';
 import { get } from 'svelte/store';
 import UserStore from '../../stores/userStore';
+import ConfigStore, { type ConfigStoreType } from '../../stores/configStore';
 import { showTooltip } from '../../stores/tooltipStore';
 import type { DataPoint } from '../../models/dataPoint';
 import type { User } from '../../models/user';
 import type { Bounds } from './types/bounds';
+import { withDimming } from './draw-utils';
 
 const LEFT_MARGIN = 60;
 const BOTTOM_MARGIN = 40;
+const MAX_MARGIN_RATIO = 0.3;
 const BAR_PADDING = 2;
 const HOVER_OUTLINE_WEIGHT = 2;
 const TARGET_BIN_COUNT = 15;
@@ -38,6 +41,7 @@ export class TurnLengthDistribution {
 	private bounds: Bounds;
 	private userMap: Map<string, User>;
 	private speakers: string[];
+	private config: ConfigStoreType;
 	// Absolute grid coordinates (bounds.xy + grid offsets)
 	private gx: number;
 	private gy: number;
@@ -50,20 +54,23 @@ export class TurnLengthDistribution {
 		const users = get(UserStore);
 		this.userMap = new Map(users.map((u) => [u.name, u]));
 		this.speakers = users.filter((u) => u.enabled).map((u) => u.name);
-		this.gx = bounds.x + LEFT_MARGIN;
+		this.config = get(ConfigStore);
+		const leftMargin = Math.min(LEFT_MARGIN, bounds.width * MAX_MARGIN_RATIO);
+		const bottomMargin = Math.min(BOTTOM_MARGIN, bounds.height * MAX_MARGIN_RATIO);
+		this.gx = bounds.x + leftMargin;
 		this.gy = bounds.y + 10;
-		this.gw = bounds.width - LEFT_MARGIN - 10;
-		this.gh = bounds.height - BOTTOM_MARGIN - 10;
+		this.gw = bounds.width - leftMargin - 10;
+		this.gh = bounds.height - bottomMargin - 10;
 	}
 
-	draw(turns: TurnSummary[]): { snippetPoints: DataPoint[] } {
-		if (turns.length === 0 || this.speakers.length === 0) return { snippetPoints: [] };
+	draw(turns: TurnSummary[]): { snippetPoints: DataPoint[]; hoveredSpeaker: string | null } {
+		if (turns.length === 0 || this.speakers.length === 0) return { snippetPoints: [], hoveredSpeaker: null };
 
 		const bins = this.binTurns(turns);
-		if (bins.length === 0) return { snippetPoints: [] };
+		if (bins.length === 0) return { snippetPoints: [], hoveredSpeaker: null };
 
 		const maxCount = Math.max(...bins.map((b) => b.totalCount));
-		if (maxCount === 0) return { snippetPoints: [] };
+		if (maxCount === 0) return { snippetPoints: [], hoveredSpeaker: null };
 
 		const barWidth = this.gw / bins.length;
 
@@ -80,14 +87,14 @@ export class TurnLengthDistribution {
 		if (hoveredSegment) {
 			this.drawHoverEffect(hoveredSegment, barWidth);
 			this.showSegmentTooltip(hoveredSegment, bins);
-			return { snippetPoints: bins[hoveredSegment.binIndex].speakers.get(hoveredSegment.speaker)! };
+			return { snippetPoints: bins[hoveredSegment.binIndex].speakers.get(hoveredSegment.speaker)!, hoveredSpeaker: hoveredSegment.speaker };
 		}
 
-		return { snippetPoints: [] };
+		return { snippetPoints: [], hoveredSpeaker: null };
 	}
 
 	private drawYAxis(maxCount: number): void {
-		this.sk.textSize(10);
+		this.sk.textSize(Math.max(8, Math.min(10, this.bounds.height * 0.03)));
 		this.sk.textAlign(this.sk.RIGHT, this.sk.CENTER);
 		this.sk.noStroke();
 		for (let i = 0; i <= Y_TICKS; i++) {
@@ -106,6 +113,10 @@ export class TurnLengthDistribution {
 	private drawBars(bins: Bin[], maxCount: number, barWidth: number, hoveredBinIndex: number, localY: number): HoveredSegment | null {
 		let hoveredSegment: HoveredSegment | null = null;
 
+		const hl = this.config.dashboardHighlightSpeaker;
+		const mouseInPanel = this.sk.overRect(this.bounds.x, this.bounds.y, this.bounds.width, this.bounds.height);
+		const crossHighlightActive = this.config.dashboardToggle && hl != null && !mouseInPanel;
+
 		for (let b = 0; b < bins.length; b++) {
 			const bin = bins[b];
 			const x = this.gx + b * barWidth + BAR_PADDING;
@@ -119,11 +130,13 @@ export class TurnLengthDistribution {
 				const h = (turns.length / maxCount) * this.gh;
 				const y = this.gy + this.gh - yOffset - h;
 
-				const user = this.userMap.get(speaker);
-				const c = this.sk.color(user!.color);
-				c.setAlpha(200);
-				this.sk.fill(c);
-				this.sk.rect(x, y, w, h, 1);
+				withDimming(this.sk.drawingContext, crossHighlightActive && speaker !== hl, () => {
+					const user = this.userMap.get(speaker);
+					const c = this.sk.color(user!.color);
+					c.setAlpha(200);
+					this.sk.fill(c);
+					this.sk.rect(x, y, w, h, 1);
+				});
 
 				if (b === hoveredBinIndex) {
 					const segTop = this.gh - yOffset - h;
@@ -141,7 +154,8 @@ export class TurnLengthDistribution {
 	}
 
 	private drawXAxis(bins: Bin[], barWidth: number): void {
-		this.sk.textSize(10);
+		const fontSize = Math.max(8, Math.min(10, this.bounds.height * 0.03));
+		this.sk.textSize(fontSize);
 		this.sk.fill(120);
 		this.sk.noStroke();
 		this.sk.textAlign(this.sk.CENTER, this.sk.TOP);
@@ -152,9 +166,9 @@ export class TurnLengthDistribution {
 			this.sk.text(label, this.gx + b * barWidth + barWidth / 2, this.gy + this.gh + 5);
 		}
 
-		this.sk.textSize(11);
+		this.sk.textSize(fontSize + 1);
 		this.sk.fill(100);
-		this.sk.text('Words per turn', this.gx + this.gw / 2, this.gy + this.gh + 22);
+		this.sk.text('Words per turn', this.gx + this.gw / 2, this.gy + this.gh + 5 + fontSize + 4);
 	}
 
 	private drawHoverEffect(hovered: HoveredSegment, barWidth: number): void {
@@ -171,7 +185,7 @@ export class TurnLengthDistribution {
 		const user = this.userMap.get(hovered.speaker);
 		const range = bin.minLength === bin.maxLength ? `${bin.minLength} words` : `${bin.minLength}-${bin.maxLength} words`;
 		const content = `<b>${hovered.speaker}</b>\n<span style="font-size: 0.85em; opacity: 0.7">${range}  ·  ${turns.length} turn${turns.length !== 1 ? 's' : ''}</span>`;
-		showTooltip(this.sk.mouseX, this.sk.mouseY, content, user?.color || '#cccccc', this.sk.height);
+		showTooltip(this.sk.mouseX, this.sk.mouseY, content, user?.color || '#cccccc', this.bounds.y + this.bounds.height);
 	}
 
 	private binTurns(turns: TurnSummary[]): Bin[] {

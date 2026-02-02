@@ -11,13 +11,16 @@ import type { User } from '../../models/user';
 import type { Transcript } from '../../models/transcript';
 import type { Timeline } from '../../models/timeline';
 import type { Bounds } from './types/bounds';
+import { CANVAS_SPACING } from '../constants/ui';
 
 function formatDuration(seconds: number): string {
 	return `${Math.round(seconds)}s`;
 }
 
 // Annotation strip constants
-const STRIP_HEIGHT = 28;
+const STRIP_HEIGHT_RATIO = 0.1;
+const MIN_STRIP_HEIGHT = 20;
+const MAX_STRIP_HEIGHT = 32;
 const OVERLAP_COLOR = '#ef4444';
 const GAP_COLOR = '#94a3b8';
 const MARKER_HEIGHT = 8;
@@ -66,13 +69,14 @@ export class TurnChart {
 	yPosSeparate: number;
 	annotationHover: DataPoint | null = null;
 	private stripBounds: Bounds | null;
+	private panelBottom: number;
 
 	constructor(sk: p5, pos: Bounds) {
 		this.sk = sk;
 		this.transcript = get(TranscriptStore);
 		this.config = get(ConfigStore);
 		const showStrip = this.transcript.timingMode !== 'untimed' && this.config.silenceOverlapToggle;
-		const stripHeight = showStrip ? STRIP_HEIGHT : 0;
+		const stripHeight = showStrip ? Math.max(MIN_STRIP_HEIGHT, Math.min(MAX_STRIP_HEIGHT, pos.height * STRIP_HEIGHT_RATIO)) : 0;
 		this.bounds = { ...pos, height: pos.height - stripHeight };
 		this.stripBounds = showStrip ? {
 			x: pos.x,
@@ -80,6 +84,7 @@ export class TurnChart {
 			width: pos.width,
 			height: stripHeight
 		} : null;
+		this.panelBottom = pos.y + pos.height;
 		this.users = get(UserStore);
 		this.userMap = new Map(this.users.map((user, index) => [user.name, { user, index }]));
 		this.timeline = get(TimelineStore);
@@ -96,7 +101,7 @@ export class TurnChart {
 	}
 
 	/** Draws the main chart */
-	draw(sortedAnimationWordArray: Record<number, DataPoint[]>): void {
+	draw(sortedAnimationWordArray: Record<number, DataPoint[]>): { hoveredSpeaker: string | null } {
 		this.userSelectedTurn = { turn: '', color: '', xCenter: 0, yCenter: 0, width: 0, height: 0 }; // Reset each frame
 		this.annotationHover = null;
 		this.drawTimeline();
@@ -120,11 +125,16 @@ export class TurnChart {
 		if (this.stripBounds) {
 			this.drawAnnotationStrip(sortedAnimationWordArray);
 		}
+
+		const turn = this.userSelectedTurn.turn;
+		const hoveredTurnPoint = turn ? (turn as DataPoint[])[0] : null;
+		return { hoveredSpeaker: hoveredTurnPoint?.speaker ?? null };
 	}
 
 	testShouldDraw(user: User, array: DataPoint[]): boolean {
 		const isUserEnabled = user.enabled;
-		const shouldDraw = !this.config?.dashboardToggle || this.sk.shouldDraw(array[0]);
+		const mouseInPanel = this.sk.overRect(this.bounds.x, this.bounds.y, this.bounds.width, this.bounds.height);
+		const shouldDraw = !this.config?.dashboardToggle || mouseInPanel || this.sk.shouldDraw(array[0]);
 		let hasSearchWord = true;
 		if (this.config.wordToSearch) {
 			const combinedString = array.map(({ word }) => word).join(' ');
@@ -138,7 +148,7 @@ export class TurnChart {
 		const start = this.bounds.x;
 		const end = this.bounds.x + this.bounds.width;
 		const height = this.yPosHalfHeight;
-		const tickLength = this.sk.SPACING / 2;
+		const tickLength = CANVAS_SPACING / 2;
 		this.sk.stroke(0);
 		this.sk.strokeWeight(2);
 		this.sk.fill(0);
@@ -177,7 +187,7 @@ export class TurnChart {
 			height = this.sk.map(turnLength, 0, this.transcript.largestTurnLength, 0, this.verticalLayoutSpacing);
 			yCenter = this.yPosSeparate + this.verticalLayoutSpacing * speakerIndex;
 		} else {
-			height = this.sk.map(turnLength, 0, this.transcript.largestTurnLength, 0, this.yPosHalfHeight);
+			height = this.sk.map(turnLength, 0, this.transcript.largestTurnLength, 0, this.bounds.height);
 			yCenter = this.yPosHalfHeight;
 		}
 		return [height, yCenter];
@@ -192,7 +202,7 @@ export class TurnChart {
 	drawText(turnArray: DataPoint[], speakerColor: string): void {
 		const speaker = turnArray[0].speaker;
 		const combined = turnArray.map((e) => e.word).join(' ');
-		showTooltip(this.sk.mouseX, this.sk.mouseY, `<b>${speaker}</b>\n${combined}`, speakerColor, this.sk.height);
+		showTooltip(this.sk.mouseX, this.sk.mouseY, `<b>${speaker}</b>\n${combined}`, speakerColor, this.panelBottom);
 	}
 
 	getVerticalLayoutSpacing(height: number): number {
@@ -207,7 +217,7 @@ export class TurnChart {
 
 	private drawAnnotationStrip(turnData: Record<number, DataPoint[]>): void {
 		const strip = this.stripBounds!;
-		const topRowY = strip.y + (STRIP_HEIGHT - MARKER_HEIGHT * 2 - ROW_GAP) / 2;
+		const topRowY = strip.y + (strip.height - MARKER_HEIGHT * 2 - ROW_GAP) / 2;
 		const bottomRowY = topRowY + MARKER_HEIGHT + ROW_GAP;
 
 		// Separator line
@@ -247,7 +257,7 @@ export class TurnChart {
 					this.sk.stroke(m.color);
 					this.sk.strokeWeight(2);
 					this.sk.rect(m.x - 1, m.y - 1, m.w + 2, m.h + 2, 2);
-					showTooltip(this.sk.mouseX, this.sk.mouseY, m.tooltipContent, m.color, this.sk.height);
+					showTooltip(this.sk.mouseX, this.sk.mouseY, m.tooltipContent, m.color, this.panelBottom);
 					this.annotationHover = m.firstDataPoint;
 					break;
 				}

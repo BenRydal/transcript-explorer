@@ -1,5 +1,8 @@
 export const DEFAULT_SPEAKER_COLOR = '#cccccc';
 
+/** Canvas spacing used for dashboard panel padding/gap. Shared between p5 and DOM overlay. */
+export const CANVAS_SPACING = 25;
+
 export const USER_COLORS = [
 	'#6a3d9a', // Dark Purple
 	'#ff7f00', // Dark Orange

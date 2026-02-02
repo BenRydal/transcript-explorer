@@ -8,12 +8,3 @@ export interface Bounds {
 	width: number;
 	height: number;
 }
-
-/**
- * Dashboard layout with three panels.
- */
-export interface DashboardBounds {
-	top: Bounds;
-	bottomLeft: Bounds;
-	bottomRight: Bounds;
-}

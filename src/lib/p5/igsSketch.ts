@@ -53,7 +53,6 @@ export const igsSketch = (p5: any) => {
 		p5.createCanvas(width, height);
 		p5.dynamicData = new DynamicData();
 		p5.renderer = new Draw(p5);
-		p5.SPACING = 25;
 		p5.toolTipTextSize = 30;
 		p5.textFont(p5.font);
 		p5.animationCounter = 0; // controls animation of data
@@ -96,9 +95,7 @@ export const igsSketch = (p5: any) => {
 		}
 
 		const { hoveredDataPoint, arrayOfFirstWords } = currConfig;
-		const hasPlayableHover =
-			hoveredDataPoint ||
-			arrayOfFirstWords?.length > 0;
+		const hasPlayableHover = hoveredDataPoint || arrayOfFirstWords?.length > 0;
 
 		p5.cursor(hasPlayableHover ? p5.HAND : p5.ARROW);
 	};
@@ -154,9 +151,10 @@ export const igsSketch = (p5: any) => {
 	};
 
 	p5.continueTimelineAnimation = () => {
-		const timeToSet = videoState.isLoaded && videoState.isPlaying
-			? videoState.currentTime
-			: timeline.currTime + (currConfig.animationRate * Math.min(p5.deltaTime, 100)) / 1000;
+		const timeToSet =
+			videoState.isLoaded && videoState.isPlaying
+				? videoState.currentTime
+				: timeline.currTime + (currConfig.animationRate * Math.min(p5.deltaTime, 100)) / 1000;
 
 		TimelineStore.update((t) => {
 			t.currTime = timeToSet;
@@ -220,18 +218,14 @@ export const igsSketch = (p5: any) => {
 	};
 
 	/**
-	 * Determines whether to draw an item in the dashboard view based on current hover state.
-	 * Returns false to dim items that don't match the hovered turn/speaker.
+	 * Determines whether to draw an item in the dashboard view based on cross-highlight state.
+	 * Returns false to dim items that don't match the highlighted turn/speaker.
 	 */
 	p5.shouldDraw = (item: any) => {
-		const hover = currConfig.hoveredDataPoint;
-		const matchesTurn = hover ? item.turnNumber === hover.turnNumber : true;
-
-		const firstWords = currConfig.arrayOfFirstWords;
-		const matchesSpeaker = firstWords?.length > 0 && firstWords[0]?.speaker
-			? item.speaker === firstWords[0].speaker
-			: true;
-
+		const turn = currConfig.dashboardHighlightTurn;
+		const speaker = currConfig.dashboardHighlightSpeaker;
+		const matchesTurn = turn != null ? item.turnNumber === turn : true;
+		const matchesSpeaker = speaker ? item.speaker === speaker : true;
 		return matchesTurn && matchesSpeaker;
 	};
 

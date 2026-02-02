@@ -9,13 +9,22 @@ import { WordRain } from './word-rain';
 import { TurnLengthDistribution } from './turn-length-distribution';
 import ConfigStore, { type ConfigStoreType } from '../../stores/configStore';
 import { resetTooltipFrame, finalizeTooltipFrame } from '../../stores/tooltipStore';
-import type { Bounds, DashboardBounds } from './types/bounds';
+import type { Bounds } from './types/bounds';
+import { CANVAS_SPACING } from '../constants/ui';
 
 interface DrawResult {
 	hover: DataPoint | null;
 	hoveredSpeaker: string | null;
 	arrayOfFirstWords: DataPoint[];
 	cloudHasOverflow: boolean;
+	/** Panel key that produced the hover (for turn-level cross-highlight) */
+	hoverSource?: string;
+}
+
+const emptyResult: DrawResult = { hover: null, hoveredSpeaker: null, arrayOfFirstWords: [], cloudHasOverflow: false };
+
+function result(overrides: Partial<DrawResult>): DrawResult {
+	return { ...emptyResult, ...overrides };
 }
 
 let currConfig: ConfigStoreType;
@@ -24,10 +33,21 @@ ConfigStore.subscribe((data) => {
 	currConfig = data;
 });
 
+/** Panels that produce turn-level (not just speaker-level) cross-highlighting */
+const TURN_LEVEL_SOURCES = new Set(['turnChart', 'contributionCloud', 'speakerHeatmap']);
+
+const TOGGLE_TO_PANEL: [keyof ConfigStoreType, string][] = [
+	['speakerGardenToggle', 'speakerGarden'],
+	['turnChartToggle', 'turnChart'],
+	['contributionCloudToggle', 'contributionCloud'],
+	['turnNetworkToggle', 'turnNetwork'],
+	['wordRainToggle', 'wordRain'],
+	['speakerHeatmapToggle', 'speakerHeatmap'],
+	['turnLengthToggle', 'turnLength']
+];
+
 export class Draw {
 	sk: p5;
-	// Previous frame's cloud hover, used for turn chart cross-highlighting in dashboard (1-frame lag)
-	private prevCloudHover: DataPoint | null = null;
 
 	constructor(sketch: p5) {
 		this.sk = sketch;
@@ -36,147 +56,161 @@ export class Draw {
 	drawViz(): void {
 		resetTooltipFrame();
 
-		let result: DrawResult;
+		let drawResult: DrawResult;
+		const activePanel = TOGGLE_TO_PANEL.find(([toggle]) => currConfig[toggle]);
 
-		if (currConfig.speakerGardenToggle) {
-			result = this.updateSpeakerGarden(this.getFullScreenBounds());
-		} else if (currConfig.turnChartToggle) {
-			result = this.updateTurnChart(this.getFullScreenBounds());
-		} else if (currConfig.contributionCloudToggle) {
-			result = this.updateContributionCloud(this.getFullScreenBounds());
-		} else if (currConfig.turnNetworkToggle) {
-			result = this.updateTurnNetwork(this.getFullScreenBounds());
-		} else if (currConfig.wordRainToggle) {
-			result = this.updateWordRain(this.getFullScreenBounds());
-		} else if (currConfig.speakerHeatmapToggle) {
-			result = this.updateSpeakerHeatmap(this.getFullScreenBounds());
-		} else if (currConfig.turnLengthToggle) {
-			result = this.updateTurnLengthDistribution(this.getFullScreenBounds());
+		if (activePanel) {
+			drawResult = this.updatePanel(activePanel[1], this.getFullScreenBounds());
 		} else {
-			result = this.drawDashboard();
+			drawResult = this.drawDashboard();
 		}
 
-		this.applyDrawResult(result);
+		this.applyDrawResult(drawResult, !activePanel);
 		finalizeTooltipFrame();
 	}
 
-	/** Write draw results to stores. Single place for all store writes in non-dashboard mode. */
-	applyDrawResult(result: DrawResult): void {
+	/** Write draw results to stores. Single place for all store writes per frame. */
+	applyDrawResult(r: DrawResult, isDashboard: boolean): void {
+		// Compute cross-highlight fields for next frame
+		let highlightSpeaker: string | null = null;
+		let highlightTurn: number | null = null;
+
+		if (isDashboard) {
+			highlightSpeaker = r.hoveredSpeaker ?? null;
+			if (highlightSpeaker && r.hoverSource && TURN_LEVEL_SOURCES.has(r.hoverSource) && r.hover) {
+				highlightTurn = r.hover.turnNumber;
+			}
+		}
+
 		ConfigStore.update((c) => ({
 			...c,
-			hoveredDataPoint: result.hover,
-			cloudHasOverflow: result.cloudHasOverflow,
-			arrayOfFirstWords: result.arrayOfFirstWords,
-			hoveredSpeakerInGarden: result.hoveredSpeaker
+			hoveredDataPoint: r.hover,
+			cloudHasOverflow: r.cloudHasOverflow,
+			arrayOfFirstWords: r.arrayOfFirstWords,
+			hoveredSpeakerInGarden: r.hoveredSpeaker,
+			dashboardHighlightSpeaker: highlightSpeaker,
+			dashboardHighlightTurn: highlightTurn
 		}));
+	}
+
+	updatePanel(key: string, bounds: Bounds): DrawResult {
+		switch (key) {
+			case 'speakerGarden':
+				return this.updateSpeakerGarden(bounds);
+			case 'turnChart':
+				return this.updateTurnChart(bounds);
+			case 'contributionCloud':
+				return this.updateContributionCloud(bounds);
+			case 'turnNetwork':
+				return this.updateTurnNetwork(bounds);
+			case 'wordRain':
+				return this.updateWordRain(bounds);
+			case 'speakerHeatmap':
+				return this.updateSpeakerHeatmap(bounds);
+			case 'turnLength':
+				return this.updateTurnLengthDistribution(bounds);
+			default:
+				return result({});
+		}
 	}
 
 	updateSpeakerGarden(pos: Bounds): DrawResult {
 		const garden = new SpeakerGarden(this.sk, pos);
 		const { hoveredSpeaker } = garden.draw(this.sk.dynamicData.getDynamicArrayForSpeakerGarden());
-		return {
-			hover: null,
-			hoveredSpeaker,
-			arrayOfFirstWords: garden.localArrayOfFirstWords,
-			cloudHasOverflow: false
-		};
+		return result({ hoveredSpeaker, arrayOfFirstWords: garden.localArrayOfFirstWords });
 	}
 
 	updateTurnChart(pos: Bounds): DrawResult {
 		const turnChart = new TurnChart(this.sk, pos);
-		turnChart.draw(this.sk.dynamicData.getDynamicArrayForTurnChart());
-		return {
-			hover: turnChart.userSelectedTurn.turn[0] ?? turnChart.annotationHover ?? null,
-			hoveredSpeaker: null,
-			arrayOfFirstWords: [],
-			cloudHasOverflow: false
-		};
+		const { hoveredSpeaker } = turnChart.draw(this.sk.dynamicData.getDynamicArrayForTurnChart());
+		return result({ hover: turnChart.userSelectedTurn.turn[0] ?? turnChart.annotationHover ?? null, hoveredSpeaker });
 	}
 
 	updateSpeakerHeatmap(pos: Bounds): DrawResult {
 		const heatmap = new SpeakerHeatmap(this.sk, pos);
-		const { hoveredCell } = heatmap.draw(this.sk.dynamicData.getProcessedWords(true));
-		return {
-			hover: hoveredCell,
-			hoveredSpeaker: null,
-			arrayOfFirstWords: [],
-			cloudHasOverflow: false
-		};
+		const { hoveredCell, hoveredSpeaker } = heatmap.draw(this.sk.dynamicData.getProcessedWords(true));
+		return result({ hover: hoveredCell, hoveredSpeaker });
 	}
 
 	updateTurnLengthDistribution(pos: Bounds): DrawResult {
 		const viz = new TurnLengthDistribution(this.sk, pos);
-		const { snippetPoints } = viz.draw(this.sk.dynamicData.getTurnSummaries());
-		return { hover: null, hoveredSpeaker: null, arrayOfFirstWords: snippetPoints, cloudHasOverflow: false };
+		const { snippetPoints, hoveredSpeaker } = viz.draw(this.sk.dynamicData.getTurnSummaries());
+		return result({ arrayOfFirstWords: snippetPoints, hoveredSpeaker });
 	}
 
 	updateTurnNetwork(pos: Bounds): DrawResult {
 		const turnNetwork = new TurnNetwork(this.sk, pos);
-		const { snippetPoints } = turnNetwork.draw(this.sk.dynamicData.getDynamicArrayForTurnNetwork());
-		return {
-			hover: null,
-			hoveredSpeaker: null,
-			arrayOfFirstWords: snippetPoints,
-			cloudHasOverflow: false
-		};
+		const { snippetPoints, hoveredSpeaker } = turnNetwork.draw(this.sk.dynamicData.getDynamicArrayForTurnNetwork());
+		return result({ arrayOfFirstWords: snippetPoints, hoveredSpeaker });
 	}
 
 	updateWordRain(pos: Bounds): DrawResult {
 		const wordRain = new WordRain(this.sk, pos);
-		const { hoveredOccurrences } = wordRain.draw(this.sk.dynamicData.getProcessedWords(true));
-		return {
-			hover: null,
-			hoveredSpeaker: null,
-			arrayOfFirstWords: hoveredOccurrences,
-			cloudHasOverflow: false
-		};
+		const { hoveredOccurrences, hoveredSpeaker } = wordRain.draw(this.sk.dynamicData.getProcessedWords(true));
+		return result({ arrayOfFirstWords: hoveredOccurrences, hoveredSpeaker });
 	}
 
 	updateContributionCloud(pos: Bounds): DrawResult {
 		const contributionCloud = new ContributionCloud(this.sk, pos);
-		const { hoveredWord, hasOverflow } = contributionCloud.draw(this.sk.dynamicData.getDynamicArraySortedForContributionCloud());
-		return {
-			hover: hoveredWord ?? null,
-			hoveredSpeaker: null,
-			arrayOfFirstWords: [],
-			cloudHasOverflow: hasOverflow
-		};
+		const { hoveredWord, hasOverflow, hoveredSpeaker } = contributionCloud.draw(this.sk.dynamicData.getDynamicArraySortedForContributionCloud());
+		return result({ hover: hoveredWord ?? null, cloudHasOverflow: hasOverflow, hoveredSpeaker });
 	}
 
 	drawDashboard(): DrawResult {
-		const { top, bottomLeft, bottomRight } = this.getDashboardBounds();
-		this.drawDashboardDividers(top, bottomLeft);
+		const panels = currConfig.dashboardPanels;
+		const boundsArray = this.getDashboardLayout(panels.length);
+		this.drawDashboardDividers(boundsArray, panels.length);
 
-		// Seed hoveredDataPoint with previous frame's cloud hover for cross-highlighting
-		ConfigStore.update((c) => ({ ...c, hoveredDataPoint: this.prevCloudHover }));
-		const turnResult = this.updateTurnChart(top);
+		let mergedHover: DataPoint | null = null;
+		let mergedHoveredSpeaker: string | null = null;
+		let hoverSource: string | undefined;
+		const mergedArrayOfFirstWords: DataPoint[] = [];
+		let mergedCloudHasOverflow = false;
 
-		// Write turn hover so cloud can cross-highlight
-		ConfigStore.update((c) => ({ ...c, hoveredDataPoint: turnResult.hover }));
-		const cloudResult = this.updateContributionCloud(bottomRight);
+		for (let i = 0; i < panels.length; i++) {
+			const panelResult = this.updatePanel(panels[i], boundsArray[i]);
+			const hasHover = panelResult.hover != null || panelResult.hoveredSpeaker != null;
 
-		// Write cloud hover so speaker garden can cross-highlight
-		ConfigStore.update((c) => ({ ...c, hoveredDataPoint: cloudResult.hover }));
-		const gardenResult = this.updateSpeakerGarden(bottomLeft);
-
-		this.prevCloudHover = cloudResult.hover;
+			if (!hoverSource && hasHover) {
+				hoverSource = panels[i];
+			}
+			mergedHover ??= panelResult.hover;
+			mergedHoveredSpeaker ??= panelResult.hoveredSpeaker;
+			mergedArrayOfFirstWords.push(...panelResult.arrayOfFirstWords);
+			mergedCloudHasOverflow ||= panelResult.cloudHasOverflow;
+		}
 
 		return {
-			hover: turnResult.hover ?? cloudResult.hover,
-			hoveredSpeaker: gardenResult.hoveredSpeaker,
-			arrayOfFirstWords: gardenResult.arrayOfFirstWords,
-			cloudHasOverflow: cloudResult.cloudHasOverflow
+			hover: mergedHover,
+			hoveredSpeaker: mergedHoveredSpeaker,
+			arrayOfFirstWords: mergedArrayOfFirstWords,
+			cloudHasOverflow: mergedCloudHasOverflow,
+			hoverSource
 		};
 	}
 
-	drawDashboardDividers(top: Bounds, bottomLeft: Bounds): void {
+	drawDashboardDividers(boundsArray: Bounds[], count: number): void {
 		this.sk.stroke(200);
 		this.sk.strokeWeight(2);
-		const gap = this.sk.SPACING;
-		const horizontalY = top.y + top.height + gap / 2;
-		const verticalX = bottomLeft.x + bottomLeft.width + gap / 2;
-		this.sk.line(0, horizontalY, this.sk.width, horizontalY);
-		this.sk.line(verticalX, horizontalY, verticalX, this.sk.height);
+		const gap = CANVAS_SPACING;
+
+		if (count === 2) {
+			// Vertical divider between two side-by-side panels
+			const verticalX = boundsArray[0].x + boundsArray[0].width + gap / 2;
+			this.sk.line(verticalX, 0, verticalX, this.sk.height);
+		} else if (count === 3) {
+			// Horizontal divider below top panel + vertical divider in bottom half
+			const horizontalY = boundsArray[0].y + boundsArray[0].height + gap / 2;
+			const verticalX = boundsArray[1].x + boundsArray[1].width + gap / 2;
+			this.sk.line(0, horizontalY, this.sk.width, horizontalY);
+			this.sk.line(verticalX, horizontalY, verticalX, this.sk.height);
+		} else if (count === 4) {
+			// Cross: horizontal divider between rows + vertical divider between columns
+			const horizontalY = boundsArray[0].y + boundsArray[0].height + gap / 2;
+			const verticalX = boundsArray[0].x + boundsArray[0].width + gap / 2;
+			this.sk.line(0, horizontalY, this.sk.width, horizontalY);
+			this.sk.line(verticalX, 0, verticalX, this.sk.height);
+		}
 	}
 
 	/**
@@ -184,7 +218,7 @@ export class Draw {
 	 * Returns { x, y, width, height } where x,y is top-left and width,height are dimensions.
 	 */
 	getFullScreenBounds(): Bounds {
-		const padding = this.sk.SPACING;
+		const padding = CANVAS_SPACING;
 		return {
 			x: padding,
 			y: padding,
@@ -194,36 +228,38 @@ export class Draw {
 	}
 
 	/**
-	 * Get bounds for dashboard layout (3 panels).
-	 * Returns { top, bottomLeft, bottomRight } each with { x, y, width, height }.
+	 * Get bounds for dashboard layout with variable panel count.
+	 * 2 panels: side-by-side
+	 * 3 panels: 1 top full-width + 2 bottom
+	 * 4 panels: 2x2 grid
 	 */
-	getDashboardBounds(): DashboardBounds {
-		const padding = this.sk.SPACING / 2; // Less padding for dashboard panels
-		const gap = this.sk.SPACING;
+	getDashboardLayout(count: number): Bounds[] {
+		const padding = CANVAS_SPACING / 2;
+		const gap = CANVAS_SPACING;
 		const totalWidth = this.sk.width - padding * 2;
 		const totalHeight = this.sk.height - padding * 2;
 		const halfWidth = (totalWidth - gap) / 2;
 		const halfHeight = (totalHeight - gap) / 2;
 
-		return {
-			top: {
-				x: padding,
-				y: padding,
-				width: totalWidth,
-				height: halfHeight
-			},
-			bottomLeft: {
-				x: padding,
-				y: padding + halfHeight + gap,
-				width: halfWidth,
-				height: halfHeight
-			},
-			bottomRight: {
-				x: padding + halfWidth + gap,
-				y: padding + halfHeight + gap,
-				width: halfWidth,
-				height: halfHeight
-			}
-		};
+		if (count === 2) {
+			return [
+				{ x: padding, y: padding, width: halfWidth, height: totalHeight },
+				{ x: padding + halfWidth + gap, y: padding, width: halfWidth, height: totalHeight }
+			];
+		} else if (count === 4) {
+			return [
+				{ x: padding, y: padding, width: halfWidth, height: halfHeight },
+				{ x: padding + halfWidth + gap, y: padding, width: halfWidth, height: halfHeight },
+				{ x: padding, y: padding + halfHeight + gap, width: halfWidth, height: halfHeight },
+				{ x: padding + halfWidth + gap, y: padding + halfHeight + gap, width: halfWidth, height: halfHeight }
+			];
+		} else {
+			// 3 panels (default): top full-width + 2 bottom
+			return [
+				{ x: padding, y: padding, width: totalWidth, height: halfHeight },
+				{ x: padding, y: padding + halfHeight + gap, width: halfWidth, height: halfHeight },
+				{ x: padding + halfWidth + gap, y: padding + halfHeight + gap, width: halfWidth, height: halfHeight }
+			];
+		}
 	}
 }

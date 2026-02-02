@@ -11,21 +11,23 @@
 import type p5 from 'p5';
 import { get } from 'svelte/store';
 import UserStore from '../../stores/userStore';
+import ConfigStore, { type ConfigStoreType } from '../../stores/configStore';
 import { showTooltip } from '../../stores/tooltipStore';
 import type { DataPoint } from '../../models/dataPoint';
 import type { User } from '../../models/user';
 import type { Bounds } from './types/bounds';
 import { DEFAULT_SPEAKER_COLOR } from '../constants/ui';
+import { withDimming } from './draw-utils';
 
-const MIN_NODE_RADIUS = 20;
-const MAX_NODE_RADIUS = 60;
+const MIN_NODE_RADIUS_RATIO = 0.04;
+const MAX_NODE_RADIUS_RATIO = 0.12;
 const MIN_EDGE_WIDTH = 1;
 const MAX_EDGE_WIDTH = 10;
 const ARROW_SIZE = 8;
-const SELF_LOOP_RADIUS = 25;
+const SELF_LOOP_RADIUS_RATIO = 0.05;
 const SELF_LOOP_GAP = Math.PI / 3;
-const NODE_LABEL_SIZE = 11;
-const EDGE_LABEL_SIZE = 9;
+const NODE_LABEL_RATIO = 0.025;
+const EDGE_LABEL_RATIO = 0.02;
 const OVERLAY_OPACITY = 180;
 const EDGE_HIT_TOLERANCE = 8;
 const EDGE_HIT_TOLERANCE_SQ = EDGE_HIT_TOLERANCE * EDGE_HIT_TOLERANCE;
@@ -79,13 +81,13 @@ type HoveredElement = {
 
 // --- Geometry helpers ---
 
-function getSelfLoopGeometry(node: NodeLayout, centerX: number, centerY: number) {
+function getSelfLoopGeometry(node: NodeLayout, centerX: number, centerY: number, selfLoopRadius: number) {
 	const dx = node.x - centerX;
 	const dy = node.y - centerY;
 	const dist = Math.sqrt(dx * dx + dy * dy);
 	const outAngle = dist < 1 ? -Math.PI / 2 : Math.atan2(dy, dx);
 
-	const loopDist = node.radius + SELF_LOOP_RADIUS;
+	const loopDist = node.radius + selfLoopRadius;
 	const inAngle = outAngle + Math.PI;
 	const gapHalf = SELF_LOOP_GAP / 2;
 
@@ -93,7 +95,8 @@ function getSelfLoopGeometry(node: NodeLayout, centerX: number, centerY: number)
 		cx: node.x + Math.cos(outAngle) * loopDist,
 		cy: node.y + Math.sin(outAngle) * loopDist,
 		arcStart: inAngle + gapHalf,
-		arcStop: inAngle + Math.PI * 2 - gapHalf
+		arcStop: inAngle + Math.PI * 2 - gapHalf,
+		radius: selfLoopRadius
 	};
 }
 
@@ -125,19 +128,37 @@ export class TurnNetwork {
 	private sk: p5;
 	private bounds: Bounds;
 	private userMap: Map<string, User>;
+	private selfLoopRadius: number;
+	private minDim: number;
+	private config: ConfigStoreType;
 
 	constructor(sk: p5, bounds: Bounds) {
 		this.sk = sk;
 		this.bounds = bounds;
 		this.userMap = new Map(get(UserStore).map((u) => [u.name, u]));
+		this.config = get(ConfigStore);
+		this.minDim = Math.min(bounds.width, bounds.height);
+		this.selfLoopRadius = Math.max(15, this.minDim * SELF_LOOP_RADIUS_RATIO);
 	}
 
-	draw(data: NetworkData): { snippetPoints: DataPoint[] } {
+	draw(data: NetworkData): { snippetPoints: DataPoint[]; hoveredSpeaker: string | null } {
 		const layout = this.buildLayout(data);
 		const hovered = this.findHovered(layout);
 
-		for (const edge of layout.edges) this.drawEdge(edge, layout, false);
-		for (const node of layout.nodes) this.drawNode(node, false);
+		const hl = this.config.dashboardHighlightSpeaker;
+		const mouseInPanel = this.sk.overRect(this.bounds.x, this.bounds.y, this.bounds.width, this.bounds.height);
+		const crossHighlightActive = this.config.dashboardToggle && hl != null && !mouseInPanel;
+
+		for (const edge of layout.edges) {
+			withDimming(this.sk.drawingContext, crossHighlightActive && edge.from !== hl && edge.to !== hl, () => {
+				this.drawEdge(edge, layout, false);
+			});
+		}
+		for (const node of layout.nodes) {
+			withDimming(this.sk.drawingContext, crossHighlightActive && node.speaker !== hl, () => {
+				this.drawNode(node, false);
+			});
+		}
 
 		if (hovered) {
 			this.sk.noStroke();
@@ -147,14 +168,14 @@ export class TurnNetwork {
 			this.showTooltipFor(hovered, layout);
 		}
 
-		return { snippetPoints: hovered?.snippetPoints ?? [] };
+		return { snippetPoints: hovered?.snippetPoints ?? [], hoveredSpeaker: hovered?.speaker ?? null };
 	}
 
 	// --- Layout ---
 
 	private buildLayout(data: NetworkData): Layout {
 		const centerX = this.bounds.x + this.bounds.width / 2;
-		const centerY = this.bounds.y + this.bounds.height / 2;
+		const centerY = this.bounds.y + this.bounds.height / 2 + this.selfLoopRadius;
 
 		const speakers = Array.from(data.speakerStats.keys()).filter(
 			(s) => this.userMap.get(s)?.enabled
@@ -168,7 +189,9 @@ export class TurnNetwork {
 			if (stats.wordCount > maxWordCount) maxWordCount = stats.wordCount;
 		}
 
-		const layoutRadius = Math.min(this.bounds.width, this.bounds.height) * LAYOUT_RADIUS_FACTOR;
+		const layoutRadius = this.minDim * LAYOUT_RADIUS_FACTOR;
+		const minNodeRadius = Math.max(15, this.minDim * MIN_NODE_RADIUS_RATIO);
+		const maxNodeRadius = Math.max(25, this.minDim * MAX_NODE_RADIUS_RATIO);
 		const nodes: NodeLayout[] = [];
 		const nodeMap = new Map<string, NodeLayout>();
 
@@ -180,7 +203,7 @@ export class TurnNetwork {
 				speaker,
 				x: speakers.length === 1 ? centerX : centerX + Math.cos(angle) * layoutRadius,
 				y: speakers.length === 1 ? centerY : centerY + Math.sin(angle) * layoutRadius,
-				radius: this.sk.map(stats.wordCount, 0, maxWordCount, MIN_NODE_RADIUS, MAX_NODE_RADIUS, true),
+				radius: this.sk.map(stats.wordCount, 0, maxWordCount, minNodeRadius, maxNodeRadius, true),
 				user: this.userMap.get(speaker),
 				turnStartPoints: stats.turnStartPoints
 			};
@@ -219,7 +242,7 @@ export class TurnNetwork {
 
 		this.sk.noStroke();
 		this.sk.fill(255);
-		this.sk.textSize(NODE_LABEL_SIZE);
+		this.sk.textSize(Math.max(8, this.minDim * NODE_LABEL_RATIO));
 		this.sk.textAlign(this.sk.CENTER, this.sk.CENTER);
 		this.sk.text(this.truncateLabel(node.speaker, node.radius * 1.6), node.x, node.y);
 	}
@@ -238,11 +261,11 @@ export class TurnNetwork {
 		this.sk.noFill();
 
 		if (edge.isSelfLoop) {
-			const loop = getSelfLoopGeometry(fromNode, layout.centerX, layout.centerY);
-			this.sk.arc(loop.cx, loop.cy, SELF_LOOP_RADIUS * 2, SELF_LOOP_RADIUS * 2, loop.arcStart, loop.arcStop);
+			const loop = getSelfLoopGeometry(fromNode, layout.centerX, layout.centerY, this.selfLoopRadius);
+			this.sk.arc(loop.cx, loop.cy, loop.radius * 2, loop.radius * 2, loop.arcStart, loop.arcStop);
 
-			const endX = loop.cx + SELF_LOOP_RADIUS * Math.cos(loop.arcStop);
-			const endY = loop.cy + SELF_LOOP_RADIUS * Math.sin(loop.arcStop);
+			const endX = loop.cx + loop.radius * Math.cos(loop.arcStop);
+			const endY = loop.cy + loop.radius * Math.sin(loop.arcStop);
 			const tanX = -Math.sin(loop.arcStop);
 			const tanY = Math.cos(loop.arcStop);
 			this.drawArrowhead(endX - tanX * ARROW_SIZE, endY - tanY * ARROW_SIZE, endX, endY, edgeColor, weight);
@@ -264,7 +287,7 @@ export class TurnNetwork {
 			this.sk.fill(255, 200);
 			this.sk.rect(lx - 10, ly - 7, 20, 14, 3);
 			this.sk.fill(80);
-			this.sk.textSize(EDGE_LABEL_SIZE);
+			this.sk.textSize(Math.max(7, this.minDim * EDGE_LABEL_RATIO));
 			this.sk.textAlign(this.sk.CENTER, this.sk.CENTER);
 			this.sk.text(String(edge.count), lx, ly);
 		}
@@ -342,9 +365,9 @@ export class TurnNetwork {
 		if (!fromNode || !toNode) return false;
 
 		if (edge.isSelfLoop) {
-			const loop = getSelfLoopGeometry(fromNode, layout.centerX, layout.centerY);
+			const loop = getSelfLoopGeometry(fromNode, layout.centerX, layout.centerY, this.selfLoopRadius);
 			const dist = Math.sqrt((mx - loop.cx) ** 2 + (my - loop.cy) ** 2);
-			return Math.abs(dist - SELF_LOOP_RADIUS) < EDGE_HIT_TOLERANCE;
+			return Math.abs(dist - loop.radius) < EDGE_HIT_TOLERANCE;
 		}
 
 		const geom = getCurvedEdgeGeometry(fromNode, toNode);
@@ -385,6 +408,6 @@ export class TurnNetwork {
 				`${hovered.edge.count} transition${hovered.edge.count !== 1 ? 's' : ''}</span>`;
 		}
 
-		showTooltip(this.sk.mouseX, this.sk.mouseY, content, color, this.sk.height);
+		showTooltip(this.sk.mouseX, this.sk.mouseY, content, color, this.bounds.y + this.bounds.height);
 	}
 }

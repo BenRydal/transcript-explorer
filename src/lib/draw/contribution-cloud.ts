@@ -72,7 +72,7 @@ export class ContributionCloud {
 		this.userMap = new Map(this.users.map((user) => [user.name, user]));
 	}
 
-	draw(words: DataPoint[]): { hoveredWord: DataPoint | null; hasOverflow: boolean } {
+	draw(words: DataPoint[]): { hoveredWord: DataPoint | null; hasOverflow: boolean; hoveredSpeaker: string | null } {
 		const layoutWords = words.filter((w) => this.isWordVisible(w));
 		const scaling = calculateScaling(this.sk, layoutWords, this.bounds, this.config);
 		const cacheKey = this.getBufferCacheKey(layoutWords.length);
@@ -90,7 +90,7 @@ export class ContributionCloud {
 			this.showWordTooltip(hoveredWord, bufferCache.positions);
 		}
 
-		return { hoveredWord: hoveredWord?.word || null, hasOverflow: bufferCache.hasOverflow };
+		return { hoveredWord: hoveredWord?.word || null, hasOverflow: bufferCache.hasOverflow, hoveredSpeaker: hoveredWord?.word.speaker ?? null };
 	}
 
 	getBufferCacheKey(filteredWordCount: number): string {
@@ -205,6 +205,7 @@ export class ContributionCloud {
 		this.sk.fill(255, OVERLAY_OPACITY);
 		this.sk.rect(this.bounds.x, this.bounds.y, this.bounds.width, this.bounds.height);
 
+		this.sk.textAlign(this.sk.LEFT, this.sk.BASELINE);
 		for (const pos of positions) {
 			if (pos.word.word === hoveredWordText) {
 				const screenX = this.bounds.x + pos.x;
@@ -257,7 +258,7 @@ export class ContributionCloud {
 
 		content += `\n<span style="font-size: 0.85em; opacity: 0.7">${details.join('  ·  ')}</span>`;
 
-		showTooltip(this.sk.mouseX, this.sk.mouseY, content, user?.color || DEFAULT_SPEAKER_COLOR, this.sk.height);
+		showTooltip(this.sk.mouseX, this.sk.mouseY, content, user?.color || DEFAULT_SPEAKER_COLOR, this.bounds.y + this.bounds.height);
 	}
 
 	getTurnContext(word: DataPoint, allPositions: WordPosition[]): string | null {
@@ -282,7 +283,10 @@ export class ContributionCloud {
 	}
 
 	isWordVisible(word: DataPoint): boolean {
-		if (this.config.dashboardToggle && !this.sk.shouldDraw(word)) return false;
+		if (this.config.dashboardToggle) {
+			const mouseInPanel = this.sk.overRect(this.bounds.x, this.bounds.y, this.bounds.width, this.bounds.height);
+			if (!mouseInPanel && !this.sk.shouldDraw(word)) return false;
+		}
 		if (this.config.repeatedWordsToggle && word.count < this.config.repeatWordSliderValue) return false;
 		return true;
 	}

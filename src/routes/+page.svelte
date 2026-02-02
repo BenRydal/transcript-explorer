@@ -49,6 +49,7 @@
 	import SpeakerControls from '$lib/components/SpeakerControls.svelte';
 	import TranscribeModeLayout from '$lib/components/TranscribeModeLayout.svelte';
 	import RecoveryModal from '$lib/components/RecoveryModal.svelte';
+	import DashboardOverlay from '$lib/components/DashboardOverlay.svelte';
 
 	import type { TranscriptionResult } from '$lib/core/transcription-service';
 
@@ -577,6 +578,9 @@
 					<div class="h-full relative" id="p5-container" data-tour="visualization">
 						<P5 {sketch} />
 						<CanvasTooltip />
+						{#if $ConfigStore.dashboardToggle}
+							<DashboardOverlay />
+						{/if}
 						{#if $ConfigStore.cloudHasOverflow && ($ConfigStore.contributionCloudToggle || $ConfigStore.dashboardToggle)}
 							<div class="badge badge-neutral absolute bottom-3 right-3">Some content not shown</div>
 						{/if}
