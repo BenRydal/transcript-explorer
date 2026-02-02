@@ -209,7 +209,7 @@ export class TurnChart {
 
 	drawText(turnArray: DataPoint[], speakerColor: string): void {
 		const speaker = turnArray[0].speaker;
-		const combined = turnArray.map((e) => e.displayWord).join(' ');
+		const combined = turnArray.map((e) => e.word).join(' ');
 		showTooltip(this.sk.mouseX, this.sk.mouseY, `<b>${speaker}</b>\n${combined}`, speakerColor, this.panelBottom);
 	}
 

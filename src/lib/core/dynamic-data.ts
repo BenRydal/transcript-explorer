@@ -209,9 +209,9 @@ export class DynamicData {
 			const existing = turnMap.get(word.turnNumber);
 			if (existing) {
 				existing.wordCount++;
-				existing.content += ' ' + word.displayWord;
+				existing.content += ' ' + word.word;
 			} else {
-				turnMap.set(word.turnNumber, { speaker: word.speaker, wordCount: 1, firstDataPoint: word, content: word.displayWord });
+				turnMap.set(word.turnNumber, { speaker: word.speaker, wordCount: 1, firstDataPoint: word, content: word.word });
 			}
 		}
 

@@ -16,10 +16,18 @@ export function normalizeSpeakerName(name: string): string {
 }
 
 /**
+ * Strips leading/trailing punctuation [,?.!:;] from a word, preserving case.
+ */
+export function stripPunctuation(word: string): string {
+	return word.replace(/^[,?.!:;]+|[,?.!:;]+$/g, '');
+}
+
+/**
  * Normalizes a word for case-insensitive grouping, counting, and comparison.
+ * Strips punctuation and lowercases.
  */
 export function normalizeWord(word: string): string {
-	return word.toLowerCase();
+	return stripPunctuation(word).toLowerCase();
 }
 
 /**
@@ -29,25 +37,13 @@ export function splitIntoWords(text: string): string[] {
 	return text.split(/\s+|[,?.!:;]+/).filter(Boolean);
 }
 
-export interface WordToken {
-	/** Bare word with leading/trailing punctuation stripped */
-	word: string;
-	/** Original token preserving punctuation (e.g., "hello," or "world!") */
-	displayWord: string;
-}
-
 /**
- * Splits text into word tokens, preserving display forms with punctuation.
- * Splits on whitespace only, then strips leading/trailing punctuation from the
- * bare `word` form. Tokens that are entirely punctuation are discarded.
+ * Splits text into word tokens (whitespace-split), preserving punctuation on each token.
+ * Tokens that are entirely punctuation are discarded.
  */
-export function splitIntoWordTokens(text: string): WordToken[] {
+export function splitIntoWordTokens(text: string): string[] {
 	return text
 		.split(/\s+/)
 		.filter(Boolean)
-		.map((token) => ({
-			word: token.replace(/^[,?.!:;]+|[,?.!:;]+$/g, ''),
-			displayWord: token
-		}))
-		.filter((t) => t.word.length > 0);
+		.filter((token) => stripPunctuation(token).length > 0);
 }

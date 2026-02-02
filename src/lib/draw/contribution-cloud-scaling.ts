@@ -4,6 +4,7 @@ import TimelineStore from '../../stores/timelineStore';
 import type { ConfigStoreType } from '../../stores/configStore';
 import type { DataPoint } from '../../models/dataPoint';
 import type { Bounds } from './types/bounds';
+import { stripPunctuation } from '../core/string-utils';
 
 export interface Scaling {
 	minTextSize: number;
@@ -115,7 +116,7 @@ function estimateScaleFactor(words: DataPoint[], availableWidth: number, availab
 	let prevSpeaker: string | null = null;
 
 	for (const word of words) {
-		totalChars += word.word.length + 1;
+		totalChars += stripPunctuation(word.word).length + 1;
 		if (config.separateToggle && prevSpeaker !== null && word.speaker !== prevSpeaker) {
 			speakerChanges++;
 		}
@@ -145,7 +146,8 @@ function measureHeight(sk: p5, words: DataPoint[], scaleFactor: number, availabl
 
 	for (const word of words) {
 		const textSize = sk.map(word.count, 1, config.repeatWordSliderValue, minSize, maxSize, true);
-		const wordWidth = getWordWidth(sk, word.word, textSize);
+		const stripped = stripPunctuation(word.word);
+		const wordWidth = getWordWidth(sk, stripped, textSize);
 
 		if (config.separateToggle && prevSpeaker !== null && word.speaker !== prevSpeaker) {
 			x = 0;
@@ -155,7 +157,7 @@ function measureHeight(sk: p5, words: DataPoint[], scaleFactor: number, availabl
 			height += lineHeight;
 		}
 
-		x += getWordWidth(sk, word.word + ' ', textSize);
+		x += getWordWidth(sk, stripped + ' ', textSize);
 		prevSpeaker = word.speaker;
 	}
 

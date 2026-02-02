@@ -177,7 +177,7 @@ export class SpeakerGarden {
 			if (!firstWords.has(element.turnNumber)) {
 				firstWords.add(element.turnNumber);
 				this.localArrayOfFirstWords.push(element);
-				wordsToDisplay.push(element.displayWord);
+				wordsToDisplay.push(element.word);
 			}
 		});
 

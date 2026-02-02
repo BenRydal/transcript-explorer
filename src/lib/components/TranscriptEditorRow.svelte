@@ -1,7 +1,7 @@
 <script lang="ts">
 	import { onMount } from 'svelte';
 	import type { Turn } from '$lib/core/turn-utils';
-	import { getTurnDisplayContent } from '$lib/core/turn-utils';
+	import { getTurnContent } from '$lib/core/turn-utils';
 	import { toSeconds, formatTimeAuto } from '$lib/core/time-utils';
 	import { toTitleCase, normalizeSpeakerName } from '$lib/core/string-utils';
 	import VideoStore from '../../stores/videoStore';
@@ -51,13 +51,13 @@
 
 	// Start editing content
 	function startEditingContent() {
-		editedContent = getTurnDisplayContent(turn);
+		editedContent = getTurnContent(turn);
 		editMode = 'content';
 	}
 
 	// Save content changes
 	function saveContent() {
-		if (editedContent.trim() !== getTurnDisplayContent(turn)) {
+		if (editedContent.trim() !== getTurnContent(turn)) {
 			onedit?.({
 				turnNumber: turn.turnNumber,
 				field: 'content',
@@ -335,7 +335,7 @@
 		</div>
 	{:else}
 		<button class="turn-content" onclick={(e) => { e.stopPropagation(); startEditingContent(); }} title="Click to edit content">
-			{getTurnDisplayContent(turn)}
+			{getTurnContent(turn)}
 		</button>
 	{/if}
 

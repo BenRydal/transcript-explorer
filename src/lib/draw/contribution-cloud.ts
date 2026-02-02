@@ -17,7 +17,7 @@ import TranscriptStore from '../../stores/transcriptStore';
 import TimelineStore from '../../stores/timelineStore';
 import { showTooltip } from '../../stores/tooltipStore';
 import { formatTimeCompact } from '../core/time-utils';
-import { normalizeWord } from '../core/string-utils';
+import { normalizeWord, stripPunctuation } from '../core/string-utils';
 import type { DataPoint } from '../../models/dataPoint';
 import type { User } from '../../models/user';
 import type { Bounds } from './types/bounds';
@@ -138,7 +138,7 @@ export class ContributionCloud {
 			buffer.textSize(pos.textSize);
 			buffer.noStroke();
 			pos.user?.enabled ? buffer.fill(pos.user.color) : buffer.fill(255);
-			buffer.text(pos.word.word, pos.x, pos.y);
+			buffer.text(stripPunctuation(pos.word.word), pos.x, pos.y);
 		}
 
 		bufferCache.buffer = buffer;
@@ -152,7 +152,8 @@ export class ContributionCloud {
 
 		for (const word of words) {
 			const textSize = this.sk.map(word.count, 1, this.config.repeatWordSliderValue, scaling.minTextSize, scaling.maxTextSize, true);
-			const width = getWordWidth(this.sk, word.word, textSize);
+			const stripped = stripPunctuation(word.word);
+			const width = getWordWidth(this.sk, stripped, textSize);
 			const isNewSpeaker = prevSpeaker !== null && word.speaker !== prevSpeaker;
 
 			if (this.config.separateToggle && isNewSpeaker) {
@@ -178,7 +179,7 @@ export class ContributionCloud {
 				});
 			}
 
-			x += getWordWidth(this.sk, word.word + ' ', textSize);
+			x += getWordWidth(this.sk, stripped + ' ', textSize);
 			prevSpeaker = word.speaker;
 		}
 
@@ -227,7 +228,7 @@ export class ContributionCloud {
 				this.sk.textSize(pos.textSize);
 				this.sk.noStroke();
 				this.sk.fill(color);
-				this.sk.text(pos.word.word, screenX, screenY);
+				this.sk.text(stripPunctuation(pos.word.word), screenX, screenY);
 
 				this.sk.noFill();
 				this.sk.stroke(color);
@@ -263,7 +264,7 @@ export class ContributionCloud {
 			}
 		}
 
-		let content = `<b>${word.speaker}:</b> ${turnContext || word.displayWord}`;
+		let content = `<b>${word.speaker}:</b> ${turnContext || word.word}`;
 
 		const details = [`×${totalCount}`, `Turn ${word.turnNumber}`];
 		const transcript = get(TranscriptStore);
@@ -284,7 +285,7 @@ export class ContributionCloud {
 		if (turnPositions.length === 0) return null;
 
 		const hoveredIndex = turnPositions.findIndex((p) => p.word === word);
-		const parts = turnPositions.map((p, i) => (i === hoveredIndex ? `<b>${p.word.displayWord}</b>` : p.word.displayWord));
+		const parts = turnPositions.map((p, i) => (i === hoveredIndex ? `<b>${p.word.word}</b>` : p.word.word));
 
 		let sentence = parts.join(' ');
 		if (sentence.length > MAX_TOOLTIP_LENGTH && hoveredIndex >= 0) {

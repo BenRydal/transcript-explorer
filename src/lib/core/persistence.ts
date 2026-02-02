@@ -14,7 +14,6 @@ interface PersistedDataPoint {
 	startTime: number;
 	endTime: number;
 	word: string;
-	displayWord?: string;
 	count: number;
 }
 
@@ -63,7 +62,6 @@ export function saveState(): void {
 				startTime: dp.startTime,
 				endTime: dp.endTime,
 				word: dp.word,
-				displayWord: dp.displayWord !== dp.word ? dp.displayWord : undefined,
 				count: dp.count
 			})),
 			totalTimeInSeconds: transcript.totalTimeInSeconds,
@@ -133,8 +131,7 @@ export function restoreState(): boolean {
 			dp.turnNumber,
 			dp.word,
 			dp.startTime,
-			dp.endTime,
-			dp.displayWord
+			dp.endTime
 		);
 		dataPoint.count = dp.count;
 		return dataPoint;

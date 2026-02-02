@@ -69,7 +69,7 @@ function createTranscriptFromTimedSegments(
 		tokens.forEach((token, wordIndex) => {
 			const wordStart = segment.start + wordIndex * wordDuration;
 			const wordEnd = segment.start + (wordIndex + 1) * wordDuration;
-			wordArray.push(new DataPoint(defaultSpeaker, turnIndex, token.word, wordStart, wordEnd, token.displayWord));
+			wordArray.push(new DataPoint(defaultSpeaker, turnIndex, token, wordStart, wordEnd));
 		});
 		turnIndex++;
 	}
@@ -126,7 +126,7 @@ export function createTranscriptFromParsedText(
 			const startTime = useTurnTime ? turn.startTime! : wordPosition;
 			// Use turn's endTime if available (CSV with end times), otherwise use startTime as placeholder
 			const endTime = useTurnTime ? (turn.endTime ?? turn.startTime!) : wordPosition + 1;
-			wordArray.push(new DataPoint(turn.speaker, actualTurnIndex, token.word, startTime, endTime, token.displayWord));
+			wordArray.push(new DataPoint(turn.speaker, actualTurnIndex, token, startTime, endTime));
 			wordPosition++;
 		});
 		actualTurnIndex++;

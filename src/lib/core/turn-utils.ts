@@ -6,7 +6,6 @@ export interface Turn {
 	startTime: number;
 	endTime: number;
 	words: string[];
-	displayWords: string[];
 	wordCount: number;
 }
 
@@ -25,13 +24,11 @@ export function getTurnsFromWordArray(wordArray: DataPoint[]): Turn[] {
 				startTime: dp.startTime,
 				endTime: dp.endTime,
 				words: [],
-				displayWords: [],
 				wordCount: 0
 			});
 		}
 		const turn = turnsMap.get(dp.turnNumber)!;
 		turn.words.push(dp.word);
-		turn.displayWords.push(dp.displayWord);
 		turn.wordCount++;
 	});
 
@@ -39,15 +36,8 @@ export function getTurnsFromWordArray(wordArray: DataPoint[]): Turn[] {
 }
 
 /**
- * Gets the content of a turn as a single string (bare words, for search/comparison).
+ * Gets the content of a turn as a single string.
  */
 export function getTurnContent(turn: Turn): string {
 	return turn.words.join(' ');
-}
-
-/**
- * Gets the display content of a turn with original punctuation preserved.
- */
-export function getTurnDisplayContent(turn: Turn): string {
-	return turn.displayWords.join(' ');
 }

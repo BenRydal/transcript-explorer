@@ -227,7 +227,7 @@ export class SpeakerHeatmap {
 		}
 		const turns = [...turnMap.values()].map((words) => ({
 			wordCount: words.length,
-			content: words.map((w) => w.displayWord).join(' ')
+			content: words.map((w) => w.word).join(' ')
 		}));
 		const multiTurn = turns.length > 1;
 

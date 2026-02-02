@@ -131,7 +131,7 @@
 				const firstDp = turnDataPoints[0];
 
 				// Create new DataPoints for the new words
-				const newDataPoints = tokens.map((token) => new DataPoint(firstDp.speaker, turnNumber, token.word, firstDp.startTime, firstDp.endTime, token.displayWord));
+				const newDataPoints = tokens.map((token) => new DataPoint(firstDp.speaker, turnNumber, token, firstDp.startTime, firstDp.endTime));
 
 				// Build new array: words before this turn + new words + words after this turn
 				const wordsBefore = transcript.wordArray.filter((dp) => dp.turnNumber < turnNumber);

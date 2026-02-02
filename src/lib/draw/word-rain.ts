@@ -672,7 +672,7 @@ export class WordRain {
 			const start = Math.max(0, idx - CONTEXT_WORDS_BEFORE);
 			const end = Math.min(turnWords.length, idx + CONTEXT_WORDS_AFTER + 1);
 			const snippet = turnWords.slice(start, end)
-				.map((w, i) => i + start === idx ? `<b>${w.displayWord}</b>` : w.displayWord)
+				.map((w, i) => i + start === idx ? `<b>${w.word}</b>` : w.word)
 				.join(' ');
 			samples.push(`"${start > 0 ? '...' : ''}${snippet}${end < turnWords.length ? '...' : ''}"`);
 
