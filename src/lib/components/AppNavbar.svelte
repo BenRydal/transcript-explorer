@@ -171,6 +171,11 @@
 		($ConfigStore.dashboardToggle && $ConfigStore.dashboardPanels.includes('speakerHeatmap'))
 	);
 
+	let showTurnLengthOptions = $derived(
+		$ConfigStore.turnLengthToggle ||
+		($ConfigStore.dashboardToggle && $ConfigStore.dashboardPanels.includes('turnLength'))
+	);
+
 	function handleConfigChangeFromInput(e: Event, key: keyof ConfigStoreType) {
 		const target = e.target as HTMLInputElement;
 		onconfigChange?.({ key, value: parseFloat(target.value) });
@@ -324,6 +329,23 @@
 								value={$ConfigStore.heatmapBinCount}
 								class="range"
 								oninput={(e) => handleConfigChangeFromInput(e, 'heatmapBinCount')}
+							/>
+						</li>
+					{/if}
+					{#if showTurnLengthOptions}
+						<li class="cursor-default">
+							<p>Bin Count: {$ConfigStore.turnLengthBinCount === 0 ? 'Auto' : $ConfigStore.turnLengthBinCount}</p>
+						</li>
+						<li>
+							<label for="turnLengthBinCount" class="sr-only">Turn length bin count</label>
+							<input
+								id="turnLengthBinCount"
+								type="range"
+								min="0"
+								max="60"
+								value={$ConfigStore.turnLengthBinCount}
+								class="range"
+								oninput={(e) => handleConfigChangeFromInput(e, 'turnLengthBinCount')}
 							/>
 						</li>
 					{/if}
@@ -520,6 +542,20 @@
 							value={$ConfigStore.heatmapBinCount}
 							class="range range-sm w-full"
 							oninput={(e) => handleConfigChangeFromInput(e, 'heatmapBinCount')}
+						/>
+					</div>
+				{/if}
+				{#if showTurnLengthOptions}
+					<div class="mt-2">
+						<label for="turnLengthBinCountMobile" class="text-sm">Bin Count: {$ConfigStore.turnLengthBinCount === 0 ? 'Auto' : $ConfigStore.turnLengthBinCount}</label>
+						<input
+							id="turnLengthBinCountMobile"
+							type="range"
+							min="0"
+							max="60"
+							value={$ConfigStore.turnLengthBinCount}
+							class="range range-sm w-full"
+							oninput={(e) => handleConfigChangeFromInput(e, 'turnLengthBinCount')}
 						/>
 					</div>
 				{/if}

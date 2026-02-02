@@ -209,11 +209,15 @@ export class TurnLengthDistribution {
 		let binSize: number;
 		let numBins: number;
 
+		const targetBins = this.config.turnLengthBinCount > 0
+			? this.config.turnLengthBinCount
+			: TARGET_BIN_COUNT;
+
 		if (range === 0) {
 			binSize = 1;
 			numBins = 1;
 		} else {
-			binSize = Math.max(1, Math.ceil(range / TARGET_BIN_COUNT));
+			binSize = Math.max(1, Math.ceil(range / targetBins));
 			numBins = Math.ceil(range / binSize) + 1;
 		}
 

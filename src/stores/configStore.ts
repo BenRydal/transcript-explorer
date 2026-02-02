@@ -50,6 +50,8 @@ export interface ConfigStoreType {
 	turnNetworkMinTransitions: number;
 	// Speaker Heatmap settings
 	heatmapBinCount: number;
+	// Turn Length settings
+	turnLengthBinCount: number;
 	// Legend overlay
 	legendVisible: boolean;
 }
@@ -106,6 +108,7 @@ export const initialConfig: ConfigStoreType = {
 	turnNetworkHideSelfLoops: false,
 	turnNetworkMinTransitions: 1,
 	heatmapBinCount: 0,
+	turnLengthBinCount: 0,
 	legendVisible: true
 };
 
