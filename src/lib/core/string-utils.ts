@@ -28,3 +28,26 @@ export function normalizeWord(word: string): string {
 export function splitIntoWords(text: string): string[] {
 	return text.split(/\s+|[,?.!:;]+/).filter(Boolean);
 }
+
+export interface WordToken {
+	/** Bare word with leading/trailing punctuation stripped */
+	word: string;
+	/** Original token preserving punctuation (e.g., "hello," or "world!") */
+	displayWord: string;
+}
+
+/**
+ * Splits text into word tokens, preserving display forms with punctuation.
+ * Splits on whitespace only, then strips leading/trailing punctuation from the
+ * bare `word` form. Tokens that are entirely punctuation are discarded.
+ */
+export function splitIntoWordTokens(text: string): WordToken[] {
+	return text
+		.split(/\s+/)
+		.filter(Boolean)
+		.map((token) => ({
+			word: token.replace(/^[,?.!:;]+|[,?.!:;]+$/g, ''),
+			displayWord: token
+		}))
+		.filter((t) => t.word.length > 0);
+}

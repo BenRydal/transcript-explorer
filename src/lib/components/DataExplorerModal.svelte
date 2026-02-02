@@ -87,7 +87,7 @@
 											<div class="space-y-2">
 												{#each $TranscriptStore.wordArray.filter((dp) => dp.speaker === user.name).slice(-3) as dataPoint}
 													<div class="p-2 bg-white rounded">
-														<p class="text-sm">"{dataPoint.word}"</p>
+														<p class="text-sm">"{dataPoint.displayWord}"</p>
 														<p class="text-xs text-gray-500">Time: {dataPoint.startTime.toFixed(2)}s - {dataPoint.endTime.toFixed(2)}s</p>
 													</div>
 												{/each}

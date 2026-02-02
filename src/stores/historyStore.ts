@@ -1,5 +1,5 @@
 import { writable, get } from 'svelte/store';
-import { DataPoint } from '../models/dataPoint';
+import type { DataPoint } from '../models/dataPoint';
 
 const MAX_HISTORY = 50;
 
@@ -15,11 +15,7 @@ function createHistoryStore() {
 	});
 
 	const snapshot = (wordArray: DataPoint[]) =>
-		wordArray.map((dp) => {
-			const copy = new DataPoint(dp.speaker, dp.turnNumber, dp.word, dp.startTime, dp.endTime);
-			copy.count = dp.count;
-			return copy;
-		});
+		wordArray.map((dp) => dp.copyWith());
 
 	return {
 		subscribe,

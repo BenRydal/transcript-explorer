@@ -1,4 +1,4 @@
-import { DataPoint } from '../../models/dataPoint';
+import type { DataPoint } from '../../models/dataPoint';
 import TranscriptStore from '../../stores/transcriptStore';
 import TimelineStore from '../../stores/timelineStore';
 import UserStore from '../../stores/userStore';
@@ -111,7 +111,7 @@ export class DynamicData {
 		for (const word of slice) {
 			if (config.stopWordsToggle && this.isStopWord(word.word)) continue;
 
-			const copy = new DataPoint(word.speaker, word.turnNumber, word.word, word.startTime, word.endTime);
+			const copy = word.copyWith();
 			const countKey = `${word.speaker}\0${normalizeWord(word.word)}`;
 			const existing = countMap.get(countKey);
 
@@ -209,9 +209,9 @@ export class DynamicData {
 			const existing = turnMap.get(word.turnNumber);
 			if (existing) {
 				existing.wordCount++;
-				existing.content += ' ' + word.word;
+				existing.content += ' ' + word.displayWord;
 			} else {
-				turnMap.set(word.turnNumber, { speaker: word.speaker, wordCount: 1, firstDataPoint: word, content: word.word });
+				turnMap.set(word.turnNumber, { speaker: word.speaker, wordCount: 1, firstDataPoint: word, content: word.displayWord });
 			}
 		}
 

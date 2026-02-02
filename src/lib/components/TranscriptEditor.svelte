@@ -12,7 +12,7 @@
 	import { applyTimingModeToWordArray, updateTimelineFromData, getMaxTime } from '$lib/core/timing-utils';
 	import type { Turn } from '$lib/core/turn-utils';
 	import { DataPoint } from '../../models/dataPoint';
-	import { normalizeWord } from '$lib/core/string-utils';
+	import { normalizeWord, splitIntoWordTokens } from '$lib/core/string-utils';
 	import { USER_COLORS, DEFAULT_SPEAKER_COLOR } from '$lib/constants/ui';
 	import EditorToolbar from './EditorToolbar.svelte';
 	import TranscriptEditorRow from './TranscriptEditorRow.svelte';
@@ -122,7 +122,7 @@
 
 			if (field === 'content') {
 				// Handle content edit - rebuild words for this turn
-				const newWords = value.split(/\s+/).filter(Boolean);
+				const tokens = splitIntoWordTokens(value);
 
 				// Find the first DataPoint of this turn to get metadata
 				const turnDataPoints = transcript.wordArray.filter((dp) => dp.turnNumber === turnNumber);
@@ -131,7 +131,7 @@
 				const firstDp = turnDataPoints[0];
 
 				// Create new DataPoints for the new words
-				const newDataPoints = newWords.map((word: string) => new DataPoint(firstDp.speaker, turnNumber, word, firstDp.startTime, firstDp.endTime));
+				const newDataPoints = tokens.map((token) => new DataPoint(firstDp.speaker, turnNumber, token.word, firstDp.startTime, firstDp.endTime, token.displayWord));
 
 				// Build new array: words before this turn + new words + words after this turn
 				const wordsBefore = transcript.wordArray.filter((dp) => dp.turnNumber < turnNumber);
@@ -142,20 +142,17 @@
 				updatedWordArray = transcript.wordArray.map((dp) => {
 					if (dp.turnNumber !== turnNumber) return dp;
 
-					return new DataPoint(newSpeakerName!, dp.turnNumber, dp.word, dp.startTime, dp.endTime);
+					return dp.copyWith({ speaker: newSpeakerName! });
 				});
 			} else {
 				// Handle time edits
 				updatedWordArray = transcript.wordArray.map((dp) => {
 					if (dp.turnNumber !== turnNumber) return dp;
 
-					return new DataPoint(
-						dp.speaker,
-						dp.turnNumber,
-						dp.word,
-						field === 'time' ? value.startTime : dp.startTime,
-						field === 'time' ? value.endTime : dp.endTime
-					);
+					return dp.copyWith({
+						startTime: field === 'time' ? value.startTime : dp.startTime,
+						endTime: field === 'time' ? value.endTime : dp.endTime
+					});
 				});
 			}
 
@@ -182,13 +179,7 @@
 				sortedTurns.forEach(([_oldTurnNumber, words], newTurnIndex) => {
 					words.forEach((dp) => {
 						updatedWordArray.push(
-							new DataPoint(
-								dp.speaker,
-								newTurnIndex, // new turn number based on sorted order
-								dp.word,
-								dp.startTime,
-								dp.endTime
-							)
+							dp.copyWith({ turnNumber: newTurnIndex })
 						);
 					});
 				});
@@ -350,7 +341,7 @@
 			// Renumber turns that come after the deleted one
 			const renumberedWordArray = updatedWordArray.map((dp) => {
 				if (dp.turnNumber > turnNumber) {
-					return new DataPoint(dp.speaker, dp.turnNumber - 1, dp.word, dp.startTime, dp.endTime);
+					return dp.copyWith({ turnNumber: dp.turnNumber - 1 });
 				}
 				return dp;
 			});
@@ -392,7 +383,7 @@
 			// Renumber all turns after the insertion point
 			const renumberedWordArray = transcript.wordArray.map((dp) => {
 				if (dp.turnNumber > turnNumber) {
-					return new DataPoint(dp.speaker, dp.turnNumber + 1, dp.word, dp.startTime, dp.endTime);
+					return dp.copyWith({ turnNumber: dp.turnNumber + 1 });
 				}
 				return dp;
 			});

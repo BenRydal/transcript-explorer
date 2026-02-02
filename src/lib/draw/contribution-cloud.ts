@@ -263,7 +263,7 @@ export class ContributionCloud {
 			}
 		}
 
-		let content = `<b>${word.speaker}:</b> ${turnContext || word.word}`;
+		let content = `<b>${word.speaker}:</b> ${turnContext || word.displayWord}`;
 
 		const details = [`×${totalCount}`, `Turn ${word.turnNumber}`];
 		const transcript = get(TranscriptStore);
@@ -284,7 +284,7 @@ export class ContributionCloud {
 		if (turnPositions.length === 0) return null;
 
 		const hoveredIndex = turnPositions.findIndex((p) => p.word === word);
-		const parts = turnPositions.map((p, i) => (i === hoveredIndex ? `<b>${p.word.word}</b>` : p.word.word));
+		const parts = turnPositions.map((p, i) => (i === hoveredIndex ? `<b>${p.word.displayWord}</b>` : p.word.displayWord));
 
 		let sentence = parts.join(' ');
 		if (sentence.length > MAX_TOOLTIP_LENGTH && hoveredIndex >= 0) {

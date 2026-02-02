@@ -24,7 +24,7 @@ export function exportTranscriptToCSV(): void {
 
 	const csvData = turns.map((turn) => ({
 		speaker: turn.speaker,
-		content: turn.words.join(' '),
+		content: turn.displayWords.join(' '),
 		...(includeStart && { start: formatTime(turn.startTime) }),
 		...(includeEnd && { end: formatTime(turn.endTime) })
 	}));
