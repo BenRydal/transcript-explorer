@@ -1,69 +1,103 @@
 <script lang="ts">
 	import { fly } from 'svelte/transition';
-	import { X, Info } from '@lucide/svelte';
+	import {
+		X,
+		Info,
+		Video,
+		Circle,
+		ArrowUpDown,
+		ArrowLeftRight,
+		Clock,
+		Type,
+		List,
+		Square,
+		ArrowRight,
+		Minus,
+		ChartBar,
+		Columns3
+	} from '@lucide/svelte';
+	import type { Component } from 'svelte';
 	import ConfigStore from '../../stores/configStore';
 	import UserStore from '../../stores/userStore';
 
-	type LegendItem = { label: string } & ({ symbol: string } | { speakerColors: true });
+	type LegendItem = { label: string } & (
+		| { icon: Component; iconColor?: string }
+		| { speakerColors: true }
+	);
+
+	const videoItem = (label: string): LegendItem => ({
+		icon: Video,
+		iconColor: '#16a34a',
+		label
+	});
 
 	const legendData: Record<string, { title: string; items: LegendItem[] }> = {
 		speakerGarden: {
 			title: 'Speaker Garden',
 			items: [
-				{ symbol: '\u2B24', label: 'Flower size \u2192 total words' },
-				{ symbol: '\u2195', label: 'Stalk height \u2192 number of turns' },
-				{ speakerColors: true, label: 'Color \u2192 speaker' }
+				{ icon: Circle, label: 'Flower size \u2192 total words' },
+				{ icon: ArrowUpDown, label: 'Stalk height \u2192 number of turns' },
+				{ speakerColors: true, label: 'Color \u2192 speaker' },
+				videoItem('Click flower \u2192 preview turns')
 			]
 		},
 		turnChart: {
 			title: 'Turn Chart',
 			items: [
-				{ symbol: '\u2194', label: 'Horizontal position \u2192 time' },
-				{ symbol: '\u2B2C', label: 'Bubble width \u2192 turn duration' },
-				{ symbol: '\u2195', label: 'Bubble height \u2192 words in turn' },
-				{ speakerColors: true, label: 'Color \u2192 speaker' }
+				{ icon: Clock, label: 'Horizontal position \u2192 time' },
+				{ icon: ArrowLeftRight, label: 'Bubble width \u2192 turn duration' },
+				{ icon: ArrowUpDown, label: 'Bubble height \u2192 words in turn' },
+				{ speakerColors: true, label: 'Color \u2192 speaker' },
+				videoItem('Click bubble \u2192 play from turn')
 			]
 		},
 		contributionCloud: {
 			title: 'Contribution Cloud',
 			items: [
-				{ symbol: '\u00b6', label: 'Words in transcript order' },
-				{ symbol: 'A', label: 'Text size \u2192 total count of word' },
-				{ speakerColors: true, label: 'Color \u2192 speaker' }
+				{ icon: List, label: 'Words in transcript order' },
+				{ icon: Type, label: 'Text size \u2192 total count of word' },
+				{ speakerColors: true, label: 'Color \u2192 speaker' },
+				videoItem('Click word \u2192 play from turn')
 			]
 		},
 		wordRain: {
 			title: 'Word Rain',
 			items: [
-				{ symbol: '\u2194', label: 'Position \u2192 mean time of word' },
-				{ symbol: 'A', label: 'Text size \u2192 total occurrences' },
-				{ symbol: '\u2502', label: 'Bar height \u2192 total occurrences' },
+				{ icon: Clock, label: 'Position \u2192 mean time of word' },
+				{ icon: Type, label: 'Text size \u2192 total occurrences' },
+				{ icon: ChartBar, label: 'Bar height \u2192 total occurrences' },
 				{ speakerColors: true, label: 'Color \u2192 dominant speaker' },
-				{ symbol: '\u25A0', label: 'Gray \u2192 shared across speakers' }
+				{ icon: Square, iconColor: '#9ca3af', label: 'Gray \u2192 shared across speakers' },
+				videoItem('Click word \u2192 play all occurrences')
 			]
 		},
 		speakerHeatmap: {
 			title: 'Speaker Heatmap',
 			items: [
-				{ speakerColors: true, label: 'Row \u2192 speaker' },
-				{ symbol: '\u2502', label: 'Column \u2192 time bin' },
-				{ symbol: '\u25A0', label: 'Cell opacity \u2192 words in bin' }
+				{ icon: ArrowUpDown, label: 'Row \u2192 speaker' },
+				{ icon: Columns3, label: 'Column \u2192 time bin' },
+				{ icon: Square, label: 'Cell opacity \u2192 words in bin' },
+				{ speakerColors: true, label: 'Color \u2192 speaker' },
+				videoItem('Click cell \u2192 play from turn')
 			]
 		},
 		turnNetwork: {
 			title: 'Turn Network',
 			items: [
-				{ speakerColors: true, label: 'Node size \u2192 total words' },
-				{ symbol: '\u2192', label: 'Arrow direction \u2192 who follows whom' },
-				{ symbol: '\u2500', label: 'Edge thickness \u2192 transitions' }
+				{ icon: Circle, label: 'Node size \u2192 total words' },
+				{ icon: ArrowRight, label: 'Arrow direction \u2192 who follows whom' },
+				{ icon: Minus, label: 'Edge thickness \u2192 transitions' },
+				{ speakerColors: true, label: 'Color \u2192 speaker' },
+				videoItem('Click node \u2192 play related turns')
 			]
 		},
 		turnLength: {
 			title: 'Turn Length',
 			items: [
-				{ symbol: '\u2194', label: 'X-axis \u2192 words per turn' },
-				{ symbol: '\u2195', label: 'Bar height \u2192 number of turns' },
-				{ speakerColors: true, label: 'Stacked colors \u2192 speaker' }
+				{ icon: ArrowLeftRight, label: 'X-axis \u2192 words per turn' },
+				{ icon: ArrowUpDown, label: 'Bar height \u2192 number of turns' },
+				{ speakerColors: true, label: 'Color \u2192 speaker' },
+				videoItem('Click bar \u2192 play related turns')
 			]
 		}
 	};
@@ -116,8 +150,11 @@
 						<div class="legend-item">
 							{#if 'speakerColors' in item && speakerGradient}
 								<span class="legend-gradient" style="background: {speakerGradient}"></span>
-							{:else if 'symbol' in item}
-								<span class="legend-symbol">{item.symbol}</span>
+							{:else if 'icon' in item}
+								{@const Icon = item.icon}
+								<span class="legend-icon" style={item.iconColor ? `color: ${item.iconColor}` : ''}>
+									<Icon size={12} fill={item.iconColor ? 'currentColor' : 'none'} />
+								</span>
 							{/if}
 							<span class="legend-label">{item.label}</span>
 						</div>
@@ -152,7 +189,7 @@
 
 	.legend-card {
 		padding: 6px 10px;
-		max-width: 220px;
+		max-width: 260px;
 	}
 
 	.legend-header {
@@ -200,11 +237,13 @@
 		line-height: 1.3;
 	}
 
-	.legend-symbol {
+	.legend-icon {
 		width: 14px;
-		text-align: center;
+		display: flex;
+		align-items: center;
+		justify-content: center;
 		flex-shrink: 0;
-		font-size: 0.65rem;
+		color: #6b7280;
 	}
 
 	.legend-gradient {
