@@ -82,11 +82,13 @@
 
 	const panelOptionsMap: Record<string, PanelOption[]> = {
 		speakerGarden: [
+			{ type: 'toggle', key: 'stopWordsToggle', label: 'Hide Stop Words' },
 			{ type: 'gardenSort' }
 		],
 		turnChart: [
 			{ type: 'toggle', key: 'separateToggle', label: 'Group by Speaker' },
-			{ type: 'toggle', key: 'silenceOverlapToggle', label: 'Silence Overlap' }
+			{ type: 'toggle', key: 'silenceOverlapToggle', label: 'Silence Overlap' },
+			{ type: 'toggle', key: 'stopWordsToggle', label: 'Hide Stop Words' }
 		],
 		contributionCloud: [
 			{ type: 'toggle', key: 'separateToggle', label: 'Group by Speaker' },
@@ -107,12 +109,15 @@
 		turnNetwork: [
 			{ type: 'toggle', key: 'turnNetworkHideSelfLoops', label: 'Hide Self-Loops' },
 			{ type: 'toggle', key: 'turnNetworkWeightByWords', label: 'Weight by Words' },
+			{ type: 'toggle', key: 'stopWordsToggle', label: 'Hide Stop Words' },
 			{ type: 'slider', key: 'turnNetworkMinTransitions', label: 'Min Transitions', min: 1, max: 20 }
 		],
 		speakerHeatmap: [
+			{ type: 'toggle', key: 'stopWordsToggle', label: 'Hide Stop Words' },
 			{ type: 'slider', key: 'heatmapBinCount', label: 'Bin Count', min: 0, max: 60, formatValue: formatBinCount }
 		],
 		turnLength: [
+			{ type: 'toggle', key: 'stopWordsToggle', label: 'Hide Stop Words' },
 			{ type: 'slider', key: 'turnLengthBinCount', label: 'Bin Count', min: 0, max: 60, formatValue: formatBinCount }
 		]
 	};
@@ -350,6 +355,9 @@
 										/>
 									</div>
 								{:else if option.type === 'gardenSort'}
+									<div class="py-1 px-1">
+										<label class="text-sm text-gray-600">Sort By</label>
+									</div>
 									{#each GARDEN_SORT_OPTIONS as sortOpt}
 										<button onclick={() => setGardenSort(sortOpt.order)} class="w-full text-left flex items-center text-sm py-1 px-1 rounded hover:bg-base-200">
 											<span class="w-4 h-4 mr-2 inline-flex items-center justify-center flex-shrink-0">
@@ -510,6 +518,7 @@
 								/>
 							</div>
 						{:else if option.type === 'gardenSort'}
+							<label class="text-sm text-gray-600">Sort By</label>
 							<div class="flex flex-wrap gap-1 w-full">
 								{#each GARDEN_SORT_OPTIONS as sortOpt}
 									<button
