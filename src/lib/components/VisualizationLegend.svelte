@@ -18,6 +18,7 @@
 	} from '@lucide/svelte';
 	import type { Component } from 'svelte';
 	import ConfigStore from '../../stores/configStore';
+	import TranscriptStore from '../../stores/transcriptStore';
 	import UserStore from '../../stores/userStore';
 
 	type LegendItem = { label: string } & (
@@ -31,76 +32,82 @@
 		label
 	});
 
-	const legendData: Record<string, { title: string; items: LegendItem[] }> = {
-		speakerGarden: {
-			title: 'Speaker Garden',
-			items: [
-				{ icon: Circle, label: 'Flower size \u2192 total words' },
-				{ icon: ArrowUpDown, label: 'Stalk height \u2192 number of turns' },
-				{ speakerColors: true, label: 'Color \u2192 speaker' },
-				videoItem('Click flower \u2192 preview turns')
-			]
-		},
-		turnChart: {
-			title: 'Turn Chart',
-			items: [
-				{ icon: Clock, label: 'Horizontal position \u2192 time' },
-				{ icon: ArrowLeftRight, label: 'Bubble width \u2192 turn duration' },
-				{ icon: ArrowUpDown, label: 'Bubble height \u2192 words in turn' },
-				{ speakerColors: true, label: 'Color \u2192 speaker' },
-				videoItem('Click bubble \u2192 play from turn')
-			]
-		},
-		contributionCloud: {
-			title: 'Contribution Cloud',
-			items: [
-				{ icon: List, label: 'Words in transcript order' },
-				{ icon: Type, label: 'Text size \u2192 total count of word' },
-				{ speakerColors: true, label: 'Color \u2192 speaker' },
-				videoItem('Click word \u2192 play from turn')
-			]
-		},
-		wordRain: {
-			title: 'Word Rain',
-			items: [
-				{ icon: Clock, label: 'Position \u2192 mean time of word' },
-				{ icon: Type, label: 'Text size \u2192 total occurrences' },
-				{ icon: ChartBar, label: 'Bar height \u2192 total occurrences' },
-				{ speakerColors: true, label: 'Color \u2192 dominant speaker' },
-				{ icon: Square, iconColor: '#9ca3af', label: 'Gray \u2192 shared across speakers' },
-				videoItem('Click word \u2192 play all occurrences')
-			]
-		},
-		speakerHeatmap: {
-			title: 'Speaker Heatmap',
-			items: [
-				{ icon: ArrowUpDown, label: 'Row \u2192 speaker' },
-				{ icon: Columns3, label: 'Column \u2192 time bin' },
-				{ icon: Square, label: 'Cell opacity \u2192 words in bin' },
-				{ speakerColors: true, label: 'Color \u2192 speaker' },
-				videoItem('Click cell \u2192 play from turn')
-			]
-		},
-		turnNetwork: {
-			title: 'Turn Network',
-			items: [
-				{ icon: Circle, label: 'Node size \u2192 total words' },
-				{ icon: ArrowRight, label: 'Arrow direction \u2192 who follows whom' },
-				{ icon: Minus, label: 'Edge thickness \u2192 transitions' },
-				{ speakerColors: true, label: 'Color \u2192 speaker' },
-				videoItem('Click node \u2192 play related turns')
-			]
-		},
-		turnLength: {
-			title: 'Turn Length',
-			items: [
-				{ icon: ArrowLeftRight, label: 'X-axis \u2192 words per turn' },
-				{ icon: ArrowUpDown, label: 'Bar height \u2192 number of turns' },
-				{ speakerColors: true, label: 'Color \u2192 speaker' },
-				videoItem('Click bar \u2192 play related turns')
-			]
-		}
-	};
+	let isUntimed = $derived($TranscriptStore.timingMode === 'untimed');
+
+	let legendData = $derived.by(() => {
+		const v = (label: string): LegendItem[] => isUntimed ? [] : [videoItem(label)];
+
+		return {
+			speakerGarden: {
+				title: 'Speaker Garden',
+				items: [
+					{ icon: Circle, label: 'Flower size \u2192 total words' },
+					{ icon: ArrowUpDown, label: 'Stalk height \u2192 number of turns' },
+					{ speakerColors: true, label: 'Color \u2192 speaker' },
+					...v('Click flower \u2192 preview turns')
+				]
+			},
+			turnChart: {
+				title: 'Turn Chart',
+				items: [
+					{ icon: Clock, label: `Horizontal position \u2192 ${isUntimed ? 'word count' : 'time'}` },
+					{ icon: ArrowLeftRight, label: `Bubble width \u2192 ${isUntimed ? 'turn length' : 'turn duration'}` },
+					{ icon: ArrowUpDown, label: 'Bubble height \u2192 words in turn' },
+					{ speakerColors: true, label: 'Color \u2192 speaker' },
+					...v('Click bubble \u2192 play from turn')
+				]
+			},
+			contributionCloud: {
+				title: 'Contribution Cloud',
+				items: [
+					{ icon: List, label: 'Words in transcript order' },
+					{ icon: Type, label: 'Text size \u2192 total count of word' },
+					{ speakerColors: true, label: 'Color \u2192 speaker' },
+					...v('Click word \u2192 play from turn')
+				]
+			},
+			wordRain: {
+				title: 'Word Rain',
+				items: [
+					{ icon: Clock, label: `Position \u2192 ${isUntimed ? 'mean position of word' : 'mean time of word'}` },
+					{ icon: Type, label: 'Text size \u2192 total occurrences' },
+					{ icon: ChartBar, label: 'Bar height \u2192 total occurrences' },
+					{ speakerColors: true, label: 'Color \u2192 dominant speaker' },
+					{ icon: Square, iconColor: '#9ca3af', label: 'Gray \u2192 shared across speakers' },
+					...v('Click word \u2192 play all occurrences')
+				]
+			},
+			speakerHeatmap: {
+				title: 'Speaker Heatmap',
+				items: [
+					{ icon: ArrowUpDown, label: 'Row \u2192 speaker' },
+					{ icon: Columns3, label: `Column \u2192 ${isUntimed ? 'word count bin' : 'time bin'}` },
+					{ icon: Square, label: 'Cell opacity \u2192 words in bin' },
+					{ speakerColors: true, label: 'Color \u2192 speaker' },
+					...v('Click cell \u2192 play from turn')
+				]
+			},
+			turnNetwork: {
+				title: 'Turn Network',
+				items: [
+					{ icon: Circle, label: 'Node size \u2192 total words' },
+					{ icon: ArrowRight, label: 'Arrow direction \u2192 who follows whom' },
+					{ icon: Minus, label: 'Edge thickness \u2192 transitions' },
+					{ speakerColors: true, label: 'Color \u2192 speaker' },
+					...v('Click node \u2192 play related turns')
+				]
+			},
+			turnLength: {
+				title: 'Turn Length',
+				items: [
+					{ icon: ArrowLeftRight, label: 'X-axis \u2192 words per turn' },
+					{ icon: ArrowUpDown, label: 'Bar height \u2192 number of turns' },
+					{ speakerColors: true, label: 'Color \u2192 speaker' },
+					...v('Click bar \u2192 play related turns')
+				]
+			}
+		} as Record<string, { title: string; items: LegendItem[] }>;
+	});
 
 	const VIZ_TOGGLES = [
 		['speakerGardenToggle', 'speakerGarden'],
