@@ -10,45 +10,15 @@
 		onStartTour?: (() => void) | null;
 	}
 
-	let {
-		isModalOpen = writable(false),
-		onLoadExample = null,
-		onOpenUpload = null,
-		onOpenPaste = null,
-		onStartTour = null
-	}: Props = $props();
+	let { isModalOpen = writable(false), onLoadExample = null, onOpenUpload = null, onOpenPaste = null, onStartTour = null }: Props = $props();
 
-	let activeTab: 'start' | 'views' | 'import' | 'create' = $state('start');
+	let activeTab: 'start' | 'import' | 'create' = $state('start');
 
 	const tabs = [
 		{ id: 'start', label: 'Get Started' },
-		{ id: 'views', label: 'Understand the Views' },
 		{ id: 'import', label: 'Import Transcript' },
 		{ id: 'create', label: 'Create Transcript' }
 	] as const;
-
-	const visualizations = [
-		{
-			img: 'speaker-garden',
-			title: 'Speaker Garden',
-			desc: 'Each flower represents a speaker. Flower size shows words spoken, stalk height shows number of turns.'
-		},
-		{
-			img: 'turn-chart',
-			title: 'Turn Chart',
-			desc: 'Each ellipse is one speaking turn. Width shows duration, height shows word count, position shows timing.'
-		},
-		{
-			img: 'contribution-cloud',
-			title: 'Contribution Cloud',
-			desc: 'Words appear as flowing text. Repeated words grow larger at their first occurrence.'
-		},
-		{
-			img: 'dashboard',
-			title: 'Dashboard',
-			desc: 'All three visualizations combined in a single view for comprehensive analysis.'
-		}
-	];
 
 	const examples = [
 		{
@@ -99,7 +69,9 @@
 	<!-- svelte-ignore a11y_no_noninteractive_element_interactions -->
 	<div
 		class="modal modal-open"
-		onclick={(e) => { if (e.target === e.currentTarget) $isModalOpen = false; }}
+		onclick={(e) => {
+			if (e.target === e.currentTarget) $isModalOpen = false;
+		}}
 		onkeydown={handleKeydown}
 		role="dialog"
 		aria-modal="true"
@@ -114,7 +86,7 @@
 					<div class="flex justify-between items-start">
 						<div class="flex-1 pr-8">
 							<h1 id="modal-title" class="text-3xl font-bold text-white italic mb-2">Transcript Explorer</h1>
-							<p class="text-blue-100 text-lg">An open-source tool to dynamically visualize and explore transcripts linked to video</p>
+							<p class="text-blue-100 text-lg">Visualize, explore, and create transcripts linked to video</p>
 						</div>
 						<button
 							class="btn btn-circle btn-ghost btn-sm text-white hover:bg-white/20 flex-shrink-0"
@@ -168,7 +140,9 @@
 							class="flex-1 bg-gradient-to-r from-amber-50 to-orange-50 border border-amber-200 rounded-lg p-4 hover:border-amber-400 transition-all group text-left"
 						>
 							<div class="flex items-center gap-3">
-								<div class="w-10 h-10 rounded-full bg-amber-100 flex items-center justify-center group-hover:bg-amber-200 transition-colors text-amber-600">
+								<div
+									class="w-10 h-10 rounded-full bg-amber-100 flex items-center justify-center group-hover:bg-amber-200 transition-colors text-amber-600"
+								>
 									<Lightbulb size={20} />
 								</div>
 								<div>
@@ -184,7 +158,9 @@
 							class="flex-1 bg-gradient-to-r from-blue-50 to-indigo-50 border border-blue-200 rounded-lg p-4 hover:border-blue-400 transition-all group text-left"
 						>
 							<div class="flex items-center gap-3">
-								<div class="w-10 h-10 rounded-full bg-blue-100 flex items-center justify-center group-hover:bg-blue-200 transition-colors text-blue-600">
+								<div
+									class="w-10 h-10 rounded-full bg-blue-100 flex items-center justify-center group-hover:bg-blue-200 transition-colors text-blue-600"
+								>
 									<CirclePlay size={20} />
 								</div>
 								<div>
@@ -212,17 +188,6 @@
 									</div>
 								</div>
 							</button>
-						{/each}
-					</div>
-				{:else if activeTab === 'views'}
-					<!-- Understand the Views Tab -->
-					<div class="grid grid-cols-2 gap-4">
-						{#each visualizations as viz}
-							<div class="p-3 rounded-lg hover:bg-gray-50 transition-colors">
-								<img src="/images/thumbs-modes/{viz.img}.webp" alt={viz.title} class="rounded border border-gray-200 w-full mb-2" />
-								<h4 class="font-semibold text-gray-800 mb-1">{viz.title}</h4>
-								<p class="text-sm text-gray-600">{viz.desc}</p>
-							</div>
 						{/each}
 					</div>
 				{:else if activeTab === 'import'}
@@ -296,7 +261,9 @@
 							<Video size={20} class="text-blue-600 flex-shrink-0 mt-0.5" />
 							<div>
 								<h4 class="font-medium text-blue-800 mb-1">Link with video</h4>
-								<p class="text-sm text-blue-700">If your transcript has timestamps, you can also upload an MP4 or paste a YouTube link to sync visualizations with video playback.</p>
+								<p class="text-sm text-blue-700">
+									If your transcript has timestamps, you can also upload an MP4 or paste a YouTube link to sync visualizations with video playback.
+								</p>
 							</div>
 						</div>
 					</div>
@@ -308,7 +275,12 @@
 						</button>
 						<button class="btn btn-outline" onclick={() => closeAndRun(onOpenPaste)}>
 							<svg xmlns="http://www.w3.org/2000/svg" class="w-5 h-5 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-								<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
+								<path
+									stroke-linecap="round"
+									stroke-linejoin="round"
+									stroke-width="2"
+									d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"
+								/>
 							</svg>
 							Paste Text
 						</button>
@@ -326,7 +298,9 @@
 								</div>
 								<div class="flex-1">
 									<h4 class="font-semibold text-gray-800 mb-1">Auto-Transcribe with AI</h4>
-									<p class="text-sm text-gray-600 mb-3">Upload an MP4 video and let AI generate a transcript automatically. Everything runs in your browser—no data is sent anywhere.</p>
+									<p class="text-sm text-gray-600 mb-3">
+										Upload an MP4 video and let AI generate a transcript automatically. Everything runs in your browser—no data is sent anywhere.
+									</p>
 									<div class="text-xs text-gray-500 space-y-1 mb-4">
 										<p><strong>How it works:</strong> Upload video → Click "Auto-Transcribe" → Edit result in the transcript editor</p>
 										<p><strong>Note:</strong> English only. All speech is assigned to one speaker—use the editor to assign speakers afterward.</p>
@@ -347,7 +321,9 @@
 								</div>
 								<div class="flex-1">
 									<h4 class="font-semibold text-gray-800 mb-1">Transcribe Manually</h4>
-									<p class="text-sm text-gray-600 mb-3">Upload a video, then use Transcribe Mode—a focused workspace designed for efficient manual transcription.</p>
+									<p class="text-sm text-gray-600 mb-3">
+										Upload a video, then use Transcribe Mode—a focused workspace designed for efficient manual transcription.
+									</p>
 									<div class="text-xs text-gray-500 space-y-1 mb-4">
 										<p><strong>How it works:</strong> Upload video → Click "Transcribe" in the navbar → Type while controlling playback</p>
 										<p><strong>Keyboard shortcuts:</strong> Space to pause, arrow keys to skip, capture timestamps as you go</p>
