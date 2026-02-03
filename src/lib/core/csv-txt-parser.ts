@@ -27,14 +27,19 @@ export function parseTXTLines(lines: string[]): ParseResult {
 
 		let speaker: string;
 		let words: string[];
+		let rawContent: string;
 
 		if (colonIndex > 0) {
 			speaker = normalizeSpeakerName(trimmedLine.slice(0, colonIndex));
-			words = splitIntoWords(trimmedLine.slice(colonIndex + 1));
+			rawContent = trimmedLine.slice(colonIndex + 1).trim();
+			words = splitIntoWords(rawContent);
 		} else {
-			// Fallback: first word is speaker (split entire line, first word becomes speaker)
-			words = splitIntoWords(trimmedLine);
-			speaker = normalizeSpeakerName(words.shift() || '');
+			// Fallback: first whitespace-separated token is speaker, rest is content
+			const firstSpaceIdx = trimmedLine.search(/\s/);
+			if (firstSpaceIdx < 0) continue;
+			speaker = normalizeSpeakerName(trimmedLine.slice(0, firstSpaceIdx));
+			rawContent = trimmedLine.slice(firstSpaceIdx).trim();
+			words = splitIntoWords(rawContent);
 		}
 
 		if (!speaker || !words.length) continue;
@@ -42,7 +47,7 @@ export function parseTXTLines(lines: string[]): ParseResult {
 		speakerSet.add(speaker);
 		turns.push({
 			speaker,
-			content: words.join(' '),
+			content: rawContent,
 			startTime: null,
 			endTime: null
 		});
@@ -100,7 +105,7 @@ export function parseCSVRows(
 
 		const speaker = normalizeSpeakerName(String(row[headers[0]]));
 		const contentStr = String(row[headers[1]] ?? '').trim();
-		const words = splitIntoWords(contentStr);
+		const words = splitIntoWords(contentStr); // bare words for validation/counting
 		if (!words.length) continue;
 
 		state.speakerSet.add(speaker);
@@ -152,7 +157,7 @@ export function parseCSVRows(
 
 		state.turns.push({
 			speaker,
-			content: words.join(' '),
+			content: contentStr,
 			startTime,
 			endTime
 		});

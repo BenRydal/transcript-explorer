@@ -17,7 +17,9 @@
 
 	let { onundo, onredo }: Props = $props();
 
-	let confirmModal: { mode: TimingMode; message: string } | null = $state(null);
+	let showConfirmModal = $state(false);
+	let pendingMode: TimingMode | null = $state(null);
+	let confirmMessage = $state('');
 
 	function toggleOrientation() {
 		EditorStore.update((state) => ({
@@ -38,9 +40,13 @@
 		if (mode === currentMode) return;
 
 		if (mode === 'untimed') {
-			confirmModal = { mode, message: 'This will remove all timestamps. This cannot be undone.' };
+			pendingMode = mode;
+			confirmMessage = 'This will remove all timestamps. This cannot be undone.';
+			showConfirmModal = true;
 		} else if (mode === 'startOnly' && currentMode === 'startEnd') {
-			confirmModal = { mode, message: 'This will remove end times. This cannot be undone.' };
+			pendingMode = mode;
+			confirmMessage = 'This will remove end times. This cannot be undone.';
+			showConfirmModal = true;
 		} else {
 			applyTimingMode(mode);
 		}
@@ -58,8 +64,8 @@
 	}
 
 	function onConfirm() {
-		if (confirmModal) applyTimingMode(confirmModal.mode);
-		confirmModal = null;
+		if (pendingMode) applyTimingMode(pendingMode);
+		pendingMode = null;
 	}
 
 	let isVertical = $derived($EditorStore.config.orientation === 'vertical');
@@ -135,11 +141,10 @@
 </div>
 
 <ConfirmModal
-	isOpen={!!confirmModal}
+	bind:isOpen={showConfirmModal}
 	title="Change Timing Mode?"
-	message={confirmModal?.message ?? ''}
+	message={confirmMessage}
 	onconfirm={onConfirm}
-	oncancel={() => (confirmModal = null)}
 />
 
 <style>

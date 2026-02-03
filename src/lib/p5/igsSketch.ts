@@ -1,7 +1,6 @@
 import P5Store from '../../stores/p5Store';
 import TranscriptStore from '../../stores/transcriptStore.js';
 import UserStore from '../../stores/userStore';
-import type { User } from '../../models/user';
 import TimelineStore from '../../stores/timelineStore';
 import ConfigStore from '../../stores/configStore';
 import EditorStore from '../../stores/editorStore';
@@ -10,8 +9,9 @@ import type { VideoState } from '../../stores/videoStore';
 import { handleVisualizationClick } from '../video/video-interaction';
 import { Draw } from '../draw/draw';
 import { DynamicData } from '../core/dynamic-data';
+import { getP5ContainerRect } from '../core/layout-utils';
 
-let users: User[] = [];
+let users: any[] = [];
 let timeline, transcript, currConfig, editorState;
 let videoState: VideoState;
 let canHover = true;
@@ -53,7 +53,6 @@ export const igsSketch = (p5: any) => {
 		p5.createCanvas(width, height);
 		p5.dynamicData = new DynamicData();
 		p5.renderer = new Draw(p5);
-		p5.SPACING = 25;
 		p5.toolTipTextSize = 30;
 		p5.textFont(p5.font);
 		p5.animationCounter = 0; // controls animation of data
@@ -71,9 +70,8 @@ export const igsSketch = (p5: any) => {
 	};
 
 	p5.getContainerSize = () => {
-		const container = document.getElementById('p5-container');
-		if (container) {
-			const rect = container.getBoundingClientRect();
+		const rect = getP5ContainerRect();
+		if (rect) {
 			return { width: rect.width, height: rect.height };
 		}
 		// Fallback to window-based calculation
@@ -96,11 +94,8 @@ export const igsSketch = (p5: any) => {
 			return;
 		}
 
-		const { firstWordOfTurnSelectedInTurnChart, selectedWordFromContributionCloud, arrayOfFirstWords } = currConfig;
-		const hasPlayableHover =
-			firstWordOfTurnSelectedInTurnChart ||
-			selectedWordFromContributionCloud ||
-			arrayOfFirstWords?.length > 0;
+		const { hoveredDataPoint, arrayOfFirstWords } = currConfig;
+		const hasPlayableHover = hoveredDataPoint || arrayOfFirstWords?.length > 0;
 
 		p5.cursor(hasPlayableHover ? p5.HAND : p5.ARROW);
 	};
@@ -156,7 +151,9 @@ export const igsSketch = (p5: any) => {
 	};
 
 	p5.continueTimelineAnimation = () => {
-		const timeToSet = videoState.isLoaded && videoState.isPlaying
+		const useVideoTime =
+			videoState.isLoaded && videoState.isPlaying && transcript.timingMode !== 'untimed';
+		const timeToSet = useVideoTime
 			? videoState.currentTime
 			: timeline.currTime + (currConfig.animationRate * Math.min(p5.deltaTime, 100)) / 1000;
 
@@ -192,7 +189,7 @@ export const igsSketch = (p5: any) => {
 	p5.handleSpeakerFilterClick = () => {
 		if (!editorState?.config?.isVisible) return;
 
-		const hoveredSpeaker = currConfig.hoveredSpeakerInDistributionDiagram;
+		const hoveredSpeaker = currConfig.hoveredSpeakerInGarden;
 		if (hoveredSpeaker) {
 			EditorStore.update((state) => ({
 				...state,
@@ -201,7 +198,7 @@ export const igsSketch = (p5: any) => {
 					filteredSpeaker: hoveredSpeaker,
 					highlightedSpeaker: hoveredSpeaker,
 					selectedTurnNumber: null,
-					selectionSource: 'distributionDiagramClick'
+					selectionSource: 'visualizationClick'
 				}
 			}));
 		}
@@ -222,29 +219,17 @@ export const igsSketch = (p5: any) => {
 	};
 
 	/**
-	 * Determines whether to draw an item/word object based on specified properties and conditions.
-	 * Used to highlight data in the dashboard view.
-	 * @param {Object} item - The word/item to be checked for drawing.
-	 * @param {string} comparisonProperty - The property of the word to compare (e.g., 'turnNumber').
-	 * @param {string} selectedProperty - The property name in this object for comparison (e.g., 'firstWordOfTurnSelectedInTurnChart').
-	 * @returns {boolean} - True if the item should be drawn, false otherwise.
+	 * Determines whether to draw an item in the dashboard view based on cross-highlight state.
+	 * Returns false to dim items that don't match the highlighted turn/speaker.
 	 */
-	p5.shouldDraw = (item: any, comparisonProperty: string, selectedProperty: string) => {
-		// Retrieve the comparison object safely
-		const comparisonObject = currConfig[selectedProperty] ?? {};
-
-		// Ensure first words array is defined and has at least one element
-		const hasFirstWords = Array.isArray(currConfig.arrayOfFirstWords) && currConfig.arrayOfFirstWords.length > 0;
-
-		// Safely check if the item's property matches the comparison object's property
-		const matchesComparisonProperty =
-			comparisonObject && comparisonProperty in comparisonObject ? item[comparisonProperty] === comparisonObject[comparisonProperty] : true;
-
-		// Safely check if the item's speaker matches the first word's speaker
-		const matchesFirstSpeaker =
-			hasFirstWords && currConfig.arrayOfFirstWords[0]?.speaker ? item.speaker === currConfig.arrayOfFirstWords[0].speaker : true;
-
-		return matchesComparisonProperty && matchesFirstSpeaker;
+	p5.shouldDraw = (item: any) => {
+		const turns = currConfig.dashboardHighlightAllTurns;
+		if (turns) return turns.includes(item.turnNumber);
+		const turn = currConfig.dashboardHighlightTurn;
+		const speaker = currConfig.dashboardHighlightSpeaker;
+		const matchesTurn = turn != null ? item.turnNumber === turn : true;
+		const matchesSpeaker = speaker ? item.speaker === speaker : true;
+		return matchesTurn && matchesSpeaker;
 	};
 
 	p5.overRect = (x: number, y: number, boxWidth: number, boxHeight: number) => {

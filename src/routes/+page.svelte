@@ -49,6 +49,8 @@
 	import SpeakerControls from '$lib/components/SpeakerControls.svelte';
 	import TranscribeModeLayout from '$lib/components/TranscribeModeLayout.svelte';
 	import RecoveryModal from '$lib/components/RecoveryModal.svelte';
+	import DashboardOverlay from '$lib/components/DashboardOverlay.svelte';
+	import VisualizationLegend from '$lib/components/VisualizationLegend.svelte';
 
 	import type { TranscriptionResult } from '$lib/core/transcription-service';
 
@@ -170,6 +172,22 @@
 	$effect(() => {
 		$filterToggleKey;
 		if (browser) p5Instance?.fillSelectedData();
+	});
+
+	// Sync visualization hover to editor selection (scroll editor to hovered turn)
+	// Use get() for EditorStore to avoid reactive dependency cycle (this effect writes to EditorStore)
+	$effect(() => {
+		const hovered = $ConfigStore.hoveredDataPoint;
+		if (hovered && get(EditorStore).config.isVisible) {
+			EditorStore.update((state) => ({
+				...state,
+				selection: {
+					...state.selection,
+					selectedTurnNumber: hovered.turnNumber,
+					selectionSource: 'visualization'
+				}
+			}));
+		}
 	});
 
 	// Resize canvas when editor layout changes
@@ -561,9 +579,13 @@
 					<div class="h-full relative" id="p5-container" data-tour="visualization">
 						<P5 {sketch} />
 						<CanvasTooltip />
-						{#if $ConfigStore.cloudHasOverflow && ($ConfigStore.contributionCloudToggle || $ConfigStore.dashboardToggle)}
-							<div class="badge badge-neutral absolute bottom-3 right-3">Some content not shown</div>
+						<VisualizationLegend />
+						{#if $ConfigStore.dashboardToggle}
+							<DashboardOverlay />
 						{/if}
+						{#each $ConfigStore.overflowBounds as b}
+							<div class="badge badge-neutral absolute" style="left: {b.x + b.width - 12}px; top: {b.y + b.height - 12}px; transform: translate(-100%, -100%);">Some content not shown</div>
+						{/each}
 						{#if hasVideoSource}
 							<VideoContainer />
 						{/if}

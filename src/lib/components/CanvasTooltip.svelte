@@ -1,22 +1,19 @@
 <script lang="ts">
 	import { tick } from 'svelte';
 	import TooltipStore from '../../stores/tooltipStore';
+	import { getP5ContainerRect, clamp } from '../core/layout-utils';
 
 	const TOOLTIP_MAX_WIDTH = 500;
 	const EDGE_PADDING = 20;
 	const MAX_PREVIEW_WORDS = 100;
 
-	// Format content - truncate long content and show word count
+	// Truncate long plain-text content; HTML-structured content is already
+	// truncated by the visualization so we leave it alone.
 	function formatContent(content: string): string {
+		if (content.includes('<')) return content;
 		const words = content.split(/\s+/).filter((w) => w.length > 0);
-		const wordCount = words.length;
-
-		if (wordCount <= MAX_PREVIEW_WORDS) {
-			return content;
-		}
-
-		const preview = words.slice(0, MAX_PREVIEW_WORDS).join(' ');
-		return `${preview}... (${wordCount} words)`;
+		if (words.length <= MAX_PREVIEW_WORDS) return content;
+		return `${words.slice(0, MAX_PREVIEW_WORDS).join(' ')}... (${words.length} words)`;
 	}
 
 	let displayContent = $derived(formatContent($TooltipStore.content));
@@ -27,10 +24,7 @@
 
 	$effect(() => {
 		if ($TooltipStore.visible) {
-			const container = document.getElementById('p5-container');
-			if (container) {
-				containerRect = container.getBoundingClientRect();
-			}
+			containerRect = getP5ContainerRect();
 		}
 	});
 
@@ -108,7 +102,7 @@
 				if (tooltipEl) {
 					const tooltipWidth = tooltipEl.offsetWidth;
 					const tooltipLeft = containerWidth - EDGE_PADDING - tooltipWidth;
-					arrowLeftPx = Math.max(12, Math.min(tooltipWidth - 12, x - tooltipLeft));
+					arrowLeftPx = clamp(x - tooltipLeft, 12, tooltipWidth - 12);
 				}
 			});
 		}

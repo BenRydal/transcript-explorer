@@ -1,13 +1,33 @@
 import type p5 from 'p5';
+import type { DataPoint } from '../../models/dataPoint';
 import { TurnChart } from './turn-chart';
 import { ContributionCloud } from './contribution-cloud';
-import { DistributionDiagram } from './distribution-diagram';
+import { SpeakerGarden } from './speaker-garden';
+import { SpeakerHeatmap } from './speaker-heatmap';
+import { TurnNetwork } from './turn-network';
+import { WordRain } from './word-rain';
+import { TurnLengthDistribution } from './turn-length-distribution';
 import ConfigStore, { type ConfigStoreType } from '../../stores/configStore';
-import EditorStore, { type EditorState, type EditorSelection } from '../../stores/editorStore';
 import { resetTooltipFrame, finalizeTooltipFrame } from '../../stores/tooltipStore';
-import type { Bounds, DashboardBounds } from './types/bounds';
+import type { Bounds } from './types/bounds';
+import { CANVAS_SPACING } from '../constants/ui';
 
-type SelectionSource = EditorSelection['selectionSource'];
+interface DrawResult {
+	hover: DataPoint | null;
+	hoveredSpeaker: string | null;
+	arrayOfFirstWords: DataPoint[];
+	overflowBounds: Bounds[];
+	/** Panel key that produced the hover (for turn-level cross-highlight) */
+	hoverSource?: string;
+	/** Turn numbers involved in a turn-network edge hover */
+	edgeTurns?: number[] | null;
+}
+
+const emptyResult: DrawResult = { hover: null, hoveredSpeaker: null, arrayOfFirstWords: [], overflowBounds: [] };
+
+function result(overrides: Partial<DrawResult>): DrawResult {
+	return { ...emptyResult, ...overrides };
+}
 
 let currConfig: ConfigStoreType;
 
@@ -15,24 +35,18 @@ ConfigStore.subscribe((data) => {
 	currConfig = data;
 });
 
-// Helper to check if speaker filter is locked
-const isFilterLocked = (state: EditorState): boolean => state.selection.selectionSource === 'distributionDiagramClick';
+/** Panels that produce turn-level (not just speaker-level) cross-highlighting */
+const TURN_LEVEL_SOURCES = new Set(['turnChart', 'contributionCloud', 'speakerHeatmap']);
 
-// Helper to update editor selection while preserving locked filter
-const updateEditorSelection = (updates: Partial<EditorSelection>, source: SelectionSource): void => {
-	EditorStore.update((state) => {
-		const locked = isFilterLocked(state);
-		return {
-			...state,
-			selection: {
-				...state.selection,
-				...updates,
-				filteredSpeaker: locked ? state.selection.filteredSpeaker : (updates.filteredSpeaker ?? null),
-				selectionSource: locked ? state.selection.selectionSource : source
-			}
-		};
-	});
-};
+const TOGGLE_TO_PANEL: [keyof ConfigStoreType, string][] = [
+	['speakerGardenToggle', 'speakerGarden'],
+	['turnChartToggle', 'turnChart'],
+	['contributionCloudToggle', 'contributionCloud'],
+	['turnNetworkToggle', 'turnNetwork'],
+	['wordRainToggle', 'wordRain'],
+	['speakerHeatmapToggle', 'speakerHeatmap'],
+	['turnLengthToggle', 'turnLength']
+];
 
 export class Draw {
 	sk: p5;
@@ -42,109 +56,172 @@ export class Draw {
 	}
 
 	drawViz(): void {
-		// Reset tooltip state at start of each frame
 		resetTooltipFrame();
 
-		if (currConfig.distributionDiagramToggle) {
-			this.updateDistributionDiagram(this.getFullScreenBounds());
-		} else if (currConfig.turnChartToggle) {
-			this.updateTurnChart(this.getFullScreenBounds());
-		} else if (currConfig.contributionCloudToggle) {
-			this.updateContributionCloud(this.getFullScreenBounds());
+		let drawResult: DrawResult;
+		const activePanel = TOGGLE_TO_PANEL.find(([toggle]) => currConfig[toggle]);
+
+		if (activePanel) {
+			drawResult = this.updatePanel(activePanel[1], this.getFullScreenBounds());
 		} else {
-			this.drawDashboard();
+			drawResult = this.drawDashboard();
 		}
 
-		// Hide tooltip if nothing requested it this frame
+		this.applyDrawResult(drawResult, !activePanel);
 		finalizeTooltipFrame();
 	}
 
-	updateDistributionDiagram(pos: Bounds): void {
-		const distributionDiagram = new DistributionDiagram(this.sk, pos);
-		const { hoveredSpeaker } = distributionDiagram.draw(this.sk.dynamicData.getDynamicArrayForDistributionDiagram());
-		ConfigStore.update((config) => ({
-			...config,
-			arrayOfFirstWords: distributionDiagram.localArrayOfFirstWords,
-			hoveredSpeakerInDistributionDiagram: hoveredSpeaker
-		}));
-		// Sync to EditorStore - only update highlightedSpeaker if filter is locked, otherwise update both
-		EditorStore.update((state) => {
-			if (isFilterLocked(state)) {
-				return { ...state, selection: { ...state.selection, highlightedSpeaker: hoveredSpeaker } };
+	/** Write draw results to stores. Single place for all store writes per frame. */
+	applyDrawResult(r: DrawResult, isDashboard: boolean): void {
+		// Compute cross-highlight fields for next frame
+		let highlightSpeaker: string | null = null;
+		let highlightTurn: number | null = null;
+		let highlightTurns: number[] | null = null;
+
+		if (isDashboard) {
+			highlightSpeaker = r.hoveredSpeaker ?? null;
+			if (r.edgeTurns && r.edgeTurns.length > 0) {
+				// Edge hover in turn network: highlight specific turns, not speaker
+				highlightTurns = r.edgeTurns;
+				highlightSpeaker = null;
+			} else if (highlightSpeaker && r.hoverSource && TURN_LEVEL_SOURCES.has(r.hoverSource) && r.hover) {
+				highlightTurn = r.hover.turnNumber;
 			}
-			return {
-				...state,
-				selection: {
-					...state.selection,
-					highlightedSpeaker: hoveredSpeaker,
-					filteredSpeaker: hoveredSpeaker,
-					selectedTurnNumber: null,
-					selectionSource: 'distributionDiagram'
-				}
-			};
-		});
-	}
+		}
 
-	updateTurnChart(pos: Bounds): void {
-		const turnChart = new TurnChart(this.sk, pos);
-		turnChart.draw(this.sk.dynamicData.getDynamicArrayForTurnChart());
-		const selectedTurn = turnChart.userSelectedTurn;
-		ConfigStore.update((config) => ({
-			...config,
-			firstWordOfTurnSelectedInTurnChart: selectedTurn.turn[0]
+		ConfigStore.update((c) => ({
+			...c,
+			hoveredDataPoint: r.hover,
+			overflowBounds: r.overflowBounds,
+			arrayOfFirstWords: r.arrayOfFirstWords,
+			hoveredSpeakerInGarden: r.hoveredSpeaker,
+			dashboardHighlightSpeaker: highlightSpeaker,
+			dashboardHighlightTurn: highlightTurn,
+			dashboardHighlightAllTurns: highlightTurns
 		}));
-		updateEditorSelection(
-			{
-				selectedTurnNumber: selectedTurn?.turn?.[0]?.turnNumber ?? null,
-				highlightedSpeaker: null
-			},
-			'turnChart'
-		);
 	}
 
-	updateContributionCloud(pos: Bounds): void {
-		const contributionCloud = new ContributionCloud(this.sk, pos);
-		const { hoveredWord, hasOverflow } = contributionCloud.draw(this.sk.dynamicData.getDynamicArraySortedForContributionCloud());
-		ConfigStore.update((config) => ({
-			...config,
-			selectedWordFromContributionCloud: hoveredWord,
-			cloudHasOverflow: hasOverflow
-		}));
-		updateEditorSelection(
-			{
-				selectedTurnNumber: hoveredWord?.turnNumber ?? null,
-				highlightedSpeaker: null
-			},
-			'contributionCloud'
-		);
-	}
-
-	drawDashboard(): void {
-		const { top, bottomLeft, bottomRight } = this.getDashboardBounds();
-		this.drawDashboardDividers(top, bottomLeft);
-		this.updateTurnChart(top);
-		this.updateContributionCloud(bottomRight);
-		this.updateDistributionDiagram(bottomLeft);
-
-		// Correct EditorStore selection: prioritize turn chart/cloud over diagram
-		// (diagram runs last and overwrites, so we re-apply if needed)
-		const turnChartWord = currConfig.firstWordOfTurnSelectedInTurnChart;
-		const cloudWord = currConfig.selectedWordFromContributionCloud;
-		if (turnChartWord) {
-			updateEditorSelection({ selectedTurnNumber: turnChartWord.turnNumber, highlightedSpeaker: null }, 'turnChart');
-		} else if (cloudWord) {
-			updateEditorSelection({ selectedTurnNumber: cloudWord.turnNumber, highlightedSpeaker: null }, 'contributionCloud');
+	updatePanel(key: string, bounds: Bounds): DrawResult {
+		switch (key) {
+			case 'speakerGarden':
+				return this.updateSpeakerGarden(bounds);
+			case 'turnChart':
+				return this.updateTurnChart(bounds);
+			case 'contributionCloud':
+				return this.updateContributionCloud(bounds);
+			case 'turnNetwork':
+				return this.updateTurnNetwork(bounds);
+			case 'wordRain':
+				return this.updateWordRain(bounds);
+			case 'speakerHeatmap':
+				return this.updateSpeakerHeatmap(bounds);
+			case 'turnLength':
+				return this.updateTurnLengthDistribution(bounds);
+			default:
+				return result({});
 		}
 	}
 
-	drawDashboardDividers(top: Bounds, bottomLeft: Bounds): void {
+	updateSpeakerGarden(pos: Bounds): DrawResult {
+		const garden = new SpeakerGarden(this.sk, pos);
+		const { hoveredSpeaker } = garden.draw(this.sk.dynamicData.getDynamicArrayForSpeakerGarden());
+		return result({ hoveredSpeaker, arrayOfFirstWords: garden.localArrayOfFirstWords });
+	}
+
+	updateTurnChart(pos: Bounds): DrawResult {
+		const turnChart = new TurnChart(this.sk, pos);
+		const { hoveredSpeaker } = turnChart.draw(this.sk.dynamicData.getDynamicArrayForTurnChart());
+		return result({ hover: turnChart.userSelectedTurn.turn[0] ?? turnChart.annotationHover ?? null, hoveredSpeaker });
+	}
+
+	updateSpeakerHeatmap(pos: Bounds): DrawResult {
+		const heatmap = new SpeakerHeatmap(this.sk, pos);
+		const { hoveredCell, hoveredSpeaker } = heatmap.draw(this.sk.dynamicData.getProcessedWords(true));
+		return result({ hover: hoveredCell, hoveredSpeaker });
+	}
+
+	updateTurnLengthDistribution(pos: Bounds): DrawResult {
+		const viz = new TurnLengthDistribution(this.sk, pos);
+		const { snippetPoints, hoveredSpeaker } = viz.draw(this.sk.dynamicData.getTurnSummaries());
+		return result({ arrayOfFirstWords: snippetPoints, hoveredSpeaker });
+	}
+
+	updateTurnNetwork(pos: Bounds): DrawResult {
+		const turnNetwork = new TurnNetwork(this.sk, pos);
+		const { snippetPoints, hoveredSpeaker, edgeTurns } = turnNetwork.draw(this.sk.dynamicData.getDynamicArrayForTurnNetwork());
+		return result({ arrayOfFirstWords: snippetPoints, hoveredSpeaker, edgeTurns });
+	}
+
+	updateWordRain(pos: Bounds): DrawResult {
+		const wordRain = new WordRain(this.sk, pos);
+		const { hoveredOccurrences, hoveredSpeaker, hasOverflow } = wordRain.draw(this.sk.dynamicData.getProcessedWords(true));
+		return result({ arrayOfFirstWords: hoveredOccurrences, hoveredSpeaker, overflowBounds: hasOverflow ? [pos] : [] });
+	}
+
+	updateContributionCloud(pos: Bounds): DrawResult {
+		const contributionCloud = new ContributionCloud(this.sk, pos);
+		const { hoveredWord, hasOverflow, hoveredSpeaker } = contributionCloud.draw(this.sk.dynamicData.getDynamicArraySortedForContributionCloud());
+		return result({ hover: hoveredWord ?? null, overflowBounds: hasOverflow ? [pos] : [], hoveredSpeaker });
+	}
+
+	drawDashboard(): DrawResult {
+		const panels = currConfig.dashboardPanels;
+		const boundsArray = this.getDashboardLayout(panels.length);
+		this.drawDashboardDividers(boundsArray, panels.length);
+
+		let mergedHover: DataPoint | null = null;
+		let mergedHoveredSpeaker: string | null = null;
+		let hoverSource: string | undefined;
+		let mergedEdgeTurns: number[] | null | undefined;
+		const mergedArrayOfFirstWords: DataPoint[] = [];
+		const mergedOverflowBounds: Bounds[] = [];
+
+		for (let i = 0; i < panels.length; i++) {
+			const panelResult = this.updatePanel(panels[i], boundsArray[i]);
+			const hasHover = panelResult.hover != null || panelResult.hoveredSpeaker != null;
+
+			if (!hoverSource && hasHover) {
+				hoverSource = panels[i];
+			}
+			mergedHover ??= panelResult.hover;
+			mergedHoveredSpeaker ??= panelResult.hoveredSpeaker;
+			mergedEdgeTurns ??= panelResult.edgeTurns;
+			mergedArrayOfFirstWords.push(...panelResult.arrayOfFirstWords);
+			mergedOverflowBounds.push(...panelResult.overflowBounds);
+		}
+
+		return {
+			hover: mergedHover,
+			hoveredSpeaker: mergedHoveredSpeaker,
+			arrayOfFirstWords: mergedArrayOfFirstWords,
+			overflowBounds: mergedOverflowBounds,
+			hoverSource,
+			edgeTurns: mergedEdgeTurns ?? null
+		};
+	}
+
+	drawDashboardDividers(boundsArray: Bounds[], count: number): void {
 		this.sk.stroke(200);
 		this.sk.strokeWeight(2);
-		const gap = this.sk.SPACING;
-		const horizontalY = top.y + top.height + gap / 2;
-		const verticalX = bottomLeft.x + bottomLeft.width + gap / 2;
-		this.sk.line(0, horizontalY, this.sk.width, horizontalY);
-		this.sk.line(verticalX, horizontalY, verticalX, this.sk.height);
+		const gap = CANVAS_SPACING;
+
+		if (count === 2) {
+			// Vertical divider between two side-by-side panels
+			const verticalX = boundsArray[0].x + boundsArray[0].width + gap / 2;
+			this.sk.line(verticalX, 0, verticalX, this.sk.height);
+		} else if (count === 3) {
+			// Horizontal divider below top panel + vertical divider in bottom half
+			const horizontalY = boundsArray[0].y + boundsArray[0].height + gap / 2;
+			const verticalX = boundsArray[1].x + boundsArray[1].width + gap / 2;
+			this.sk.line(0, horizontalY, this.sk.width, horizontalY);
+			this.sk.line(verticalX, horizontalY, verticalX, this.sk.height);
+		} else if (count === 4) {
+			// Cross: horizontal divider between rows + vertical divider between columns
+			const horizontalY = boundsArray[0].y + boundsArray[0].height + gap / 2;
+			const verticalX = boundsArray[0].x + boundsArray[0].width + gap / 2;
+			this.sk.line(0, horizontalY, this.sk.width, horizontalY);
+			this.sk.line(verticalX, 0, verticalX, this.sk.height);
+		}
 	}
 
 	/**
@@ -152,7 +229,7 @@ export class Draw {
 	 * Returns { x, y, width, height } where x,y is top-left and width,height are dimensions.
 	 */
 	getFullScreenBounds(): Bounds {
-		const padding = this.sk.SPACING;
+		const padding = CANVAS_SPACING;
 		return {
 			x: padding,
 			y: padding,
@@ -162,36 +239,38 @@ export class Draw {
 	}
 
 	/**
-	 * Get bounds for dashboard layout (3 panels).
-	 * Returns { top, bottomLeft, bottomRight } each with { x, y, width, height }.
+	 * Get bounds for dashboard layout with variable panel count.
+	 * 2 panels: side-by-side
+	 * 3 panels: 1 top full-width + 2 bottom
+	 * 4 panels: 2x2 grid
 	 */
-	getDashboardBounds(): DashboardBounds {
-		const padding = this.sk.SPACING / 2; // Less padding for dashboard panels
-		const gap = this.sk.SPACING;
+	getDashboardLayout(count: number): Bounds[] {
+		const padding = CANVAS_SPACING / 2;
+		const gap = CANVAS_SPACING;
 		const totalWidth = this.sk.width - padding * 2;
 		const totalHeight = this.sk.height - padding * 2;
 		const halfWidth = (totalWidth - gap) / 2;
 		const halfHeight = (totalHeight - gap) / 2;
 
-		return {
-			top: {
-				x: padding,
-				y: padding,
-				width: totalWidth,
-				height: halfHeight
-			},
-			bottomLeft: {
-				x: padding,
-				y: padding + halfHeight + gap,
-				width: halfWidth,
-				height: halfHeight
-			},
-			bottomRight: {
-				x: padding + halfWidth + gap,
-				y: padding + halfHeight + gap,
-				width: halfWidth,
-				height: halfHeight
-			}
-		};
+		if (count === 2) {
+			return [
+				{ x: padding, y: padding, width: halfWidth, height: totalHeight },
+				{ x: padding + halfWidth + gap, y: padding, width: halfWidth, height: totalHeight }
+			];
+		} else if (count === 4) {
+			return [
+				{ x: padding, y: padding, width: halfWidth, height: halfHeight },
+				{ x: padding + halfWidth + gap, y: padding, width: halfWidth, height: halfHeight },
+				{ x: padding, y: padding + halfHeight + gap, width: halfWidth, height: halfHeight },
+				{ x: padding + halfWidth + gap, y: padding + halfHeight + gap, width: halfWidth, height: halfHeight }
+			];
+		} else {
+			// 3 panels (default): top full-width + 2 bottom
+			return [
+				{ x: padding, y: padding, width: totalWidth, height: halfHeight },
+				{ x: padding, y: padding + halfHeight + gap, width: halfWidth, height: halfHeight },
+				{ x: padding + halfWidth + gap, y: padding + halfHeight + gap, width: halfWidth, height: halfHeight }
+			];
+		}
 	}
 }

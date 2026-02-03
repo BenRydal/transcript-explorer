@@ -38,7 +38,11 @@
 							<div>
 								<p><span class="font-semibold">Total Words:</span> {$TranscriptStore.totalNumOfWords}</p>
 								<p><span class="font-semibold">Total Turns:</span> {$TranscriptStore.totalConversationTurns}</p>
-								<p><span class="font-semibold">Total Time:</span> {$TranscriptStore.totalTimeInSeconds.toFixed(2)}s</p>
+								{#if $TranscriptStore.timingMode === 'untimed'}
+									<p><span class="font-semibold">Total Word Count:</span> {Math.round($TranscriptStore.totalTimeInSeconds)}</p>
+								{:else}
+									<p><span class="font-semibold">Total Time:</span> {$TranscriptStore.totalTimeInSeconds.toFixed(2)}s</p>
+								{/if}
 							</div>
 							<div>
 								<p><span class="font-semibold">Largest Turn Length:</span> {$TranscriptStore.largestTurnLength} words</p>
@@ -88,7 +92,9 @@
 												{#each $TranscriptStore.wordArray.filter((dp) => dp.speaker === user.name).slice(-3) as dataPoint}
 													<div class="p-2 bg-white rounded">
 														<p class="text-sm">"{dataPoint.word}"</p>
+													{#if $TranscriptStore.timingMode !== 'untimed'}
 														<p class="text-xs text-gray-500">Time: {dataPoint.startTime.toFixed(2)}s - {dataPoint.endTime.toFixed(2)}s</p>
+													{/if}
 													</div>
 												{/each}
 											</div>

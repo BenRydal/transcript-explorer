@@ -9,7 +9,7 @@ import type { TranscriptionSegment } from './transcription-service';
 import type { ParseResult } from './text-parser';
 import { USER_COLORS } from '../constants/ui';
 import { calculateTranscriptStats } from './transcript-stats';
-import { splitIntoWords } from './string-utils';
+import { splitIntoWordTokens } from './string-utils';
 
 export interface User {
 	name: string;
@@ -61,15 +61,15 @@ function createTranscriptFromTimedSegments(
 
 	let turnIndex = 0;
 	for (const segment of segments) {
-		const words = splitIntoWords(segment.text);
-		if (words.length === 0) continue;
+		const tokens = splitIntoWordTokens(segment.text);
+		if (tokens.length === 0) continue;
 
-		const wordDuration = (segment.end - segment.start) / words.length;
+		const wordDuration = (segment.end - segment.start) / tokens.length;
 
-		words.forEach((word, wordIndex) => {
+		tokens.forEach((token, wordIndex) => {
 			const wordStart = segment.start + wordIndex * wordDuration;
 			const wordEnd = segment.start + (wordIndex + 1) * wordDuration;
-			wordArray.push(new DataPoint(defaultSpeaker, turnIndex, word, wordStart, wordEnd));
+			wordArray.push(new DataPoint(defaultSpeaker, turnIndex, token, wordStart, wordEnd));
 		});
 		turnIndex++;
 	}
@@ -117,16 +117,16 @@ export function createTranscriptFromParsedText(
 	let actualTurnIndex = 0;
 
 	parseResult.turns.forEach((turn) => {
-		const words = splitIntoWords(turn.content);
-		if (words.length === 0) return; // Skip empty turns
+		const tokens = splitIntoWordTokens(turn.content);
+		if (tokens.length === 0) return; // Skip empty turns
 
 		const useTurnTime = hasTimestamps && turn.startTime !== null;
 
-		words.forEach((word) => {
+		tokens.forEach((token) => {
 			const startTime = useTurnTime ? turn.startTime! : wordPosition;
 			// Use turn's endTime if available (CSV with end times), otherwise use startTime as placeholder
 			const endTime = useTurnTime ? (turn.endTime ?? turn.startTime!) : wordPosition + 1;
-			wordArray.push(new DataPoint(turn.speaker, actualTurnIndex, word, startTime, endTime));
+			wordArray.push(new DataPoint(turn.speaker, actualTurnIndex, token, startTime, endTime));
 			wordPosition++;
 		});
 		actualTurnIndex++;

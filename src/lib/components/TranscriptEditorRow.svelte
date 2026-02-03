@@ -7,6 +7,7 @@
 	import VideoStore from '../../stores/videoStore';
 	import type { TimingMode } from '../../models/transcript';
 	import { notifications } from '../../stores/notificationStore';
+	import { DEFAULT_SPEAKER_COLOR } from '$lib/constants/ui';
 
 	let rowElement: HTMLElement;
 
@@ -24,7 +25,7 @@
 
 	let {
 		turn,
-		speakerColor = '#666666',
+		speakerColor = DEFAULT_SPEAKER_COLOR,
 		isSelected = false,
 		isSpeakerHighlighted = false,
 		timingMode = 'untimed',

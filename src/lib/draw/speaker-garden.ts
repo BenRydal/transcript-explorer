@@ -1,9 +1,10 @@
 /**
- * Distribution Diagram Visualization
+ * Speaker Garden Visualization
  *
- * Displays speaker contributions as either circles or flowers.
- * - Circle mode: concentric circles sized by word count and turn count
- * - Flower mode: flowers with stalk height = turns, flower size = words
+ * Displays speaker contributions as flowers.
+ * - Stalk height = number of turns
+ * - Flower size = number of words
+ * - Color = speaker color
  *
  * Flower rendering (stalks, leaves, petals) is handled by flower-drawing.ts.
  */
@@ -17,6 +18,9 @@ import { showTooltip } from '../../stores/tooltipStore';
 import type { DataPoint } from '../../models/dataPoint';
 import type { User } from '../../models/user';
 import type { Bounds } from './types/bounds';
+import { normalizeWord } from '../core/string-utils';
+import { withDimming } from './draw-utils';
+import { CANVAS_SPACING } from '../constants/ui';
 import { drawFlower } from './flower-drawing';
 
 const MIN_FLOWER_SIZE = 25; // Minimum flower radius so small speakers are still visible
@@ -25,10 +29,9 @@ interface SpeakerMetrics {
 	numOfTurns: number;
 	numOfWords: number;
 	scaledWordArea: number;
-	scaledTurnArea: number;
 }
 
-export class DistributionDiagram {
+export class SpeakerGarden {
 	sk: p5;
 	users: User[];
 	userMap: Map<string, User>;
@@ -42,7 +45,6 @@ export class DistributionDiagram {
 	xPosCurCircle: number;
 	yPosTop: number;
 	yPosBottom: number;
-	yPosHalfHeight: number;
 	maxFlowerRadius: number;
 	hoveredSpeaker: string | null;
 
@@ -61,18 +63,20 @@ export class DistributionDiagram {
 		this.xPosCurCircle = pos.x + this.maxCircleRadius;
 		this.yPosTop = pos.y;
 		this.yPosBottom = pos.y + pos.height;
-		this.yPosHalfHeight = pos.y + pos.height / 2;
 		this.maxFlowerRadius = this.calculateMaxFlowerRadius();
 		this.hoveredSpeaker = null;
 	}
 
 	draw(sortedAnimationWordArray: Record<string, DataPoint[]>): { hoveredSpeaker: string | null } {
-		const searchTerm = this.config.wordToSearch?.toLowerCase();
+		const searchTerm = this.config.wordToSearch ? normalizeWord(this.config.wordToSearch) : undefined;
 		this.hoveredSpeaker = null;
 
-		if (this.config.flowersToggle) {
-			this.drawFlowerGuideLines();
-		}
+		const hl = this.config.dashboardHighlightSpeaker;
+		const hlTurns = this.config.dashboardHighlightAllTurns;
+		const mouseInPanel = this.sk.overRect(this.bounds.x, this.bounds.y, this.bounds.width, this.bounds.height);
+		const crossHighlightActive = this.config.dashboardToggle && (hl != null || hlTurns != null) && !mouseInPanel;
+
+		this.drawFlowerGuideLines();
 
 		for (const key in sortedAnimationWordArray) {
 			if (sortedAnimationWordArray[key].length) {
@@ -80,11 +84,17 @@ export class DistributionDiagram {
 				if (user?.enabled) {
 					let wordsToVisualize = sortedAnimationWordArray[key];
 					if (searchTerm) {
-						wordsToVisualize = wordsToVisualize.filter((w) => w.word.toLowerCase().includes(searchTerm));
+						wordsToVisualize = wordsToVisualize.filter((w) => normalizeWord(w.word).includes(searchTerm));
 					}
 
 					if (wordsToVisualize.length > 0) {
-						this.drawViz(wordsToVisualize, this.config.flowersToggle);
+						const shouldDim = crossHighlightActive && (
+							(hl != null && wordsToVisualize[0].speaker !== hl) ||
+							(hlTurns != null && !wordsToVisualize.some((w) => hlTurns.includes(w.turnNumber)))
+						);
+						withDimming(this.sk.drawingContext, shouldDim, () => {
+							this.drawViz(wordsToVisualize);
+						});
 					}
 				}
 			}
@@ -94,44 +104,22 @@ export class DistributionDiagram {
 		return { hoveredSpeaker: this.hoveredSpeaker };
 	}
 
-	drawViz(tempTurnArray: DataPoint[], isDrawFlower: boolean): void {
-		const firstElement = tempTurnArray[0];
-		const metrics = this.calculateMetrics(tempTurnArray, isDrawFlower);
-		const user = this.userMap.get(firstElement.speaker);
+	drawViz(tempTurnArray: DataPoint[]): void {
+		const metrics = this.calculateMetrics(tempTurnArray);
+		const user = this.userMap.get(tempTurnArray[0].speaker);
 		if (!user) return;
 		const color = this.sk.color(user.color);
-
-		if (isDrawFlower) {
-			this.drawFlowerVisualization(color, metrics, tempTurnArray);
-		} else {
-			this.drawCircleVisualization(firstElement, color, metrics, tempTurnArray);
-		}
+		this.drawFlowerVisualization(color, metrics, tempTurnArray);
 	}
 
-	calculateMetrics(tempTurnArray: DataPoint[], isFlower = false): SpeakerMetrics {
+	calculateMetrics(tempTurnArray: DataPoint[]): SpeakerMetrics {
 		const numOfTurns = this.calculateNumOfTurns(tempTurnArray);
 		const numOfWords = tempTurnArray.length;
 		return {
 			numOfTurns,
 			numOfWords,
-			scaledWordArea: this.getScaledArea(numOfWords, isFlower),
-			scaledTurnArea: this.getScaledArea(numOfTurns, isFlower)
+			scaledWordArea: this.getScaledArea(numOfWords)
 		};
-	}
-
-	drawCircleVisualization(firstElement: DataPoint, color: p5.Color, metrics: SpeakerMetrics, tempTurnArray: DataPoint[]): void {
-		const { scaledWordArea, scaledTurnArea, numOfTurns, numOfWords } = metrics;
-
-		this.setColor(color, 120);
-		this.sk.circle(this.xPosCurCircle, this.yPosHalfHeight, scaledWordArea);
-
-		this.setColor(color, 255);
-		this.sk.circle(this.xPosCurCircle, this.yPosHalfHeight, scaledTurnArea);
-
-		if (this.sk.overCircle(this.xPosCurCircle, this.yPosHalfHeight, scaledWordArea)) {
-			this.hoveredSpeaker = firstElement.speaker;
-			this.drawSpeakerTooltip(firstElement.speaker, numOfTurns, numOfWords, tempTurnArray, color);
-		}
 	}
 
 	drawFlowerVisualization(color: p5.Color, metrics: SpeakerMetrics, tempTurnArray: DataPoint[]): void {
@@ -166,24 +154,17 @@ export class DistributionDiagram {
 		this.sk.stroke(0);
 		this.sk.strokeWeight(2);
 		this.sk.line(xLeft, top, xLeft, bottom);
-		this.sk.line(xLeft - this.sk.SPACING / 2, top, xLeft + this.sk.SPACING / 2, top);
+		this.sk.line(xLeft - CANVAS_SPACING / 2, top, xLeft + CANVAS_SPACING / 2, top);
 
 		this.sk.fill(0);
 		this.sk.noStroke();
-		this.sk.textSize(16);
-		this.sk.text(`${this.largestNumOfTurnsByASpeaker} Turns`, xLeft - this.sk.SPACING / 2, top - this.sk.SPACING / 2);
+		this.sk.textAlign(this.sk.LEFT, this.sk.BASELINE);
+		this.sk.textSize(Math.max(10, Math.min(16, this.bounds.height * 0.04)));
+		this.sk.text(`${this.largestNumOfTurnsByASpeaker} Turns`, xLeft - CANVAS_SPACING / 2, top - CANVAS_SPACING / 2);
 	}
 
 	calculateNumOfTurns(objects: DataPoint[]): number {
-		return objects.reduce((count, obj, index, arr) => {
-			return index > 0 && obj.turnNumber === arr[index - 1].turnNumber ? count : count + 1;
-		}, 0);
-	}
-
-	setColor(color: p5.Color, alpha: number): void {
-		color.setAlpha(alpha);
-		this.sk.noStroke();
-		this.sk.fill(color);
+		return new Set(objects.map((obj) => obj.turnNumber)).size;
 	}
 
 	drawSpeakerTooltip(speaker: string, numOfTurns: number, numOfWords: number, turnArray: DataPoint[], speakerColor: p5.Color): void {
@@ -217,18 +198,18 @@ export class DistributionDiagram {
 		const statsLine = `${numOfWords} total words (${wordPercent}%)\n${numOfTurns} turns (${turnPercent}%)`;
 		const tooltipContent = `<b>First word of each turn:</b>\n${firstWordsLine}\n\n${statsLine}`;
 
-		showTooltip(this.sk.mouseX, this.sk.mouseY, tooltipContent, speakerColor, this.sk.height);
+		showTooltip(this.sk.mouseX, this.sk.mouseY, tooltipContent, speakerColor, this.bounds.y + this.bounds.height);
 	}
 
 	getMaxCircleRadius(pixelWidth: number): number {
 		return pixelWidth / (this.users.length + 1);
 	}
 
-	getScaledArea(value: number, applyMinimum = false): number {
+	getScaledArea(value: number): number {
 		const normalizedValue = value / this.largestNumOfWordsByASpeaker;
 		const area = normalizedValue * this.maxCircleArea;
 		const radius = Math.sqrt(area / Math.PI);
-		return applyMinimum ? Math.max(radius, MIN_FLOWER_SIZE) : radius;
+		return Math.max(radius, MIN_FLOWER_SIZE);
 	}
 
 	calculateMaxFlowerRadius(): number {

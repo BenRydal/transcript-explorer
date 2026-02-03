@@ -15,13 +15,8 @@
 		},
 		{
 			target: '[data-tour="viz-modes"]',
-			title: 'Visualization Modes',
-			content: 'Switch between Distribution Diagram, Turn Chart, Contribution Cloud, and Dashboard views.'
-		},
-		{
-			target: '[data-tour="interactions"]',
-			title: 'Interactions & Editor',
-			content: 'Toggle visualization options like speaker separation and search transcripts. Open the transcript editor to view and edit text.'
+			title: 'Visualizations & Options',
+			content: 'Switch between visualizations and configure their options. Options appear below the active visualization.'
 		},
 		{
 			target: '[data-tour="visualization"]',
@@ -102,7 +97,7 @@
 	{@const tooltipLeft = rect ? Math.max(16, Math.min(rect.left + rect.width / 2 - 160, window.innerWidth - 336)) : window.innerWidth / 2 - 160}
 
 	<div class="fixed inset-0 z-[9999] pointer-events-none">
-		<button class="absolute inset-0 bg-black/50 pointer-events-auto cursor-default" onclick={end}></button>
+		<button class="absolute inset-0 bg-black/50 pointer-events-auto cursor-default" onclick={end} aria-label="Close tour"></button>
 
 		{#if rect}
 			<div

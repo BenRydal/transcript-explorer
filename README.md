@@ -1,7 +1,7 @@
 <h1 align="center">Transcript Explorer</h1>
 
 <p align="center">
-  <strong>An open-source tool for dynamically visualizing and exploring transcripts of conversation linked to video</strong>
+  <strong>Visualize, explore, and create transcripts linked to video</strong>
 </p>
 
 <p align="center">
@@ -26,7 +26,7 @@
 ## Features
 
 - **Browser-Based** — Everything runs locally in your browser with zero server dependencies
-- **Multiple Visualizations** — Distribution diagram, turn chart, contribution cloud, and flower mode
+- **Multiple Visualizations** — Speaker garden, turn chart, contribution cloud, word rain, and more
 - **Video Integration** — Sync transcripts with YouTube videos or local video files
 - **Auto-Transcription** — In-browser Whisper AI transcription (no data leaves your device)
 - **Transcribe Mode** — Dedicated workspace with keyboard shortcuts for manual video transcription
@@ -38,21 +38,24 @@
 
 ## Visualizations
 
-Transcript Explorer provides four visualization modes to explore your conversation data.
+Transcript Explorer provides eight visualization modes plus a configurable dashboard. Each visualization includes an interactive legend explaining its visual encodings.
+
+- **Speaker Garden** — Flowers represent speakers; size shows words spoken, height shows turns taken
+- **Turn Chart** — Ellipses show individual turns; width is duration, height is word count
+- **Contribution Cloud** — Words in transcript order, sized by frequency
+- **Word Rain** — Aggregated words positioned by mean time with frequency bars
+- **Speaker Heatmap** — Grid of speaker activity over time bins
+- **Turn Network** — Directed graph of speaker-to-speaker transitions
+- **Turn Length Distribution** — Stacked histogram of turn lengths by speaker
+- **Dashboard** — Configurable multi-panel view combining any of the above
 
 > _Screenshots show example transcript data from a 2-minute kindergarten classroom activity._
 
-|                                                                                                                                                                                      |                                                                                                                                                                |
-| :----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------: | :------------------------------------------------------------------------------------------------------------------------------------------------------------: |
-|                                                   ![Distribution Diagram](./static/images/thumbs-modes/distribution-diagram.webp)                                                    |                                                  ![Turn Chart](./static/images/thumbs-modes/turn-chart.webp)                                                   |
-|                                                                               **Distribution Diagram**                                                                               |                                                                         **Turn Chart**                                                                         |
-| Each flower represents a speaker. Flower size indicates words spoken; height indicates number of turns. Hover to see the first word of each turn; click to watch video of each turn. | Each ellipse is a conversation turn, colored by speaker. Width indicates turn duration; height indicates word count. Hover to read turns; click to play video. |
-
-|                                                                                                                                                        |                                                             |
-| :----------------------------------------------------------------------------------------------------------------------------------------------------: | :---------------------------------------------------------: |
-|                                      ![Contribution Cloud](./static/images/thumbs-modes/contribution-cloud.webp)                                       |  ![Dashboard](./static/images/thumbs-modes/dashboard.webp)  |
-|                                                                 **Contribution Cloud**                                                                 |                        **Dashboard**                        |
-| Turns displayed as a paragraph as they unfold. When a word is repeated, its first instance grows in size. Click any word to play video from that turn. | Coordinated view showing all visualizations simultaneously. |
+| ![Speaker Garden](./static/images/thumbs-modes/speaker-garden.webp) | ![Turn Chart](./static/images/thumbs-modes/turn-chart.webp) |
+| :------------------------------------------------------------------: | :----------------------------------------------------------: |
+|                         **Speaker Garden**                           |                       **Turn Chart**                         |
+| ![Contribution Cloud](./static/images/thumbs-modes/contribution-cloud.webp) | ![Dashboard](./static/images/thumbs-modes/dashboard.webp) |
+|                        **Contribution Cloud**                                |                       **Dashboard**                        |
 
 ---
 

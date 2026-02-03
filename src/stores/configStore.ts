@@ -1,12 +1,19 @@
 import { writable, derived } from 'svelte/store';
 import type { DataPoint } from '../models/dataPoint';
+import type { Bounds } from '../lib/draw/types/bounds';
+
+export type GardenSortOrder = 'default' | 'words' | 'turns' | 'alpha';
 
 export interface ConfigStoreType {
-	distributionDiagramToggle: boolean;
+	speakerGardenToggle: boolean;
 	turnChartToggle: boolean;
 	contributionCloudToggle: boolean;
+	turnNetworkToggle: boolean;
+	wordRainToggle: boolean;
 	dashboardToggle: boolean;
-	flowersToggle: boolean;
+	speakerHeatmapToggle: boolean;
+	turnLengthToggle: boolean;
+	silenceOverlapToggle: boolean;
 	separateToggle: boolean;
 	sortToggle: boolean;
 	lastWordToggle: boolean;
@@ -15,25 +22,60 @@ export interface ConfigStoreType {
 	repeatedWordsToggle: boolean;
 	animationRate: number;
 	repeatWordSliderValue: number;
-	selectedWordFromContributionCloud: DataPoint | null;
-	cloudHasOverflow: boolean;
-	firstWordOfTurnSelectedInTurnChart: DataPoint | null;
+	hoveredDataPoint: DataPoint | null;
+	overflowBounds: Bounds[];
 	arrayOfFirstWords: DataPoint[];
 	wordToSearch: string;
-	hoveredSpeakerInDistributionDiagram: string | null;
+	hoveredSpeakerInGarden: string | null;
 	// Start-only mode settings
 	preserveGapsBetweenTurns: boolean;
 	speechRateWordsPerSecond: number;
 	// Video playback settings
 	snippetDurationSeconds: number;
+	// Dashboard panel selection
+	dashboardPanels: string[];
+	// Speaker Garden settings
+	gardenSortOrder: GardenSortOrder;
+	// Dashboard cross-highlighting (written by previous frame's applyDrawResult)
+	dashboardHighlightSpeaker: string | null;
+	dashboardHighlightTurn: number | null;
+	dashboardHighlightAllTurns: number[] | null;
+	// Word Rain settings
+	wordRainMinFrequency: number;
+	wordRainTemporalBinning: boolean;
+	wordRainBinCount: number;
+	// Turn Network settings
+	turnNetworkWeightByWords: boolean;
+	turnNetworkHideSelfLoops: boolean;
+	turnNetworkMinTransitions: number;
+	// Speaker Heatmap settings
+	heatmapBinCount: number;
+	// Turn Length settings
+	turnLengthBinCount: number;
+	// Legend overlay
+	legendVisible: boolean;
 }
 
+export const DASHBOARD_PANEL_OPTIONS = [
+	{ key: 'speakerGarden', label: 'Speaker Garden' },
+	{ key: 'turnChart', label: 'Turn Chart' },
+	{ key: 'contributionCloud', label: 'Contribution Cloud' },
+	{ key: 'turnNetwork', label: 'Turn Network' },
+	{ key: 'wordRain', label: 'Word Rain' },
+	{ key: 'speakerHeatmap', label: 'Speaker Heatmap' },
+	{ key: 'turnLength', label: 'Turn Length' }
+] as const;
+
 export const initialConfig: ConfigStoreType = {
-	distributionDiagramToggle: true,
+	speakerGardenToggle: true,
 	turnChartToggle: false,
 	contributionCloudToggle: false,
+	turnNetworkToggle: false,
+	wordRainToggle: false,
 	dashboardToggle: false,
-	flowersToggle: true,
+	speakerHeatmapToggle: false,
+	turnLengthToggle: false,
+	silenceOverlapToggle: true,
 	separateToggle: false,
 	sortToggle: false,
 	lastWordToggle: false,
@@ -42,17 +84,32 @@ export const initialConfig: ConfigStoreType = {
 	repeatedWordsToggle: false,
 	animationRate: 3,
 	repeatWordSliderValue: 5,
-	selectedWordFromContributionCloud: null,
-	cloudHasOverflow: false,
-	firstWordOfTurnSelectedInTurnChart: null,
+	hoveredDataPoint: null,
+	overflowBounds: [],
 	arrayOfFirstWords: [],
 	wordToSearch: '',
-	hoveredSpeakerInDistributionDiagram: null,
+	hoveredSpeakerInGarden: null,
 	// Start-only mode settings (default: estimate from speech rate)
 	preserveGapsBetweenTurns: true,
 	speechRateWordsPerSecond: 3,
 	// Video playback settings
-	snippetDurationSeconds: 2
+	snippetDurationSeconds: 2,
+	// Speaker Garden settings
+	gardenSortOrder: 'default',
+	// Dashboard panel selection
+	dashboardPanels: ['turnChart', 'contributionCloud', 'speakerGarden'],
+	dashboardHighlightSpeaker: null,
+	dashboardHighlightTurn: null,
+	dashboardHighlightAllTurns: null,
+	wordRainMinFrequency: 1,
+	wordRainTemporalBinning: false,
+	wordRainBinCount: 8,
+	turnNetworkWeightByWords: false,
+	turnNetworkHideSelfLoops: false,
+	turnNetworkMinTransitions: 1,
+	heatmapBinCount: 0,
+	turnLengthBinCount: 0,
+	legendVisible: true
 };
 
 const ConfigStore = writable<ConfigStoreType>(initialConfig);

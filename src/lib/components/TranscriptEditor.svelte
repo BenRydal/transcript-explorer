@@ -12,7 +12,8 @@
 	import { applyTimingModeToWordArray, updateTimelineFromData, getMaxTime } from '$lib/core/timing-utils';
 	import type { Turn } from '$lib/core/turn-utils';
 	import { DataPoint } from '../../models/dataPoint';
-	import { USER_COLORS } from '$lib/constants/ui';
+	import { normalizeWord, splitIntoWordTokens } from '$lib/core/string-utils';
+	import { USER_COLORS, DEFAULT_SPEAKER_COLOR } from '$lib/constants/ui';
 	import EditorToolbar from './EditorToolbar.svelte';
 	import TranscriptEditorRow from './TranscriptEditorRow.svelte';
 	import ConfirmModal from './ConfirmModal.svelte';
@@ -25,7 +26,8 @@
 
 	let { oncreateTranscript }: Props = $props();
 
-	let deleteModal: number | null = $state(null);
+	let showDeleteModal = $state(false);
+	let pendingDeleteTurn: number | null = $state(null);
 
 	// Reactively derive turns from TranscriptStore
 	let turns = $derived($TranscriptStore.wordArray.length > 0 ? getTurnsFromWordArray($TranscriptStore.wordArray) : []);
@@ -44,7 +46,7 @@
 	let displayedTurns = $derived(turns.filter((turn) => {
 		if (!enabledSpeakers.has(turn.speaker)) return false;
 		if ($EditorStore.selection.filteredSpeaker && turn.speaker !== $EditorStore.selection.filteredSpeaker) return false;
-		if ($ConfigStore.wordToSearch && !getTurnContent(turn).toLowerCase().includes($ConfigStore.wordToSearch.toLowerCase())) return false;
+		if ($ConfigStore.wordToSearch && !normalizeWord(getTurnContent(turn)).includes(normalizeWord($ConfigStore.wordToSearch))) return false;
 		return true;
 	}));
 
@@ -63,7 +65,7 @@
 
 	// Get user color for a speaker (uses reactive map)
 	function getSpeakerColor(speakerName: string): string {
-		return speakerColorMap.get(speakerName) || '#666666';
+		return speakerColorMap.get(speakerName) || DEFAULT_SPEAKER_COLOR;
 	}
 
 	// Check if a turn is selected
@@ -99,9 +101,8 @@
 			const firstWord = turnWords[0];
 			ConfigStore.update((config) => ({
 				...config,
-				firstWordOfTurnSelectedInTurnChart: firstWord,
-				arrayOfFirstWords: [firstWord],
-				selectedWordFromContributionCloud: firstWord
+				hoveredDataPoint: firstWord,
+				arrayOfFirstWords: [firstWord]
 			}));
 		}
 	}
@@ -122,7 +123,7 @@
 
 			if (field === 'content') {
 				// Handle content edit - rebuild words for this turn
-				const newWords = value.split(/\s+/).filter(Boolean);
+				const tokens = splitIntoWordTokens(value);
 
 				// Find the first DataPoint of this turn to get metadata
 				const turnDataPoints = transcript.wordArray.filter((dp) => dp.turnNumber === turnNumber);
@@ -131,7 +132,7 @@
 				const firstDp = turnDataPoints[0];
 
 				// Create new DataPoints for the new words
-				const newDataPoints = newWords.map((word: string) => new DataPoint(firstDp.speaker, turnNumber, word, firstDp.startTime, firstDp.endTime));
+				const newDataPoints = tokens.map((token) => new DataPoint(firstDp.speaker, turnNumber, token, firstDp.startTime, firstDp.endTime));
 
 				// Build new array: words before this turn + new words + words after this turn
 				const wordsBefore = transcript.wordArray.filter((dp) => dp.turnNumber < turnNumber);
@@ -142,20 +143,17 @@
 				updatedWordArray = transcript.wordArray.map((dp) => {
 					if (dp.turnNumber !== turnNumber) return dp;
 
-					return new DataPoint(newSpeakerName!, dp.turnNumber, dp.word, dp.startTime, dp.endTime);
+					return dp.copyWith({ speaker: newSpeakerName! });
 				});
 			} else {
 				// Handle time edits
 				updatedWordArray = transcript.wordArray.map((dp) => {
 					if (dp.turnNumber !== turnNumber) return dp;
 
-					return new DataPoint(
-						dp.speaker,
-						dp.turnNumber,
-						dp.word,
-						field === 'time' ? value.startTime : dp.startTime,
-						field === 'time' ? value.endTime : dp.endTime
-					);
+					return dp.copyWith({
+						startTime: field === 'time' ? value.startTime : dp.startTime,
+						endTime: field === 'time' ? value.endTime : dp.endTime
+					});
 				});
 			}
 
@@ -182,13 +180,7 @@
 				sortedTurns.forEach(([_oldTurnNumber, words], newTurnIndex) => {
 					words.forEach((dp) => {
 						updatedWordArray.push(
-							new DataPoint(
-								dp.speaker,
-								newTurnIndex, // new turn number based on sorted order
-								dp.word,
-								dp.startTime,
-								dp.endTime
-							)
+							dp.copyWith({ turnNumber: newTurnIndex })
 						);
 					});
 				});
@@ -267,9 +259,9 @@
 			turnLengths.set(turnNumber, (turnLengths.get(turnNumber) || 0) + 1);
 
 			if (word) {
-				const lowerWord = word.toLowerCase();
-				const count = (wordFrequency.get(lowerWord) || 0) + 1;
-				wordFrequency.set(lowerWord, count);
+				const normalized = normalizeWord(word);
+				const count = (wordFrequency.get(normalized) || 0) + 1;
+				wordFrequency.set(normalized, count);
 				if (count > maxWordFrequency) {
 					maxWordFrequency = count;
 					mostFrequentWord = word;
@@ -331,14 +323,15 @@
 
 	// Handle delete turn - show confirmation modal
 	function handleTurnDelete(data: { turnNumber: number }) {
-		deleteModal = data.turnNumber;
+		pendingDeleteTurn = data.turnNumber;
+		showDeleteModal = true;
 	}
 
 	// Actually delete the turn after confirmation
 	function onDeleteConfirm() {
-		if (deleteModal === null) return;
-		const turnNumber = deleteModal;
-		deleteModal = null;
+		if (pendingDeleteTurn === null) return;
+		const turnNumber = pendingDeleteTurn;
+		pendingDeleteTurn = null;
 
 		// Save state for undo
 		HistoryStore.pushState(get(TranscriptStore).wordArray);
@@ -350,7 +343,7 @@
 			// Renumber turns that come after the deleted one
 			const renumberedWordArray = updatedWordArray.map((dp) => {
 				if (dp.turnNumber > turnNumber) {
-					return new DataPoint(dp.speaker, dp.turnNumber - 1, dp.word, dp.startTime, dp.endTime);
+					return dp.copyWith({ turnNumber: dp.turnNumber - 1 });
 				}
 				return dp;
 			});
@@ -392,7 +385,7 @@
 			// Renumber all turns after the insertion point
 			const renumberedWordArray = transcript.wordArray.map((dp) => {
 				if (dp.turnNumber > turnNumber) {
-					return new DataPoint(dp.speaker, dp.turnNumber + 1, dp.word, dp.startTime, dp.endTime);
+					return dp.copyWith({ turnNumber: dp.turnNumber + 1 });
 				}
 				return dp;
 			});
@@ -506,7 +499,7 @@
 						Showing turns by <strong>{$EditorStore.selection.filteredSpeaker}</strong>
 						<span class="filter-count">({displayedTurns.length} of {turns.length} turns)</span>
 					</span>
-					{#if $EditorStore.selection.selectionSource === 'distributionDiagramClick'}
+					{#if $EditorStore.selection.selectionSource === 'visualizationClick'}
 						<button class="clear-filter-btn" onclick={clearSpeakerFilter}>× Show all</button>
 					{/if}
 				</div>
@@ -533,12 +526,11 @@
 </div>
 
 <ConfirmModal
-	isOpen={deleteModal !== null}
+	bind:isOpen={showDeleteModal}
 	title="Delete Turn?"
 	message="Are you sure you want to delete this turn? This can be undone."
 	confirmText="Delete"
 	onconfirm={onDeleteConfirm}
-	oncancel={() => (deleteModal = null)}
 />
 
 <style>

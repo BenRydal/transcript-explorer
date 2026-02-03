@@ -14,12 +14,15 @@ import { get } from 'svelte/store';
 import UserStore from '../../stores/userStore';
 import ConfigStore, { type ConfigStoreType } from '../../stores/configStore';
 import TranscriptStore from '../../stores/transcriptStore';
+import TimelineStore from '../../stores/timelineStore';
 import { showTooltip } from '../../stores/tooltipStore';
 import { formatTimeCompact } from '../core/time-utils';
+import { normalizeWord, stripPunctuation } from '../core/string-utils';
 import type { DataPoint } from '../../models/dataPoint';
 import type { User } from '../../models/user';
 import type { Bounds } from './types/bounds';
 import { calculateScaling, getWordWidth, type Scaling } from './contribution-cloud-scaling';
+import { DEFAULT_SPEAKER_COLOR } from '../constants/ui';
 
 export { clearScalingCache } from './contribution-cloud-scaling';
 
@@ -29,6 +32,8 @@ interface WordPosition {
 	y: number;
 	textSize: number;
 	width: number;
+	ascent: number;
+	descent: number;
 	user: User | undefined;
 	isNewSpeaker: boolean;
 }
@@ -71,7 +76,7 @@ export class ContributionCloud {
 		this.userMap = new Map(this.users.map((user) => [user.name, user]));
 	}
 
-	draw(words: DataPoint[]): { hoveredWord: DataPoint | null; hasOverflow: boolean } {
+	draw(words: DataPoint[]): { hoveredWord: DataPoint | null; hasOverflow: boolean; hoveredSpeaker: string | null } {
 		const layoutWords = words.filter((w) => this.isWordVisible(w));
 		const scaling = calculateScaling(this.sk, layoutWords, this.bounds, this.config);
 		const cacheKey = this.getBufferCacheKey(layoutWords.length);
@@ -89,11 +94,12 @@ export class ContributionCloud {
 			this.showWordTooltip(hoveredWord, bufferCache.positions);
 		}
 
-		return { hoveredWord: hoveredWord?.word || null, hasOverflow: bufferCache.hasOverflow };
+		return { hoveredWord: hoveredWord?.word || null, hasOverflow: bufferCache.hasOverflow, hoveredSpeaker: hoveredWord?.word.speaker ?? null };
 	}
 
 	getBufferCacheKey(filteredWordCount: number): string {
 		const userStates = this.users.map((u) => `${u.name}:${u.color}:${u.enabled}`).join(',');
+		const timeline = get(TimelineStore);
 		return [
 			this.bounds.x,
 			this.bounds.y,
@@ -106,7 +112,9 @@ export class ContributionCloud {
 			this.config.repeatWordSliderValue,
 			this.config.dashboardToggle,
 			this.config.wordToSearch || '',
-			userStates
+			userStates,
+			timeline.leftMarker,
+			timeline.rightMarker
 		].join('|');
 	}
 
@@ -130,7 +138,7 @@ export class ContributionCloud {
 			buffer.textSize(pos.textSize);
 			buffer.noStroke();
 			pos.user?.enabled ? buffer.fill(pos.user.color) : buffer.fill(255);
-			buffer.text(pos.word.word, pos.x, pos.y);
+			buffer.text(stripPunctuation(pos.word.word), pos.x, pos.y);
 		}
 
 		bufferCache.buffer = buffer;
@@ -143,8 +151,10 @@ export class ContributionCloud {
 		let prevSpeaker: string | null = null;
 
 		for (const word of words) {
-			const textSize = this.sk.map(word.count, 1, this.config.repeatWordSliderValue, scaling.minTextSize, scaling.maxTextSize, true);
-			const width = getWordWidth(this.sk, word.word, textSize);
+			const t = Math.log(word.count) / Math.log(scaling.maxCount);
+			const textSize = scaling.minTextSize + t * (scaling.maxTextSize - scaling.minTextSize);
+			const stripped = stripPunctuation(word.word);
+			const width = getWordWidth(this.sk, stripped, textSize);
 			const isNewSpeaker = prevSpeaker !== null && word.speaker !== prevSpeaker;
 
 			if (this.config.separateToggle && isNewSpeaker) {
@@ -156,18 +166,21 @@ export class ContributionCloud {
 			}
 
 			if (this.passesSearchFilter(word)) {
+				this.sk.textSize(textSize);
 				positions.push({
 					word,
 					x,
 					y,
 					textSize,
 					width,
+					ascent: this.sk.textAscent(),
+					descent: this.sk.textDescent(),
 					user: this.userMap.get(word.speaker),
 					isNewSpeaker
 				});
 			}
 
-			x += getWordWidth(this.sk, word.word + ' ', textSize);
+			x += getWordWidth(this.sk, stripped + ' ', textSize);
 			prevSpeaker = word.speaker;
 		}
 
@@ -204,23 +217,24 @@ export class ContributionCloud {
 		this.sk.fill(255, OVERLAY_OPACITY);
 		this.sk.rect(this.bounds.x, this.bounds.y, this.bounds.width, this.bounds.height);
 
+		this.sk.textAlign(this.sk.LEFT, this.sk.BASELINE);
 		for (const pos of positions) {
-			if (pos.word.word === hoveredWordText) {
+			if (normalizeWord(pos.word.word) === normalizeWord(hoveredWordText)) {
 				const screenX = this.bounds.x + pos.x;
 				const screenY = this.bounds.y + pos.y;
 				const isHovered = pos.word === hoveredPos.word;
 				const padding = isHovered ? 3 : 2;
-				const color = pos.user?.color || 200;
+				const color = pos.user?.color || DEFAULT_SPEAKER_COLOR;
 
 				this.sk.textSize(pos.textSize);
 				this.sk.noStroke();
 				this.sk.fill(color);
-				this.sk.text(pos.word.word, screenX, screenY);
+				this.sk.text(stripPunctuation(pos.word.word), screenX, screenY);
 
 				this.sk.noFill();
 				this.sk.stroke(color);
 				this.sk.strokeWeight(isHovered ? HOVER_OUTLINE_WEIGHT : 1);
-				this.sk.rect(screenX - padding, screenY - pos.textSize - padding, pos.width + padding * 2, pos.textSize + padding * 2, isHovered ? 4 : 3);
+				this.sk.rect(screenX - padding, screenY - pos.ascent - padding, pos.width + padding * 2, pos.ascent + pos.descent + padding * 2, isHovered ? 4 : 3);
 			}
 		}
 	}
@@ -233,7 +247,7 @@ export class ContributionCloud {
 			if (pos.user?.enabled) {
 				const screenX = this.bounds.x + pos.x;
 				const screenY = this.bounds.y + pos.y;
-				if (this.sk.overRect(screenX, screenY - pos.textSize, pos.width, pos.textSize)) {
+				if (this.sk.overRect(screenX, screenY - pos.ascent, pos.width, pos.ascent + pos.descent)) {
 					return pos;
 				}
 			}
@@ -244,9 +258,14 @@ export class ContributionCloud {
 	showWordTooltip(pos: WordPosition, allPositions: WordPosition[]): void {
 		const { word, user } = pos;
 		const turnContext = this.getTurnContext(word, allPositions);
-		const totalCount = allPositions.find((p) => p.word.word === word.word)?.word.count || 1;
+		let totalCount = 1;
+		for (const p of allPositions) {
+			if (normalizeWord(p.word.word) === normalizeWord(word.word) && p.word.speaker === word.speaker && p.word.count > totalCount) {
+				totalCount = p.word.count;
+			}
+		}
 
-		let content = `<b>${word.speaker}:</b> ${turnContext || word.word}`;
+		let content = `<b>${word.speaker}</b>\n${turnContext || word.word}`;
 
 		const details = [`×${totalCount}`, `Turn ${word.turnNumber}`];
 		const transcript = get(TranscriptStore);
@@ -256,24 +275,23 @@ export class ContributionCloud {
 
 		content += `\n<span style="font-size: 0.85em; opacity: 0.7">${details.join('  ·  ')}</span>`;
 
-		showTooltip(this.sk.mouseX, this.sk.mouseY, content, user?.color || [200, 200, 200], this.sk.height);
+		showTooltip(this.sk.mouseX, this.sk.mouseY, content, user?.color || DEFAULT_SPEAKER_COLOR, this.bounds.y + this.bounds.height);
 	}
 
 	getTurnContext(word: DataPoint, allPositions: WordPosition[]): string | null {
-		const turnWords = allPositions
+		const turnPositions = allPositions
 			.filter((p) => p.word.turnNumber === word.turnNumber)
-			.sort((a, b) => a.word.startTime - b.word.startTime)
-			.map((p) => p.word.word);
+			.sort((a, b) => a.word.startTime - b.word.startTime);
 
-		if (turnWords.length === 0) return null;
+		if (turnPositions.length === 0) return null;
 
-		const wordIndex = turnWords.findIndex((w) => w === word.word);
-		const parts = turnWords.map((w, i) => (i === wordIndex ? `<b>${w}</b>` : w));
+		const hoveredIndex = turnPositions.findIndex((p) => p.word === word);
+		const parts = turnPositions.map((p, i) => (i === hoveredIndex ? `<b>${p.word.word}</b>` : p.word.word));
 
 		let sentence = parts.join(' ');
-		if (sentence.length > MAX_TOOLTIP_LENGTH && wordIndex >= 0) {
-			const start = Math.max(0, wordIndex - 8);
-			const end = Math.min(parts.length, wordIndex + 12);
+		if (sentence.length > MAX_TOOLTIP_LENGTH && hoveredIndex >= 0) {
+			const start = Math.max(0, hoveredIndex - 8);
+			const end = Math.min(parts.length, hoveredIndex + 12);
 			sentence = (start > 0 ? '... ' : '') + parts.slice(start, end).join(' ') + (end < parts.length ? ' ...' : '');
 		}
 
@@ -281,12 +299,17 @@ export class ContributionCloud {
 	}
 
 	isWordVisible(word: DataPoint): boolean {
-		if (this.config.dashboardToggle && !this.sk.shouldDraw(word, 'turnNumber', 'firstWordOfTurnSelectedInTurnChart')) return false;
+		const user = this.userMap.get(word.speaker);
+		if (user && !user.enabled) return false;
+		if (this.config.dashboardToggle) {
+			const mouseInPanel = this.sk.overRect(this.bounds.x, this.bounds.y, this.bounds.width, this.bounds.height);
+			if (!mouseInPanel && !this.sk.shouldDraw(word)) return false;
+		}
 		if (this.config.repeatedWordsToggle && word.count < this.config.repeatWordSliderValue) return false;
 		return true;
 	}
 
 	passesSearchFilter(word: DataPoint): boolean {
-		return !this.config.wordToSearch || word.word.toLowerCase().includes(this.config.wordToSearch.toLowerCase());
+		return !this.config.wordToSearch || normalizeWord(word.word).includes(normalizeWord(this.config.wordToSearch));
 	}
 }

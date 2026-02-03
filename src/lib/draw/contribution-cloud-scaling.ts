@@ -1,13 +1,17 @@
 import type p5 from 'p5';
+import { get } from 'svelte/store';
+import TimelineStore from '../../stores/timelineStore';
 import type { ConfigStoreType } from '../../stores/configStore';
 import type { DataPoint } from '../../models/dataPoint';
 import type { Bounds } from './types/bounds';
+import { stripPunctuation } from '../core/string-utils';
 
 export interface Scaling {
 	minTextSize: number;
 	maxTextSize: number;
 	lineHeight: number;
 	newSpeakerGap: number;
+	maxCount: number;
 }
 
 interface ScalingCache {
@@ -20,7 +24,8 @@ const BASE_SCALING: Scaling = {
 	minTextSize: 20,
 	maxTextSize: 50,
 	lineHeight: 50,
-	newSpeakerGap: 75
+	newSpeakerGap: 75,
+	maxCount: 2
 };
 
 const MIN_SCALE = 0.15;
@@ -31,8 +36,9 @@ const REFERENCE_TEXT_SIZE = 50;
 let scalingCache: ScalingCache = { key: null, scaling: null };
 const wordWidthCache = new Map<string, number>();
 
-function getCacheKey(bounds: Bounds, wordCount: number, config: ConfigStoreType): string {
-	return `${bounds.x},${bounds.y},${bounds.width},${bounds.height}|${wordCount}|${config.separateToggle}|${config.repeatedWordsToggle}|${config.repeatWordSliderValue}|${config.dashboardToggle}`;
+function getCacheKey(bounds: Bounds, wordCount: number, maxCount: number, config: ConfigStoreType): string {
+	const timeline = get(TimelineStore);
+	return `${bounds.x},${bounds.y},${bounds.width},${bounds.height}|${wordCount}|${maxCount}|${config.separateToggle}|${config.repeatedWordsToggle}|${config.repeatWordSliderValue}|${config.dashboardToggle}|${timeline.leftMarker},${timeline.rightMarker}`;
 }
 
 /**
@@ -64,7 +70,12 @@ export function getWordWidth(sk: p5, word: string, textSize: number): number {
 export function calculateScaling(sk: p5, words: DataPoint[], bounds: Bounds, config: ConfigStoreType): Scaling {
 	if (words.length === 0) return { ...BASE_SCALING };
 
-	const cacheKey = getCacheKey(bounds, words.length, config);
+	let maxCount = 2;
+	for (const w of words) {
+		if (w.count > maxCount) maxCount = w.count;
+	}
+
+	const cacheKey = getCacheKey(bounds, words.length, maxCount, config);
 	if (scalingCache.key === cacheKey && scalingCache.scaling) {
 		return scalingCache.scaling;
 	}
@@ -73,18 +84,18 @@ export function calculateScaling(sk: p5, words: DataPoint[], bounds: Bounds, con
 	const availableHeight = bounds.height;
 
 	let scaleFactor = estimateScaleFactor(words, availableWidth, availableHeight, config);
-	let measuredHeight = measureHeight(sk, words, scaleFactor, availableWidth, config);
+	let measuredHeight = measureHeight(sk, words, scaleFactor, availableWidth, maxCount, config);
 
 	// Shrink if needed
 	while (scaleFactor > MIN_SCALE && measuredHeight > availableHeight) {
 		scaleFactor *= 0.9;
-		measuredHeight = measureHeight(sk, words, scaleFactor, availableWidth, config);
+		measuredHeight = measureHeight(sk, words, scaleFactor, availableWidth, maxCount, config);
 	}
 
 	// Try to grow if there's room
 	for (let i = 0; i < 5 && scaleFactor < 1.0; i++) {
 		const larger = Math.min(scaleFactor * 1.1, 1.0);
-		if (measureHeight(sk, words, larger, availableWidth, config) <= availableHeight) {
+		if (measureHeight(sk, words, larger, availableWidth, maxCount, config) <= availableHeight) {
 			scaleFactor = larger;
 		} else {
 			break;
@@ -95,7 +106,8 @@ export function calculateScaling(sk: p5, words: DataPoint[], bounds: Bounds, con
 		minTextSize: BASE_SCALING.minTextSize * scaleFactor,
 		maxTextSize: BASE_SCALING.maxTextSize * scaleFactor,
 		lineHeight: BASE_SCALING.lineHeight * scaleFactor,
-		newSpeakerGap: BASE_SCALING.newSpeakerGap * scaleFactor
+		newSpeakerGap: BASE_SCALING.newSpeakerGap * scaleFactor,
+		maxCount
 	};
 
 	scalingCache.key = cacheKey;
@@ -112,7 +124,7 @@ function estimateScaleFactor(words: DataPoint[], availableWidth: number, availab
 	let prevSpeaker: string | null = null;
 
 	for (const word of words) {
-		totalChars += word.word.length + 1;
+		totalChars += stripPunctuation(word.word).length + 1;
 		if (config.separateToggle && prevSpeaker !== null && word.speaker !== prevSpeaker) {
 			speakerChanges++;
 		}
@@ -130,7 +142,7 @@ function estimateScaleFactor(words: DataPoint[], availableWidth: number, availab
 /**
  * Measures actual height needed for words at a given scale factor.
  */
-function measureHeight(sk: p5, words: DataPoint[], scaleFactor: number, availableWidth: number, config: ConfigStoreType): number {
+function measureHeight(sk: p5, words: DataPoint[], scaleFactor: number, availableWidth: number, maxCount: number, config: ConfigStoreType): number {
 	const lineHeight = BASE_SCALING.lineHeight * scaleFactor;
 	const newSpeakerGap = BASE_SCALING.newSpeakerGap * scaleFactor;
 	const minSize = BASE_SCALING.minTextSize * scaleFactor;
@@ -141,8 +153,10 @@ function measureHeight(sk: p5, words: DataPoint[], scaleFactor: number, availabl
 	let prevSpeaker: string | null = null;
 
 	for (const word of words) {
-		const textSize = sk.map(word.count, 1, config.repeatWordSliderValue, minSize, maxSize, true);
-		const wordWidth = getWordWidth(sk, word.word, textSize);
+		const t = Math.log(word.count) / Math.log(maxCount);
+		const textSize = minSize + t * (maxSize - minSize);
+		const stripped = stripPunctuation(word.word);
+		const wordWidth = getWordWidth(sk, stripped, textSize);
 
 		if (config.separateToggle && prevSpeaker !== null && word.speaker !== prevSpeaker) {
 			x = 0;
@@ -152,7 +166,7 @@ function measureHeight(sk: p5, words: DataPoint[], scaleFactor: number, availabl
 			height += lineHeight;
 		}
 
-		x += getWordWidth(sk, word.word + ' ', textSize);
+		x += getWordWidth(sk, stripped + ' ', textSize);
 		prevSpeaker = word.speaker;
 	}
 

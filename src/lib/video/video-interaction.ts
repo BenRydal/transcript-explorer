@@ -6,6 +6,7 @@
 import { get } from 'svelte/store';
 import VideoStore, { stopPlayback, playFrom, playSnippets } from '../../stores/videoStore';
 import ConfigStore from '../../stores/configStore';
+import TranscriptStore from '../../stores/transcriptStore';
 
 /**
  * Handle a click on the visualization canvas.
@@ -13,9 +14,8 @@ import ConfigStore from '../../stores/configStore';
  *
  * Priority:
  * 1. If playing, stop playback
- * 2. Turn chart hover → play from that turn
- * 3. Contribution cloud hover → play from that word
- * 4. Distribution diagram hover → play speaker snippets
+ * 2. Hovered data point → play from that point
+ * 3. Distribution diagram hover → play speaker snippets
  */
 export function handleVisualizationClick(): void {
 	const videoState = get(VideoStore);
@@ -27,13 +27,13 @@ export function handleVisualizationClick(): void {
 		return;
 	}
 
-	const config = get(ConfigStore);
-	const { firstWordOfTurnSelectedInTurnChart, selectedWordFromContributionCloud, arrayOfFirstWords } = config;
+	if (get(TranscriptStore).timingMode === 'untimed') return;
 
-	if (firstWordOfTurnSelectedInTurnChart) {
-		playFrom(firstWordOfTurnSelectedInTurnChart);
-	} else if (selectedWordFromContributionCloud) {
-		playFrom(selectedWordFromContributionCloud);
+	const config = get(ConfigStore);
+	const { hoveredDataPoint, arrayOfFirstWords } = config;
+
+	if (hoveredDataPoint) {
+		playFrom(hoveredDataPoint);
 	} else if (arrayOfFirstWords?.length) {
 		playSnippets(arrayOfFirstWords);
 	}

@@ -1,10 +1,12 @@
-import { DataPoint } from '../../models/dataPoint';
+import type { DataPoint } from '../../models/dataPoint';
 import TranscriptStore from '../../stores/transcriptStore';
 import TimelineStore from '../../stores/timelineStore';
 import UserStore from '../../stores/userStore';
 import ConfigStore, { type ConfigStoreType } from '../../stores/configStore';
 import { get } from 'svelte/store';
 import { clearScalingCache, clearCloudBuffer } from '../draw/contribution-cloud';
+import { normalizeWord } from './string-utils';
+import type { NetworkData } from '../draw/turn-network';
 
 // Module-level stop words Set (created once, shared by all instances)
 const STOP_WORDS = new Set([
@@ -82,7 +84,7 @@ export class DynamicData {
 	}
 
 	isStopWord(stringWord: string): boolean {
-		return STOP_WORDS.has(stringWord.toLowerCase());
+		return STOP_WORDS.has(normalizeWord(stringWord));
 	}
 
 	isInTimeRange(startTime: number, endTime: number): boolean {
@@ -93,19 +95,25 @@ export class DynamicData {
 	/**
 	 * Get the current slice of words based on endIndex, with counts computed.
 	 * Filters stop words and applies count logic based on config toggles.
-	 * Note: Counts are computed for ALL words first, then filtered by time range.
+	 * When filterByTimeRange is true, time range filter is applied BEFORE counting
+	 * so that counts reflect only the visible range.
 	 */
 	getProcessedWords(filterByTimeRange = false): DataPoint[] {
-		const slice = wordArray.slice(0, this.endIndex);
+		let slice = wordArray.slice(0, this.endIndex);
+
+		if (filterByTimeRange) {
+			slice = slice.filter((word) => this.isInTimeRange(word.startTime, word.endTime));
+		}
+
 		const result: DataPoint[] = [];
 		const countMap = new Map<string, DataPoint[]>();
 
-		// First pass: compute counts for all words (stop words excluded)
 		for (const word of slice) {
 			if (config.stopWordsToggle && this.isStopWord(word.word)) continue;
 
-			const copy = new DataPoint(word.speaker, word.turnNumber, word.word, word.startTime, word.endTime);
-			const existing = countMap.get(word.word);
+			const copy = word.copyWith();
+			const countKey = `${word.speaker}\0${normalizeWord(word.word)}`;
+			const existing = countMap.get(countKey);
 
 			if (existing) {
 				if (config.lastWordToggle) {
@@ -118,25 +126,46 @@ export class DynamicData {
 				}
 				existing.push(copy);
 			} else {
-				countMap.set(word.word, [copy]);
+				countMap.set(countKey, [copy]);
 			}
 			result.push(copy);
 		}
 
-		// Filter by time range after counts are computed
-		if (filterByTimeRange) {
-			return result.filter((word) => this.isInTimeRange(word.startTime, word.endTime));
-		}
 		return result;
 	}
 
-	getDynamicArrayForDistributionDiagram(): Record<string, DataPoint[]> {
+	getDynamicArrayForSpeakerGarden(): Record<string, DataPoint[]> {
 		const categorized: Record<string, DataPoint[]> = {};
 		for (const word of this.getProcessedWords(true)) {
 			if (!categorized[word.speaker]) categorized[word.speaker] = [];
 			categorized[word.speaker].push(word);
 		}
-		return categorized;
+
+		const sortOrder = config.gardenSortOrder;
+		if (sortOrder === 'default') return categorized;
+
+		const entries = Object.entries(categorized);
+		switch (sortOrder) {
+			case 'words':
+				entries.sort((a, b) => b[1].length - a[1].length);
+				break;
+			case 'turns':
+				entries.sort((a, b) => {
+					const turnsA = new Set(a[1].map((w) => w.turnNumber)).size;
+					const turnsB = new Set(b[1].map((w) => w.turnNumber)).size;
+					return turnsB - turnsA;
+				});
+				break;
+			case 'alpha':
+				entries.sort((a, b) => a[0].localeCompare(b[0]));
+				break;
+		}
+
+		const sorted: Record<string, DataPoint[]> = {};
+		for (const [key, value] of entries) {
+			sorted[key] = value;
+		}
+		return sorted;
 	}
 
 	getDynamicArrayForTurnChart(): Record<number, DataPoint[]> {
@@ -151,15 +180,100 @@ export class DynamicData {
 	getDynamicArraySortedForContributionCloud(): DataPoint[] {
 		const words = this.getProcessedWords(true);
 
-		if (config.sortToggle) {
-			words.sort((a, b) => b.count - a.count);
-		}
-		if (config.separateToggle) {
-			const users = get(UserStore);
-			const speakerOrder = new Map(users.map((u, i) => [u.name, i]));
-			words.sort((a, b) => (speakerOrder.get(a.speaker) ?? 999) - (speakerOrder.get(b.speaker) ?? 999));
+		const needsSeparate = config.separateToggle;
+		const needsSort = config.sortToggle;
+
+		if (needsSeparate || needsSort) {
+			const speakerOrder = needsSeparate
+				? new Map(get(UserStore).map((u, i) => [u.name, i]))
+				: null;
+
+			words.sort((a, b) => {
+				if (speakerOrder) {
+					const speakerDiff = (speakerOrder.get(a.speaker) ?? 999) - (speakerOrder.get(b.speaker) ?? 999);
+					if (speakerDiff !== 0) return speakerDiff;
+				}
+				if (needsSort) return b.count - a.count;
+				return 0;
+			});
 		}
 
 		return words;
+	}
+
+	getTurnSummaries(): { speaker: string; wordCount: number; firstDataPoint: DataPoint; content: string }[] {
+		const words = this.getProcessedWords(true);
+		const turnMap = new Map<number, { speaker: string; wordCount: number; firstDataPoint: DataPoint; content: string }>();
+
+		for (const word of words) {
+			const existing = turnMap.get(word.turnNumber);
+			if (existing) {
+				existing.wordCount++;
+				existing.content += ' ' + word.word;
+			} else {
+				turnMap.set(word.turnNumber, { speaker: word.speaker, wordCount: 1, firstDataPoint: word, content: word.word });
+			}
+		}
+
+		return Array.from(turnMap.values());
+	}
+
+	getDynamicArrayForTurnNetwork(): NetworkData {
+		const words = this.getProcessedWords(true);
+
+		// Compute which turns match the search term (null if no search active)
+		let searchMatchingTurns: Set<number> | null = null;
+		if (config.wordToSearch) {
+			const searchTerm = normalizeWord(config.wordToSearch);
+			searchMatchingTurns = new Set<number>();
+			for (const word of words) {
+				if (!searchMatchingTurns.has(word.turnNumber) && normalizeWord(word.word).includes(searchTerm)) {
+					searchMatchingTurns.add(word.turnNumber);
+				}
+			}
+		}
+
+		// Pre-compute per-turn word counts
+		const turnWordCounts = new Map<number, number>();
+		for (const word of words) {
+			turnWordCounts.set(word.turnNumber, (turnWordCounts.get(word.turnNumber) ?? 0) + 1);
+		}
+
+		const transitions = new Map<string, Map<string, { count: number; wordCount: number; turnStartPoints: DataPoint[] }>>();
+		const speakerStats = new Map<string, { wordCount: number; turnCount: number; turnStartPoints: DataPoint[] }>();
+		let prevSpeaker: string | null = null;
+		let prevTurn = -1;
+
+		for (const word of words) {
+			let stats = speakerStats.get(word.speaker);
+			if (!stats) {
+				stats = { wordCount: 0, turnCount: 0, turnStartPoints: [] };
+				speakerStats.set(word.speaker, stats);
+			}
+			stats.wordCount++;
+
+			if (word.turnNumber !== prevTurn) {
+				stats.turnCount++;
+				stats.turnStartPoints.push(word);
+
+				if (prevSpeaker !== null) {
+					if (!transitions.has(prevSpeaker)) transitions.set(prevSpeaker, new Map());
+					const targets = transitions.get(prevSpeaker)!;
+					const transition = targets.get(word.speaker);
+					if (transition) {
+						transition.count++;
+						transition.wordCount += turnWordCounts.get(word.turnNumber) ?? 0;
+						transition.turnStartPoints.push(word);
+					} else {
+						targets.set(word.speaker, { count: 1, wordCount: turnWordCounts.get(word.turnNumber) ?? 0, turnStartPoints: [word] });
+					}
+				}
+
+				prevSpeaker = word.speaker;
+				prevTurn = word.turnNumber;
+			}
+		}
+
+		return { transitions, speakerStats, searchMatchingTurns, turnWordCounts };
 	}
 }

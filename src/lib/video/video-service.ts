@@ -101,150 +101,65 @@ export function createYouTubePlayer(
 }
 
 /**
- * Playback operations - work with both YouTube and HTML5 players
- * YouTube API methods are wrapped in try-catch because the iframe may not be fully ready
+ * Execute a player operation with YouTube readiness check and error handling.
+ * Returns the fallback value if player is null, not ready, or throws.
  */
-export function playVideo(player: VideoPlayer): void {
-	if (!player) return;
+function withPlayer<T>(
+	player: VideoPlayer,
+	ytAction: (p: YTPlayer) => T,
+	htmlAction: (p: HTMLVideoElement) => T,
+	fallback: T
+): T {
+	if (!player) return fallback;
 	try {
 		if (isYouTubePlayer(player)) {
-			if (!isYouTubePlayerReady(player)) {
-				console.warn('playVideo: YouTube player not ready');
-				return;
-			}
-			player.playVideo();
+			if (!isYouTubePlayerReady(player)) return fallback;
+			return ytAction(player);
 		} else {
-			player.play();
+			return htmlAction(player);
 		}
-	} catch (e) {
-		console.warn('playVideo failed:', e);
+	} catch {
+		return fallback;
 	}
+}
+
+export function playVideo(player: VideoPlayer): void {
+	withPlayer(player, (p) => p.playVideo(), (p) => p.play(), undefined);
 }
 
 export function pauseVideo(player: VideoPlayer): void {
-	if (!player) return;
-	try {
-		if (isYouTubePlayer(player)) {
-			if (!isYouTubePlayerReady(player)) {
-				console.warn('pauseVideo: YouTube player not ready');
-				return;
-			}
-			player.pauseVideo();
-		} else {
-			player.pause();
-		}
-	} catch (e) {
-		console.warn('pauseVideo failed:', e);
-	}
+	withPlayer(player, (p) => p.pauseVideo(), (p) => p.pause(), undefined);
 }
 
 export function seekTo(player: VideoPlayer, time: number): void {
-	if (!player) return;
-	try {
-		if (isYouTubePlayer(player)) {
-			if (!isYouTubePlayerReady(player)) {
-				console.warn('seekTo: YouTube player not ready');
-				return;
-			}
-			player.seekTo(time, true);
-		} else {
-			player.currentTime = time;
-		}
-	} catch (e) {
-		console.warn('seekTo failed:', e);
-	}
+	withPlayer(player, (p) => p.seekTo(time, true), (p) => { p.currentTime = time; }, undefined);
 }
 
 export function getCurrentTime(player: VideoPlayer): number {
-	if (!player) return 0;
-	try {
-		if (isYouTubePlayer(player)) {
-			if (!isYouTubePlayerReady(player)) return 0;
-			return player.getCurrentTime();
-		} else {
-			return player.currentTime;
-		}
-	} catch (e) {
-		return 0;
-	}
+	return withPlayer(player, (p) => p.getCurrentTime(), (p) => p.currentTime, 0);
 }
 
 export function getDuration(player: VideoPlayer): number {
-	if (!player) return 0;
-	try {
-		if (isYouTubePlayer(player)) {
-			if (!isYouTubePlayerReady(player)) return 0;
-			return player.getDuration();
-		} else {
-			return player.duration;
-		}
-	} catch (e) {
-		return 0;
-	}
+	return withPlayer(player, (p) => p.getDuration(), (p) => p.duration, 0);
 }
 
 export function muteVideo(player: VideoPlayer): void {
-	if (!player) return;
-	try {
-		if (isYouTubePlayer(player)) {
-			if (!isYouTubePlayerReady(player)) {
-				console.warn('muteVideo: YouTube player not ready');
-				return;
-			}
-			player.mute();
-		} else {
-			player.muted = true;
-		}
-	} catch (e) {
-		console.warn('muteVideo failed:', e);
-	}
+	withPlayer(player, (p) => p.mute(), (p) => { p.muted = true; }, undefined);
 }
 
 export function unmuteVideo(player: VideoPlayer): void {
-	if (!player) return;
-	try {
-		if (isYouTubePlayer(player)) {
-			if (!isYouTubePlayerReady(player)) {
-				console.warn('unmuteVideo: YouTube player not ready');
-				return;
-			}
-			player.unMute();
-		} else {
-			player.muted = false;
-		}
-	} catch (e) {
-		console.warn('unmuteVideo failed:', e);
-	}
+	withPlayer(player, (p) => p.unMute(), (p) => { p.muted = false; }, undefined);
 }
 
 export function setPlaybackRate(player: VideoPlayer, rate: number): void {
-	if (!player) return;
-	try {
-		if (isYouTubePlayer(player)) {
-			if (!isYouTubePlayerReady(player)) {
-				console.warn('setPlaybackRate: YouTube player not ready');
-				return;
-			}
-			// YouTube API uses setPlaybackRate
-			(player as any).setPlaybackRate?.(rate);
-		} else {
-			player.playbackRate = rate;
-		}
-	} catch (e) {
-		console.warn('setPlaybackRate failed:', e);
-	}
+	withPlayer(player, (p) => (p as any).setPlaybackRate?.(rate), (p) => { p.playbackRate = rate; }, undefined);
 }
 
 export function destroyPlayer(player: VideoPlayer): void {
 	if (!player) return;
 	try {
-		if (isYouTubePlayer(player)) {
-			player.destroy();
-		}
-	} catch (e) {
-		console.warn('destroyPlayer failed:', e);
-	}
-	// HTML5 video elements are cleaned up when removed from DOM
+		if (isYouTubePlayer(player)) player.destroy();
+	} catch { /* player already destroyed */ }
 }
 
 /**
