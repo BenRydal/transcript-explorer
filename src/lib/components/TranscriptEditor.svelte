@@ -26,7 +26,8 @@
 
 	let { oncreateTranscript }: Props = $props();
 
-	let deleteModal: number | null = $state(null);
+	let showDeleteModal = $state(false);
+	let pendingDeleteTurn: number | null = $state(null);
 
 	// Reactively derive turns from TranscriptStore
 	let turns = $derived($TranscriptStore.wordArray.length > 0 ? getTurnsFromWordArray($TranscriptStore.wordArray) : []);
@@ -322,14 +323,15 @@
 
 	// Handle delete turn - show confirmation modal
 	function handleTurnDelete(data: { turnNumber: number }) {
-		deleteModal = data.turnNumber;
+		pendingDeleteTurn = data.turnNumber;
+		showDeleteModal = true;
 	}
 
 	// Actually delete the turn after confirmation
 	function onDeleteConfirm() {
-		if (deleteModal === null) return;
-		const turnNumber = deleteModal;
-		deleteModal = null;
+		if (pendingDeleteTurn === null) return;
+		const turnNumber = pendingDeleteTurn;
+		pendingDeleteTurn = null;
 
 		// Save state for undo
 		HistoryStore.pushState(get(TranscriptStore).wordArray);
@@ -524,12 +526,11 @@
 </div>
 
 <ConfirmModal
-	isOpen={deleteModal !== null}
+	bind:isOpen={showDeleteModal}
 	title="Delete Turn?"
 	message="Are you sure you want to delete this turn? This can be undone."
 	confirmText="Delete"
 	onconfirm={onDeleteConfirm}
-	oncancel={() => (deleteModal = null)}
 />
 
 <style>
