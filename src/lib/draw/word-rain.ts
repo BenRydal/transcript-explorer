@@ -577,7 +577,13 @@ export class WordRain {
 		}
 
 		for (const pw of placed) {
+			// Check word text
 			if (this.sk.overRect(pw.x, pw.y - pw.ascent, pw.width, pw.ascent + pw.descent)) {
+				return pw;
+			}
+			// Check frequency bar at top
+			const barX = pw.x + pw.width / 2 - pw.barW / 2;
+			if (this.sk.overRect(barX, pw.barY, pw.barW, pw.barH)) {
 				return pw;
 			}
 		}
