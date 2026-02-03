@@ -151,7 +151,8 @@ export class ContributionCloud {
 		let prevSpeaker: string | null = null;
 
 		for (const word of words) {
-			const textSize = this.sk.map(word.count, 1, this.config.repeatWordSliderValue, scaling.minTextSize, scaling.maxTextSize, true);
+			const t = Math.log(word.count) / Math.log(scaling.maxCount);
+			const textSize = scaling.minTextSize + t * (scaling.maxTextSize - scaling.minTextSize);
 			const stripped = stripPunctuation(word.word);
 			const width = getWordWidth(this.sk, stripped, textSize);
 			const isNewSpeaker = prevSpeaker !== null && word.speaker !== prevSpeaker;

@@ -405,7 +405,7 @@ export class WordRain {
 			const t = (agg.meanTime - this.timeline.leftMarker) / range;
 			const x = region.x + t * region.width;
 
-			const sizeT = maxCount > 1 ? (agg.count - 1) / (maxCount - 1) : 0;
+			const sizeT = maxCount > 1 ? Math.log(agg.count) / Math.log(maxCount) : 0;
 			const minSize = Math.max(minFloor, region.height * TEXT_MIN_RATIO);
 			const maxSize = Math.max(maxFloor, region.height * TEXT_MAX_RATIO);
 			const textSize = minSize + sizeT * (maxSize - minSize);
