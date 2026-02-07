@@ -61,10 +61,10 @@ export class QuestionFlow {
 		this.gh = bounds.height - TOP_MARGIN - BOTTOM_MARGIN;
 	}
 
-	draw(pairs: QuestionAnswerPair[]): { snippetPoints: DataPoint[]; hoveredSpeaker: string | null } {
+	draw(pairs: QuestionAnswerPair[]): { hoveredDataPoint: DataPoint | null; hoveredSpeaker: string | null } {
 		if (pairs.length === 0 || this.speakers.length === 0) {
 			this.drawEmptyState();
-			return { snippetPoints: [], hoveredSpeaker: null };
+			return { hoveredDataPoint: null, hoveredSpeaker: null };
 		}
 
 		// Calculate word counts for sizing
@@ -93,14 +93,13 @@ export class QuestionFlow {
 		// Handle hover
 		if (hoveredPair) {
 			this.showPairTooltip(hoveredPair.pair);
-			const snippetPoints: DataPoint[] = [hoveredPair.pair.questionFirstWord];
-			if (hoveredPair.pair.answerFirstWord) {
-				snippetPoints.push(hoveredPair.pair.answerFirstWord);
-			}
-			return { snippetPoints, hoveredSpeaker: hoveredPair.pair.questionSpeaker };
+			return {
+				hoveredDataPoint: hoveredPair.pair.questionFirstWord,
+				hoveredSpeaker: hoveredPair.pair.questionSpeaker
+			};
 		}
 
-		return { snippetPoints: [], hoveredSpeaker: null };
+		return { hoveredDataPoint: null, hoveredSpeaker: null };
 	}
 
 	private drawEmptyState(): void {

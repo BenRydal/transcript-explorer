@@ -58,15 +58,15 @@ export class WordJourney {
 		this.gh = bounds.height - TOP_MARGIN - BOTTOM_MARGIN;
 	}
 
-	draw(data: { word: string; occurrences: WordOccurrence[] }): { hoveredOccurrences: DataPoint[]; hoveredSpeaker: string | null } {
+	draw(data: { word: string; occurrences: WordOccurrence[] }): { hoveredDataPoint: DataPoint | null; hoveredSpeaker: string | null } {
 		if (!data.word || this.speakers.length === 0) {
 			this.drawCenteredMessage(data.word ? 'No matching words found' : 'Type a word in the search box to see its journey');
-			return { hoveredOccurrences: [], hoveredSpeaker: null };
+			return { hoveredDataPoint: null, hoveredSpeaker: null };
 		}
 
 		if (data.occurrences.length === 0) {
 			this.drawCenteredMessage(`No occurrences of "${data.word}" found in transcript`);
-			return { hoveredOccurrences: [], hoveredSpeaker: null };
+			return { hoveredDataPoint: null, hoveredSpeaker: null };
 		}
 
 		// Draw title
@@ -90,12 +90,12 @@ export class WordJourney {
 		if (hoveredOcc) {
 			this.showOccurrenceTooltip(hoveredOcc.occurrence);
 			return {
-				hoveredOccurrences: data.occurrences.map((o) => o.dataPoint),
+				hoveredDataPoint: hoveredOcc.occurrence.dataPoint,
 				hoveredSpeaker: hoveredOcc.occurrence.speaker
 			};
 		}
 
-		return { hoveredOccurrences: [], hoveredSpeaker: null };
+		return { hoveredDataPoint: null, hoveredSpeaker: null };
 	}
 
 	private drawCenteredMessage(message: string): void {

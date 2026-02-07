@@ -184,14 +184,14 @@ export class Draw {
 
 	updateQuestionFlow(pos: Bounds): DrawResult {
 		const viz = new QuestionFlow(this.sk, pos);
-		const { snippetPoints, hoveredSpeaker } = viz.draw(this.sk.dynamicData.getQuestionAnswerPairs());
-		return result({ arrayOfFirstWords: snippetPoints, hoveredSpeaker });
+		const { hoveredDataPoint, hoveredSpeaker } = viz.draw(this.sk.dynamicData.getQuestionAnswerPairs());
+		return result({ hover: hoveredDataPoint, hoveredSpeaker });
 	}
 
 	updateWordJourney(pos: Bounds): DrawResult {
 		const viz = new WordJourney(this.sk, pos);
-		const { hoveredOccurrences, hoveredSpeaker } = viz.draw(this.sk.dynamicData.getWordJourney(currConfig.wordToSearch));
-		return result({ arrayOfFirstWords: hoveredOccurrences, hoveredSpeaker });
+		const { hoveredDataPoint, hoveredSpeaker } = viz.draw(this.sk.dynamicData.getWordJourney(currConfig.wordToSearch));
+		return result({ hover: hoveredDataPoint, hoveredSpeaker });
 	}
 
 	drawDashboard(): DrawResult {
