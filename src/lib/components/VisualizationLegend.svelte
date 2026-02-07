@@ -15,7 +15,11 @@
 		Minus,
 		ChartBar,
 		Columns3,
-		Hexagon
+		Hexagon,
+		Star,
+		Diamond,
+		HelpCircle,
+		MessageCircle
 	} from '@lucide/svelte';
 	import type { Component } from 'svelte';
 	import ConfigStore from '../../stores/configStore';
@@ -111,6 +115,29 @@
 					{ speakerColors: true, label: 'Color \u2192 speaker' },
 					...v('Click shape \u2192 play examples')
 				]
+			},
+			wordJourney: {
+				title: 'Word Journey',
+				items: [
+					{ icon: Clock, label: `Horizontal position \u2192 ${isUntimed ? 'word count' : 'time'}` },
+					{ icon: Star, label: 'Star \u2192 first overall occurrence' },
+					{ icon: Diamond, label: 'Diamond \u2192 first by speaker' },
+					{ icon: Circle, label: 'Circle \u2192 other occurrences' },
+					{ speakerColors: true, label: 'Color \u2192 speaker' },
+					...v('Click dot \u2192 play from occurrence')
+				]
+			},
+			questionFlow: {
+				title: 'Question Flow',
+				items: [
+					{ icon: Clock, label: `Horizontal position \u2192 ${isUntimed ? 'word count' : 'time'}` },
+					{ icon: HelpCircle, label: 'Circle with ? \u2192 question' },
+					{ icon: MessageCircle, label: 'Circle \u2192 answer' },
+					{ icon: Circle, label: 'Node size \u2192 word count' },
+					{ icon: ArrowRight, label: 'Arc \u2192 question to answer' },
+					{ speakerColors: true, label: 'Color \u2192 speaker' },
+					...v('Click node \u2192 play Q&A')
+				]
 			}
 		} as Record<string, { title: string; items: LegendItem[] }>;
 	});
@@ -123,7 +150,9 @@
 		['speakerHeatmapToggle', 'speakerHeatmap'],
 		['turnNetworkToggle', 'turnNetwork'],
 		['turnLengthToggle', 'turnLength'],
-		['speakerFingerprintToggle', 'speakerFingerprint']
+		['speakerFingerprintToggle', 'speakerFingerprint'],
+		['wordJourneyToggle', 'wordJourney'],
+		['questionFlowToggle', 'questionFlow']
 	] as const;
 
 	let legend = $derived.by(() => {
