@@ -8,6 +8,33 @@ import { clearScalingCache, clearCloudBuffer } from '../draw/contribution-cloud'
 import { normalizeWord } from './string-utils';
 import type { NetworkData } from '../draw/turn-network';
 
+// --- Question Flow Types ---
+
+export interface QuestionAnswerPair {
+	questionTurn: number;
+	questionSpeaker: string;
+	questionFirstWord: DataPoint;
+	questionContent: string;
+	answerTurn: number | null;
+	answerSpeaker: string | null;
+	answerFirstWord: DataPoint | null;
+	answerContent: string | null;
+	startTime: number;
+}
+
+// --- Word Journey Types ---
+
+export interface WordOccurrence {
+	speaker: string;
+	turnNumber: number;
+	dataPoint: DataPoint;
+	startTime: number;
+	isFirst: boolean;
+	isFirstBySpeaker: boolean;
+	matchedWord: string;
+	turnContent: string;
+}
+
 // --- Speaker Fingerprint Types ---
 
 export interface SpeakerFingerprintData {
@@ -740,5 +767,145 @@ export class DynamicData {
 					consecutiveTurnFirstWords: allTurnFirstWords.filter((w) => stats.consecutiveTurnNumbers.has(w.turnNumber))
 				};
 			});
+	}
+
+	/**
+	 * Identifies question turns and pairs them with the following answer turn (if any).
+	 * A turn is a question if it ends with '?' or starts with an interrogative word.
+	 */
+	getQuestionAnswerPairs(): QuestionAnswerPair[] {
+		const words = this.getProcessedWords(true);
+		if (words.length === 0) return [];
+
+		const users = get(UserStore);
+		const enabledSpeakers = new Set(users.filter((u) => u.enabled).map((u) => u.name));
+
+		// Build turn data: content, first word, speaker
+		const turnData = new Map<number, { speaker: string; content: string; firstWord: DataPoint; startTime: number }>();
+		for (const word of words) {
+			const existing = turnData.get(word.turnNumber);
+			if (existing) {
+				existing.content += ' ' + word.word;
+			} else {
+				turnData.set(word.turnNumber, {
+					speaker: word.speaker,
+					content: word.word,
+					firstWord: word,
+					startTime: word.startTime
+				});
+			}
+		}
+
+		// Get sorted turn numbers
+		const turnNumbers = Array.from(turnData.keys()).sort((a, b) => a - b);
+
+		// Identify question turns
+		const isQuestionTurn = (turnNum: number): boolean => {
+			const data = turnData.get(turnNum);
+			if (!data) return false;
+			const content = data.content;
+			// Has question mark
+			if (content.includes('?')) return true;
+			// Starts with interrogative word
+			const firstWord = content.split(' ')[0];
+			return QUESTION_STARTERS.has(normalizeWord(firstWord));
+		};
+
+		const pairs: QuestionAnswerPair[] = [];
+
+		for (let i = 0; i < turnNumbers.length; i++) {
+			const turnNum = turnNumbers[i];
+			const data = turnData.get(turnNum)!;
+
+			// Skip if speaker is disabled
+			if (!enabledSpeakers.has(data.speaker)) continue;
+
+			if (!isQuestionTurn(turnNum)) continue;
+
+			// Look for next turn by a different speaker as the "answer"
+			let answerTurn: number | null = null;
+			let answerData: { speaker: string; content: string; firstWord: DataPoint; startTime: number } | null = null;
+
+			for (let j = i + 1; j < turnNumbers.length; j++) {
+				const nextTurnNum = turnNumbers[j];
+				const nextData = turnData.get(nextTurnNum)!;
+				if (nextData.speaker !== data.speaker && enabledSpeakers.has(nextData.speaker)) {
+					answerTurn = nextTurnNum;
+					answerData = nextData;
+					break;
+				}
+			}
+
+			pairs.push({
+				questionTurn: turnNum,
+				questionSpeaker: data.speaker,
+				questionFirstWord: data.firstWord,
+				questionContent: data.content,
+				answerTurn,
+				answerSpeaker: answerData?.speaker ?? null,
+				answerFirstWord: answerData?.firstWord ?? null,
+				answerContent: answerData?.content ?? null,
+				startTime: data.startTime
+			});
+		}
+
+		return pairs;
+	}
+
+	/**
+	 * Tracks occurrences of a specific word across all speakers over time.
+	 */
+	getWordJourney(searchWord: string): { word: string; occurrences: WordOccurrence[] } {
+		if (!searchWord) return { word: '', occurrences: [] };
+
+		const words = this.getProcessedWords(true);
+		if (words.length === 0) return { word: searchWord, occurrences: [] };
+
+		const users = get(UserStore);
+		const enabledSpeakers = new Set(users.filter((u) => u.enabled).map((u) => u.name));
+
+		// Build turn content map
+		const turnContent = new Map<number, string>();
+		for (const word of words) {
+			const existing = turnContent.get(word.turnNumber);
+			if (existing) {
+				turnContent.set(word.turnNumber, existing + ' ' + word.word);
+			} else {
+				turnContent.set(word.turnNumber, word.word);
+			}
+		}
+
+		const normalizedSearch = normalizeWord(searchWord);
+		const occurrences: WordOccurrence[] = [];
+		const speakerFirstOccurrence = new Map<string, boolean>();
+		let isFirstOverall = true;
+
+		for (const word of words) {
+			if (!enabledSpeakers.has(word.speaker)) continue;
+			if (!normalizeWord(word.word).includes(normalizedSearch)) continue;
+
+			const isFirstBySpeaker = !speakerFirstOccurrence.has(word.speaker);
+			if (isFirstBySpeaker) {
+				speakerFirstOccurrence.set(word.speaker, true);
+			}
+
+			occurrences.push({
+				speaker: word.speaker,
+				turnNumber: word.turnNumber,
+				dataPoint: word,
+				startTime: word.startTime,
+				isFirst: isFirstOverall,
+				isFirstBySpeaker,
+				matchedWord: word.word,
+				turnContent: turnContent.get(word.turnNumber) || ''
+			});
+
+			isFirstOverall = false;
+		}
+
+		// Sort by startTime
+		occurrences.sort((a, b) => a.startTime - b.startTime);
+
+		return { word: searchWord, occurrences };
 	}
 }

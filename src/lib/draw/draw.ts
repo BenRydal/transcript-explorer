@@ -8,6 +8,8 @@ import { TurnNetwork } from './turn-network';
 import { WordRain } from './word-rain';
 import { TurnLengthDistribution } from './turn-length-distribution';
 import { SpeakerFingerprint } from './speaker-fingerprint';
+import { QuestionFlow } from './question-flow';
+import { WordJourney } from './word-journey';
 import ConfigStore, { type ConfigStoreType } from '../../stores/configStore';
 import HoverStore from '../../stores/hoverStore';
 import { resetTooltipFrame, finalizeTooltipFrame } from '../../stores/tooltipStore';
@@ -48,7 +50,9 @@ const TOGGLE_TO_PANEL: [keyof ConfigStoreType, string][] = [
 	['wordRainToggle', 'wordRain'],
 	['speakerHeatmapToggle', 'speakerHeatmap'],
 	['turnLengthToggle', 'turnLength'],
-	['speakerFingerprintToggle', 'speakerFingerprint']
+	['speakerFingerprintToggle', 'speakerFingerprint'],
+	['questionFlowToggle', 'questionFlow'],
+	['wordJourneyToggle', 'wordJourney']
 ];
 
 export class Draw {
@@ -121,6 +125,10 @@ export class Draw {
 				return this.updateTurnLengthDistribution(bounds);
 			case 'speakerFingerprint':
 				return this.updateSpeakerFingerprint(bounds);
+			case 'questionFlow':
+				return this.updateQuestionFlow(bounds);
+			case 'wordJourney':
+				return this.updateWordJourney(bounds);
 			default:
 				return result({});
 		}
@@ -172,6 +180,18 @@ export class Draw {
 		const fingerprint = new SpeakerFingerprint(this.sk, pos);
 		const { snippetPoints, hoveredSpeaker } = fingerprint.draw(this.sk.dynamicData.getSpeakerFingerprints());
 		return result({ arrayOfFirstWords: snippetPoints, hoveredSpeaker });
+	}
+
+	updateQuestionFlow(pos: Bounds): DrawResult {
+		const viz = new QuestionFlow(this.sk, pos);
+		const { snippetPoints, hoveredSpeaker } = viz.draw(this.sk.dynamicData.getQuestionAnswerPairs());
+		return result({ arrayOfFirstWords: snippetPoints, hoveredSpeaker });
+	}
+
+	updateWordJourney(pos: Bounds): DrawResult {
+		const viz = new WordJourney(this.sk, pos);
+		const { hoveredOccurrences, hoveredSpeaker } = viz.draw(this.sk.dynamicData.getWordJourney(currConfig.wordToSearch));
+		return result({ arrayOfFirstWords: hoveredOccurrences, hoveredSpeaker });
 	}
 
 	drawDashboard(): DrawResult {

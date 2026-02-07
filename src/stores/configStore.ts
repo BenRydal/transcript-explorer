@@ -12,6 +12,8 @@ export interface ConfigStoreType {
 	speakerHeatmapToggle: boolean;
 	turnLengthToggle: boolean;
 	speakerFingerprintToggle: boolean;
+	questionFlowToggle: boolean;
+	wordJourneyToggle: boolean;
 	silenceOverlapToggle: boolean;
 	separateToggle: boolean;
 	sortToggle: boolean;
@@ -57,7 +59,9 @@ export const DASHBOARD_PANEL_OPTIONS = [
 	{ key: 'wordRain', label: 'Word Rain' },
 	{ key: 'speakerHeatmap', label: 'Speaker Heatmap' },
 	{ key: 'turnLength', label: 'Turn Length' },
-	{ key: 'speakerFingerprint', label: 'Speaker Fingerprint' }
+	{ key: 'speakerFingerprint', label: 'Speaker Fingerprint' },
+	{ key: 'questionFlow', label: 'Question Flow' },
+	{ key: 'wordJourney', label: 'Word Journey' }
 ] as const;
 
 export const initialConfig: ConfigStoreType = {
@@ -70,6 +74,8 @@ export const initialConfig: ConfigStoreType = {
 	speakerHeatmapToggle: false,
 	turnLengthToggle: false,
 	speakerFingerprintToggle: false,
+	questionFlowToggle: false,
+	wordJourneyToggle: false,
 	silenceOverlapToggle: true,
 	separateToggle: false,
 	sortToggle: false,

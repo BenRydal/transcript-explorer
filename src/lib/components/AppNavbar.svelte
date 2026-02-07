@@ -70,6 +70,8 @@
 		'speakerFingerprintToggle',
 		'speakerHeatmapToggle',
 		'turnLengthToggle',
+		'questionFlowToggle',
+		'wordJourneyToggle',
 		'dashboardToggle'
 	] as const;
 	const regularVisualizationToggles = techniqueToggleOptions.filter((t) => t !== 'dashboardToggle');
@@ -90,7 +92,9 @@
 		wordRain: 'Word Rain',
 		speakerHeatmap: 'Speaker Heatmap',
 		turnLength: 'Turn Length',
-		speakerFingerprint: 'Speaker Fingerprint'
+		speakerFingerprint: 'Speaker Fingerprint',
+		questionFlow: 'Question Flow',
+		wordJourney: 'Word Journey'
 	};
 
 	const GARDEN_SORT_OPTIONS: { order: GardenSortOrder; label: string }[] = [
