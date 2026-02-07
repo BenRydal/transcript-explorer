@@ -69,6 +69,7 @@
 		'wordRainToggle',
 		'speakerHeatmapToggle',
 		'turnLengthToggle',
+		'speakerFingerprintToggle',
 		'dashboardToggle'
 	] as const;
 	const regularVisualizationToggles = techniqueToggleOptions.filter((t) => t !== 'dashboardToggle');
@@ -88,7 +89,8 @@
 		turnNetwork: 'Turn Network',
 		wordRain: 'Word Rain',
 		speakerHeatmap: 'Speaker Heatmap',
-		turnLength: 'Turn Length'
+		turnLength: 'Turn Length',
+		speakerFingerprint: 'Speaker Fingerprint'
 	};
 
 	const GARDEN_SORT_OPTIONS: { order: GardenSortOrder; label: string }[] = [
@@ -143,6 +145,10 @@
 		turnLength: [
 			{ type: 'toggle', key: 'stopWordsToggle', label: 'Hide Stop Words' },
 			{ type: 'slider', key: 'turnLengthBinCount', label: 'Bin Count', min: 0, max: 60, formatValue: formatBinCount }
+		],
+		speakerFingerprint: [
+			{ type: 'toggle', key: 'fingerprintOverlayMode', label: 'Overlay Mode' },
+			{ type: 'toggle', key: 'stopWordsToggle', label: 'Hide Stop Words' }
 		]
 	};
 

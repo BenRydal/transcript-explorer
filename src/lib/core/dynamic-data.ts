@@ -8,6 +8,60 @@ import { clearScalingCache, clearCloudBuffer } from '../draw/contribution-cloud'
 import { normalizeWord } from './string-utils';
 import type { NetworkData } from '../draw/turn-network';
 
+// --- Speaker Fingerprint Types ---
+
+export interface SpeakerFingerprintData {
+	speaker: string;
+	// Raw counts
+	totalWords: number;
+	totalTurns: number;
+	uniqueWords: number;
+	questionTurns: number;
+	interruptionTurns: number;
+	// Raw rates (actual percentages for tooltip display)
+	rawParticipationRate: number;
+	rawVerbosityRate: number;
+	rawVocabDiversity: number;
+	rawQuestionRate: number;
+	rawInterruptionRate: number;
+	// Normalized ratios (0-1 scale for radar chart, all normalized to max speaker)
+	avgTurnLength: number;
+	participationRate: number;
+	verbosityRate: number;
+	vocabularyDiversity: number;
+	questionRate: number;
+	interruptionRate: number;
+}
+
+// Interrogative words for question detection
+const QUESTION_STARTERS = new Set([
+	'what',
+	'who',
+	'where',
+	'when',
+	'why',
+	'how',
+	'is',
+	'are',
+	'was',
+	'were',
+	'am',
+	'do',
+	'does',
+	'did',
+	'can',
+	'could',
+	'will',
+	'would',
+	'should',
+	'shall',
+	'may',
+	'might',
+	'have',
+	'has',
+	'had'
+]);
+
 // Module-level stop words Set (created once, shared by all instances)
 const STOP_WORDS = new Set([
 	// Articles
@@ -475,5 +529,183 @@ export class DynamicData {
 		}
 
 		return { transitions, speakerStats, searchMatchingTurns, turnWordCounts };
+	}
+
+	/**
+	 * Computes speaker fingerprint data for radar chart visualization.
+	 */
+	getSpeakerFingerprints(): SpeakerFingerprintData[] {
+		const words = this.getProcessedWords(true);
+		if (words.length === 0) return [];
+
+		const timeline = get(TimelineStore);
+		const users = get(UserStore);
+		const enabledSpeakers = new Set(users.filter((u) => u.enabled).map((u) => u.name));
+		if (enabledSpeakers.size === 0) return [];
+
+		const hasTiming = timeline.endTime > 0 && words.some((w) => w.startTime !== w.endTime);
+
+		// Helper for safe division - returns 0 when denominator is 0 to avoid NaN
+		const ratio = (num: number, denom: number) => (denom > 0 ? num / denom : 0);
+
+		// Aggregate data by speaker and track turns for interruption detection
+		const speakerData = new Map<
+			string,
+			{
+				words: string[];
+				turns: Set<number>;
+				turnContents: Map<number, string[]>;
+			}
+		>();
+		const turnInfo = new Map<number, { speaker: string; startTime: number; endTime: number }>();
+
+		for (const word of words) {
+			// Initialize speaker data if needed
+			let data = speakerData.get(word.speaker);
+			if (!data) {
+				data = { words: [], turns: new Set(), turnContents: new Map() };
+				speakerData.set(word.speaker, data);
+			}
+
+			data.words.push(normalizeWord(word.word));
+			data.turns.add(word.turnNumber);
+
+			// Build turn content for question detection
+			let turnWords = data.turnContents.get(word.turnNumber);
+			if (!turnWords) {
+				turnWords = [];
+				data.turnContents.set(word.turnNumber, turnWords);
+			}
+			turnWords.push(word.word);
+
+			// Track turn timing (first word sets start, update end for each word)
+			const existing = turnInfo.get(word.turnNumber);
+			if (!existing) {
+				turnInfo.set(word.turnNumber, { speaker: word.speaker, startTime: word.startTime, endTime: word.endTime });
+			} else if (word.endTime > existing.endTime) {
+				existing.endTime = word.endTime;
+			}
+		}
+
+		// Build sorted turn order for interruption detection
+		const turnOrder = Array.from(turnInfo.entries())
+			.map(([turnNumber, info]) => ({ turnNumber, ...info }))
+			.sort((a, b) => a.startTime - b.startTime);
+
+		const interruptingTurns = new Set<number>();
+		if (hasTiming) {
+			for (let i = 1; i < turnOrder.length; i++) {
+				const prev = turnOrder[i - 1],
+					curr = turnOrder[i];
+				if (curr.speaker !== prev.speaker && curr.startTime < prev.endTime) {
+					interruptingTurns.add(curr.turnNumber);
+				}
+			}
+		}
+
+		// Compute totals for rate calculations
+		let totalWords = 0,
+			totalTurns = 0;
+		for (const data of speakerData.values()) {
+			totalWords += data.words.length;
+			totalTurns += data.turns.size;
+		}
+
+		// Compute per-speaker stats and track max values for normalization
+		const maxValues = { avgTurnLength: 0, participation: 0, verbosity: 0, vocabDiversity: 0, questions: 0, interruptions: 0 };
+		const speakerStats = new Map<
+			string,
+			{
+				wordCount: number;
+				turnCount: number;
+				uniqueWords: number;
+				questionTurns: number;
+				interruptionCount: number;
+				rawParticipation: number;
+				rawVerbosity: number;
+				rawVocabDiversity: number;
+				rawQuestions: number;
+				rawInterruptions: number;
+			}
+		>();
+
+		for (const [speaker, data] of speakerData) {
+			const wordCount = data.words.length;
+			const turnCount = data.turns.size;
+			const uniqueWords = new Set(data.words).size;
+
+			// Count question turns (has '?' or starts with interrogative word)
+			let questionTurns = 0;
+			for (const turnWords of data.turnContents.values()) {
+				if (turnWords.some((w) => w.includes('?')) || QUESTION_STARTERS.has(normalizeWord(turnWords[0] || ''))) {
+					questionTurns++;
+				}
+			}
+
+			// Count interruptions
+			let interruptionCount = 0;
+			for (const turnNum of data.turns) {
+				if (interruptingTurns.has(turnNum)) interruptionCount++;
+			}
+
+			// Compute raw rates
+			const rawParticipation = ratio(turnCount, totalTurns);
+			const rawVerbosity = ratio(wordCount, totalWords);
+			const rawVocabDiversity = ratio(uniqueWords, wordCount);
+			const rawQuestions = ratio(questionTurns, turnCount);
+			const rawInterruptions = hasTiming ? ratio(interruptionCount, turnCount) : 0;
+			const avgTurnLength = ratio(wordCount, turnCount);
+
+			speakerStats.set(speaker, {
+				wordCount,
+				turnCount,
+				uniqueWords,
+				questionTurns,
+				interruptionCount,
+				rawParticipation,
+				rawVerbosity,
+				rawVocabDiversity,
+				rawQuestions,
+				rawInterruptions
+			});
+
+			// Track max values
+			maxValues.avgTurnLength = Math.max(maxValues.avgTurnLength, avgTurnLength);
+			maxValues.participation = Math.max(maxValues.participation, rawParticipation);
+			maxValues.verbosity = Math.max(maxValues.verbosity, rawVerbosity);
+			maxValues.vocabDiversity = Math.max(maxValues.vocabDiversity, rawVocabDiversity);
+			maxValues.questions = Math.max(maxValues.questions, rawQuestions);
+			maxValues.interruptions = Math.max(maxValues.interruptions, rawInterruptions);
+		}
+
+		// Build fingerprints for enabled speakers only (but normalized against all speakers)
+		return Array.from(speakerData.keys())
+			.filter((speaker) => enabledSpeakers.has(speaker))
+			.map((speaker) => {
+				const stats = speakerStats.get(speaker)!;
+				const avgTurnLength = ratio(stats.wordCount, stats.turnCount);
+
+				return {
+					speaker,
+					totalWords: stats.wordCount,
+					totalTurns: stats.turnCount,
+					uniqueWords: stats.uniqueWords,
+					questionTurns: stats.questionTurns,
+					interruptionTurns: stats.interruptionCount,
+					// Raw rates for tooltip display
+					rawParticipationRate: stats.rawParticipation,
+					rawVerbosityRate: stats.rawVerbosity,
+					rawVocabDiversity: stats.rawVocabDiversity,
+					rawQuestionRate: stats.rawQuestions,
+					rawInterruptionRate: stats.rawInterruptions,
+					// Normalized values (0-1 scale, all normalized to max speaker)
+					avgTurnLength: ratio(avgTurnLength, maxValues.avgTurnLength),
+					participationRate: ratio(stats.rawParticipation, maxValues.participation),
+					verbosityRate: ratio(stats.rawVerbosity, maxValues.verbosity),
+					vocabularyDiversity: ratio(stats.rawVocabDiversity, maxValues.vocabDiversity),
+					questionRate: ratio(stats.rawQuestions, maxValues.questions),
+					interruptionRate: ratio(stats.rawInterruptions, maxValues.interruptions)
+				};
+			});
 	}
 }

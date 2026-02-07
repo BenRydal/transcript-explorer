@@ -13,6 +13,7 @@ export interface ConfigStoreType {
 	dashboardToggle: boolean;
 	speakerHeatmapToggle: boolean;
 	turnLengthToggle: boolean;
+	speakerFingerprintToggle: boolean;
 	silenceOverlapToggle: boolean;
 	separateToggle: boolean;
 	sortToggle: boolean;
@@ -54,6 +55,8 @@ export interface ConfigStoreType {
 	turnLengthBinCount: number;
 	// Legend overlay
 	legendVisible: boolean;
+	// Speaker Fingerprint settings
+	fingerprintOverlayMode: boolean;
 }
 
 export const DASHBOARD_PANEL_OPTIONS = [
@@ -63,7 +66,8 @@ export const DASHBOARD_PANEL_OPTIONS = [
 	{ key: 'turnNetwork', label: 'Turn Network' },
 	{ key: 'wordRain', label: 'Word Rain' },
 	{ key: 'speakerHeatmap', label: 'Speaker Heatmap' },
-	{ key: 'turnLength', label: 'Turn Length' }
+	{ key: 'turnLength', label: 'Turn Length' },
+	{ key: 'speakerFingerprint', label: 'Speaker Fingerprint' }
 ] as const;
 
 export const initialConfig: ConfigStoreType = {
@@ -75,6 +79,7 @@ export const initialConfig: ConfigStoreType = {
 	dashboardToggle: false,
 	speakerHeatmapToggle: false,
 	turnLengthToggle: false,
+	speakerFingerprintToggle: false,
 	silenceOverlapToggle: true,
 	separateToggle: false,
 	sortToggle: false,
@@ -109,7 +114,8 @@ export const initialConfig: ConfigStoreType = {
 	turnNetworkMinTransitions: 1,
 	heatmapBinCount: 0,
 	turnLengthBinCount: 0,
-	legendVisible: true
+	legendVisible: true,
+	fingerprintOverlayMode: true
 };
 
 const ConfigStore = writable<ConfigStoreType>(initialConfig);
