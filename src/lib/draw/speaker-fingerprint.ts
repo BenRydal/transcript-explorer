@@ -383,9 +383,7 @@ export class SpeakerFingerprint {
 		const pct = (v: number) => `${Math.round(v * 100)}%`;
 		const avgTurnWords = fp.totalTurns > 0 ? (fp.totalWords / fp.totalTurns).toFixed(1) : '0';
 		const totalConversationTurns =
-			fp.rawParticipationRate > 0 && isFinite(fp.rawParticipationRate)
-				? Math.round(fp.totalTurns / fp.rawParticipationRate)
-				: fp.totalTurns;
+			fp.rawParticipationRate > 0 && isFinite(fp.rawParticipationRate) ? Math.round(fp.totalTurns / fp.rawParticipationRate) : fp.totalTurns;
 
 		let content = `<b>${toTitleCase(fp.speaker)}</b>\n`;
 		content += `<span style="font-size: 0.85em; opacity: 0.8">`;
