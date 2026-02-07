@@ -88,11 +88,7 @@ function createTranscriptFromTimedSegments(
 	return { transcript, users: [{ name: defaultSpeaker, color: defaultColor, enabled: true }] };
 }
 
-export function createTranscriptFromWhisper(
-	segments: TranscriptionSegment[],
-	videoDuration: number,
-	defaultColor: string
-): TranscriptCreationResult {
+export function createTranscriptFromWhisper(segments: TranscriptionSegment[], videoDuration: number, defaultColor: string): TranscriptCreationResult {
 	return createTranscriptFromTimedSegments(segments, 'SPEAKER 1', defaultColor, videoDuration || undefined);
 }
 
@@ -106,10 +102,7 @@ export function createTranscriptFromWhisper(
  * @param parseResult - Parsed turns with optional timing
  * @param timingModeOverride - Override auto-detected timing mode (used by CSV parser)
  */
-export function createTranscriptFromParsedText(
-	parseResult: ParseResult,
-	timingModeOverride?: TimingMode
-): TranscriptCreationResult {
+export function createTranscriptFromParsedText(parseResult: ParseResult, timingModeOverride?: TimingMode): TranscriptCreationResult {
 	const wordArray: DataPoint[] = [];
 	const hasTimestamps = parseResult.hasTimestamps;
 

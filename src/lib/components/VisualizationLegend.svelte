@@ -21,10 +21,7 @@
 	import TranscriptStore from '../../stores/transcriptStore';
 	import UserStore from '../../stores/userStore';
 
-	type LegendItem = { label: string } & (
-		| { icon: Component; iconColor?: string }
-		| { speakerColors: true }
-	);
+	type LegendItem = { label: string } & ({ icon: Component; iconColor?: string } | { speakerColors: true });
 
 	const videoItem = (label: string): LegendItem => ({
 		icon: Video,
@@ -35,7 +32,7 @@
 	let isUntimed = $derived($TranscriptStore.timingMode === 'untimed');
 
 	let legendData = $derived.by(() => {
-		const v = (label: string): LegendItem[] => isUntimed ? [] : [videoItem(label)];
+		const v = (label: string): LegendItem[] => (isUntimed ? [] : [videoItem(label)]);
 
 		return {
 			speakerGarden: {

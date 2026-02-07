@@ -51,11 +51,11 @@ Transcript Explorer provides eight visualization modes plus a configurable dashb
 
 > _Screenshots show example transcript data from a 2-minute kindergarten classroom activity._
 
-| ![Speaker Garden](./static/images/thumbs-modes/speaker-garden.webp) | ![Turn Chart](./static/images/thumbs-modes/turn-chart.webp) |
-| :------------------------------------------------------------------: | :----------------------------------------------------------: |
-|                         **Speaker Garden**                           |                       **Turn Chart**                         |
-| ![Contribution Cloud](./static/images/thumbs-modes/contribution-cloud.webp) | ![Dashboard](./static/images/thumbs-modes/dashboard.webp) |
-|                        **Contribution Cloud**                                |                       **Dashboard**                        |
+|     ![Speaker Garden](./static/images/thumbs-modes/speaker-garden.webp)     | ![Turn Chart](./static/images/thumbs-modes/turn-chart.webp) |
+| :-------------------------------------------------------------------------: | :---------------------------------------------------------: |
+|                             **Speaker Garden**                              |                       **Turn Chart**                        |
+| ![Contribution Cloud](./static/images/thumbs-modes/contribution-cloud.webp) |  ![Dashboard](./static/images/thumbs-modes/dashboard.webp)  |
+|                           **Contribution Cloud**                            |                        **Dashboard**                        |
 
 ---
 

@@ -73,17 +73,19 @@ interface Layout {
 	centerY: number;
 }
 
-type HoveredElement = {
-	type: 'node';
-	speaker: string;
-	snippetPoints: DataPoint[];
-	node: NodeLayout;
-} | {
-	type: 'edge';
-	speaker: string;
-	snippetPoints: DataPoint[];
-	edge: EdgeLayout;
-};
+type HoveredElement =
+	| {
+			type: 'node';
+			speaker: string;
+			snippetPoints: DataPoint[];
+			node: NodeLayout;
+	  }
+	| {
+			type: 'edge';
+			speaker: string;
+			snippetPoints: DataPoint[];
+			edge: EdgeLayout;
+	  };
 
 // --- Geometry helpers ---
 
@@ -122,7 +124,10 @@ function getCurvedEdgeGeometry(fromNode: NodeLayout, toNode: NodeLayout) {
 	const curveOffset = dist * CURVE_OFFSET_FACTOR;
 
 	return {
-		startX, startY, endX, endY,
+		startX,
+		startY,
+		endX,
+		endY,
 		cpX: (startX + endX) / 2 + -uy * curveOffset,
 		cpY: (startY + endY) / 2 + ux * curveOffset
 	};
@@ -157,19 +162,18 @@ export class TurnNetwork {
 		const crossHighlightActive = this.config.dashboardToggle && (hl != null || hlTurns != null) && !mouseInPanel;
 
 		for (const edge of layout.edges) {
-			const shouldDim = crossHighlightActive && (
-				(hlTurns != null && !edge.turnStartPoints.some((p) => hlTurns.includes(p.turnNumber))) ||
-				(hl != null && edge.from !== hl && edge.to !== hl)
-			);
+			const shouldDim =
+				crossHighlightActive &&
+				((hlTurns != null && !edge.turnStartPoints.some((p) => hlTurns.includes(p.turnNumber))) ||
+					(hl != null && edge.from !== hl && edge.to !== hl));
 			withDimming(this.sk.drawingContext, shouldDim, () => {
 				this.drawEdge(edge, layout, false);
 			});
 		}
 		for (const node of layout.nodes) {
-			const shouldDim = crossHighlightActive && (
-				(hlTurns != null && !node.turnStartPoints.some((p) => hlTurns.includes(p.turnNumber))) ||
-				(hl != null && node.speaker !== hl)
-			);
+			const shouldDim =
+				crossHighlightActive &&
+				((hlTurns != null && !node.turnStartPoints.some((p) => hlTurns.includes(p.turnNumber))) || (hl != null && node.speaker !== hl));
 			withDimming(this.sk.drawingContext, shouldDim, () => {
 				this.drawNode(node, false);
 			});
@@ -183,9 +187,7 @@ export class TurnNetwork {
 			this.showTooltipFor(hovered, layout);
 		}
 
-		const edgeTurns = hovered?.type === 'edge'
-			? hovered.edge.turnStartPoints.flatMap((p) => [p.turnNumber - 1, p.turnNumber])
-			: null;
+		const edgeTurns = hovered?.type === 'edge' ? hovered.edge.turnStartPoints.flatMap((p) => [p.turnNumber - 1, p.turnNumber]) : null;
 		return { snippetPoints: hovered?.snippetPoints ?? [], hoveredSpeaker: hovered?.speaker ?? null, edgeTurns };
 	}
 
@@ -195,9 +197,7 @@ export class TurnNetwork {
 		const centerX = this.bounds.x + this.bounds.width / 2;
 		const centerY = this.bounds.y + this.bounds.height / 2 + this.selfLoopRadius;
 
-		const speakers = Array.from(data.speakerStats.keys()).filter(
-			(s) => this.userMap.get(s)?.enabled
-		);
+		const speakers = Array.from(data.speakerStats.keys()).filter((s) => this.userMap.get(s)?.enabled);
 		if (speakers.length === 0) {
 			return { nodes: [], nodeMap: new Map(), edges: [], maxWeight: 0, centerX, centerY };
 		}
@@ -450,8 +450,7 @@ export class TurnNetwork {
 				`Initiated ${plural(initiated)}  ·  Received ${plural(received)}</span>`;
 		} else {
 			content =
-				`<b>${hovered.edge.from} → ${hovered.edge.to}</b>\n` +
-				`<span style="font-size: 0.85em; opacity: 0.7">${plural(hovered.edge.weight)}</span>`;
+				`<b>${hovered.edge.from} → ${hovered.edge.to}</b>\n` + `<span style="font-size: 0.85em; opacity: 0.7">${plural(hovered.edge.weight)}</span>`;
 		}
 
 		showTooltip(this.sk.mouseX, this.sk.mouseY, content, color, this.bounds.y + this.bounds.height);

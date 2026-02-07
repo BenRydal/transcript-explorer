@@ -88,10 +88,10 @@ export class SpeakerGarden {
 					}
 
 					if (wordsToVisualize.length > 0) {
-						const shouldDim = crossHighlightActive && (
-							(hl != null && wordsToVisualize[0].speaker !== hl) ||
-							(hlTurns != null && !wordsToVisualize.some((w) => hlTurns.includes(w.turnNumber)))
-						);
+						const shouldDim =
+							crossHighlightActive &&
+							((hl != null && wordsToVisualize[0].speaker !== hl) ||
+								(hlTurns != null && !wordsToVisualize.some((w) => hlTurns.includes(w.turnNumber))));
 						withDimming(this.sk.drawingContext, shouldDim, () => {
 							this.drawViz(wordsToVisualize);
 						});

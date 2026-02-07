@@ -151,11 +151,8 @@ export const igsSketch = (p5: any) => {
 	};
 
 	p5.continueTimelineAnimation = () => {
-		const useVideoTime =
-			videoState.isLoaded && videoState.isPlaying && transcript.timingMode !== 'untimed';
-		const timeToSet = useVideoTime
-			? videoState.currentTime
-			: timeline.currTime + (currConfig.animationRate * Math.min(p5.deltaTime, 100)) / 1000;
+		const useVideoTime = videoState.isLoaded && videoState.isPlaying && transcript.timingMode !== 'untimed';
+		const timeToSet = useVideoTime ? videoState.currentTime : timeline.currTime + (currConfig.animationRate * Math.min(p5.deltaTime, 100)) / 1000;
 
 		TimelineStore.update((t) => {
 			t.currTime = timeToSet;

@@ -65,9 +65,7 @@ export class SpeakerHeatmap {
 	draw(words: DataPoint[]): { hoveredCell: DataPoint | null; hoveredSpeaker: string | null } {
 		const speakers = this.users.filter((u) => u.enabled).map((u) => u.name);
 		const grid = this.getGridBounds();
-		const numBins = this.config.heatmapBinCount > 0
-			? this.config.heatmapBinCount
-			: Math.max(1, Math.floor(grid.width / TARGET_CELL_WIDTH));
+		const numBins = this.config.heatmapBinCount > 0 ? this.config.heatmapBinCount : Math.max(1, Math.floor(grid.width / TARGET_CELL_WIDTH));
 
 		if (speakers.length === 0) return { hoveredCell: null, hoveredSpeaker: null };
 
@@ -130,11 +128,11 @@ export class SpeakerHeatmap {
 				const cw = cellWidth - CELL_PADDING * 2;
 				const ch = cellHeight - CELL_PADDING * 2;
 
-				const shouldDim = crossHighlightActive && (
-					(hlTurns != null && !cellWords.some((w) => hlTurns.includes(w.turnNumber))) ||
-					(hl != null && speakers[row] !== hl) ||
-					(hlTurn != null && !cellWords.some((w) => w.turnNumber === hlTurn))
-				);
+				const shouldDim =
+					crossHighlightActive &&
+					((hlTurns != null && !cellWords.some((w) => hlTurns.includes(w.turnNumber))) ||
+						(hl != null && speakers[row] !== hl) ||
+						(hlTurn != null && !cellWords.some((w) => w.turnNumber === hlTurn)));
 				withDimming(this.sk.drawingContext, shouldDim, () => {
 					if (cellWords.length > 0) {
 						const user = this.userMap.get(speakers[row]);
@@ -178,7 +176,14 @@ export class SpeakerHeatmap {
 		this.sk.text(label, grid.x + grid.width, grid.y + grid.height + 5);
 	}
 
-	private findHoveredCell(binnedData: BinnedData, speakers: string[], grid: Bounds, cellWidth: number, cellHeight: number, searchTerm: string): HoveredCell | null {
+	private findHoveredCell(
+		binnedData: BinnedData,
+		speakers: string[],
+		grid: Bounds,
+		cellWidth: number,
+		cellHeight: number,
+		searchTerm: string
+	): HoveredCell | null {
 		if (!this.sk.overRect(this.bounds.x, this.bounds.y, this.bounds.width, this.bounds.height)) {
 			return null;
 		}

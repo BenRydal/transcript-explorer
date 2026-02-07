@@ -21,7 +21,13 @@
 	import { Core } from '$lib/core/core';
 	import { igsSketch } from '$lib/p5/igsSketch';
 	import { USER_COLORS } from '$lib/constants/ui';
-	import { createEmptyTranscript, createTranscriptFromWhisper, createTranscriptFromParsedText, createTranscriptFromSubtitle, type TranscriptCreationResult } from '$lib/core/transcript-factory';
+	import {
+		createEmptyTranscript,
+		createTranscriptFromWhisper,
+		createTranscriptFromParsedText,
+		createTranscriptFromSubtitle,
+		type TranscriptCreationResult
+	} from '$lib/core/transcript-factory';
 	import type { ParseResult } from '$lib/core/text-parser';
 	import { parseSubtitleText } from '$lib/core/subtitle-parser';
 	import { parseCSVRows, parseTXTLines } from '$lib/core/csv-txt-parser';
@@ -212,10 +218,7 @@
 	 * Handles timing mode application, timeline reset, and canvas refresh.
 	 * @param timelineEndOverride - Use when timeline should extend beyond transcript data (e.g., video duration)
 	 */
-	function applyTranscriptResult(
-		{ transcript, users }: TranscriptCreationResult,
-		timelineEndOverride?: number
-	) {
+	function applyTranscriptResult({ transcript, users }: TranscriptCreationResult, timelineEndOverride?: number) {
 		transcript.wordArray = applyTimingModeToWordArray(transcript.wordArray, transcript.timingMode);
 		const maxTime = getMaxTime(transcript.wordArray);
 		transcript.totalTimeInSeconds = maxTime;
@@ -362,10 +365,7 @@
 			clearState(); // Clear auto-save when creating transcript from transcription
 			core.clearTranscriptData();
 
-			applyTranscriptResult(
-				createTranscriptFromWhisper(result.segments, pendingVideoDuration, USER_COLORS[0]),
-				pendingVideoDuration
-			);
+			applyTranscriptResult(createTranscriptFromWhisper(result.segments, pendingVideoDuration, USER_COLORS[0]), pendingVideoDuration);
 			openEditor();
 		} catch (error) {
 			notifications.error('Failed to process transcription results.');
@@ -584,7 +584,12 @@
 							<DashboardOverlay />
 						{/if}
 						{#each $ConfigStore.overflowBounds as b}
-							<div class="badge badge-neutral absolute" style="left: {b.x + b.width - 12}px; top: {b.y + b.height - 12}px; transform: translate(-100%, -100%);">Some content not shown</div>
+							<div
+								class="badge badge-neutral absolute"
+								style="left: {b.x + b.width - 12}px; top: {b.y + b.height - 12}px; transform: translate(-100%, -100%);"
+							>
+								Some content not shown
+							</div>
 						{/each}
 						{#if hasVideoSource}
 							<VideoContainer />

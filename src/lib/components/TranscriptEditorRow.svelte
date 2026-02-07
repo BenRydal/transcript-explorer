@@ -271,17 +271,17 @@
 						<span class="capture-bracket">[</span>
 					</button>
 				{/if}
-				<input
-					type="text"
-					class="time-input"
-					bind:value={editedStartTime}
-					onkeydown={handleEditKeydown}
-					onblur={saveStartTime}
-					placeholder="Start"
-				/>
+				<input type="text" class="time-input" bind:value={editedStartTime} onkeydown={handleEditKeydown} onblur={saveStartTime} placeholder="Start" />
 			</div>
 		{:else}
-			<button class="turn-timecode" onclick={(e) => { e.stopPropagation(); startEditingStartTime(); }} title="Click to edit start time">
+			<button
+				class="turn-timecode"
+				onclick={(e) => {
+					e.stopPropagation();
+					startEditingStartTime();
+				}}
+				title="Click to edit start time"
+			>
 				{startTimeDisplay}
 			</button>
 		{/if}
@@ -304,7 +304,14 @@
 				{/if}
 			</div>
 		{:else}
-			<button class="turn-timecode" onclick={(e) => { e.stopPropagation(); startEditingEndTime(); }} title="Click to edit end time">
+			<button
+				class="turn-timecode"
+				onclick={(e) => {
+					e.stopPropagation();
+					startEditingEndTime();
+				}}
+				title="Click to edit end time"
+			>
 				{endTimeDisplay}
 			</button>
 		{/if}
@@ -322,7 +329,15 @@
 			placeholder="Speaker name..."
 		/>
 	{:else}
-		<button class="turn-speaker" style="color: {speakerColor}" onclick={(e) => { e.stopPropagation(); startEditingSpeaker(); }} title="Click to edit speaker">
+		<button
+			class="turn-speaker"
+			style="color: {speakerColor}"
+			onclick={(e) => {
+				e.stopPropagation();
+				startEditingSpeaker();
+			}}
+			title="Click to edit speaker"
+		>
 			{toTitleCase(turn.speaker)}:
 		</button>
 	{/if}
@@ -334,7 +349,14 @@
 			<div class="edit-hint">Enter to save, Esc to cancel</div>
 		</div>
 	{:else}
-		<button class="turn-content" onclick={(e) => { e.stopPropagation(); startEditingContent(); }} title="Click to edit content">
+		<button
+			class="turn-content"
+			onclick={(e) => {
+				e.stopPropagation();
+				startEditingContent();
+			}}
+			title="Click to edit content"
+		>
 			{getTurnContent(turn)}
 		</button>
 	{/if}

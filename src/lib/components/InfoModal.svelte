@@ -354,16 +354,18 @@
 						class="absolute right-0 bottom-full mb-2 text-sm text-gray-500 text-left w-[90vw] max-w-[450px] bg-white border border-gray-200 rounded-lg p-3 shadow-lg space-y-1"
 					>
 						<p>
-							<strong>Citation:</strong> Shapiro, B. R., Silvis, D., & Hall, R. (2025). <a href="https://doi.org/10.1080/10508406.2025.2537945" class="text-blue-600 hover:underline" target="_blank" rel="noopener noreferrer"
-								>Visualization as theory and experience: interactive
-							qualitative data visualization for the learning sciences</a>. <em>Journal of the Learning Sciences, 34</em>(5), 840–871.
+							<strong>Citation:</strong> Shapiro, B. R., Silvis, D., & Hall, R. (2025).
+							<a href="https://doi.org/10.1080/10508406.2025.2537945" class="text-blue-600 hover:underline" target="_blank" rel="noopener noreferrer"
+								>Visualization as theory and experience: interactive qualitative data visualization for the learning sciences</a
+							>. <em>Journal of the Learning Sciences, 34</em>(5), 840–871.
 						</p>
 						<p>
 							<strong>Credits:</strong> Example data from Mathematics Teaching and Learning to Teach (MTLT), University of Michigan (2010) and The
 							Third International Mathematics and Science Study (TIMSS) 1999 Video Study. Speaker Garden inspired by
 							<a href="https://doi.org/10.1145/320719.322581" class="text-blue-600 hover:underline" target="_blank" rel="noopener noreferrer"
 								>PeopleGarden</a
-							> by Xiong &amp; Donath. Word Rain inspired by work by
+							>
+							by Xiong &amp; Donath. Word Rain inspired by work by
 							<a href="https://doi.org/10.1177/14738716241236188" class="text-blue-600 hover:underline" target="_blank" rel="noopener noreferrer"
 								>Skeppstedt, Ahltorp &amp; Lindström</a
 							>.

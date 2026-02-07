@@ -123,8 +123,7 @@ export function parseCSVRows(
 		let endTime: number | null = null;
 
 		// Check if this is a purely untimed transcript (no times seen yet)
-		const isUntimed = !hasStartTime && !hasEndTime &&
-			state.lastValidStartTime === null && state.lastValidEndTime === null;
+		const isUntimed = !hasStartTime && !hasEndTime && state.lastValidStartTime === null && state.lastValidEndTime === null;
 
 		if (!isUntimed) {
 			// Timed transcript: use actual timestamps with inference

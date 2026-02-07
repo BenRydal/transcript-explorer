@@ -86,12 +86,14 @@ export class TurnChart {
 			width: pos.width,
 			height: pos.height - stripHeight - VERTICAL_PADDING * 2
 		};
-		this.stripBounds = showStrip ? {
-			x: pos.x,
-			y: pos.y + pos.height - stripHeight,
-			width: pos.width,
-			height: stripHeight
-		} : null;
+		this.stripBounds = showStrip
+			? {
+					x: pos.x,
+					y: pos.y + pos.height - stripHeight,
+					width: pos.width,
+					height: stripHeight
+				}
+			: null;
 		this.panelBottom = pos.y + pos.height;
 		this.users = get(UserStore);
 		this.userMap = new Map(this.users.map((user, index) => [user.name, { user, index }]));
@@ -182,8 +184,12 @@ export class TurnChart {
 		// Handle hover interaction
 		if (this.sk.overRect(xStart, yCenter - height / 2, xEnd - xStart, height)) {
 			this.userSelectedTurn = {
-				turn: turnArray, color: user.color,
-				xCenter, yCenter, width: xEnd - xStart, height
+				turn: turnArray,
+				color: user.color,
+				xCenter,
+				yCenter,
+				width: xEnd - xStart,
+				height
 			};
 		}
 	}
@@ -235,10 +241,7 @@ export class TurnChart {
 
 		// Build turn ranges from the data we already have
 		const turns = this.getTurnRanges(turnData);
-		const markers = [
-			...this.buildOverlapMarkers(turns, topRowY),
-			...this.buildGapMarkers(turns, bottomRowY)
-		];
+		const markers = [...this.buildOverlapMarkers(turns, topRowY), ...this.buildGapMarkers(turns, bottomRowY)];
 
 		// Legend dots
 		const dotX = strip.x + LEGEND_DOT_LEFT_OFFSET;
@@ -303,7 +306,10 @@ export class TurnChart {
 				const xEnd = this.getPixelValueFromTime(end);
 				const duration = end - start;
 				markers.push({
-					x, w: Math.max(MIN_MARKER_WIDTH, xEnd - x), y: rowY, h: MARKER_HEIGHT,
+					x,
+					w: Math.max(MIN_MARKER_WIDTH, xEnd - x),
+					y: rowY,
+					h: MARKER_HEIGHT,
 					color: OVERLAP_COLOR,
 					firstDataPoint: turns[j].firstDataPoint,
 					tooltipContent: `<b>Overlap · ${formatDuration(duration)}</b>\n<span style="font-size: 0.85em; opacity: 0.7">${turns[i].speaker} & ${turns[j].speaker}\n${formatTimeCompact(start)} - ${formatTimeCompact(end)}</span>`
@@ -321,7 +327,10 @@ export class TurnChart {
 			const x = this.getPixelValueFromTime(turns[i].endTime);
 			const xEnd = this.getPixelValueFromTime(turns[i + 1].startTime);
 			markers.push({
-				x, w: Math.max(MIN_MARKER_WIDTH, xEnd - x), y: rowY, h: MARKER_HEIGHT,
+				x,
+				w: Math.max(MIN_MARKER_WIDTH, xEnd - x),
+				y: rowY,
+				h: MARKER_HEIGHT,
 				color: GAP_COLOR,
 				firstDataPoint: turns[i].firstDataPoint,
 				tooltipContent: `<b>Silence · ${formatDuration(gapDuration)}</b>\n<span style="font-size: 0.85em; opacity: 0.7">${turns[i].speaker} → ${turns[i + 1].speaker}\n${formatTimeCompact(turns[i].endTime)} - ${formatTimeCompact(turns[i + 1].startTime)}</span>`

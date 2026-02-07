@@ -234,7 +234,13 @@ export class ContributionCloud {
 				this.sk.noFill();
 				this.sk.stroke(color);
 				this.sk.strokeWeight(isHovered ? HOVER_OUTLINE_WEIGHT : 1);
-				this.sk.rect(screenX - padding, screenY - pos.ascent - padding, pos.width + padding * 2, pos.ascent + pos.descent + padding * 2, isHovered ? 4 : 3);
+				this.sk.rect(
+					screenX - padding,
+					screenY - pos.ascent - padding,
+					pos.width + padding * 2,
+					pos.ascent + pos.descent + padding * 2,
+					isHovered ? 4 : 3
+				);
 			}
 		}
 	}
@@ -279,9 +285,7 @@ export class ContributionCloud {
 	}
 
 	getTurnContext(word: DataPoint, allPositions: WordPosition[]): string | null {
-		const turnPositions = allPositions
-			.filter((p) => p.word.turnNumber === word.turnNumber)
-			.sort((a, b) => a.word.startTime - b.word.startTime);
+		const turnPositions = allPositions.filter((p) => p.word.turnNumber === word.turnNumber).sort((a, b) => a.word.startTime - b.word.startTime);
 
 		if (turnPositions.length === 0) return null;
 

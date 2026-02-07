@@ -22,11 +22,7 @@
 
 <div class="user-button-group">
 	{#each visibleUsers as { user, index } (index)}
-		<UserButton
-			{user}
-			ontoggleVisibility={() => ontoggleVisibility?.(index)}
-			onopenDropdown={(event) => onopenDropdown?.(index, event)}
-		/>
+		<UserButton {user} ontoggleVisibility={() => ontoggleVisibility?.(index)} onopenDropdown={(event) => onopenDropdown?.(index, event)} />
 	{/each}
 
 	{#if showExpandButton}
@@ -72,5 +68,4 @@
 	.expand-button:active {
 		background-color: #c4c4c4;
 	}
-
 </style>

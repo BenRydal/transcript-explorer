@@ -102,8 +102,12 @@ export class TurnLengthDistribution {
 
 		const localX = this.sk.mouseX - this.gx;
 		const localY = this.sk.mouseY - this.gy;
-		const mouseInGrid = this.sk.overRect(this.bounds.x, this.bounds.y, this.bounds.width, this.bounds.height)
-			&& localX >= 0 && localX < this.gw && localY >= 0 && localY < this.gh;
+		const mouseInGrid =
+			this.sk.overRect(this.bounds.x, this.bounds.y, this.bounds.width, this.bounds.height) &&
+			localX >= 0 &&
+			localX < this.gw &&
+			localY >= 0 &&
+			localY < this.gh;
 		const hoveredBinIndex = mouseInGrid ? Math.floor(localX / barWidth) : -1;
 
 		this.drawYAxis(maxCount);
@@ -158,10 +162,9 @@ export class TurnLengthDistribution {
 				const h = (turns.length / maxCount) * this.gh;
 				const y = this.gy + this.gh - yOffset - h;
 
-				const shouldDim = crossHighlightActive && (
-					(hlTurns != null && !turns.some((t) => hlTurns.includes(t.dataPoint.turnNumber))) ||
-					(hl != null && speaker !== hl)
-				);
+				const shouldDim =
+					crossHighlightActive &&
+					((hlTurns != null && !turns.some((t) => hlTurns.includes(t.dataPoint.turnNumber))) || (hl != null && speaker !== hl));
 				withDimming(this.sk.drawingContext, shouldDim, () => {
 					const user = this.userMap.get(speaker);
 					const c = this.sk.color(user!.color);
@@ -228,9 +231,7 @@ export class TurnLengthDistribution {
 		let binSize: number;
 		let numBins: number;
 
-		const targetBins = this.config.turnLengthBinCount > 0
-			? this.config.turnLengthBinCount
-			: TARGET_BIN_COUNT;
+		const targetBins = this.config.turnLengthBinCount > 0 ? this.config.turnLengthBinCount : TARGET_BIN_COUNT;
 
 		if (range === 0) {
 			binSize = 1;

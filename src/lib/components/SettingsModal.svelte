@@ -43,11 +43,18 @@
 	function handleKeydown(e: KeyboardEvent) {
 		if (e.key === 'Escape') isOpen = false;
 	}
-
 </script>
 
 {#if isOpen}
-	<div class="modal modal-open" onclick={(e) => { if (e.target === e.currentTarget) isOpen = false; }} onkeydown={handleKeydown} role="dialog" aria-modal="true">
+	<div
+		class="modal modal-open"
+		onclick={(e) => {
+			if (e.target === e.currentTarget) isOpen = false;
+		}}
+		onkeydown={handleKeydown}
+		role="dialog"
+		aria-modal="true"
+	>
 		<div class="modal-box w-11/12 max-w-md p-8">
 			<div class="flex justify-between mb-6">
 				<h3 class="font-bold text-xl">Settings</h3>
@@ -98,56 +105,56 @@
 
 				<!-- Start-Only Mode Settings -->
 				{#if $TranscriptStore.timingMode === 'startOnly'}
-				<div class="flex flex-col border-t pt-4">
-					<p class="font-medium mb-2">Turn End Time Calculation:</p>
-					<p class="text-sm text-gray-600 mb-3">For transcripts with only start times</p>
-					<div class="flex flex-col gap-2">
-						<label class="flex items-center gap-2 cursor-pointer">
+					<div class="flex flex-col border-t pt-4">
+						<p class="font-medium mb-2">Turn End Time Calculation:</p>
+						<p class="text-sm text-gray-600 mb-3">For transcripts with only start times</p>
+						<div class="flex flex-col gap-2">
+							<label class="flex items-center gap-2 cursor-pointer">
+								<input
+									type="radio"
+									name="endTimeCalculation"
+									class="radio radio-sm"
+									checked={!$ConfigStore.preserveGapsBetweenTurns}
+									onchange={() => {
+										handleConfigChange('preserveGapsBetweenTurns', false);
+										recalculateStartOnlyEndTimes();
+									}}
+								/>
+								<span class="text-sm">Fill to next turn <span class="text-gray-500">(no gaps between speakers)</span></span>
+							</label>
+							<label class="flex items-center gap-2 cursor-pointer">
+								<input
+									type="radio"
+									name="endTimeCalculation"
+									class="radio radio-sm"
+									checked={$ConfigStore.preserveGapsBetweenTurns}
+									onchange={() => {
+										handleConfigChange('preserveGapsBetweenTurns', true);
+										recalculateStartOnlyEndTimes();
+									}}
+								/>
+								<span class="text-sm">Estimate from speech rate <span class="text-gray-500">(preserves silence/gaps)</span></span>
+							</label>
+						</div>
+						<div class="flex flex-col mt-3">
+							<label for="speechRate" class="text-sm">
+								Speech rate: {$ConfigStore.speechRateWordsPerSecond} words/sec
+							</label>
 							<input
-								type="radio"
-								name="endTimeCalculation"
-								class="radio radio-sm"
-								checked={!$ConfigStore.preserveGapsBetweenTurns}
-								onchange={() => {
-									handleConfigChange('preserveGapsBetweenTurns', false);
+								id="speechRate"
+								type="range"
+								min="1"
+								max="6"
+								step="0.5"
+								value={$ConfigStore.speechRateWordsPerSecond}
+								oninput={(e) => {
+									handleConfigChange('speechRateWordsPerSecond', parseFloat((e.target as HTMLInputElement).value));
 									recalculateStartOnlyEndTimes();
 								}}
+								class="range range-sm"
 							/>
-							<span class="text-sm">Fill to next turn <span class="text-gray-500">(no gaps between speakers)</span></span>
-						</label>
-						<label class="flex items-center gap-2 cursor-pointer">
-							<input
-								type="radio"
-								name="endTimeCalculation"
-								class="radio radio-sm"
-								checked={$ConfigStore.preserveGapsBetweenTurns}
-								onchange={() => {
-									handleConfigChange('preserveGapsBetweenTurns', true);
-									recalculateStartOnlyEndTimes();
-								}}
-							/>
-							<span class="text-sm">Estimate from speech rate <span class="text-gray-500">(preserves silence/gaps)</span></span>
-						</label>
+						</div>
 					</div>
-					<div class="flex flex-col mt-3">
-						<label for="speechRate" class="text-sm">
-							Speech rate: {$ConfigStore.speechRateWordsPerSecond} words/sec
-						</label>
-						<input
-							id="speechRate"
-							type="range"
-							min="1"
-							max="6"
-							step="0.5"
-							value={$ConfigStore.speechRateWordsPerSecond}
-							oninput={(e) => {
-								handleConfigChange('speechRateWordsPerSecond', parseFloat((e.target as HTMLInputElement).value));
-								recalculateStartOnlyEndTimes();
-							}}
-							class="range range-sm"
-						/>
-					</div>
-				</div>
 				{/if}
 
 				<!-- Video Playback Settings -->
@@ -157,7 +164,9 @@
 						<label for="snippetDuration" class="text-sm">
 							Turn preview duration: {$ConfigStore.snippetDurationSeconds}s
 						</label>
-						<p class="text-xs text-gray-500 mb-1">When clicking a speaker in the distribution diagram, plays this duration from each of their turns</p>
+						<p class="text-xs text-gray-500 mb-1">
+							When clicking a speaker in the distribution diagram, plays this duration from each of their turns
+						</p>
 						<input
 							id="snippetDuration"
 							type="range"

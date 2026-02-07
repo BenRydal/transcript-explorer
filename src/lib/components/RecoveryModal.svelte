@@ -8,12 +8,7 @@
 		ondiscard?: () => void;
 	}
 
-	let {
-		isOpen = $bindable(false),
-		savedAt = null,
-		onrestore,
-		ondiscard
-	}: Props = $props();
+	let { isOpen = $bindable(false), savedAt = null, onrestore, ondiscard }: Props = $props();
 
 	function restore() {
 		onrestore?.();
@@ -38,8 +33,7 @@
 				We found a transcript from your previous session
 				{#if savedAt}
 					<span class="text-base-content/70">({formatTimestamp(savedAt)})</span>
-				{/if}.
-				Would you like to restore it?
+				{/if}. Would you like to restore it?
 			</p>
 			<div class="modal-action">
 				<button class="btn btn-ghost" onclick={discard}>Start Fresh</button>

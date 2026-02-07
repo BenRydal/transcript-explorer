@@ -15,7 +15,15 @@
 </script>
 
 {#if isOpen}
-	<div class="modal modal-open" onclick={(e) => { if (e.target === e.currentTarget) isOpen = false; }} onkeydown={handleKeydown} role="dialog" aria-modal="true">
+	<div
+		class="modal modal-open"
+		onclick={(e) => {
+			if (e.target === e.currentTarget) isOpen = false;
+		}}
+		onkeydown={handleKeydown}
+		role="dialog"
+		aria-modal="true"
+	>
 		<div class="modal-box w-11/12 max-w-5xl">
 			<div class="flex justify-between">
 				<div class="flex flex-col">
@@ -92,9 +100,9 @@
 												{#each $TranscriptStore.wordArray.filter((dp) => dp.speaker === user.name).slice(-3) as dataPoint}
 													<div class="p-2 bg-white rounded">
 														<p class="text-sm">"{dataPoint.word}"</p>
-													{#if $TranscriptStore.timingMode !== 'untimed'}
-														<p class="text-xs text-gray-500">Time: {dataPoint.startTime.toFixed(2)}s - {dataPoint.endTime.toFixed(2)}s</p>
-													{/if}
+														{#if $TranscriptStore.timingMode !== 'untimed'}
+															<p class="text-xs text-gray-500">Time: {dataPoint.startTime.toFixed(2)}s - {dataPoint.endTime.toFixed(2)}s</p>
+														{/if}
 													</div>
 												{/each}
 											</div>

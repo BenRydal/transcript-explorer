@@ -43,12 +43,14 @@
 	let isInTranscribeMode = $derived($TranscribeModeStore.isActive);
 
 	// Filter turns by speaker visibility, locked filter, and search term
-	let displayedTurns = $derived(turns.filter((turn) => {
-		if (!enabledSpeakers.has(turn.speaker)) return false;
-		if ($EditorStore.selection.filteredSpeaker && turn.speaker !== $EditorStore.selection.filteredSpeaker) return false;
-		if ($ConfigStore.wordToSearch && !normalizeWord(getTurnContent(turn)).includes(normalizeWord($ConfigStore.wordToSearch))) return false;
-		return true;
-	}));
+	let displayedTurns = $derived(
+		turns.filter((turn) => {
+			if (!enabledSpeakers.has(turn.speaker)) return false;
+			if ($EditorStore.selection.filteredSpeaker && turn.speaker !== $EditorStore.selection.filteredSpeaker) return false;
+			if ($ConfigStore.wordToSearch && !normalizeWord(getTurnContent(turn)).includes(normalizeWord($ConfigStore.wordToSearch))) return false;
+			return true;
+		})
+	);
 
 	// Clear the locked speaker filter
 	function clearSpeakerFilter() {
@@ -179,9 +181,7 @@
 				updatedWordArray = [];
 				sortedTurns.forEach(([_oldTurnNumber, words], newTurnIndex) => {
 					words.forEach((dp) => {
-						updatedWordArray.push(
-							dp.copyWith({ turnNumber: newTurnIndex })
-						);
+						updatedWordArray.push(dp.copyWith({ turnNumber: newTurnIndex }));
 					});
 				});
 			}
@@ -483,9 +483,7 @@
 				{#if isInTranscribeMode}
 					<div class="empty-state-content">
 						<p class="text-gray-600 mb-4">No transcript yet. Create one to start transcribing.</p>
-						<button class="create-transcript-btn" onclick={() => oncreateTranscript?.()}>
-							Create New Transcript
-						</button>
+						<button class="create-transcript-btn" onclick={() => oncreateTranscript?.()}> Create New Transcript </button>
 						<p class="text-gray-400 text-sm mt-3">Or upload an existing transcript file</p>
 					</div>
 				{:else}

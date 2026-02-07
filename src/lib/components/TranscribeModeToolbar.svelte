@@ -19,11 +19,7 @@
 	</div>
 
 	<div class="toolbar-center">
-		<button
-			class="shortcuts-hint"
-			onclick={() => (showShortcuts = !showShortcuts)}
-			aria-expanded={showShortcuts}
-		>
+		<button class="shortcuts-hint" onclick={() => (showShortcuts = !showShortcuts)} aria-expanded={showShortcuts}>
 			Keyboard Shortcuts
 			<svg class="chevron" class:open={showShortcuts} viewBox="0 0 24 24" fill="currentColor">
 				<path d="M7 10l5 5 5-5z" />

@@ -118,9 +118,7 @@ export class WordRain {
 
 	private drawCombined(words: DataPoint[]): WordRainResult {
 		const visibleWords = words.filter((w) => this.userMap.get(w.speaker)?.enabled !== false);
-		const aggregated = this.config.wordRainTemporalBinning
-			? this.aggregateWordsInBins(visibleWords)
-			: this.aggregateWords(visibleWords);
+		const aggregated = this.config.wordRainTemporalBinning ? this.aggregateWordsInBins(visibleWords) : this.aggregateWords(visibleWords);
 		const filtered = this.filterAndSort(aggregated);
 		if (filtered.length === 0) return EMPTY_RAIN_RESULT;
 
@@ -136,9 +134,7 @@ export class WordRain {
 		if (enabledUsers.length === 0) return EMPTY_RAIN_RESULT;
 
 		const useBinning = this.config.wordRainTemporalBinning;
-		const bySpeaker = useBinning
-			? this.aggregateWordsBySpeakerInBins(words, enabledUsers)
-			: this.aggregateWordsBySpeaker(words, enabledUsers);
+		const bySpeaker = useBinning ? this.aggregateWordsBySpeakerInBins(words, enabledUsers) : this.aggregateWordsBySpeaker(words, enabledUsers);
 		const bandHeight = this.bounds.height / enabledUsers.length;
 		const xhl = this.getCrossHighlight();
 		const allPlaced: PlacedWord[] = [];
@@ -175,9 +171,7 @@ export class WordRain {
 	private filterAndSort(aggregated: AggregatedWord[]): AggregatedWord[] {
 		const minFreq = this.config.wordRainMinFrequency;
 		const search = this.searchTerm;
-		const filtered = aggregated.filter((a) =>
-			a.count >= minFreq && (!search || a.word.includes(search))
-		);
+		const filtered = aggregated.filter((a) => a.count >= minFreq && (!search || a.word.includes(search)));
 		filtered.sort((a, b) => b.count - a.count);
 		return filtered;
 	}
@@ -248,14 +242,17 @@ export class WordRain {
 
 		const result = new Map<string, AggregatedWord[]>();
 		for (const [speaker, wordMap] of speakerMaps) {
-			result.set(speaker, Array.from(wordMap, ([word, entry]) => ({
-				word,
-				count: entry.count,
-				meanTime: entry.timeSum / entry.count,
-				dominantSpeaker: speaker,
-				dominantCount: entry.count,
-				occurrences: entry.occurrences
-			})));
+			result.set(
+				speaker,
+				Array.from(wordMap, ([word, entry]) => ({
+					word,
+					count: entry.count,
+					meanTime: entry.timeSum / entry.count,
+					dominantSpeaker: speaker,
+					dominantCount: entry.count,
+					occurrences: entry.occurrences
+				}))
+			);
 		}
 		return result;
 	}
@@ -344,15 +341,18 @@ export class WordRain {
 
 		const result = new Map<string, AggregatedWord[]>();
 		for (const [speaker, wordMap] of speakerMaps) {
-			result.set(speaker, Array.from(wordMap.values(), (entry) => ({
-				word: entry.word,
-				count: entry.count,
-				meanTime: (entry.binRange[0] + entry.binRange[1]) / 2,
-				dominantSpeaker: speaker,
-				dominantCount: entry.count,
-				occurrences: entry.occurrences,
-				binRange: entry.binRange
-			})));
+			result.set(
+				speaker,
+				Array.from(wordMap.values(), (entry) => ({
+					word: entry.word,
+					count: entry.count,
+					meanTime: (entry.binRange[0] + entry.binRange[1]) / 2,
+					dominantSpeaker: speaker,
+					dominantCount: entry.count,
+					occurrences: entry.occurrences,
+					binRange: entry.binRange
+				}))
+			);
 		}
 		return result;
 	}
@@ -439,7 +439,7 @@ export class WordRain {
 				color = speakerColor;
 			} else {
 				const user = this.userMap.get(agg.dominantSpeaker);
-				color = agg.dominantCount / agg.count > DOMINANCE_THRESHOLD ? (user?.color || DEFAULT_SPEAKER_COLOR) : SHARED_WORD_COLOR;
+				color = agg.dominantCount / agg.count > DOMINANCE_THRESHOLD ? user?.color || DEFAULT_SPEAKER_COLOR : SHARED_WORD_COLOR;
 			}
 
 			placed.push({
@@ -450,7 +450,9 @@ export class WordRain {
 				width: wordWidth,
 				ascent: this.sk.textAscent(),
 				descent: this.sk.textDescent(),
-				barY, barH, barW,
+				barY,
+				barH,
+				barW,
 				countRatio,
 				color
 			});
@@ -646,11 +648,13 @@ export class WordRain {
 			speakerCounts.set(dp.speaker, (speakerCounts.get(dp.speaker) || 0) + 1);
 		}
 		const sorted = [...speakerCounts.entries()].sort((a, b) => b[1] - a[1]);
-		const breakdown = sorted.map(([speaker, count]) => {
-			const user = this.userMap.get(speaker);
-			const color = user?.color || DEFAULT_SPEAKER_COLOR;
-			return `<span style="color:${color}">${toTitleCase(speaker)}: ${count}</span>`;
-		}).join('  ·  ');
+		const breakdown = sorted
+			.map(([speaker, count]) => {
+				const user = this.userMap.get(speaker);
+				const color = user?.color || DEFAULT_SPEAKER_COLOR;
+				return `<span style="color:${color}">${toTitleCase(speaker)}: ${count}</span>`;
+			})
+			.join('  ·  ');
 		content += `\n${breakdown}`;
 
 		// Sample turn contexts
@@ -677,8 +681,9 @@ export class WordRain {
 
 			const start = Math.max(0, idx - CONTEXT_WORDS_BEFORE);
 			const end = Math.min(turnWords.length, idx + CONTEXT_WORDS_AFTER + 1);
-			const snippet = turnWords.slice(start, end)
-				.map((w, i) => i + start === idx ? `<b>${w.word}</b>` : w.word)
+			const snippet = turnWords
+				.slice(start, end)
+				.map((w, i) => (i + start === idx ? `<b>${w.word}</b>` : w.word))
 				.join(' ');
 			samples.push(`"${start > 0 ? '...' : ''}${snippet}${end < turnWords.length ? '...' : ''}"`);
 

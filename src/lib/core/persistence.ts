@@ -126,13 +126,7 @@ export function restoreState(): boolean {
 
 	const transcript = new Transcript();
 	transcript.wordArray = state.transcript.wordArray.map((dp) => {
-		const dataPoint = new DataPoint(
-			dp.speaker,
-			dp.turnNumber,
-			dp.word,
-			dp.startTime,
-			dp.endTime
-		);
+		const dataPoint = new DataPoint(dp.speaker, dp.turnNumber, dp.word, dp.startTime, dp.endTime);
 		dataPoint.count = dp.count;
 		return dataPoint;
 	});
