@@ -53,6 +53,7 @@ export class SpeakerHeatmap {
 	private transcript: Transcript;
 	private config: ConfigStoreType;
 	private hover: HoverState;
+	private fullTranscriptMaxCellCount: number | null = null;
 
 	constructor(sk: p5, bounds: Bounds) {
 		this.sk = sk;
@@ -74,6 +75,14 @@ export class SpeakerHeatmap {
 
 		const searchTerm = this.config.wordToSearch ? normalizeWord(this.config.wordToSearch) : '';
 		const binnedData = this.binWords(words, numBins, speakers);
+
+		// When scaling to full transcript, use the global max cell count
+		if (!this.config.scaleToVisibleData) {
+			if (this.fullTranscriptMaxCellCount === null) {
+				this.fullTranscriptMaxCellCount = this.binFullTranscript(numBins, speakers).maxCellCount;
+			}
+			binnedData.maxCellCount = Math.max(binnedData.maxCellCount, this.fullTranscriptMaxCellCount);
+		}
 		const cellWidth = grid.width / numBins;
 		const cellHeight = grid.height / speakers.length;
 
@@ -287,5 +296,29 @@ export class SpeakerHeatmap {
 		}
 
 		return { bins, maxCellCount };
+	}
+
+	/**
+	 * Bins the full transcript wordArray to find the global max cell count.
+	 */
+	private binFullTranscript(numBins: number, speakers: string[]): { maxCellCount: number } {
+		const fullRange = this.transcript.totalTimeInSeconds || this.timeline.endTime;
+		if (fullRange <= 0) return { maxCellCount: 0 };
+
+		const binWidth = fullRange / numBins;
+		const cellCounts = new Map<string, number>();
+
+		for (const word of this.transcript.wordArray) {
+			const binIndex = Math.min(numBins - 1, Math.max(0, Math.floor(word.startTime / binWidth)));
+			const key = `${binIndex}-${word.speaker}`;
+			cellCounts.set(key, (cellCounts.get(key) || 0) + 1);
+		}
+
+		let maxCellCount = 0;
+		for (const count of cellCounts.values()) {
+			if (count > maxCellCount) maxCellCount = count;
+		}
+
+		return { maxCellCount };
 	}
 }

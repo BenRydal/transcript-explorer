@@ -38,7 +38,7 @@ const wordWidthCache = new Map<string, number>();
 
 function getCacheKey(bounds: Bounds, wordCount: number, maxCount: number, config: ConfigStoreType): string {
 	const timeline = get(TimelineStore);
-	return `${bounds.x},${bounds.y},${bounds.width},${bounds.height}|${wordCount}|${maxCount}|${config.separateToggle}|${config.repeatedWordsToggle}|${config.repeatWordSliderValue}|${config.dashboardToggle}|${timeline.leftMarker},${timeline.rightMarker}`;
+	return `${bounds.x},${bounds.y},${bounds.width},${bounds.height}|${wordCount}|${maxCount}|${config.separateToggle}|${config.repeatedWordsToggle}|${config.repeatWordSliderValue}|${config.dashboardToggle}|${config.scaleToVisibleData}|${timeline.leftMarker},${timeline.rightMarker}`;
 }
 
 /**
@@ -66,13 +66,20 @@ export function getWordWidth(sk: p5, word: string, textSize: number): number {
 /**
  * Calculates optimal scaling to fit words within bounds.
  * Results are cached based on bounds, word count, and config.
+ * When fullTranscriptMaxCount is provided and scaleToVisibleData is false,
+ * uses that as the max count for consistent scaling across selections.
  */
-export function calculateScaling(sk: p5, words: DataPoint[], bounds: Bounds, config: ConfigStoreType): Scaling {
+export function calculateScaling(sk: p5, words: DataPoint[], bounds: Bounds, config: ConfigStoreType, fullTranscriptMaxCount?: number): Scaling {
 	if (words.length === 0) return { ...BASE_SCALING };
 
+	// Determine max word count for scaling
 	let maxCount = 2;
-	for (const w of words) {
-		if (w.count > maxCount) maxCount = w.count;
+	if (!config.scaleToVisibleData && fullTranscriptMaxCount) {
+		maxCount = Math.max(maxCount, fullTranscriptMaxCount);
+	} else {
+		for (const w of words) {
+			if (w.count > maxCount) maxCount = w.count;
+		}
 	}
 
 	const cacheKey = getCacheKey(bounds, words.length, maxCount, config);

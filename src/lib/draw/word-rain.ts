@@ -82,6 +82,7 @@ export class WordRain {
 	private searchTerm: string;
 	private config: ConfigStoreType;
 	private hover: HoverState;
+	private fullTranscriptMaxCount: number;
 
 	constructor(sk: p5, bounds: Bounds) {
 		this.sk = sk;
@@ -92,6 +93,7 @@ export class WordRain {
 		this.config = get(ConfigStore);
 		this.hover = get(HoverStore);
 		this.searchTerm = this.config.wordToSearch ? normalizeWord(this.config.wordToSearch) : '';
+		this.fullTranscriptMaxCount = this.transcript.maxCountOfMostRepeatedWord;
 	}
 
 	draw(words: DataPoint[]): WordRainResult {
@@ -368,7 +370,7 @@ export class WordRain {
 	private placeWordsInRegion(filtered: AggregatedWord[], region: Bounds, speakerColor: string | null): PlacedWord[] {
 		if (filtered.length === 0) return [];
 
-		const maxCount = filtered[0].count;
+		const maxCount = !this.config.scaleToVisibleData && this.fullTranscriptMaxCount > 0 ? this.fullTranscriptMaxCount : filtered[0].count;
 		const isSeparate = speakerColor !== null;
 		const labelOffset = isSeparate ? SPEAKER_LABEL_SIZE + 4 : 0;
 		const barSectionHeight = region.height * BAR_SECTION_RATIO;

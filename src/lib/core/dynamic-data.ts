@@ -566,8 +566,10 @@ export class DynamicData {
 
 	/**
 	 * Computes speaker fingerprint data for radar chart visualization.
+	 * When scaleToFullTranscript is true (default), normalizes against all speakers
+	 * in the full transcript for consistent comparisons across time ranges.
 	 */
-	getSpeakerFingerprints(): SpeakerFingerprintData[] {
+	getSpeakerFingerprints(scaleToFullTranscript = true): SpeakerFingerprintData[] {
 		const words = this.getProcessedWords(true);
 		if (words.length === 0) return [];
 
@@ -654,8 +656,21 @@ export class DynamicData {
 			}
 		}
 
-		// Compute per-speaker stats and track max values for normalization
-		const maxValues = { avgTurnLength: 0, participation: 0, consecutive: 0, vocabDiversity: 0, questions: 0, interruptions: 0 };
+		// When scaling to full transcript, compute max values from all speakers (not just visible)
+		// This ensures consistent normalization across time range selections
+		let maxValues: {
+			avgTurnLength: number;
+			participation: number;
+			consecutive: number;
+			vocabDiversity: number;
+			questions: number;
+			interruptions: number;
+		};
+		if (scaleToFullTranscript) {
+			maxValues = this.computeFullTranscriptMaxValues();
+		} else {
+			maxValues = { avgTurnLength: 0, participation: 0, consecutive: 0, vocabDiversity: 0, questions: 0, interruptions: 0 };
+		}
 		const speakerStats = new Map<
 			string,
 			{
@@ -716,13 +731,15 @@ export class DynamicData {
 				rawInterruptions
 			});
 
-			// Track max values
-			maxValues.avgTurnLength = Math.max(maxValues.avgTurnLength, avgTurnLength);
-			maxValues.participation = Math.max(maxValues.participation, rawParticipation);
-			maxValues.consecutive = Math.max(maxValues.consecutive, rawConsecutive);
-			maxValues.vocabDiversity = Math.max(maxValues.vocabDiversity, rawVocabDiversity);
-			maxValues.questions = Math.max(maxValues.questions, rawQuestions);
-			maxValues.interruptions = Math.max(maxValues.interruptions, rawInterruptions);
+			// Track max values (only update if not using full transcript scaling)
+			if (!scaleToFullTranscript) {
+				maxValues.avgTurnLength = Math.max(maxValues.avgTurnLength, avgTurnLength);
+				maxValues.participation = Math.max(maxValues.participation, rawParticipation);
+				maxValues.consecutive = Math.max(maxValues.consecutive, rawConsecutive);
+				maxValues.vocabDiversity = Math.max(maxValues.vocabDiversity, rawVocabDiversity);
+				maxValues.questions = Math.max(maxValues.questions, rawQuestions);
+				maxValues.interruptions = Math.max(maxValues.interruptions, rawInterruptions);
+			}
 		}
 
 		// Build fingerprints for enabled speakers only (but normalized against all speakers)
@@ -907,5 +924,123 @@ export class DynamicData {
 		occurrences.sort((a, b) => a.startTime - b.startTime);
 
 		return { word: searchWord, occurrences };
+	}
+
+	/**
+	 * Computes max fingerprint values from the full transcript (all speakers, all time).
+	 * Used for consistent normalization when scaling to full transcript.
+	 */
+	private computeFullTranscriptMaxValues(): {
+		avgTurnLength: number;
+		participation: number;
+		consecutive: number;
+		vocabDiversity: number;
+		questions: number;
+		interruptions: number;
+	} {
+		if (wordArray.length === 0) {
+			return { avgTurnLength: 0, participation: 0, consecutive: 0, vocabDiversity: 0, questions: 0, interruptions: 0 };
+		}
+
+		const timeline = get(TimelineStore);
+		const hasTiming = timeline.endTime > 0 && wordArray.some((w) => w.startTime !== w.endTime);
+
+		// Helper for safe division
+		const ratio = (num: number, denom: number) => (denom > 0 ? num / denom : 0);
+
+		// Aggregate data by speaker
+		const speakerData = new Map<string, { words: string[]; turns: Set<number>; turnContents: Map<number, string[]> }>();
+		const turnInfo = new Map<number, { speaker: string; startTime: number; endTime: number }>();
+
+		for (const word of wordArray) {
+			let data = speakerData.get(word.speaker);
+			if (!data) {
+				data = { words: [], turns: new Set(), turnContents: new Map() };
+				speakerData.set(word.speaker, data);
+			}
+
+			data.words.push(normalizeWord(word.word));
+			data.turns.add(word.turnNumber);
+
+			let turnWords = data.turnContents.get(word.turnNumber);
+			if (!turnWords) {
+				turnWords = [];
+				data.turnContents.set(word.turnNumber, turnWords);
+			}
+			turnWords.push(word.word);
+
+			const existing = turnInfo.get(word.turnNumber);
+			if (!existing) {
+				turnInfo.set(word.turnNumber, { speaker: word.speaker, startTime: word.startTime, endTime: word.endTime });
+			} else if (word.endTime > existing.endTime) {
+				existing.endTime = word.endTime;
+			}
+		}
+
+		// Build sorted turn order for interruption/consecutive detection
+		const turnOrder = Array.from(turnInfo.entries())
+			.map(([turnNumber, info]) => ({ turnNumber, ...info }))
+			.sort((a, b) => a.startTime - b.startTime);
+
+		const interruptingTurns = new Set<number>();
+		const consecutiveTurns = new Set<number>();
+		for (let i = 1; i < turnOrder.length; i++) {
+			const prev = turnOrder[i - 1],
+				curr = turnOrder[i];
+			if (curr.speaker === prev.speaker) {
+				consecutiveTurns.add(curr.turnNumber);
+			} else if (hasTiming && curr.startTime < prev.endTime) {
+				interruptingTurns.add(curr.turnNumber);
+			}
+		}
+
+		// Compute totals
+		let totalWords = 0,
+			totalTurns = 0;
+		for (const data of speakerData.values()) {
+			totalWords += data.words.length;
+			totalTurns += data.turns.size;
+		}
+
+		// Find max values across all speakers
+		const maxValues = { avgTurnLength: 0, participation: 0, consecutive: 0, vocabDiversity: 0, questions: 0, interruptions: 0 };
+
+		for (const [, data] of speakerData) {
+			const wordCount = data.words.length;
+			const turnCount = data.turns.size;
+			const uniqueWords = new Set(data.words).size;
+
+			// Question detection
+			let questionCount = 0;
+			for (const [, turnWords] of data.turnContents) {
+				if (turnWords.some((w) => w.includes('?')) || QUESTION_STARTERS.has(normalizeWord(turnWords[0] || ''))) {
+					questionCount++;
+				}
+			}
+
+			// Interruption and consecutive counts
+			let interruptionCount = 0,
+				consecutiveCount = 0;
+			for (const turnNum of data.turns) {
+				if (interruptingTurns.has(turnNum)) interruptionCount++;
+				if (consecutiveTurns.has(turnNum)) consecutiveCount++;
+			}
+
+			const avgTurnLength = ratio(wordCount, turnCount);
+			const rawParticipation = ratio(turnCount, totalTurns);
+			const rawConsecutive = ratio(consecutiveCount, turnCount);
+			const rawVocabDiversity = ratio(uniqueWords, Math.sqrt(wordCount));
+			const rawQuestions = ratio(questionCount, turnCount);
+			const rawInterruptions = hasTiming ? ratio(interruptionCount, turnCount) : 0;
+
+			maxValues.avgTurnLength = Math.max(maxValues.avgTurnLength, avgTurnLength);
+			maxValues.participation = Math.max(maxValues.participation, rawParticipation);
+			maxValues.consecutive = Math.max(maxValues.consecutive, rawConsecutive);
+			maxValues.vocabDiversity = Math.max(maxValues.vocabDiversity, rawVocabDiversity);
+			maxValues.questions = Math.max(maxValues.questions, rawQuestions);
+			maxValues.interruptions = Math.max(maxValues.interruptions, rawInterruptions);
+		}
+
+		return maxValues;
 	}
 }

@@ -68,6 +68,7 @@ export class ContributionCloud {
 	users: User[];
 	config: ConfigStoreType;
 	userMap: Map<string, User>;
+	fullTranscriptMaxCount: number;
 
 	constructor(sk: p5, bounds: Bounds) {
 		this.sk = sk;
@@ -75,11 +76,12 @@ export class ContributionCloud {
 		this.users = get(UserStore);
 		this.config = get(ConfigStore);
 		this.userMap = createUserMap(this.users);
+		this.fullTranscriptMaxCount = get(TranscriptStore).maxCountOfMostRepeatedWord;
 	}
 
 	draw(words: DataPoint[]): { hoveredWord: DataPoint | null; hasOverflow: boolean; hoveredSpeaker: string | null } {
 		const layoutWords = words.filter((w) => this.isWordVisible(w));
-		const scaling = calculateScaling(this.sk, layoutWords, this.bounds, this.config);
+		const scaling = calculateScaling(this.sk, layoutWords, this.bounds, this.config, this.fullTranscriptMaxCount);
 		const cacheKey = this.getBufferCacheKey(layoutWords.length);
 
 		if (cacheKey !== bufferCache.cacheKey || !bufferCache.buffer) {

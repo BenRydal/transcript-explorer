@@ -13,6 +13,7 @@ import { get } from 'svelte/store';
 import UserStore from '../../stores/userStore';
 import ConfigStore, { type ConfigStoreType } from '../../stores/configStore';
 import HoverStore, { type HoverState } from '../../stores/hoverStore';
+import TranscriptStore from '../../stores/transcriptStore';
 import { showTooltip } from '../../stores/tooltipStore';
 import type { DataPoint } from '../../models/dataPoint';
 import type { User } from '../../models/user';
@@ -144,6 +145,7 @@ export class TurnNetwork {
 	private minDim: number;
 	private config: ConfigStoreType;
 	private hover: HoverState;
+	private fullTranscriptMaxWordCount: number;
 
 	constructor(sk: p5, bounds: Bounds) {
 		this.sk = sk;
@@ -153,6 +155,9 @@ export class TurnNetwork {
 		this.hover = get(HoverStore);
 		this.minDim = Math.min(bounds.width, bounds.height);
 		this.selfLoopRadius = Math.max(15, this.minDim * SELF_LOOP_RADIUS_RATIO);
+		// For full transcript scaling, use the pre-computed largest word count by speaker
+		const transcript = get(TranscriptStore);
+		this.fullTranscriptMaxWordCount = transcript.largestNumOfWordsByASpeaker;
 	}
 
 	draw(data: NetworkData): { snippetPoints: DataPoint[]; hoveredSpeaker: string | null; edgeTurns: number[] | null } {
@@ -204,8 +209,12 @@ export class TurnNetwork {
 		}
 
 		let maxWordCount = 0;
-		for (const stats of data.speakerStats.values()) {
-			if (stats.wordCount > maxWordCount) maxWordCount = stats.wordCount;
+		if (!this.config.scaleToVisibleData && this.fullTranscriptMaxWordCount > 0) {
+			maxWordCount = this.fullTranscriptMaxWordCount;
+		} else {
+			for (const stats of data.speakerStats.values()) {
+				if (stats.wordCount > maxWordCount) maxWordCount = stats.wordCount;
+			}
 		}
 
 		const layoutRadius = this.minDim * LAYOUT_RADIUS_FACTOR;

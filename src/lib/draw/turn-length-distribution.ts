@@ -3,6 +3,7 @@ import { get } from 'svelte/store';
 import UserStore from '../../stores/userStore';
 import ConfigStore, { type ConfigStoreType } from '../../stores/configStore';
 import HoverStore, { type HoverState } from '../../stores/hoverStore';
+import TranscriptStore from '../../stores/transcriptStore';
 import { showTooltip } from '../../stores/tooltipStore';
 import type { DataPoint } from '../../models/dataPoint';
 import type { User } from '../../models/user';
@@ -52,6 +53,7 @@ export class TurnLengthDistribution {
 	private speakers: string[];
 	private config: ConfigStoreType;
 	private hover: HoverState;
+	private fullTranscriptMaxBinCount: number;
 	// Absolute grid coordinates (bounds.xy + grid offsets)
 	private gx: number;
 	private gy: number;
@@ -72,6 +74,8 @@ export class TurnLengthDistribution {
 		this.gy = bounds.y + 10;
 		this.gw = bounds.width - leftMargin - 10;
 		this.gh = bounds.height - bottomMargin - 10;
+		// Pre-compute max bin count from full transcript for stable scaling
+		this.fullTranscriptMaxBinCount = this.computeFullTranscriptMaxBinCount();
 	}
 
 	draw(turns: TurnSummary[]): { snippetPoints: DataPoint[]; hoveredSpeaker: string | null } {
@@ -80,8 +84,14 @@ export class TurnLengthDistribution {
 		const bins = this.binTurns(turns);
 		if (bins.length === 0) return { snippetPoints: [], hoveredSpeaker: null };
 
-		const maxCount = Math.max(...bins.map((b) => b.totalCount));
-		if (maxCount === 0) return { snippetPoints: [], hoveredSpeaker: null };
+		const visibleMaxCount = Math.max(...bins.map((b) => b.totalCount));
+		if (visibleMaxCount === 0) return { snippetPoints: [], hoveredSpeaker: null };
+
+		// Use full transcript max when scaling to full transcript
+		const maxCount =
+			!this.config.scaleToVisibleData && this.fullTranscriptMaxBinCount > 0
+				? Math.max(visibleMaxCount, this.fullTranscriptMaxBinCount)
+				: visibleMaxCount;
 
 		// Filter bin contents by search term while keeping axes stable
 		if (this.config.wordToSearch) {
@@ -266,5 +276,44 @@ export class TurnLengthDistribution {
 		}
 
 		return bins;
+	}
+
+	/**
+	 * Computes the max bin count from the full transcript for stable scaling.
+	 */
+	private computeFullTranscriptMaxBinCount(): number {
+		const transcript = get(TranscriptStore);
+		if (transcript.wordArray.length === 0) return 0;
+
+		// Build turn summaries from full transcript
+		const turnMap = new Map<number, { wordCount: number }>();
+		for (const word of transcript.wordArray) {
+			const existing = turnMap.get(word.turnNumber);
+			if (existing) {
+				existing.wordCount++;
+			} else {
+				turnMap.set(word.turnNumber, { wordCount: 1 });
+			}
+		}
+
+		const turns = Array.from(turnMap.values());
+		if (turns.length === 0) return 0;
+
+		const wordCounts = turns.map((t) => t.wordCount);
+		const maxWordCount = Math.max(...wordCounts);
+		const minWordCount = Math.min(...wordCounts);
+		const range = maxWordCount - minWordCount;
+
+		const targetBins = this.config.turnLengthBinCount > 0 ? this.config.turnLengthBinCount : TARGET_BIN_COUNT;
+		const binSize = range === 0 ? 1 : Math.max(1, Math.ceil(range / targetBins));
+		const numBins = range === 0 ? 1 : Math.ceil(range / binSize) + 1;
+
+		const binCounts = new Array(numBins).fill(0);
+		for (const turn of turns) {
+			const binIndex = Math.min(numBins - 1, Math.floor((turn.wordCount - minWordCount) / binSize));
+			binCounts[binIndex]++;
+		}
+
+		return Math.max(...binCounts);
 	}
 }

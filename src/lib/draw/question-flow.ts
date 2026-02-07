@@ -4,6 +4,7 @@ import UserStore from '../../stores/userStore';
 import TimelineStore from '../../stores/timelineStore';
 import ConfigStore, { type ConfigStoreType } from '../../stores/configStore';
 import HoverStore, { type HoverState } from '../../stores/hoverStore';
+import TranscriptStore from '../../stores/transcriptStore';
 import { showTooltip } from '../../stores/tooltipStore';
 import type { DataPoint } from '../../models/dataPoint';
 import type { User } from '../../models/user';
@@ -38,6 +39,7 @@ export class QuestionFlow {
 	private config: ConfigStoreType;
 	private hover: HoverState;
 	private timeline: { leftMarker: number; rightMarker: number };
+	private fullTranscriptMaxWords: number;
 	// Grid coordinates
 	private gx: number;
 	private gy: number;
@@ -54,6 +56,8 @@ export class QuestionFlow {
 		this.hover = get(HoverStore);
 		const tl = get(TimelineStore);
 		this.timeline = { leftMarker: tl.leftMarker, rightMarker: tl.rightMarker };
+		// Use largest turn length as proxy for max words in Q/A pairs
+		this.fullTranscriptMaxWords = get(TranscriptStore).largestTurnLength;
 
 		this.gx = bounds.x + LEFT_MARGIN;
 		this.gy = bounds.y + TOP_MARGIN;
@@ -73,7 +77,10 @@ export class QuestionFlow {
 			const aWords = p.answerContent ? p.answerContent.split(' ').length : 0;
 			return { qWords, aWords };
 		});
-		const maxWords = Math.max(...wordCounts.flatMap((w) => [w.qWords, w.aWords]));
+		const visibleMaxWords = Math.max(...wordCounts.flatMap((w) => [w.qWords, w.aWords]));
+		// Use full transcript max when scaling to full transcript
+		const maxWords =
+			!this.config.scaleToVisibleData && this.fullTranscriptMaxWords > 0 ? Math.max(visibleMaxWords, this.fullTranscriptMaxWords) : visibleMaxWords;
 
 		// Draw speaker labels on Y axis
 		this.drawSpeakerLabels();

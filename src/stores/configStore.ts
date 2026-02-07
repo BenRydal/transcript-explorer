@@ -49,6 +49,8 @@ export interface ConfigStoreType {
 	legendVisible: boolean;
 	// Speaker Fingerprint settings
 	fingerprintOverlayMode: boolean;
+	// Visualization scaling
+	scaleToVisibleData: boolean;
 }
 
 export const DASHBOARD_PANEL_OPTIONS = [
@@ -104,7 +106,8 @@ export const initialConfig: ConfigStoreType = {
 	heatmapBinCount: 0,
 	turnLengthBinCount: 0,
 	legendVisible: true,
-	fingerprintOverlayMode: true
+	fingerprintOverlayMode: true,
+	scaleToVisibleData: false
 };
 
 const ConfigStore = writable<ConfigStoreType>(initialConfig);

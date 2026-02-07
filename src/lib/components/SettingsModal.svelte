@@ -157,6 +157,23 @@
 					</div>
 				{/if}
 
+				<!-- Visualization Scaling -->
+				<div class="flex flex-col border-t pt-4">
+					<p class="font-medium mb-2">Visualization Scaling</p>
+					<label class="flex items-center gap-2 cursor-pointer">
+						<input
+							type="checkbox"
+							class="checkbox checkbox-sm"
+							checked={$ConfigStore.scaleToVisibleData}
+							onchange={() => handleConfigChange('scaleToVisibleData', !$ConfigStore.scaleToVisibleData)}
+						/>
+						<span class="text-sm">Scale to visible data</span>
+					</label>
+					<p class="text-xs text-gray-500 mt-1">
+						When enabled, visualizations scale to the current selection. When disabled, they scale to the full transcript for consistent comparisons.
+					</p>
+				</div>
+
 				<!-- Video Playback Settings -->
 				<div class="flex flex-col border-t pt-4">
 					<p class="font-medium mb-2">Video Playback</p>
