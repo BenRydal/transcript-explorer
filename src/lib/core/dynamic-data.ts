@@ -32,6 +32,11 @@ export interface SpeakerFingerprintData {
 	vocabularyDiversity: number;
 	questionRate: number;
 	interruptionRate: number;
+	// First words of turns for video playback (by dimension)
+	allTurnFirstWords: DataPoint[];
+	questionTurnFirstWords: DataPoint[];
+	interruptionTurnFirstWords: DataPoint[];
+	consecutiveTurnFirstWords: DataPoint[];
 }
 
 // Interrogative words for question detection
@@ -614,6 +619,14 @@ export class DynamicData {
 			totalTurns += data.turns.size;
 		}
 
+		// Build turn first words map for video playback
+		const turnFirstWords = new Map<number, DataPoint>();
+		for (const word of words) {
+			if (!turnFirstWords.has(word.turnNumber)) {
+				turnFirstWords.set(word.turnNumber, word);
+			}
+		}
+
 		// Compute per-speaker stats and track max values for normalization
 		const maxValues = { avgTurnLength: 0, participation: 0, consecutive: 0, vocabDiversity: 0, questions: 0, interruptions: 0 };
 		const speakerStats = new Map<
@@ -622,9 +635,9 @@ export class DynamicData {
 				wordCount: number;
 				turnCount: number;
 				uniqueWords: number;
-				questionTurns: number;
-				interruptionCount: number;
-				consecutiveCount: number;
+				questionTurnNumbers: Set<number>;
+				interruptionTurnNumbers: Set<number>;
+				consecutiveTurnNumbers: Set<number>;
 				rawParticipation: number;
 				rawConsecutive: number;
 				rawVocabDiversity: number;
@@ -638,37 +651,37 @@ export class DynamicData {
 			const turnCount = data.turns.size;
 			const uniqueWords = new Set(data.words).size;
 
-			// Count question turns (has '?' or starts with interrogative word)
-			let questionTurns = 0;
-			for (const turnWords of data.turnContents.values()) {
+			// Identify question turns (has '?' or starts with interrogative word)
+			const questionTurnNumbers = new Set<number>();
+			for (const [turnNum, turnWords] of data.turnContents) {
 				if (turnWords.some((w) => w.includes('?')) || QUESTION_STARTERS.has(normalizeWord(turnWords[0] || ''))) {
-					questionTurns++;
+					questionTurnNumbers.add(turnNum);
 				}
 			}
 
-			// Count interruptions and consecutive turns
-			let interruptionCount = 0;
-			let consecutiveCount = 0;
+			// Identify interruption and consecutive turns
+			const interruptionTurnNumbers = new Set<number>();
+			const consecutiveTurnNumbers = new Set<number>();
 			for (const turnNum of data.turns) {
-				if (interruptingTurns.has(turnNum)) interruptionCount++;
-				if (consecutiveTurns.has(turnNum)) consecutiveCount++;
+				if (interruptingTurns.has(turnNum)) interruptionTurnNumbers.add(turnNum);
+				if (consecutiveTurns.has(turnNum)) consecutiveTurnNumbers.add(turnNum);
 			}
 
 			// Compute raw rates
 			const rawParticipation = ratio(turnCount, totalTurns);
-			const rawConsecutive = ratio(consecutiveCount, turnCount);
+			const rawConsecutive = ratio(consecutiveTurnNumbers.size, turnCount);
 			const rawVocabDiversity = ratio(uniqueWords, Math.sqrt(wordCount));
-			const rawQuestions = ratio(questionTurns, turnCount);
-			const rawInterruptions = hasTiming ? ratio(interruptionCount, turnCount) : 0;
+			const rawQuestions = ratio(questionTurnNumbers.size, turnCount);
+			const rawInterruptions = hasTiming ? ratio(interruptionTurnNumbers.size, turnCount) : 0;
 			const avgTurnLength = ratio(wordCount, turnCount);
 
 			speakerStats.set(speaker, {
 				wordCount,
 				turnCount,
 				uniqueWords,
-				questionTurns,
-				interruptionCount,
-				consecutiveCount,
+				questionTurnNumbers,
+				interruptionTurnNumbers,
+				consecutiveTurnNumbers,
 				rawParticipation,
 				rawConsecutive,
 				rawVocabDiversity,
@@ -689,17 +702,24 @@ export class DynamicData {
 		return Array.from(speakerData.keys())
 			.filter((speaker) => enabledSpeakers.has(speaker))
 			.map((speaker) => {
+				const data = speakerData.get(speaker)!;
 				const stats = speakerStats.get(speaker)!;
 				const avgTurnLength = ratio(stats.wordCount, stats.turnCount);
+
+				// Get first words for each turn, sorted by turn number
+				const allTurnFirstWords = Array.from(data.turns)
+					.sort((a, b) => a - b)
+					.map((turnNum) => turnFirstWords.get(turnNum)!)
+					.filter(Boolean);
 
 				return {
 					speaker,
 					totalWords: stats.wordCount,
 					totalTurns: stats.turnCount,
 					uniqueWords: stats.uniqueWords,
-					questionTurns: stats.questionTurns,
-					interruptionTurns: stats.interruptionCount,
-					consecutiveTurns: stats.consecutiveCount,
+					questionTurns: stats.questionTurnNumbers.size,
+					interruptionTurns: stats.interruptionTurnNumbers.size,
+					consecutiveTurns: stats.consecutiveTurnNumbers.size,
 					// Raw rates for tooltip display
 					rawParticipationRate: stats.rawParticipation,
 					rawConsecutiveRate: stats.rawConsecutive,
@@ -712,7 +732,12 @@ export class DynamicData {
 					consecutiveRate: ratio(stats.rawConsecutive, maxValues.consecutive),
 					vocabularyDiversity: ratio(stats.rawVocabDiversity, maxValues.vocabDiversity),
 					questionRate: ratio(stats.rawQuestions, maxValues.questions),
-					interruptionRate: ratio(stats.rawInterruptions, maxValues.interruptions)
+					interruptionRate: ratio(stats.rawInterruptions, maxValues.interruptions),
+					// First words of turns for video playback
+					allTurnFirstWords,
+					questionTurnFirstWords: allTurnFirstWords.filter((w) => stats.questionTurnNumbers.has(w.turnNumber)),
+					interruptionTurnFirstWords: allTurnFirstWords.filter((w) => stats.interruptionTurnNumbers.has(w.turnNumber)),
+					consecutiveTurnFirstWords: allTurnFirstWords.filter((w) => stats.consecutiveTurnNumbers.has(w.turnNumber))
 				};
 			});
 	}

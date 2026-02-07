@@ -108,7 +108,8 @@
 				title: 'Speaker Fingerprint',
 				items: [
 					{ icon: Hexagon, label: 'Larger shape \u2192 higher values' },
-					{ speakerColors: true, label: 'Color \u2192 speaker' }
+					{ speakerColors: true, label: 'Color \u2192 speaker' },
+					...v('Click shape \u2192 play examples')
 				]
 			}
 		} as Record<string, { title: string; items: LegendItem[] }>;

@@ -53,6 +53,8 @@ const SMALL_MULTIPLE_LABEL_OFFSET = 16;
 // Helper to calculate angle for a given axis index
 const getAxisAngle = (axisIndex: number): number => (axisIndex / NUM_AXES) * Math.PI * 2 - Math.PI / 2;
 
+type HoveredVertex = { speaker: string; axisIndex: number } | null;
+
 // --- Main class ---
 
 export class SpeakerFingerprint {
@@ -90,8 +92,9 @@ export class SpeakerFingerprint {
 		this.drawRadarGrid(centerX, centerY, radius);
 		this.drawAxisLabels(centerX, centerY, radius);
 
-		// Find hovered speaker
-		const hoveredSpeaker = this.findHoveredSpeaker(fingerprints, centerX, centerY, radius);
+		// Find hovered vertex (speaker + axis)
+		const hoveredVertex = this.findHoveredVertex(fingerprints, centerX, centerY, radius);
+		const hoveredSpeaker = hoveredVertex?.speaker ?? null;
 
 		// Draw all speaker polygons (hovered one last for visibility)
 		const sortedFingerprints = [...fingerprints].sort((a, b) => {
@@ -106,7 +109,8 @@ export class SpeakerFingerprint {
 		}
 
 		this.showTooltipIfHovered(fingerprints, hoveredSpeaker);
-		return { snippetPoints: [], hoveredSpeaker };
+		const snippetPoints = this.getSnippetPointsForVertex(hoveredVertex, fingerprints);
+		return { snippetPoints, hoveredSpeaker };
 	}
 
 	// --- Small multiples mode (5+ speakers) ---
@@ -118,20 +122,25 @@ export class SpeakerFingerprint {
 		const cellHeight = (this.bounds.height - SMALL_MULTIPLE_PADDING) / rows;
 		const cellRadius = Math.max(30, Math.min(cellWidth, cellHeight) / 2 - SMALL_MULTIPLE_PADDING);
 
-		let hoveredSpeaker: string | null = null;
+		let hoveredVertex: HoveredVertex = null;
 
-		fingerprints.forEach((fp, i) => {
+		for (let i = 0; i < fingerprints.length; i++) {
+			const fp = fingerprints[i];
 			const col = i % cols;
 			const row = Math.floor(i / cols);
 			const cellX = this.bounds.x + col * cellWidth + cellWidth / 2;
 			const cellY = this.bounds.y + row * cellHeight + cellHeight / 2;
 
-			const isHovered = this.isPointInCell(this.sk.mouseX, this.sk.mouseY, cellX, cellY, cellRadius);
-			if (isHovered) hoveredSpeaker = fp.speaker;
+			const isInCell = this.isPointInCell(this.sk.mouseX, this.sk.mouseY, cellX, cellY, cellRadius);
+			if (isInCell) {
+				// Check for vertex hover within this cell
+				const vertexHover = this.findHoveredVertex([fp], cellX, cellY, cellRadius);
+				if (vertexHover) hoveredVertex = vertexHover;
+			}
 
 			this.drawRadarGrid(cellX, cellY, cellRadius, true);
 			if (i === 0) this.drawAxisLabelsShort(cellX, cellY, cellRadius);
-			this.drawSpeakerPolygon(fp, cellX, cellY, cellRadius, isHovered);
+			this.drawSpeakerPolygon(fp, cellX, cellY, cellRadius, hoveredVertex?.speaker === fp.speaker);
 
 			// Draw speaker name below
 			const color = this.userMap.get(fp.speaker)?.color || DEFAULT_SPEAKER_COLOR;
@@ -140,10 +149,12 @@ export class SpeakerFingerprint {
 			this.sk.textAlign(this.sk.CENTER, this.sk.TOP);
 			this.sk.textSize(11);
 			this.sk.text(toTitleCase(fp.speaker), cellX, cellY + cellRadius + 5);
-		});
+		}
 
+		const hoveredSpeaker = hoveredVertex?.speaker ?? null;
 		this.showTooltipIfHovered(fingerprints, hoveredSpeaker);
-		return { snippetPoints: [], hoveredSpeaker };
+		const snippetPoints = this.getSnippetPointsForVertex(hoveredVertex, fingerprints);
+		return { snippetPoints, hoveredSpeaker };
 	}
 
 	private showTooltipIfHovered(fingerprints: SpeakerFingerprintData[], hoveredSpeaker: string | null): void {
@@ -267,7 +278,7 @@ export class SpeakerFingerprint {
 
 	// --- Hover detection ---
 
-	private findHoveredSpeaker(fingerprints: SpeakerFingerprintData[], cx: number, cy: number, radius: number): string | null {
+	private findHoveredVertex(fingerprints: SpeakerFingerprintData[], cx: number, cy: number, radius: number): HoveredVertex {
 		if (!this.sk.overRect(this.bounds.x, this.bounds.y, this.bounds.width, this.bounds.height)) {
 			return null;
 		}
@@ -275,21 +286,23 @@ export class SpeakerFingerprint {
 		const mx = this.sk.mouseX;
 		const my = this.sk.mouseY;
 
-		// First check vertex proximity (highest priority)
-		let closestVertexSpeaker: string | null = null;
+		// Check vertex proximity (highest priority)
+		let closestVertex: HoveredVertex = null;
 		let closestVertexDist = 15; // Max vertex detection radius
 
 		for (const fp of fingerprints) {
-			for (const v of this.getPolygonVertices(fp, cx, cy, radius)) {
+			const vertices = this.getPolygonVertices(fp, cx, cy, radius);
+			for (let i = 0; i < vertices.length; i++) {
+				const v = vertices[i];
 				const dist = Math.sqrt((mx - v.x) ** 2 + (my - v.y) ** 2);
 				if (dist < closestVertexDist) {
 					closestVertexDist = dist;
-					closestVertexSpeaker = fp.speaker;
+					closestVertex = { speaker: fp.speaker, axisIndex: i };
 				}
 			}
 		}
 
-		if (closestVertexSpeaker) return closestVertexSpeaker;
+		if (closestVertex) return closestVertex;
 
 		// Fall back to polygon containment (prefer smaller polygons)
 		let smallestArea = Infinity;
@@ -306,7 +319,8 @@ export class SpeakerFingerprint {
 			}
 		}
 
-		return containedSpeaker;
+		// Return with axisIndex -1 to indicate polygon hover (not vertex)
+		return containedSpeaker ? { speaker: containedSpeaker, axisIndex: -1 } : null;
 	}
 
 	private isPointInPolygon(px: number, py: number, vertices: { x: number; y: number }[]): boolean {
@@ -335,20 +349,49 @@ export class SpeakerFingerprint {
 		return (px - cx) ** 2 + (py - cy) ** 2 <= expandedRadius ** 2;
 	}
 
+	// --- Snippet points for video playback ---
+
+	private getSnippetPointsForVertex(hovered: HoveredVertex, fingerprints: SpeakerFingerprintData[]): DataPoint[] {
+		if (!hovered) return [];
+
+		const fp = fingerprints.find((f) => f.speaker === hovered.speaker);
+		if (!fp) return [];
+
+		// If hovering polygon (not vertex), return all turns
+		if (hovered.axisIndex === -1) {
+			return fp.allTurnFirstWords || [];
+		}
+
+		// Return dimension-specific turns (pre-computed in dynamic-data.ts)
+		switch (hovered.axisIndex) {
+			case 2: // Consecutive
+				return fp.consecutiveTurnFirstWords || [];
+			case 4: // Questions
+				return fp.questionTurnFirstWords || [];
+			case 5: // Interruptions
+				return fp.interruptionTurnFirstWords || [];
+			default: // Turn Length, Participation, Vocabulary - play all turns
+				return fp.allTurnFirstWords || [];
+		}
+	}
+
 	// --- Tooltip ---
 
 	private showTooltipFor(fp: SpeakerFingerprintData): void {
 		const color = this.userMap.get(fp.speaker)?.color || DEFAULT_SPEAKER_COLOR;
 		const pct = (v: number) => `${Math.round(v * 100)}%`;
 		const avgTurnWords = fp.totalTurns > 0 ? (fp.totalWords / fp.totalTurns).toFixed(1) : '0';
-		const totalConversationTurns = fp.rawParticipationRate > 0 ? Math.round(fp.totalTurns / fp.rawParticipationRate) : 0;
+		const totalConversationTurns =
+			fp.rawParticipationRate > 0 && isFinite(fp.rawParticipationRate)
+				? Math.round(fp.totalTurns / fp.rawParticipationRate)
+				: fp.totalTurns;
 
 		let content = `<b>${toTitleCase(fp.speaker)}</b>\n`;
 		content += `<span style="font-size: 0.85em; opacity: 0.8">`;
 		content += `<b>Turn Length:</b> ${avgTurnWords} words per turn avg\n`;
 		content += `<b>Participation:</b> ${fp.totalTurns} of ${totalConversationTurns} turns taken (${pct(fp.rawParticipationRate)})\n`;
 		content += `<b>Consecutive:</b> ${fp.consecutiveTurns} turns followed own turn (${pct(fp.rawConsecutiveRate)})\n`;
-		content += `<b>Vocabulary:</b> ${fp.uniqueWords} unique of ${fp.totalWords} words (adjusted for length)\n`;
+		content += `<b>Vocabulary:</b> ${fp.uniqueWords} unique of ${fp.totalWords} words\n`;
 		content += `<b>Questions:</b> ${fp.questionTurns} turns with ? or question words (${pct(fp.rawQuestionRate)})`;
 
 		if (this.hasTiming) {
