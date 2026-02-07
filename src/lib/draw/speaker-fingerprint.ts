@@ -26,11 +26,12 @@ import { toTitleCase } from '../core/string-utils';
 // --- Constants ---
 
 const NUM_AXES = 6;
-const AXIS_LABELS = ['Turn Length', 'Participation', 'Verbosity', 'Vocab Diversity', 'Questions', 'Interruptions'];
+const AXIS_LABELS = ['Turn Length', 'Participation', 'Consecutive', 'Vocabulary', 'Questions', 'Interrupts'];
+const AXIS_LABELS_FULL = ['Turn Length', 'Participation', 'Consecutive Turns', 'Vocabulary', 'Questions', 'Interruptions'];
 const AXIS_KEYS: (keyof SpeakerFingerprintData)[] = [
 	'avgTurnLength',
 	'participationRate',
-	'verbosityRate',
+	'consecutiveRate',
 	'vocabularyDiversity',
 	'questionRate',
 	'interruptionRate'
@@ -48,6 +49,9 @@ const GRID_OPACITY = 40;
 const AXIS_OPACITY = 80;
 const SMALL_MULTIPLE_PADDING = 30;
 const SMALL_MULTIPLE_LABEL_OFFSET = 16;
+
+// Helper to calculate angle for a given axis index
+const getAxisAngle = (axisIndex: number): number => (axisIndex / NUM_AXES) * Math.PI * 2 - Math.PI / 2;
 
 // --- Main class ---
 
@@ -152,20 +156,18 @@ export class SpeakerFingerprint {
 	// --- Drawing helpers ---
 
 	private drawRadarGrid(cx: number, cy: number, radius: number, minimal = false): void {
+		const rings = minimal ? 2 : GRID_RINGS;
+
+		// Concentric rings
 		this.sk.noFill();
 		this.sk.stroke(200, GRID_OPACITY);
 		this.sk.strokeWeight(1);
-
-		// Concentric rings
-		const rings = minimal ? 2 : GRID_RINGS;
 		for (let r = 1; r <= rings; r++) {
 			const ringRadius = (radius * r) / rings;
 			this.sk.beginShape();
 			for (let i = 0; i < NUM_AXES; i++) {
-				const angle = (i / NUM_AXES) * Math.PI * 2 - Math.PI / 2;
-				const x = cx + Math.cos(angle) * ringRadius;
-				const y = cy + Math.sin(angle) * ringRadius;
-				this.sk.vertex(x, y);
+				const angle = getAxisAngle(i);
+				this.sk.vertex(cx + Math.cos(angle) * ringRadius, cy + Math.sin(angle) * ringRadius);
 			}
 			this.sk.endShape(this.sk.CLOSE);
 		}
@@ -173,10 +175,8 @@ export class SpeakerFingerprint {
 		// Axis lines
 		this.sk.stroke(180, AXIS_OPACITY);
 		for (let i = 0; i < NUM_AXES; i++) {
-			const angle = (i / NUM_AXES) * Math.PI * 2 - Math.PI / 2;
-			const x = cx + Math.cos(angle) * radius;
-			const y = cy + Math.sin(angle) * radius;
-			this.sk.line(cx, cy, x, y);
+			const angle = getAxisAngle(i);
+			this.sk.line(cx, cy, cx + Math.cos(angle) * radius, cy + Math.sin(angle) * radius);
 		}
 
 		// Scale labels along the top axis
@@ -186,47 +186,34 @@ export class SpeakerFingerprint {
 		this.sk.textAlign(this.sk.LEFT, this.sk.CENTER);
 		const labels = minimal ? ['Low', 'Most'] : ['Low', 'Med', 'High', 'Most'];
 		for (let r = 1; r <= rings; r++) {
-			const ringRadius = (radius * r) / rings;
-			this.sk.text(labels[r - 1], cx + 3, cy - ringRadius);
+			this.sk.text(labels[r - 1], cx + 3, cy - (radius * r) / rings);
 		}
 	}
 
 	private drawAxisLabels(cx: number, cy: number, radius: number): void {
-		this.sk.noStroke();
-		this.sk.textSize(11);
-
-		for (let i = 0; i < NUM_AXES; i++) {
-			const { x, y, angle } = this.getAxisLabelPosition(cx, cy, radius + LABEL_OFFSET, i);
-			this.setTextAlignForAngle(angle);
-
-			const isInterruptions = AXIS_KEYS[i] === 'interruptionRate';
-			this.sk.fill(isInterruptions && !this.hasTiming ? 180 : 80);
-			const label = isInterruptions && !this.hasTiming ? AXIS_LABELS[i] + ' (N/A)' : AXIS_LABELS[i];
-			this.sk.text(label, x, y);
-		}
+		this.drawAxisLabelsImpl(cx, cy, radius + LABEL_OFFSET, 11, 80, true);
 	}
 
 	private drawAxisLabelsShort(cx: number, cy: number, radius: number): void {
-		this.sk.noStroke();
-		this.sk.textSize(10);
-
-		for (let i = 0; i < NUM_AXES; i++) {
-			const { x, y, angle } = this.getAxisLabelPosition(cx, cy, radius + SMALL_MULTIPLE_LABEL_OFFSET, i);
-			this.setTextAlignForAngle(angle);
-
-			const isInterruptions = AXIS_KEYS[i] === 'interruptionRate';
-			this.sk.fill(isInterruptions && !this.hasTiming ? 180 : 120);
-			this.sk.text(AXIS_LABELS[i], x, y);
-		}
+		this.drawAxisLabelsImpl(cx, cy, radius + SMALL_MULTIPLE_LABEL_OFFSET, 10, 120, false);
 	}
 
-	private getAxisLabelPosition(cx: number, cy: number, labelRadius: number, axisIndex: number): { x: number; y: number; angle: number } {
-		const angle = (axisIndex / NUM_AXES) * Math.PI * 2 - Math.PI / 2;
-		return {
-			x: cx + Math.cos(angle) * labelRadius,
-			y: cy + Math.sin(angle) * labelRadius,
-			angle
-		};
+	private drawAxisLabelsImpl(cx: number, cy: number, labelRadius: number, textSize: number, defaultFill: number, fullMode: boolean): void {
+		this.sk.noStroke();
+		this.sk.textSize(textSize);
+		const labels = fullMode ? AXIS_LABELS_FULL : AXIS_LABELS;
+
+		for (let i = 0; i < NUM_AXES; i++) {
+			const angle = getAxisAngle(i);
+			const x = cx + Math.cos(angle) * labelRadius;
+			const y = cy + Math.sin(angle) * labelRadius;
+			this.setTextAlignForAngle(angle);
+
+			const isInterruptionsDisabled = AXIS_KEYS[i] === 'interruptionRate' && !this.hasTiming;
+			this.sk.fill(isInterruptionsDisabled ? 180 : defaultFill);
+			const label = isInterruptionsDisabled && fullMode ? labels[i] + ' (N/A)' : labels[i];
+			this.sk.text(label, x, y);
+		}
 	}
 
 	private setTextAlignForAngle(angle: number): void {
@@ -242,14 +229,13 @@ export class SpeakerFingerprint {
 	}
 
 	private drawSpeakerPolygon(fp: SpeakerFingerprintData, cx: number, cy: number, radius: number, isHovered: boolean): void {
-		const user = this.userMap.get(fp.speaker);
-		const color = this.sk.color(user?.color || DEFAULT_SPEAKER_COLOR);
+		const color = this.sk.color(this.userMap.get(fp.speaker)?.color || DEFAULT_SPEAKER_COLOR);
 		const vertices = this.getPolygonVertices(fp, cx, cy, radius);
 
 		// Draw filled polygon
-		const fillColor = this.sk.color(color.toString());
-		fillColor.setAlpha(isHovered ? POLYGON_HOVER_OPACITY : POLYGON_OPACITY);
-		this.sk.fill(fillColor);
+		color.setAlpha(isHovered ? POLYGON_HOVER_OPACITY : POLYGON_OPACITY);
+		this.sk.fill(color);
+		color.setAlpha(255);
 		this.sk.stroke(color);
 		this.sk.strokeWeight(isHovered ? STROKE_HOVER_WEIGHT : STROKE_WEIGHT);
 
@@ -270,12 +256,11 @@ export class SpeakerFingerprint {
 
 	private getPolygonVertices(fp: SpeakerFingerprintData, cx: number, cy: number, radius: number): { x: number; y: number }[] {
 		return AXIS_KEYS.map((key, i) => {
-			const angle = (i / NUM_AXES) * Math.PI * 2 - Math.PI / 2;
+			const angle = getAxisAngle(i);
 			const value = Math.max(0, Math.min(1, fp[key] as number));
-			const pointRadius = value * radius;
 			return {
-				x: cx + Math.cos(angle) * pointRadius,
-				y: cy + Math.sin(angle) * pointRadius
+				x: cx + Math.cos(angle) * value * radius,
+				y: cy + Math.sin(angle) * value * radius
 			};
 		});
 	}
@@ -295,8 +280,7 @@ export class SpeakerFingerprint {
 		let closestVertexDist = 15; // Max vertex detection radius
 
 		for (const fp of fingerprints) {
-			const vertices = this.getPolygonVertices(fp, cx, cy, radius);
-			for (const v of vertices) {
+			for (const v of this.getPolygonVertices(fp, cx, cy, radius)) {
 				const dist = Math.sqrt((mx - v.x) ** 2 + (my - v.y) ** 2);
 				if (dist < closestVertexDist) {
 					closestVertexDist = dist;
@@ -347,30 +331,28 @@ export class SpeakerFingerprint {
 	}
 
 	private isPointInCell(px: number, py: number, cx: number, cy: number, radius: number): boolean {
-		const dx = px - cx;
-		const dy = py - cy;
-		return dx * dx + dy * dy <= (radius + 20) * (radius + 20);
+		const expandedRadius = radius + 20;
+		return (px - cx) ** 2 + (py - cy) ** 2 <= expandedRadius ** 2;
 	}
 
 	// --- Tooltip ---
 
 	private showTooltipFor(fp: SpeakerFingerprintData): void {
-		const user = this.userMap.get(fp.speaker);
-		const color = user?.color || DEFAULT_SPEAKER_COLOR;
-
+		const color = this.userMap.get(fp.speaker)?.color || DEFAULT_SPEAKER_COLOR;
 		const pct = (v: number) => `${Math.round(v * 100)}%`;
 		const avgTurnWords = fp.totalTurns > 0 ? (fp.totalWords / fp.totalTurns).toFixed(1) : '0';
+		const totalConversationTurns = fp.rawParticipationRate > 0 ? Math.round(fp.totalTurns / fp.rawParticipationRate) : 0;
 
 		let content = `<b>${toTitleCase(fp.speaker)}</b>\n`;
 		content += `<span style="font-size: 0.85em; opacity: 0.8">`;
-		content += `Words: ${fp.totalWords} (${pct(fp.rawVerbosityRate)})\n`;
-		content += `Turns: ${fp.totalTurns} (${pct(fp.rawParticipationRate)})\n`;
-		content += `Avg turn: ${avgTurnWords} words\n`;
-		content += `Vocabulary: ${fp.uniqueWords} unique (${pct(fp.rawVocabDiversity)} diversity)\n`;
-		content += `Questions: ${fp.questionTurns} turns (${pct(fp.rawQuestionRate)})`;
+		content += `<b>Turn Length:</b> ${avgTurnWords} words per turn avg\n`;
+		content += `<b>Participation:</b> ${fp.totalTurns} of ${totalConversationTurns} turns taken (${pct(fp.rawParticipationRate)})\n`;
+		content += `<b>Consecutive:</b> ${fp.consecutiveTurns} turns followed own turn (${pct(fp.rawConsecutiveRate)})\n`;
+		content += `<b>Vocabulary:</b> ${fp.uniqueWords} unique of ${fp.totalWords} words (adjusted for length)\n`;
+		content += `<b>Questions:</b> ${fp.questionTurns} turns with ? or question words (${pct(fp.rawQuestionRate)})`;
 
 		if (this.hasTiming) {
-			content += `\nInterruptions: ${fp.interruptionTurns} turns (${pct(fp.rawInterruptionRate)})`;
+			content += `\n<b>Interruptions:</b> ${fp.interruptionTurns} overlapping previous speaker (${pct(fp.rawInterruptionRate)})`;
 		}
 
 		content += `</span>`;

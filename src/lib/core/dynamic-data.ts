@@ -18,16 +18,17 @@ export interface SpeakerFingerprintData {
 	uniqueWords: number;
 	questionTurns: number;
 	interruptionTurns: number;
+	consecutiveTurns: number;
 	// Raw rates (actual percentages for tooltip display)
 	rawParticipationRate: number;
-	rawVerbosityRate: number;
+	rawConsecutiveRate: number;
 	rawVocabDiversity: number;
 	rawQuestionRate: number;
 	rawInterruptionRate: number;
 	// Normalized ratios (0-1 scale for radar chart, all normalized to max speaker)
 	avgTurnLength: number;
 	participationRate: number;
-	verbosityRate: number;
+	consecutiveRate: number;
 	vocabularyDiversity: number;
 	questionRate: number;
 	interruptionRate: number;
@@ -592,14 +593,16 @@ export class DynamicData {
 			.map(([turnNumber, info]) => ({ turnNumber, ...info }))
 			.sort((a, b) => a.startTime - b.startTime);
 
+		// Detect interruptions and consecutive turns in a single pass
 		const interruptingTurns = new Set<number>();
-		if (hasTiming) {
-			for (let i = 1; i < turnOrder.length; i++) {
-				const prev = turnOrder[i - 1],
-					curr = turnOrder[i];
-				if (curr.speaker !== prev.speaker && curr.startTime < prev.endTime) {
-					interruptingTurns.add(curr.turnNumber);
-				}
+		const consecutiveTurns = new Set<number>();
+		for (let i = 1; i < turnOrder.length; i++) {
+			const prev = turnOrder[i - 1],
+				curr = turnOrder[i];
+			if (curr.speaker === prev.speaker) {
+				consecutiveTurns.add(curr.turnNumber);
+			} else if (hasTiming && curr.startTime < prev.endTime) {
+				interruptingTurns.add(curr.turnNumber);
 			}
 		}
 
@@ -612,7 +615,7 @@ export class DynamicData {
 		}
 
 		// Compute per-speaker stats and track max values for normalization
-		const maxValues = { avgTurnLength: 0, participation: 0, verbosity: 0, vocabDiversity: 0, questions: 0, interruptions: 0 };
+		const maxValues = { avgTurnLength: 0, participation: 0, consecutive: 0, vocabDiversity: 0, questions: 0, interruptions: 0 };
 		const speakerStats = new Map<
 			string,
 			{
@@ -621,8 +624,9 @@ export class DynamicData {
 				uniqueWords: number;
 				questionTurns: number;
 				interruptionCount: number;
+				consecutiveCount: number;
 				rawParticipation: number;
-				rawVerbosity: number;
+				rawConsecutive: number;
 				rawVocabDiversity: number;
 				rawQuestions: number;
 				rawInterruptions: number;
@@ -642,16 +646,18 @@ export class DynamicData {
 				}
 			}
 
-			// Count interruptions
+			// Count interruptions and consecutive turns
 			let interruptionCount = 0;
+			let consecutiveCount = 0;
 			for (const turnNum of data.turns) {
 				if (interruptingTurns.has(turnNum)) interruptionCount++;
+				if (consecutiveTurns.has(turnNum)) consecutiveCount++;
 			}
 
 			// Compute raw rates
 			const rawParticipation = ratio(turnCount, totalTurns);
-			const rawVerbosity = ratio(wordCount, totalWords);
-			const rawVocabDiversity = ratio(uniqueWords, wordCount);
+			const rawConsecutive = ratio(consecutiveCount, turnCount);
+			const rawVocabDiversity = ratio(uniqueWords, Math.sqrt(wordCount));
 			const rawQuestions = ratio(questionTurns, turnCount);
 			const rawInterruptions = hasTiming ? ratio(interruptionCount, turnCount) : 0;
 			const avgTurnLength = ratio(wordCount, turnCount);
@@ -662,8 +668,9 @@ export class DynamicData {
 				uniqueWords,
 				questionTurns,
 				interruptionCount,
+				consecutiveCount,
 				rawParticipation,
-				rawVerbosity,
+				rawConsecutive,
 				rawVocabDiversity,
 				rawQuestions,
 				rawInterruptions
@@ -672,7 +679,7 @@ export class DynamicData {
 			// Track max values
 			maxValues.avgTurnLength = Math.max(maxValues.avgTurnLength, avgTurnLength);
 			maxValues.participation = Math.max(maxValues.participation, rawParticipation);
-			maxValues.verbosity = Math.max(maxValues.verbosity, rawVerbosity);
+			maxValues.consecutive = Math.max(maxValues.consecutive, rawConsecutive);
 			maxValues.vocabDiversity = Math.max(maxValues.vocabDiversity, rawVocabDiversity);
 			maxValues.questions = Math.max(maxValues.questions, rawQuestions);
 			maxValues.interruptions = Math.max(maxValues.interruptions, rawInterruptions);
@@ -692,16 +699,17 @@ export class DynamicData {
 					uniqueWords: stats.uniqueWords,
 					questionTurns: stats.questionTurns,
 					interruptionTurns: stats.interruptionCount,
+					consecutiveTurns: stats.consecutiveCount,
 					// Raw rates for tooltip display
 					rawParticipationRate: stats.rawParticipation,
-					rawVerbosityRate: stats.rawVerbosity,
+					rawConsecutiveRate: stats.rawConsecutive,
 					rawVocabDiversity: stats.rawVocabDiversity,
 					rawQuestionRate: stats.rawQuestions,
 					rawInterruptionRate: stats.rawInterruptions,
 					// Normalized values (0-1 scale, all normalized to max speaker)
 					avgTurnLength: ratio(avgTurnLength, maxValues.avgTurnLength),
 					participationRate: ratio(stats.rawParticipation, maxValues.participation),
-					verbosityRate: ratio(stats.rawVerbosity, maxValues.verbosity),
+					consecutiveRate: ratio(stats.rawConsecutive, maxValues.consecutive),
 					vocabularyDiversity: ratio(stats.rawVocabDiversity, maxValues.vocabDiversity),
 					questionRate: ratio(stats.rawQuestions, maxValues.questions),
 					interruptionRate: ratio(stats.rawInterruptions, maxValues.interruptions)

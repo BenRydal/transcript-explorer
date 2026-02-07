@@ -14,7 +14,8 @@
 		ArrowRight,
 		Minus,
 		ChartBar,
-		Columns3
+		Columns3,
+		Hexagon
 	} from '@lucide/svelte';
 	import type { Component } from 'svelte';
 	import ConfigStore from '../../stores/configStore';
@@ -102,6 +103,13 @@
 					{ speakerColors: true, label: 'Color \u2192 speaker' },
 					...v('Click bar \u2192 play related turns')
 				]
+			},
+			speakerFingerprint: {
+				title: 'Speaker Fingerprint',
+				items: [
+					{ icon: Hexagon, label: 'Larger shape \u2192 higher values' },
+					{ speakerColors: true, label: 'Color \u2192 speaker' }
+				]
 			}
 		} as Record<string, { title: string; items: LegendItem[] }>;
 	});
@@ -113,7 +121,8 @@
 		['wordRainToggle', 'wordRain'],
 		['speakerHeatmapToggle', 'speakerHeatmap'],
 		['turnNetworkToggle', 'turnNetwork'],
-		['turnLengthToggle', 'turnLength']
+		['turnLengthToggle', 'turnLength'],
+		['speakerFingerprintToggle', 'speakerFingerprint']
 	] as const;
 
 	let legend = $derived.by(() => {
@@ -129,8 +138,7 @@
 
 	let speakerGradient = $derived.by(() => {
 		const colors = $UserStore.filter((u) => u.enabled).map((u) => u.color);
-		if (colors.length === 0) return '';
-		if (colors.length === 1) return colors[0];
+		if (colors.length <= 1) return colors[0] ?? '';
 		return `linear-gradient(to right, ${colors.join(', ')})`;
 	});
 
