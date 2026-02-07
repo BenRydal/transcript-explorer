@@ -2,6 +2,7 @@ import type p5 from 'p5';
 import { get } from 'svelte/store';
 import UserStore from '../../stores/userStore';
 import ConfigStore, { type ConfigStoreType } from '../../stores/configStore';
+import HoverStore, { type HoverState } from '../../stores/hoverStore';
 import TranscriptStore from '../../stores/transcriptStore';
 import TimelineStore from '../../stores/timelineStore';
 import { showTooltip } from '../../stores/tooltipStore';
@@ -12,7 +13,7 @@ import type { Transcript } from '../../models/transcript';
 import type { Timeline } from '../../models/timeline';
 import type { Bounds } from './types/bounds';
 import { DEFAULT_SPEAKER_COLOR } from '../constants/ui';
-import { withDimming } from './draw-utils';
+import { withDimming, createUserMap, getCrossHighlight, type CrossHighlight } from './draw-utils';
 import { normalizeWord, toTitleCase } from '../core/string-utils';
 
 const MAX_SAMPLE_TURNS = 4;
@@ -57,12 +58,6 @@ interface WordRainResult {
 
 const EMPTY_RAIN_RESULT: WordRainResult = { hoveredOccurrences: [], hoveredSpeaker: null, hasOverflow: false };
 
-interface CrossHighlight {
-	active: boolean;
-	speaker: string;
-	turns: number[] | null;
-}
-
 interface PlacedWord {
 	agg: AggregatedWord;
 	x: number;
@@ -86,27 +81,17 @@ export class WordRain {
 	private transcript: Transcript;
 	private searchTerm: string;
 	private config: ConfigStoreType;
+	private hover: HoverState;
 
 	constructor(sk: p5, bounds: Bounds) {
 		this.sk = sk;
 		this.bounds = bounds;
-		const users = get(UserStore);
-		this.userMap = new Map(users.map((u) => [u.name, u]));
+		this.userMap = createUserMap(get(UserStore));
 		this.timeline = get(TimelineStore);
 		this.transcript = get(TranscriptStore);
 		this.config = get(ConfigStore);
+		this.hover = get(HoverStore);
 		this.searchTerm = this.config.wordToSearch ? normalizeWord(this.config.wordToSearch) : '';
-	}
-
-	private static readonly NO_HIGHLIGHT: CrossHighlight = { active: false, speaker: '', turns: null };
-
-	private getCrossHighlight(): CrossHighlight {
-		if (!this.config.dashboardToggle) return WordRain.NO_HIGHLIGHT;
-		const hl = this.config.dashboardHighlightSpeaker;
-		const hlTurns = this.config.dashboardHighlightAllTurns;
-		if (!hl && !hlTurns) return WordRain.NO_HIGHLIGHT;
-		const mouseInPanel = this.sk.overRect(this.bounds.x, this.bounds.y, this.bounds.width, this.bounds.height);
-		return { active: !mouseInPanel, speaker: hl ?? '', turns: hlTurns };
 	}
 
 	draw(words: DataPoint[]): WordRainResult {
@@ -136,7 +121,7 @@ export class WordRain {
 		const useBinning = this.config.wordRainTemporalBinning;
 		const bySpeaker = useBinning ? this.aggregateWordsBySpeakerInBins(words, enabledUsers) : this.aggregateWordsBySpeaker(words, enabledUsers);
 		const bandHeight = this.bounds.height / enabledUsers.length;
-		const xhl = this.getCrossHighlight();
+		const xhl = getCrossHighlight(this.sk, this.bounds, this.config.dashboardToggle, this.hover);
 		const allPlaced: PlacedWord[] = [];
 		let hasOverflow = false;
 
@@ -177,7 +162,7 @@ export class WordRain {
 	}
 
 	private renderAndHandleHover(placed: PlacedWord[], hasOverflow: boolean): WordRainResult {
-		const xhl = this.getCrossHighlight();
+		const xhl = getCrossHighlight(this.sk, this.bounds, this.config.dashboardToggle, this.hover);
 		this.renderBars(placed, xhl);
 		this.renderConnectors(placed, xhl);
 		this.renderWords(placed, xhl);

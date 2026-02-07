@@ -22,6 +22,7 @@ import type { Bounds } from './types/bounds';
 import type { SpeakerFingerprintData } from '../core/dynamic-data';
 import { DEFAULT_SPEAKER_COLOR } from '../constants/ui';
 import { toTitleCase } from '../core/string-utils';
+import { createUserMap } from './draw-utils';
 
 // --- Constants ---
 
@@ -67,7 +68,7 @@ export class SpeakerFingerprint {
 	constructor(sk: p5, bounds: Bounds) {
 		this.sk = sk;
 		this.bounds = bounds;
-		this.userMap = new Map(get(UserStore).map((u) => [u.name, u]));
+		this.userMap = createUserMap(get(UserStore));
 		this.config = get(ConfigStore);
 		const transcript = get(TranscriptStore);
 		this.hasTiming = transcript.timingMode !== 'untimed';

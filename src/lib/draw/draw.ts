@@ -9,6 +9,7 @@ import { WordRain } from './word-rain';
 import { TurnLengthDistribution } from './turn-length-distribution';
 import { SpeakerFingerprint } from './speaker-fingerprint';
 import ConfigStore, { type ConfigStoreType } from '../../stores/configStore';
+import HoverStore from '../../stores/hoverStore';
 import { resetTooltipFrame, finalizeTooltipFrame } from '../../stores/tooltipStore';
 import type { Bounds } from './types/bounds';
 import { CANVAS_SPACING } from '../constants/ui';
@@ -91,16 +92,15 @@ export class Draw {
 			}
 		}
 
-		ConfigStore.update((c) => ({
-			...c,
+		HoverStore.set({
 			hoveredDataPoint: r.hover,
-			overflowBounds: r.overflowBounds,
+			hoveredSpeaker: r.hoveredSpeaker,
 			arrayOfFirstWords: r.arrayOfFirstWords,
-			hoveredSpeakerInGarden: r.hoveredSpeaker,
+			overflowBounds: r.overflowBounds,
 			dashboardHighlightSpeaker: highlightSpeaker,
 			dashboardHighlightTurn: highlightTurn,
 			dashboardHighlightAllTurns: highlightTurns
-		}));
+		});
 	}
 
 	updatePanel(key: string, bounds: Bounds): DrawResult {

@@ -1,6 +1,4 @@
 import { writable, derived } from 'svelte/store';
-import type { DataPoint } from '../models/dataPoint';
-import type { Bounds } from '../lib/draw/types/bounds';
 
 export type GardenSortOrder = 'default' | 'words' | 'turns' | 'alpha';
 
@@ -23,11 +21,7 @@ export interface ConfigStoreType {
 	repeatedWordsToggle: boolean;
 	animationRate: number;
 	repeatWordSliderValue: number;
-	hoveredDataPoint: DataPoint | null;
-	overflowBounds: Bounds[];
-	arrayOfFirstWords: DataPoint[];
 	wordToSearch: string;
-	hoveredSpeakerInGarden: string | null;
 	// Start-only mode settings
 	preserveGapsBetweenTurns: boolean;
 	speechRateWordsPerSecond: number;
@@ -37,10 +31,6 @@ export interface ConfigStoreType {
 	dashboardPanels: string[];
 	// Speaker Garden settings
 	gardenSortOrder: GardenSortOrder;
-	// Dashboard cross-highlighting (written by previous frame's applyDrawResult)
-	dashboardHighlightSpeaker: string | null;
-	dashboardHighlightTurn: number | null;
-	dashboardHighlightAllTurns: number[] | null;
 	// Word Rain settings
 	wordRainMinFrequency: number;
 	wordRainTemporalBinning: boolean;
@@ -89,11 +79,7 @@ export const initialConfig: ConfigStoreType = {
 	repeatedWordsToggle: false,
 	animationRate: 3,
 	repeatWordSliderValue: 5,
-	hoveredDataPoint: null,
-	overflowBounds: [],
-	arrayOfFirstWords: [],
 	wordToSearch: '',
-	hoveredSpeakerInGarden: null,
 	// Start-only mode settings (default: estimate from speech rate)
 	preserveGapsBetweenTurns: true,
 	speechRateWordsPerSecond: 3,
@@ -103,9 +89,6 @@ export const initialConfig: ConfigStoreType = {
 	gardenSortOrder: 'default',
 	// Dashboard panel selection
 	dashboardPanels: ['turnChart', 'contributionCloud', 'speakerGarden'],
-	dashboardHighlightSpeaker: null,
-	dashboardHighlightTurn: null,
-	dashboardHighlightAllTurns: null,
 	wordRainMinFrequency: 1,
 	wordRainTemporalBinning: false,
 	wordRainBinCount: 8,

@@ -5,6 +5,7 @@
 	import UserStore from '../../stores/userStore';
 	import EditorStore from '../../stores/editorStore';
 	import ConfigStore from '../../stores/configStore';
+	import HoverStore, { initialHoverState } from '../../stores/hoverStore';
 	import P5Store from '../../stores/p5Store';
 	import HistoryStore from '../../stores/historyStore';
 	import TranscribeModeStore from '../../stores/transcribeModeStore';
@@ -101,11 +102,11 @@
 
 		if (turnWords.length > 0) {
 			const firstWord = turnWords[0];
-			ConfigStore.update((config) => ({
-				...config,
+			HoverStore.set({
+				...initialHoverState,
 				hoveredDataPoint: firstWord,
 				arrayOfFirstWords: [firstWord]
-			}));
+			});
 		}
 	}
 

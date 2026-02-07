@@ -2,11 +2,12 @@ import type p5 from 'p5';
 import { get } from 'svelte/store';
 import UserStore from '../../stores/userStore';
 import ConfigStore, { type ConfigStoreType } from '../../stores/configStore';
+import HoverStore, { type HoverState } from '../../stores/hoverStore';
 import { showTooltip } from '../../stores/tooltipStore';
 import type { DataPoint } from '../../models/dataPoint';
 import type { User } from '../../models/user';
 import type { Bounds } from './types/bounds';
-import { withDimming, formatTurnPreviewLines } from './draw-utils';
+import { withDimming, formatTurnPreviewLines, createUserMap, getCrossHighlight } from './draw-utils';
 import { normalizeWord } from '../core/string-utils';
 
 const LEFT_MARGIN = 60;
@@ -50,6 +51,7 @@ export class TurnLengthDistribution {
 	private userMap: Map<string, User>;
 	private speakers: string[];
 	private config: ConfigStoreType;
+	private hover: HoverState;
 	// Absolute grid coordinates (bounds.xy + grid offsets)
 	private gx: number;
 	private gy: number;
@@ -60,9 +62,10 @@ export class TurnLengthDistribution {
 		this.sk = sk;
 		this.bounds = bounds;
 		const users = get(UserStore);
-		this.userMap = new Map(users.map((u) => [u.name, u]));
+		this.userMap = createUserMap(users);
 		this.speakers = users.filter((u) => u.enabled).map((u) => u.name);
 		this.config = get(ConfigStore);
+		this.hover = get(HoverStore);
 		const leftMargin = Math.min(LEFT_MARGIN, bounds.width * MAX_MARGIN_RATIO);
 		const bottomMargin = Math.min(BOTTOM_MARGIN, bounds.height * MAX_MARGIN_RATIO);
 		this.gx = bounds.x + leftMargin;
@@ -144,10 +147,7 @@ export class TurnLengthDistribution {
 	private drawBars(bins: Bin[], maxCount: number, barWidth: number, hoveredBinIndex: number, localY: number): HoveredSegment | null {
 		let hoveredSegment: HoveredSegment | null = null;
 
-		const hl = this.config.dashboardHighlightSpeaker;
-		const hlTurns = this.config.dashboardHighlightAllTurns;
-		const mouseInPanel = this.sk.overRect(this.bounds.x, this.bounds.y, this.bounds.width, this.bounds.height);
-		const crossHighlightActive = this.config.dashboardToggle && (hl != null || hlTurns != null) && !mouseInPanel;
+		const crossHighlight = getCrossHighlight(this.sk, this.bounds, this.config.dashboardToggle, this.hover);
 
 		for (let b = 0; b < bins.length; b++) {
 			const bin = bins[b];
@@ -163,8 +163,9 @@ export class TurnLengthDistribution {
 				const y = this.gy + this.gh - yOffset - h;
 
 				const shouldDim =
-					crossHighlightActive &&
-					((hlTurns != null && !turns.some((t) => hlTurns.includes(t.dataPoint.turnNumber))) || (hl != null && speaker !== hl));
+					crossHighlight.active &&
+					((crossHighlight.turns != null && !turns.some((t) => crossHighlight.turns!.includes(t.dataPoint.turnNumber))) ||
+						(crossHighlight.speaker != null && speaker !== crossHighlight.speaker));
 				withDimming(this.sk.drawingContext, shouldDim, () => {
 					const user = this.userMap.get(speaker);
 					const c = this.sk.color(user!.color);

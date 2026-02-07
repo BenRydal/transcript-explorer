@@ -5,17 +5,14 @@
 
 import { DataPoint } from '../../models/dataPoint';
 import { Transcript, type TimingMode } from '../../models/transcript';
+import type { User } from '../../models/user';
 import type { TranscriptionSegment } from './transcription-service';
 import type { ParseResult } from './text-parser';
 import { USER_COLORS } from '../constants/ui';
 import { calculateTranscriptStats } from './transcript-stats';
 import { splitIntoWordTokens } from './string-utils';
 
-export interface User {
-	name: string;
-	color: string;
-	enabled: boolean;
-}
+export type { User };
 
 export interface TranscriptCreationResult {
 	transcript: Transcript;

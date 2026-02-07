@@ -12,12 +12,13 @@ import type p5 from 'p5';
 import { get } from 'svelte/store';
 import UserStore from '../../stores/userStore';
 import ConfigStore, { type ConfigStoreType } from '../../stores/configStore';
+import HoverStore, { type HoverState } from '../../stores/hoverStore';
 import { showTooltip } from '../../stores/tooltipStore';
 import type { DataPoint } from '../../models/dataPoint';
 import type { User } from '../../models/user';
 import type { Bounds } from './types/bounds';
 import { DEFAULT_SPEAKER_COLOR } from '../constants/ui';
-import { withDimming } from './draw-utils';
+import { withDimming, createUserMap, getCrossHighlight } from './draw-utils';
 
 const MIN_NODE_RADIUS_RATIO = 0.04;
 const MAX_NODE_RADIUS_RATIO = 0.12;
@@ -142,12 +143,14 @@ export class TurnNetwork {
 	private selfLoopRadius: number;
 	private minDim: number;
 	private config: ConfigStoreType;
+	private hover: HoverState;
 
 	constructor(sk: p5, bounds: Bounds) {
 		this.sk = sk;
 		this.bounds = bounds;
-		this.userMap = new Map(get(UserStore).map((u) => [u.name, u]));
+		this.userMap = createUserMap(get(UserStore));
 		this.config = get(ConfigStore);
+		this.hover = get(HoverStore);
 		this.minDim = Math.min(bounds.width, bounds.height);
 		this.selfLoopRadius = Math.max(15, this.minDim * SELF_LOOP_RADIUS_RATIO);
 	}
@@ -156,24 +159,22 @@ export class TurnNetwork {
 		const layout = this.buildLayout(data);
 		const hovered = this.findHovered(layout);
 
-		const hl = this.config.dashboardHighlightSpeaker;
-		const hlTurns = this.config.dashboardHighlightAllTurns;
-		const mouseInPanel = this.sk.overRect(this.bounds.x, this.bounds.y, this.bounds.width, this.bounds.height);
-		const crossHighlightActive = this.config.dashboardToggle && (hl != null || hlTurns != null) && !mouseInPanel;
+		const crossHighlight = getCrossHighlight(this.sk, this.bounds, this.config.dashboardToggle, this.hover);
 
 		for (const edge of layout.edges) {
 			const shouldDim =
-				crossHighlightActive &&
-				((hlTurns != null && !edge.turnStartPoints.some((p) => hlTurns.includes(p.turnNumber))) ||
-					(hl != null && edge.from !== hl && edge.to !== hl));
+				crossHighlight.active &&
+				((crossHighlight.turns != null && !edge.turnStartPoints.some((p) => crossHighlight.turns!.includes(p.turnNumber))) ||
+					(crossHighlight.speaker != null && edge.from !== crossHighlight.speaker && edge.to !== crossHighlight.speaker));
 			withDimming(this.sk.drawingContext, shouldDim, () => {
 				this.drawEdge(edge, layout, false);
 			});
 		}
 		for (const node of layout.nodes) {
 			const shouldDim =
-				crossHighlightActive &&
-				((hlTurns != null && !node.turnStartPoints.some((p) => hlTurns.includes(p.turnNumber))) || (hl != null && node.speaker !== hl));
+				crossHighlight.active &&
+				((crossHighlight.turns != null && !node.turnStartPoints.some((p) => crossHighlight.turns!.includes(p.turnNumber))) ||
+					(crossHighlight.speaker != null && node.speaker !== crossHighlight.speaker));
 			withDimming(this.sk.drawingContext, shouldDim, () => {
 				this.drawNode(node, false);
 			});

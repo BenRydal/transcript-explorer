@@ -1,3 +1,8 @@
+import type p5 from 'p5';
+import type { User } from '../../models/user';
+import type { HoverState } from '../../stores/hoverStore';
+import type { Bounds } from './types/bounds';
+
 const DIM_ALPHA = 0.2;
 
 /**
@@ -10,6 +15,54 @@ export function withDimming(ctx: CanvasRenderingContext2D, dim: boolean, fn: () 
 	} finally {
 		if (dim) ctx.globalAlpha = 1.0;
 	}
+}
+
+/**
+ * Creates a Map from speaker name to User object for quick lookups.
+ */
+export function createUserMap(users: User[]): Map<string, User> {
+	return new Map(users.map((u) => [u.name, u]));
+}
+
+/**
+ * Cross-highlight state for dashboard mode.
+ * Computed once per draw call, used to dim non-matching elements.
+ */
+export interface CrossHighlight {
+	/** Whether cross-highlighting is active (dashboard mode with hover, mouse outside panel) */
+	active: boolean;
+	/** Speaker being highlighted (null if none) */
+	speaker: string | null;
+	/** Specific turn being highlighted (null if none) */
+	turn: number | null;
+	/** Multiple turns being highlighted, e.g., from turn network edge (null if none) */
+	turns: number[] | null;
+}
+
+const NO_HIGHLIGHT: CrossHighlight = { active: false, speaker: null, turn: null, turns: null };
+
+/**
+ * Computes cross-highlight state for dashboard mode.
+ * Returns inactive state if not in dashboard mode or mouse is inside the panel.
+ */
+export function getCrossHighlight(sk: p5, bounds: Bounds, dashboardToggle: boolean, hover: HoverState): CrossHighlight {
+	if (!dashboardToggle) return NO_HIGHLIGHT;
+
+	const hl = hover.dashboardHighlightSpeaker;
+	const hlTurn = hover.dashboardHighlightTurn;
+	const hlTurns = hover.dashboardHighlightAllTurns;
+
+	if (hl == null && hlTurn == null && hlTurns == null) return NO_HIGHLIGHT;
+
+	const mouseInPanel = sk.overRect(bounds.x, bounds.y, bounds.width, bounds.height);
+	if (mouseInPanel) return NO_HIGHLIGHT;
+
+	return {
+		active: true,
+		speaker: hl,
+		turn: hlTurn,
+		turns: hlTurns
+	};
 }
 
 const TOOLTIP_MAX_TURNS = 4;

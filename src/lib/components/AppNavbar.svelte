@@ -67,9 +67,9 @@
 		'contributionCloudToggle',
 		'turnNetworkToggle',
 		'wordRainToggle',
+		'speakerFingerprintToggle',
 		'speakerHeatmapToggle',
 		'turnLengthToggle',
-		'speakerFingerprintToggle',
 		'dashboardToggle'
 	] as const;
 	const regularVisualizationToggles = techniqueToggleOptions.filter((t) => t !== 'dashboardToggle');

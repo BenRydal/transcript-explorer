@@ -23,6 +23,7 @@ import type { User } from '../../models/user';
 import type { Bounds } from './types/bounds';
 import { calculateScaling, getWordWidth, type Scaling } from './contribution-cloud-scaling';
 import { DEFAULT_SPEAKER_COLOR } from '../constants/ui';
+import { createUserMap } from './draw-utils';
 
 export { clearScalingCache } from './contribution-cloud-scaling';
 
@@ -73,7 +74,7 @@ export class ContributionCloud {
 		this.bounds = bounds;
 		this.users = get(UserStore);
 		this.config = get(ConfigStore);
-		this.userMap = new Map(this.users.map((user) => [user.name, user]));
+		this.userMap = createUserMap(this.users);
 	}
 
 	draw(words: DataPoint[]): { hoveredWord: DataPoint | null; hasOverflow: boolean; hoveredSpeaker: string | null } {

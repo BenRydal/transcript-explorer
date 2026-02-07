@@ -2,6 +2,7 @@ import type p5 from 'p5';
 import { get } from 'svelte/store';
 import UserStore from '../../stores/userStore';
 import ConfigStore, { type ConfigStoreType } from '../../stores/configStore';
+import HoverStore, { type HoverState } from '../../stores/hoverStore';
 import TranscriptStore from '../../stores/transcriptStore';
 import TimelineStore from '../../stores/timelineStore';
 import { showTooltip } from '../../stores/tooltipStore';
@@ -12,7 +13,7 @@ import type { Transcript } from '../../models/transcript';
 import type { Timeline } from '../../models/timeline';
 import type { Bounds } from './types/bounds';
 import { DEFAULT_SPEAKER_COLOR } from '../constants/ui';
-import { withDimming, formatTurnPreviewLines } from './draw-utils';
+import { withDimming, formatTurnPreviewLines, createUserMap, getCrossHighlight } from './draw-utils';
 import { normalizeWord } from '../core/string-utils';
 
 const LEFT_MARGIN = 100;
@@ -51,15 +52,17 @@ export class SpeakerHeatmap {
 	private timeline: Timeline;
 	private transcript: Transcript;
 	private config: ConfigStoreType;
+	private hover: HoverState;
 
 	constructor(sk: p5, bounds: Bounds) {
 		this.sk = sk;
 		this.bounds = bounds;
 		this.users = get(UserStore);
-		this.userMap = new Map(this.users.map((user) => [user.name, user]));
+		this.userMap = createUserMap(this.users);
 		this.timeline = get(TimelineStore);
 		this.transcript = get(TranscriptStore);
 		this.config = get(ConfigStore);
+		this.hover = get(HoverStore);
 	}
 
 	draw(words: DataPoint[]): { hoveredCell: DataPoint | null; hoveredSpeaker: string | null } {
@@ -112,11 +115,7 @@ export class SpeakerHeatmap {
 	}
 
 	private drawCells(binnedData: BinnedData, speakers: string[], grid: Bounds, cellWidth: number, cellHeight: number, searchTerm: string): void {
-		const hl = this.config.dashboardHighlightSpeaker;
-		const hlTurn = this.config.dashboardHighlightTurn;
-		const hlTurns = this.config.dashboardHighlightAllTurns;
-		const mouseInPanel = this.sk.overRect(this.bounds.x, this.bounds.y, this.bounds.width, this.bounds.height);
-		const crossHighlightActive = this.config.dashboardToggle && (hl != null || hlTurn != null || hlTurns != null) && !mouseInPanel;
+		const crossHighlight = getCrossHighlight(this.sk, this.bounds, this.config.dashboardToggle, this.hover);
 
 		this.sk.noStroke();
 		for (let col = 0; col < binnedData.bins.length; col++) {
@@ -129,10 +128,10 @@ export class SpeakerHeatmap {
 				const ch = cellHeight - CELL_PADDING * 2;
 
 				const shouldDim =
-					crossHighlightActive &&
-					((hlTurns != null && !cellWords.some((w) => hlTurns.includes(w.turnNumber))) ||
-						(hl != null && speakers[row] !== hl) ||
-						(hlTurn != null && !cellWords.some((w) => w.turnNumber === hlTurn)));
+					crossHighlight.active &&
+					((crossHighlight.turns != null && !cellWords.some((w) => crossHighlight.turns!.includes(w.turnNumber))) ||
+						(crossHighlight.speaker != null && speakers[row] !== crossHighlight.speaker) ||
+						(crossHighlight.turn != null && !cellWords.some((w) => w.turnNumber === crossHighlight.turn)));
 				withDimming(this.sk.drawingContext, shouldDim, () => {
 					if (cellWords.length > 0) {
 						const user = this.userMap.get(speakers[row]);

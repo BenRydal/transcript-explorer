@@ -14,12 +14,13 @@ import { get } from 'svelte/store';
 import TranscriptStore from '../../stores/transcriptStore';
 import UserStore from '../../stores/userStore';
 import ConfigStore, { type ConfigStoreType } from '../../stores/configStore';
+import HoverStore, { type HoverState } from '../../stores/hoverStore';
 import { showTooltip } from '../../stores/tooltipStore';
 import type { DataPoint } from '../../models/dataPoint';
 import type { User } from '../../models/user';
 import type { Bounds } from './types/bounds';
 import { normalizeWord } from '../core/string-utils';
-import { withDimming } from './draw-utils';
+import { withDimming, createUserMap, getCrossHighlight } from './draw-utils';
 import { CANVAS_SPACING } from '../constants/ui';
 import { drawFlower } from './flower-drawing';
 
@@ -36,6 +37,7 @@ export class SpeakerGarden {
 	users: User[];
 	userMap: Map<string, User>;
 	config: ConfigStoreType;
+	hover: HoverState;
 	largestNumOfWordsByASpeaker: number;
 	largestNumOfTurnsByASpeaker: number;
 	localArrayOfFirstWords: DataPoint[];
@@ -51,8 +53,9 @@ export class SpeakerGarden {
 	constructor(sk: p5, pos: Bounds) {
 		this.sk = sk;
 		this.users = get(UserStore);
-		this.userMap = new Map(this.users.map((user) => [user.name, user]));
+		this.userMap = createUserMap(this.users);
 		this.config = get(ConfigStore);
+		this.hover = get(HoverStore);
 		const transcript = get(TranscriptStore);
 		this.largestNumOfWordsByASpeaker = transcript.largestNumOfWordsByASpeaker;
 		this.largestNumOfTurnsByASpeaker = transcript.largestNumOfTurnsByASpeaker;
@@ -71,10 +74,7 @@ export class SpeakerGarden {
 		const searchTerm = this.config.wordToSearch ? normalizeWord(this.config.wordToSearch) : undefined;
 		this.hoveredSpeaker = null;
 
-		const hl = this.config.dashboardHighlightSpeaker;
-		const hlTurns = this.config.dashboardHighlightAllTurns;
-		const mouseInPanel = this.sk.overRect(this.bounds.x, this.bounds.y, this.bounds.width, this.bounds.height);
-		const crossHighlightActive = this.config.dashboardToggle && (hl != null || hlTurns != null) && !mouseInPanel;
+		const crossHighlight = getCrossHighlight(this.sk, this.bounds, this.config.dashboardToggle, this.hover);
 
 		this.drawFlowerGuideLines();
 
@@ -89,9 +89,9 @@ export class SpeakerGarden {
 
 					if (wordsToVisualize.length > 0) {
 						const shouldDim =
-							crossHighlightActive &&
-							((hl != null && wordsToVisualize[0].speaker !== hl) ||
-								(hlTurns != null && !wordsToVisualize.some((w) => hlTurns.includes(w.turnNumber))));
+							crossHighlight.active &&
+							((crossHighlight.speaker != null && wordsToVisualize[0].speaker !== crossHighlight.speaker) ||
+								(crossHighlight.turns != null && !wordsToVisualize.some((w) => crossHighlight.turns!.includes(w.turnNumber))));
 						withDimming(this.sk.drawingContext, shouldDim, () => {
 							this.drawViz(wordsToVisualize);
 						});

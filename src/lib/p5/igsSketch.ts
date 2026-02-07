@@ -3,6 +3,7 @@ import TranscriptStore from '../../stores/transcriptStore.js';
 import UserStore from '../../stores/userStore';
 import TimelineStore from '../../stores/timelineStore';
 import ConfigStore from '../../stores/configStore';
+import HoverStore, { type HoverState } from '../../stores/hoverStore';
 import EditorStore from '../../stores/editorStore';
 import VideoStore from '../../stores/videoStore';
 import type { VideoState } from '../../stores/videoStore';
@@ -13,6 +14,7 @@ import { getP5ContainerRect } from '../core/layout-utils';
 
 let users: any[] = [];
 let timeline, transcript, currConfig, editorState;
+let hoverState: HoverState;
 let videoState: VideoState;
 let canHover = true;
 let mouseEventLocked = false;
@@ -27,6 +29,10 @@ UserStore.subscribe((data) => {
 
 ConfigStore.subscribe((data) => {
 	currConfig = data;
+});
+
+HoverStore.subscribe((data) => {
+	hoverState = data;
 });
 
 TranscriptStore.subscribe((data) => {
@@ -94,7 +100,7 @@ export const igsSketch = (p5: any) => {
 			return;
 		}
 
-		const { hoveredDataPoint, arrayOfFirstWords } = currConfig;
+		const { hoveredDataPoint, arrayOfFirstWords } = hoverState;
 		const hasPlayableHover = hoveredDataPoint || arrayOfFirstWords?.length > 0;
 
 		p5.cursor(hasPlayableHover ? p5.HAND : p5.ARROW);
@@ -186,7 +192,7 @@ export const igsSketch = (p5: any) => {
 	p5.handleSpeakerFilterClick = () => {
 		if (!editorState?.config?.isVisible) return;
 
-		const hoveredSpeaker = currConfig.hoveredSpeakerInGarden;
+		const hoveredSpeaker = hoverState.hoveredSpeaker;
 		if (hoveredSpeaker) {
 			EditorStore.update((state) => ({
 				...state,
@@ -220,10 +226,10 @@ export const igsSketch = (p5: any) => {
 	 * Returns false to dim items that don't match the highlighted turn/speaker.
 	 */
 	p5.shouldDraw = (item: any) => {
-		const turns = currConfig.dashboardHighlightAllTurns;
+		const turns = hoverState.dashboardHighlightAllTurns;
 		if (turns) return turns.includes(item.turnNumber);
-		const turn = currConfig.dashboardHighlightTurn;
-		const speaker = currConfig.dashboardHighlightSpeaker;
+		const turn = hoverState.dashboardHighlightTurn;
+		const speaker = hoverState.dashboardHighlightSpeaker;
 		const matchesTurn = turn != null ? item.turnNumber === turn : true;
 		const matchesSpeaker = speaker ? item.speaker === speaker : true;
 		return matchesTurn && matchesSpeaker;
