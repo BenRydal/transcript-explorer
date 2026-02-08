@@ -138,15 +138,9 @@
 			{ type: 'toggle', key: 'turnNetworkWeightByWords', label: 'Weight by Words' },
 			{ type: 'slider', key: 'turnNetworkMinTransitions', label: 'Min Transitions', min: 1, max: 20 }
 		],
-		speakerHeatmap: [
-			{ type: 'slider', key: 'heatmapBinCount', label: 'Bin Count', min: 0, max: 60, formatValue: formatBinCount }
-		],
-		turnLength: [
-			{ type: 'slider', key: 'turnLengthBinCount', label: 'Bin Count', min: 0, max: 60, formatValue: formatBinCount }
-		],
-		speakerFingerprint: [
-			{ type: 'toggle', key: 'fingerprintOverlayMode', label: 'Overlay Mode' }
-		]
+		speakerHeatmap: [{ type: 'slider', key: 'heatmapBinCount', label: 'Bin Count', min: 0, max: 60, formatValue: formatBinCount }],
+		turnLength: [{ type: 'slider', key: 'turnLengthBinCount', label: 'Bin Count', min: 0, max: 60, formatValue: formatBinCount }],
+		speakerFingerprint: [{ type: 'toggle', key: 'fingerprintOverlayMode', label: 'Overlay' }]
 	};
 
 	// --- Derived state ---
