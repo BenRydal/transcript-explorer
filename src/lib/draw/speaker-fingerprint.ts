@@ -2,12 +2,11 @@
  * Speaker Fingerprint Visualization
  *
  * A radar chart showing each speaker's speaking style profile across multiple dimensions:
- * - Average turn length
- * - Participation rate (% of turns)
- * - Verbosity rate (% of words)
- * - Vocabulary diversity (type-token ratio)
- * - Question rate (% of turns with questions)
- * - Interruption rate (% of turns that interrupt)
+ * - Average turn length (max-normalized across speakers)
+ * - Participation rate (max-normalized across speakers)
+ * - Consecutive rate (raw 0-1, % of own turns that follow own previous turn)
+ * - Question rate (raw 0-1, % of own turns with questions)
+ * - Interruption rate (raw 0-1, % of own turns that interrupt)
  */
 
 import type p5 from 'p5';
@@ -26,14 +25,13 @@ import { createUserMap } from './draw-utils';
 
 // --- Constants ---
 
-const NUM_AXES = 6;
-const AXIS_LABELS = ['Turn Length', 'Participation', 'Consecutive', 'Vocabulary', 'Questions', 'Interrupts'];
-const AXIS_LABELS_FULL = ['Turn Length', 'Participation', 'Consecutive Turns', 'Vocabulary', 'Questions', 'Interruptions'];
+const NUM_AXES = 5;
+const AXIS_LABELS = ['Turn Length', 'Participation', 'Consecutive', 'Questions', 'Interrupts'];
+const AXIS_LABELS_FULL = ['Turn Length', 'Participation', 'Consecutive Turns', 'Questions', 'Interruptions'];
 const AXIS_KEYS: (keyof SpeakerFingerprintData)[] = [
 	'avgTurnLength',
 	'participationRate',
 	'consecutiveRate',
-	'vocabularyDiversity',
 	'questionRate',
 	'interruptionRate'
 ];
@@ -364,14 +362,15 @@ export class SpeakerFingerprint {
 		}
 
 		// Return dimension-specific turns (pre-computed in dynamic-data.ts)
+		// Axes: 0=Turn Length, 1=Participation, 2=Consecutive, 3=Questions, 4=Interruptions
 		switch (hovered.axisIndex) {
 			case 2: // Consecutive
 				return fp.consecutiveTurnFirstWords || [];
-			case 4: // Questions
+			case 3: // Questions
 				return fp.questionTurnFirstWords || [];
-			case 5: // Interruptions
+			case 4: // Interruptions
 				return fp.interruptionTurnFirstWords || [];
-			default: // Turn Length, Participation, Vocabulary - play all turns
+			default: // Turn Length, Participation - play all turns
 				return fp.allTurnFirstWords || [];
 		}
 	}
@@ -390,7 +389,6 @@ export class SpeakerFingerprint {
 		content += `<b>Turn Length:</b> ${avgTurnWords} words per turn avg\n`;
 		content += `<b>Participation:</b> ${fp.totalTurns} of ${totalConversationTurns} turns taken (${pct(fp.rawParticipationRate)})\n`;
 		content += `<b>Consecutive:</b> ${fp.consecutiveTurns} turns followed own turn (${pct(fp.rawConsecutiveRate)})\n`;
-		content += `<b>Vocabulary:</b> ${fp.uniqueWords} unique of ${fp.totalWords} words\n`;
 		content += `<b>Questions:</b> ${fp.questionTurns} turns with ? or question words (${pct(fp.rawQuestionRate)})`;
 
 		if (this.hasTiming) {
