@@ -387,8 +387,7 @@ export class DynamicData {
 		const enabledSpeakers = this.getEnabledSpeakers();
 		if (enabledSpeakers.size === 0) return [];
 
-		const timeline = get(TimelineStore);
-		const hasTiming = timeline.endTime > 0 && visibleWords.some((w) => w.startTime !== w.endTime);
+		const hasTiming = get(TranscriptStore).timingMode !== 'untimed';
 
 		const turnData = this.buildTurnData(visibleWords);
 
