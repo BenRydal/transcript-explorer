@@ -2,6 +2,7 @@ import type p5 from 'p5';
 import { get } from 'svelte/store';
 import UserStore from '../../stores/userStore';
 import ConfigStore, { type ConfigStoreType } from '../../stores/configStore';
+import HoverStore, { type HoverState } from '../../stores/hoverStore';
 import TranscriptStore from '../../stores/transcriptStore';
 import TimelineStore from '../../stores/timelineStore';
 import { showTooltip } from '../../stores/tooltipStore';
@@ -12,7 +13,7 @@ import type { Transcript } from '../../models/transcript';
 import type { Timeline } from '../../models/timeline';
 import type { Bounds } from './types/bounds';
 import { DEFAULT_SPEAKER_COLOR } from '../constants/ui';
-import { withDimming, formatTurnPreviewLines } from './draw-utils';
+import { withDimming, formatTurnPreviewLines, createUserMap, getCrossHighlight } from './draw-utils';
 import { normalizeWord } from '../core/string-utils';
 
 const LEFT_MARGIN = 100;
@@ -51,28 +52,37 @@ export class SpeakerHeatmap {
 	private timeline: Timeline;
 	private transcript: Transcript;
 	private config: ConfigStoreType;
+	private hover: HoverState;
+	private fullTranscriptMaxCellCount: number | null = null;
 
 	constructor(sk: p5, bounds: Bounds) {
 		this.sk = sk;
 		this.bounds = bounds;
 		this.users = get(UserStore);
-		this.userMap = new Map(this.users.map((user) => [user.name, user]));
+		this.userMap = createUserMap(this.users);
 		this.timeline = get(TimelineStore);
 		this.transcript = get(TranscriptStore);
 		this.config = get(ConfigStore);
+		this.hover = get(HoverStore);
 	}
 
 	draw(words: DataPoint[]): { hoveredCell: DataPoint | null; hoveredSpeaker: string | null } {
 		const speakers = this.users.filter((u) => u.enabled).map((u) => u.name);
 		const grid = this.getGridBounds();
-		const numBins = this.config.heatmapBinCount > 0
-			? this.config.heatmapBinCount
-			: Math.max(1, Math.floor(grid.width / TARGET_CELL_WIDTH));
+		const numBins = this.config.heatmapBinCount > 0 ? this.config.heatmapBinCount : Math.max(1, Math.floor(grid.width / TARGET_CELL_WIDTH));
 
 		if (speakers.length === 0) return { hoveredCell: null, hoveredSpeaker: null };
 
 		const searchTerm = this.config.wordToSearch ? normalizeWord(this.config.wordToSearch) : '';
 		const binnedData = this.binWords(words, numBins, speakers);
+
+		// When scaling to full transcript, use the global max cell count
+		if (!this.config.scaleToVisibleData) {
+			if (this.fullTranscriptMaxCellCount === null) {
+				this.fullTranscriptMaxCellCount = this.binFullTranscript(numBins, speakers).maxCellCount;
+			}
+			binnedData.maxCellCount = Math.max(binnedData.maxCellCount, this.fullTranscriptMaxCellCount);
+		}
 		const cellWidth = grid.width / numBins;
 		const cellHeight = grid.height / speakers.length;
 
@@ -114,11 +124,7 @@ export class SpeakerHeatmap {
 	}
 
 	private drawCells(binnedData: BinnedData, speakers: string[], grid: Bounds, cellWidth: number, cellHeight: number, searchTerm: string): void {
-		const hl = this.config.dashboardHighlightSpeaker;
-		const hlTurn = this.config.dashboardHighlightTurn;
-		const hlTurns = this.config.dashboardHighlightAllTurns;
-		const mouseInPanel = this.sk.overRect(this.bounds.x, this.bounds.y, this.bounds.width, this.bounds.height);
-		const crossHighlightActive = this.config.dashboardToggle && (hl != null || hlTurn != null || hlTurns != null) && !mouseInPanel;
+		const crossHighlight = getCrossHighlight(this.sk, this.bounds, this.config.dashboardToggle, this.hover);
 
 		this.sk.noStroke();
 		for (let col = 0; col < binnedData.bins.length; col++) {
@@ -130,11 +136,11 @@ export class SpeakerHeatmap {
 				const cw = cellWidth - CELL_PADDING * 2;
 				const ch = cellHeight - CELL_PADDING * 2;
 
-				const shouldDim = crossHighlightActive && (
-					(hlTurns != null && !cellWords.some((w) => hlTurns.includes(w.turnNumber))) ||
-					(hl != null && speakers[row] !== hl) ||
-					(hlTurn != null && !cellWords.some((w) => w.turnNumber === hlTurn))
-				);
+				const shouldDim =
+					crossHighlight.active &&
+					((crossHighlight.turns != null && !cellWords.some((w) => crossHighlight.turns!.includes(w.turnNumber))) ||
+						(crossHighlight.speaker != null && speakers[row] !== crossHighlight.speaker) ||
+						(crossHighlight.turn != null && !cellWords.some((w) => w.turnNumber === crossHighlight.turn)));
 				withDimming(this.sk.drawingContext, shouldDim, () => {
 					if (cellWords.length > 0) {
 						const user = this.userMap.get(speakers[row]);
@@ -178,7 +184,14 @@ export class SpeakerHeatmap {
 		this.sk.text(label, grid.x + grid.width, grid.y + grid.height + 5);
 	}
 
-	private findHoveredCell(binnedData: BinnedData, speakers: string[], grid: Bounds, cellWidth: number, cellHeight: number, searchTerm: string): HoveredCell | null {
+	private findHoveredCell(
+		binnedData: BinnedData,
+		speakers: string[],
+		grid: Bounds,
+		cellWidth: number,
+		cellHeight: number,
+		searchTerm: string
+	): HoveredCell | null {
 		if (!this.sk.overRect(this.bounds.x, this.bounds.y, this.bounds.width, this.bounds.height)) {
 			return null;
 		}
@@ -283,5 +296,29 @@ export class SpeakerHeatmap {
 		}
 
 		return { bins, maxCellCount };
+	}
+
+	/**
+	 * Bins the full transcript wordArray to find the global max cell count.
+	 */
+	private binFullTranscript(numBins: number, speakers: string[]): { maxCellCount: number } {
+		const fullRange = this.transcript.totalTimeInSeconds || this.timeline.endTime;
+		if (fullRange <= 0) return { maxCellCount: 0 };
+
+		const binWidth = fullRange / numBins;
+		const cellCounts = new Map<string, number>();
+
+		for (const word of this.transcript.wordArray) {
+			const binIndex = Math.min(numBins - 1, Math.max(0, Math.floor(word.startTime / binWidth)));
+			const key = `${binIndex}-${word.speaker}`;
+			cellCounts.set(key, (cellCounts.get(key) || 0) + 1);
+		}
+
+		let maxCellCount = 0;
+		for (const count of cellCounts.values()) {
+			if (count > maxCellCount) maxCellCount = count;
+		}
+
+		return { maxCellCount };
 	}
 }

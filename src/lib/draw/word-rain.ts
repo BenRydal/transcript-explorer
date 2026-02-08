@@ -2,6 +2,7 @@ import type p5 from 'p5';
 import { get } from 'svelte/store';
 import UserStore from '../../stores/userStore';
 import ConfigStore, { type ConfigStoreType } from '../../stores/configStore';
+import HoverStore, { type HoverState } from '../../stores/hoverStore';
 import TranscriptStore from '../../stores/transcriptStore';
 import TimelineStore from '../../stores/timelineStore';
 import { showTooltip } from '../../stores/tooltipStore';
@@ -12,7 +13,7 @@ import type { Transcript } from '../../models/transcript';
 import type { Timeline } from '../../models/timeline';
 import type { Bounds } from './types/bounds';
 import { DEFAULT_SPEAKER_COLOR } from '../constants/ui';
-import { withDimming } from './draw-utils';
+import { withDimming, createUserMap, getCrossHighlight, type CrossHighlight } from './draw-utils';
 import { normalizeWord, toTitleCase } from '../core/string-utils';
 
 const MAX_SAMPLE_TURNS = 4;
@@ -57,12 +58,6 @@ interface WordRainResult {
 
 const EMPTY_RAIN_RESULT: WordRainResult = { hoveredOccurrences: [], hoveredSpeaker: null, hasOverflow: false };
 
-interface CrossHighlight {
-	active: boolean;
-	speaker: string;
-	turns: number[] | null;
-}
-
 interface PlacedWord {
 	agg: AggregatedWord;
 	x: number;
@@ -86,27 +81,19 @@ export class WordRain {
 	private transcript: Transcript;
 	private searchTerm: string;
 	private config: ConfigStoreType;
+	private hover: HoverState;
+	private fullTranscriptMaxCount: number;
 
 	constructor(sk: p5, bounds: Bounds) {
 		this.sk = sk;
 		this.bounds = bounds;
-		const users = get(UserStore);
-		this.userMap = new Map(users.map((u) => [u.name, u]));
+		this.userMap = createUserMap(get(UserStore));
 		this.timeline = get(TimelineStore);
 		this.transcript = get(TranscriptStore);
 		this.config = get(ConfigStore);
+		this.hover = get(HoverStore);
 		this.searchTerm = this.config.wordToSearch ? normalizeWord(this.config.wordToSearch) : '';
-	}
-
-	private static readonly NO_HIGHLIGHT: CrossHighlight = { active: false, speaker: '', turns: null };
-
-	private getCrossHighlight(): CrossHighlight {
-		if (!this.config.dashboardToggle) return WordRain.NO_HIGHLIGHT;
-		const hl = this.config.dashboardHighlightSpeaker;
-		const hlTurns = this.config.dashboardHighlightAllTurns;
-		if (!hl && !hlTurns) return WordRain.NO_HIGHLIGHT;
-		const mouseInPanel = this.sk.overRect(this.bounds.x, this.bounds.y, this.bounds.width, this.bounds.height);
-		return { active: !mouseInPanel, speaker: hl ?? '', turns: hlTurns };
+		this.fullTranscriptMaxCount = this.transcript.maxCountOfMostRepeatedWord;
 	}
 
 	draw(words: DataPoint[]): WordRainResult {
@@ -118,9 +105,7 @@ export class WordRain {
 
 	private drawCombined(words: DataPoint[]): WordRainResult {
 		const visibleWords = words.filter((w) => this.userMap.get(w.speaker)?.enabled !== false);
-		const aggregated = this.config.wordRainTemporalBinning
-			? this.aggregateWordsInBins(visibleWords)
-			: this.aggregateWords(visibleWords);
+		const aggregated = this.config.wordRainTemporalBinning ? this.aggregateWordsInBins(visibleWords) : this.aggregateWords(visibleWords);
 		const filtered = this.filterAndSort(aggregated);
 		if (filtered.length === 0) return EMPTY_RAIN_RESULT;
 
@@ -136,11 +121,9 @@ export class WordRain {
 		if (enabledUsers.length === 0) return EMPTY_RAIN_RESULT;
 
 		const useBinning = this.config.wordRainTemporalBinning;
-		const bySpeaker = useBinning
-			? this.aggregateWordsBySpeakerInBins(words, enabledUsers)
-			: this.aggregateWordsBySpeaker(words, enabledUsers);
+		const bySpeaker = useBinning ? this.aggregateWordsBySpeakerInBins(words, enabledUsers) : this.aggregateWordsBySpeaker(words, enabledUsers);
 		const bandHeight = this.bounds.height / enabledUsers.length;
-		const xhl = this.getCrossHighlight();
+		const xhl = getCrossHighlight(this.sk, this.bounds, this.config.dashboardToggle, this.hover);
 		const allPlaced: PlacedWord[] = [];
 		let hasOverflow = false;
 
@@ -175,15 +158,13 @@ export class WordRain {
 	private filterAndSort(aggregated: AggregatedWord[]): AggregatedWord[] {
 		const minFreq = this.config.wordRainMinFrequency;
 		const search = this.searchTerm;
-		const filtered = aggregated.filter((a) =>
-			a.count >= minFreq && (!search || a.word.includes(search))
-		);
+		const filtered = aggregated.filter((a) => a.count >= minFreq && (!search || a.word.includes(search)));
 		filtered.sort((a, b) => b.count - a.count);
 		return filtered;
 	}
 
 	private renderAndHandleHover(placed: PlacedWord[], hasOverflow: boolean): WordRainResult {
-		const xhl = this.getCrossHighlight();
+		const xhl = getCrossHighlight(this.sk, this.bounds, this.config.dashboardToggle, this.hover);
 		this.renderBars(placed, xhl);
 		this.renderConnectors(placed, xhl);
 		this.renderWords(placed, xhl);
@@ -248,14 +229,17 @@ export class WordRain {
 
 		const result = new Map<string, AggregatedWord[]>();
 		for (const [speaker, wordMap] of speakerMaps) {
-			result.set(speaker, Array.from(wordMap, ([word, entry]) => ({
-				word,
-				count: entry.count,
-				meanTime: entry.timeSum / entry.count,
-				dominantSpeaker: speaker,
-				dominantCount: entry.count,
-				occurrences: entry.occurrences
-			})));
+			result.set(
+				speaker,
+				Array.from(wordMap, ([word, entry]) => ({
+					word,
+					count: entry.count,
+					meanTime: entry.timeSum / entry.count,
+					dominantSpeaker: speaker,
+					dominantCount: entry.count,
+					occurrences: entry.occurrences
+				}))
+			);
 		}
 		return result;
 	}
@@ -344,15 +328,18 @@ export class WordRain {
 
 		const result = new Map<string, AggregatedWord[]>();
 		for (const [speaker, wordMap] of speakerMaps) {
-			result.set(speaker, Array.from(wordMap.values(), (entry) => ({
-				word: entry.word,
-				count: entry.count,
-				meanTime: (entry.binRange[0] + entry.binRange[1]) / 2,
-				dominantSpeaker: speaker,
-				dominantCount: entry.count,
-				occurrences: entry.occurrences,
-				binRange: entry.binRange
-			})));
+			result.set(
+				speaker,
+				Array.from(wordMap.values(), (entry) => ({
+					word: entry.word,
+					count: entry.count,
+					meanTime: (entry.binRange[0] + entry.binRange[1]) / 2,
+					dominantSpeaker: speaker,
+					dominantCount: entry.count,
+					occurrences: entry.occurrences,
+					binRange: entry.binRange
+				}))
+			);
 		}
 		return result;
 	}
@@ -383,7 +370,7 @@ export class WordRain {
 	private placeWordsInRegion(filtered: AggregatedWord[], region: Bounds, speakerColor: string | null): PlacedWord[] {
 		if (filtered.length === 0) return [];
 
-		const maxCount = filtered[0].count;
+		const maxCount = !this.config.scaleToVisibleData && this.fullTranscriptMaxCount > 0 ? this.fullTranscriptMaxCount : filtered[0].count;
 		const isSeparate = speakerColor !== null;
 		const labelOffset = isSeparate ? SPEAKER_LABEL_SIZE + 4 : 0;
 		const barSectionHeight = region.height * BAR_SECTION_RATIO;
@@ -439,7 +426,7 @@ export class WordRain {
 				color = speakerColor;
 			} else {
 				const user = this.userMap.get(agg.dominantSpeaker);
-				color = agg.dominantCount / agg.count > DOMINANCE_THRESHOLD ? (user?.color || DEFAULT_SPEAKER_COLOR) : SHARED_WORD_COLOR;
+				color = agg.dominantCount / agg.count > DOMINANCE_THRESHOLD ? user?.color || DEFAULT_SPEAKER_COLOR : SHARED_WORD_COLOR;
 			}
 
 			placed.push({
@@ -450,7 +437,9 @@ export class WordRain {
 				width: wordWidth,
 				ascent: this.sk.textAscent(),
 				descent: this.sk.textDescent(),
-				barY, barH, barW,
+				barY,
+				barH,
+				barW,
 				countRatio,
 				color
 			});
@@ -646,11 +635,13 @@ export class WordRain {
 			speakerCounts.set(dp.speaker, (speakerCounts.get(dp.speaker) || 0) + 1);
 		}
 		const sorted = [...speakerCounts.entries()].sort((a, b) => b[1] - a[1]);
-		const breakdown = sorted.map(([speaker, count]) => {
-			const user = this.userMap.get(speaker);
-			const color = user?.color || DEFAULT_SPEAKER_COLOR;
-			return `<span style="color:${color}">${toTitleCase(speaker)}: ${count}</span>`;
-		}).join('  ·  ');
+		const breakdown = sorted
+			.map(([speaker, count]) => {
+				const user = this.userMap.get(speaker);
+				const color = user?.color || DEFAULT_SPEAKER_COLOR;
+				return `<span style="color:${color}">${toTitleCase(speaker)}: ${count}</span>`;
+			})
+			.join('  ·  ');
 		content += `\n${breakdown}`;
 
 		// Sample turn contexts
@@ -677,8 +668,9 @@ export class WordRain {
 
 			const start = Math.max(0, idx - CONTEXT_WORDS_BEFORE);
 			const end = Math.min(turnWords.length, idx + CONTEXT_WORDS_AFTER + 1);
-			const snippet = turnWords.slice(start, end)
-				.map((w, i) => i + start === idx ? `<b>${w.word}</b>` : w.word)
+			const snippet = turnWords
+				.slice(start, end)
+				.map((w, i) => (i + start === idx ? `<b>${w.word}</b>` : w.word))
 				.join(' ');
 			samples.push(`"${start > 0 ? '...' : ''}${snippet}${end < turnWords.length ? '...' : ''}"`);
 

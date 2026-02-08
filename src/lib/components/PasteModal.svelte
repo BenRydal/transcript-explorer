@@ -102,7 +102,16 @@
 </script>
 
 {#if isOpen}
-	<div class="modal modal-open" onclick={(e) => { if (e.target === e.currentTarget) close(); }} onkeydown={handleKeydown} role="dialog" aria-modal="true" aria-labelledby="paste-modal-title">
+	<div
+		class="modal modal-open"
+		onclick={(e) => {
+			if (e.target === e.currentTarget) close();
+		}}
+		onkeydown={handleKeydown}
+		role="dialog"
+		aria-modal="true"
+		aria-labelledby="paste-modal-title"
+	>
 		<div class="modal-box w-11/12 max-w-2xl max-h-[90vh] flex flex-col">
 			<div class="flex justify-between mb-4">
 				<h3 id="paste-modal-title" class="font-bold text-lg">Paste Transcript Text</h3>

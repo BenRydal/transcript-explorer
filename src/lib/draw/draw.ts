@@ -7,7 +7,11 @@ import { SpeakerHeatmap } from './speaker-heatmap';
 import { TurnNetwork } from './turn-network';
 import { WordRain } from './word-rain';
 import { TurnLengthDistribution } from './turn-length-distribution';
+import { SpeakerFingerprint } from './speaker-fingerprint';
+import { QuestionFlow } from './question-flow';
+import { WordJourney } from './word-journey';
 import ConfigStore, { type ConfigStoreType } from '../../stores/configStore';
+import HoverStore from '../../stores/hoverStore';
 import { resetTooltipFrame, finalizeTooltipFrame } from '../../stores/tooltipStore';
 import type { Bounds } from './types/bounds';
 import { CANVAS_SPACING } from '../constants/ui';
@@ -45,7 +49,10 @@ const TOGGLE_TO_PANEL: [keyof ConfigStoreType, string][] = [
 	['turnNetworkToggle', 'turnNetwork'],
 	['wordRainToggle', 'wordRain'],
 	['speakerHeatmapToggle', 'speakerHeatmap'],
-	['turnLengthToggle', 'turnLength']
+	['turnLengthToggle', 'turnLength'],
+	['speakerFingerprintToggle', 'speakerFingerprint'],
+	['questionFlowToggle', 'questionFlow'],
+	['wordJourneyToggle', 'wordJourney']
 ];
 
 export class Draw {
@@ -89,16 +96,15 @@ export class Draw {
 			}
 		}
 
-		ConfigStore.update((c) => ({
-			...c,
+		HoverStore.set({
 			hoveredDataPoint: r.hover,
-			overflowBounds: r.overflowBounds,
+			hoveredSpeaker: r.hoveredSpeaker,
 			arrayOfFirstWords: r.arrayOfFirstWords,
-			hoveredSpeakerInGarden: r.hoveredSpeaker,
+			overflowBounds: r.overflowBounds,
 			dashboardHighlightSpeaker: highlightSpeaker,
 			dashboardHighlightTurn: highlightTurn,
 			dashboardHighlightAllTurns: highlightTurns
-		}));
+		});
 	}
 
 	updatePanel(key: string, bounds: Bounds): DrawResult {
@@ -117,6 +123,12 @@ export class Draw {
 				return this.updateSpeakerHeatmap(bounds);
 			case 'turnLength':
 				return this.updateTurnLengthDistribution(bounds);
+			case 'speakerFingerprint':
+				return this.updateSpeakerFingerprint(bounds);
+			case 'questionFlow':
+				return this.updateQuestionFlow(bounds);
+			case 'wordJourney':
+				return this.updateWordJourney(bounds);
 			default:
 				return result({});
 		}
@@ -162,6 +174,24 @@ export class Draw {
 		const contributionCloud = new ContributionCloud(this.sk, pos);
 		const { hoveredWord, hasOverflow, hoveredSpeaker } = contributionCloud.draw(this.sk.dynamicData.getDynamicArraySortedForContributionCloud());
 		return result({ hover: hoveredWord ?? null, overflowBounds: hasOverflow ? [pos] : [], hoveredSpeaker });
+	}
+
+	updateSpeakerFingerprint(pos: Bounds): DrawResult {
+		const fingerprint = new SpeakerFingerprint(this.sk, pos);
+		const { snippetPoints, hoveredSpeaker } = fingerprint.draw(this.sk.dynamicData.getSpeakerFingerprints(currConfig.scaleToVisibleData));
+		return result({ arrayOfFirstWords: snippetPoints, hoveredSpeaker });
+	}
+
+	updateQuestionFlow(pos: Bounds): DrawResult {
+		const viz = new QuestionFlow(this.sk, pos);
+		const { hoveredDataPoint, hoveredSpeaker } = viz.draw(this.sk.dynamicData.getQuestionAnswerPairs());
+		return result({ hover: hoveredDataPoint, hoveredSpeaker });
+	}
+
+	updateWordJourney(pos: Bounds): DrawResult {
+		const viz = new WordJourney(this.sk, pos);
+		const { hoveredDataPoint, hoveredSpeaker } = viz.draw(this.sk.dynamicData.getWordJourney(currConfig.wordToSearch));
+		return result({ hover: hoveredDataPoint, hoveredSpeaker });
 	}
 
 	drawDashboard(): DrawResult {

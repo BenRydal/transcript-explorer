@@ -46,7 +46,11 @@ function testFile(name: string) {
 
 // ============ CSV Tests ============
 
-function parseCSVFile(filePath: string): { valid: boolean; parseResult: ReturnType<typeof parseCSVRows> | null; papaResult: Papa.ParseResult<Record<string, unknown>> | null } {
+function parseCSVFile(filePath: string): {
+	valid: boolean;
+	parseResult: ReturnType<typeof parseCSVRows> | null;
+	papaResult: Papa.ParseResult<Record<string, unknown>> | null;
+} {
 	const content = fs.readFileSync(filePath, 'utf-8');
 	const papaResult = Papa.parse<Record<string, unknown>>(content, {
 		dynamicTyping: true,
@@ -67,7 +71,10 @@ function parseCSVFile(filePath: string): { valid: boolean; parseResult: ReturnTy
 function runCSVTests() {
 	section('CSV FILE TESTS');
 	const csvDir = path.join(__dirname, 'csv');
-	const files = fs.readdirSync(csvDir).filter(f => f.endsWith('.csv')).sort();
+	const files = fs
+		.readdirSync(csvDir)
+		.filter((f) => f.endsWith('.csv'))
+		.sort();
 
 	for (const file of files) {
 		testFile(file);
@@ -105,10 +112,11 @@ function runCSVTests() {
 			continue;
 		}
 
-		console.log(`  Turns: ${parseResult.turns.length}, Speakers: ${parseResult.speakers.length}, ` +
-			`Timestamps: ${parseResult.hasTimestamps}, TimingMode: ${parseResult.detectedTimingMode}`);
-		console.log(`  Transcript: ${transcript.totalNumOfWords} words, ${transcript.totalConversationTurns} turns, ` +
-			`mode=${transcript.timingMode}`);
+		console.log(
+			`  Turns: ${parseResult.turns.length}, Speakers: ${parseResult.speakers.length}, ` +
+				`Timestamps: ${parseResult.hasTimestamps}, TimingMode: ${parseResult.detectedTimingMode}`
+		);
+		console.log(`  Transcript: ${transcript.totalNumOfWords} words, ${transcript.totalConversationTurns} turns, ` + `mode=${transcript.timingMode}`);
 
 		// File-specific assertions
 		switch (file) {
@@ -244,7 +252,10 @@ function runCSVTests() {
 function runTXTTests() {
 	section('TXT FILE TESTS');
 	const txtDir = path.join(__dirname, 'txt-files');
-	const files = fs.readdirSync(txtDir).filter(f => f.endsWith('.txt')).sort();
+	const files = fs
+		.readdirSync(txtDir)
+		.filter((f) => f.endsWith('.txt'))
+		.sort();
 
 	for (const file of files) {
 		testFile(file);
@@ -258,8 +269,10 @@ function runTXTTests() {
 
 		// Test with text-parser (more sophisticated, handles timestamps)
 		const textResult = parseTranscriptText(content);
-		console.log(`  Text parser: ${textResult.turns.length} turns, ${textResult.speakers.length} speakers, ` +
-			`format=${textResult.detectedFormat}, timestamps=${textResult.hasTimestamps}`);
+		console.log(
+			`  Text parser: ${textResult.turns.length} turns, ${textResult.speakers.length} speakers, ` +
+				`format=${textResult.detectedFormat}, timestamps=${textResult.hasTimestamps}`
+		);
 
 		// Both should produce some result (or both empty for bad files)
 		if (file.includes('empty-and-whitespace')) {
@@ -282,8 +295,10 @@ function runTXTTests() {
 				const { transcript, users } = createTranscriptFromParsedText(textResult);
 				assert(transcript.totalNumOfWords > 0, `${file}: transcript should have words`);
 				assert(users.length > 0, `${file}: should have users`);
-				console.log(`  Transcript: ${transcript.totalNumOfWords} words, ${transcript.totalConversationTurns} turns, ` +
-					`${users.length} users, mode=${transcript.timingMode}`);
+				console.log(
+					`  Transcript: ${transcript.totalNumOfWords} words, ${transcript.totalConversationTurns} turns, ` +
+						`${users.length} users, mode=${transcript.timingMode}`
+				);
 			} catch (e) {
 				assert(false, `${file}: createTranscriptFromParsedText threw: ${e}`);
 			}
@@ -296,7 +311,10 @@ function runTXTTests() {
 function runSubtitleTests() {
 	section('SRT/VTT FILE TESTS');
 	const srtDir = path.join(__dirname, 'srt');
-	const files = fs.readdirSync(srtDir).filter(f => f.endsWith('.srt') || f.endsWith('.vtt')).sort();
+	const files = fs
+		.readdirSync(srtDir)
+		.filter((f) => f.endsWith('.srt') || f.endsWith('.vtt'))
+		.sort();
 
 	for (const file of files) {
 		testFile(file);
@@ -383,8 +401,10 @@ function runConsistencyChecks() {
 		assert(transcript.maxCountOfMostRepeatedWord > 0, 'maxCountOfMostRepeatedWord should be > 0');
 		assert(transcript.mostFrequentWord.length > 0, 'mostFrequentWord should not be empty');
 		assert(users.length === 6, 'Should have 6 users with colors');
-		console.log(`  Stats: largestTurn=${transcript.largestTurnLength}, freq="${transcript.mostFrequentWord}"(${transcript.maxCountOfMostRepeatedWord})`);
-		console.log(`  Users: ${users.map(u => u.name).join(', ')}`);
+		console.log(
+			`  Stats: largestTurn=${transcript.largestTurnLength}, freq="${transcript.mostFrequentWord}"(${transcript.maxCountOfMostRepeatedWord})`
+		);
+		console.log(`  Users: ${users.map((u) => u.name).join(', ')}`);
 	}
 }
 

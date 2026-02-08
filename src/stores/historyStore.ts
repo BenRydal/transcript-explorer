@@ -14,8 +14,7 @@ function createHistoryStore() {
 		future: []
 	});
 
-	const snapshot = (wordArray: DataPoint[]) =>
-		wordArray.map((dp) => dp.copyWith());
+	const snapshot = (wordArray: DataPoint[]) => wordArray.map((dp) => dp.copyWith());
 
 	return {
 		subscribe,

@@ -73,6 +73,7 @@ export class TurnChart {
 	annotationHover: DataPoint | null = null;
 	private stripBounds: Bounds | null;
 	private panelBottom: number;
+	private maxTurnLength: number;
 
 	constructor(sk: p5, pos: Bounds) {
 		this.sk = sk;
@@ -86,12 +87,14 @@ export class TurnChart {
 			width: pos.width,
 			height: pos.height - stripHeight - VERTICAL_PADDING * 2
 		};
-		this.stripBounds = showStrip ? {
-			x: pos.x,
-			y: pos.y + pos.height - stripHeight,
-			width: pos.width,
-			height: stripHeight
-		} : null;
+		this.stripBounds = showStrip
+			? {
+					x: pos.x,
+					y: pos.y + pos.height - stripHeight,
+					width: pos.width,
+					height: stripHeight
+				}
+			: null;
 		this.panelBottom = pos.y + pos.height;
 		this.users = get(UserStore);
 		this.userMap = new Map(this.users.map((user, index) => [user.name, { user, index }]));
@@ -100,6 +103,8 @@ export class TurnChart {
 		this.yPosHalfHeight = this.bounds.y + this.bounds.height / 2;
 		this.userSelectedTurn = { turn: '', color: '', xCenter: 0, yCenter: 0, width: 0, height: 0 };
 		this.yPosSeparate = this.getYPosTopSeparate();
+		// When scaleToVisibleData is enabled, we'll compute this in draw() from visible data
+		this.maxTurnLength = this.config.scaleToVisibleData ? 0 : this.transcript.largestTurnLength;
 	}
 
 	getYPosTopSeparate(): number {
@@ -112,6 +117,12 @@ export class TurnChart {
 	draw(sortedAnimationWordArray: Record<number, DataPoint[]>): { hoveredSpeaker: string | null } {
 		this.userSelectedTurn = { turn: '', color: '', xCenter: 0, yCenter: 0, width: 0, height: 0 }; // Reset each frame
 		this.annotationHover = null;
+
+		// Compute max turn length from visible data when scaleToVisibleData is enabled
+		if (this.config.scaleToVisibleData) {
+			this.maxTurnLength = this.computeMaxTurnLength(sortedAnimationWordArray);
+		}
+
 		this.drawTimeline();
 		this.sk.textSize(this.sk.toolTipTextSize);
 		for (const key in sortedAnimationWordArray) {
@@ -140,30 +151,51 @@ export class TurnChart {
 	}
 
 	testShouldDraw(user: User, array: DataPoint[]): boolean {
-		const isUserEnabled = user.enabled;
+		if (!user.enabled) return false;
 		const mouseInPanel = this.sk.overRect(this.bounds.x, this.bounds.y, this.bounds.width, this.bounds.height);
-		const shouldDraw = !this.config?.dashboardToggle || mouseInPanel || this.sk.shouldDraw(array[0]);
-		let hasSearchWord = true;
+		if (this.config.dashboardToggle && !mouseInPanel && !this.sk.shouldDraw(array[0])) return false;
 		if (this.config.wordToSearch) {
 			const combinedString = array.map(({ word }) => word).join(' ');
-			hasSearchWord = combinedString.includes(this.config.wordToSearch);
+			if (!combinedString.includes(this.config.wordToSearch)) return false;
 		}
-		return isUserEnabled && shouldDraw && hasSearchWord;
+		return true;
 	}
 
 	/** Draws the timeline axis */
 	drawTimeline(): void {
 		const start = this.bounds.x;
 		const end = this.bounds.x + this.bounds.width;
-		const height = this.yPosHalfHeight;
+		const y = this.yPosHalfHeight;
 		const tickLength = CANVAS_SPACING / 2;
 		this.sk.stroke(0);
 		this.sk.strokeWeight(2);
 		this.sk.fill(0);
 		// Draw timeline and ticks
-		this.sk.line(start, height - tickLength, start, height + tickLength);
-		this.sk.line(end, height - tickLength, end, height + tickLength);
-		this.sk.line(start, height, end, height);
+		this.sk.line(start, y - tickLength, start, y + tickLength);
+		this.sk.line(end, y - tickLength, end, y + tickLength);
+		this.sk.line(start, y, end, y);
+
+		// Time labels
+		const isUntimed = this.transcript.timingMode === 'untimed';
+		if (isUntimed) return;
+		const numTicks = Math.min(8, Math.floor(this.bounds.width / 60));
+		this.sk.textSize(Math.max(10, Math.min(13, this.bounds.height * 0.035)));
+		this.sk.fill(0);
+		this.sk.noStroke();
+		this.sk.textAlign(this.sk.CENTER, this.sk.TOP);
+		const duration = this.timeline.rightMarker - this.timeline.leftMarker;
+		for (let i = 0; i <= numTicks; i++) {
+			const frac = i / numTicks;
+			const time = this.timeline.leftMarker + frac * duration;
+			const x = start + frac * this.bounds.width;
+			// Tick mark
+			this.sk.stroke(0);
+			this.sk.strokeWeight(1);
+			this.sk.line(x, y, x, y + tickLength);
+			// Label
+			this.sk.noStroke();
+			this.sk.text(formatTimeCompact(time), x, y + tickLength + 2);
+		}
 	}
 
 	/** Draws turn bubbles */
@@ -171,20 +203,15 @@ export class TurnChart {
 		const turnData = turnArray[0];
 		const xStart = this.getPixelValueFromTime(turnData.startTime);
 		const xEnd = this.getPixelValueFromTime(turnData.endTime);
-		const xCenter = xStart + (xEnd - xStart) / 2;
-
+		const width = xEnd - xStart;
+		const xCenter = xStart + width / 2;
 		const [height, yCenter] = this.getCoordinates(turnArray.length, speakerIndex);
 
-		// Draw bubble
 		this.setStrokes(this.sk.color(user.color));
-		this.sk.ellipse(xCenter, yCenter, xEnd - xStart, height);
+		this.sk.ellipse(xCenter, yCenter, width, height);
 
-		// Handle hover interaction
-		if (this.sk.overRect(xStart, yCenter - height / 2, xEnd - xStart, height)) {
-			this.userSelectedTurn = {
-				turn: turnArray, color: user.color,
-				xCenter, yCenter, width: xEnd - xStart, height
-			};
+		if (this.sk.overRect(xStart, yCenter - height / 2, width, height)) {
+			this.userSelectedTurn = { turn: turnArray, color: user.color, xCenter, yCenter, width, height };
 		}
 	}
 
@@ -192,10 +219,10 @@ export class TurnChart {
 	getCoordinates(turnLength: number, speakerIndex: number): [number, number] {
 		let height: number, yCenter: number;
 		if (this.config.separateToggle) {
-			height = this.sk.map(turnLength, 0, this.transcript.largestTurnLength, 0, this.verticalLayoutSpacing);
+			height = this.sk.map(turnLength, 0, this.maxTurnLength, 0, this.verticalLayoutSpacing);
 			yCenter = this.yPosSeparate + this.verticalLayoutSpacing * speakerIndex;
 		} else {
-			height = this.sk.map(turnLength, 0, this.transcript.largestTurnLength, 0, this.bounds.height);
+			height = this.sk.map(turnLength, 0, this.maxTurnLength, 0, this.bounds.height);
 			yCenter = this.yPosHalfHeight;
 		}
 		return [height, yCenter];
@@ -235,10 +262,7 @@ export class TurnChart {
 
 		// Build turn ranges from the data we already have
 		const turns = this.getTurnRanges(turnData);
-		const markers = [
-			...this.buildOverlapMarkers(turns, topRowY),
-			...this.buildGapMarkers(turns, bottomRowY)
-		];
+		const markers = [...this.buildOverlapMarkers(turns, topRowY), ...this.buildGapMarkers(turns, bottomRowY)];
 
 		// Legend dots
 		const dotX = strip.x + LEGEND_DOT_LEFT_OFFSET;
@@ -303,7 +327,10 @@ export class TurnChart {
 				const xEnd = this.getPixelValueFromTime(end);
 				const duration = end - start;
 				markers.push({
-					x, w: Math.max(MIN_MARKER_WIDTH, xEnd - x), y: rowY, h: MARKER_HEIGHT,
+					x,
+					w: Math.max(MIN_MARKER_WIDTH, xEnd - x),
+					y: rowY,
+					h: MARKER_HEIGHT,
 					color: OVERLAP_COLOR,
 					firstDataPoint: turns[j].firstDataPoint,
 					tooltipContent: `<b>Overlap · ${formatDuration(duration)}</b>\n<span style="font-size: 0.85em; opacity: 0.7">${turns[i].speaker} & ${turns[j].speaker}\n${formatTimeCompact(start)} - ${formatTimeCompact(end)}</span>`
@@ -321,12 +348,30 @@ export class TurnChart {
 			const x = this.getPixelValueFromTime(turns[i].endTime);
 			const xEnd = this.getPixelValueFromTime(turns[i + 1].startTime);
 			markers.push({
-				x, w: Math.max(MIN_MARKER_WIDTH, xEnd - x), y: rowY, h: MARKER_HEIGHT,
+				x,
+				w: Math.max(MIN_MARKER_WIDTH, xEnd - x),
+				y: rowY,
+				h: MARKER_HEIGHT,
 				color: GAP_COLOR,
 				firstDataPoint: turns[i].firstDataPoint,
 				tooltipContent: `<b>Silence · ${formatDuration(gapDuration)}</b>\n<span style="font-size: 0.85em; opacity: 0.7">${turns[i].speaker} → ${turns[i + 1].speaker}\n${formatTimeCompact(turns[i].endTime)} - ${formatTimeCompact(turns[i + 1].startTime)}</span>`
 			});
 		}
 		return markers;
+	}
+
+	/**
+	 * Computes the maximum turn length from the visible data (for scaleToVisibleData mode).
+	 */
+	private computeMaxTurnLength(data: Record<number, DataPoint[]>): number {
+		let max = 1;
+		for (const key in data) {
+			const words = data[key];
+			if (words.length === 0) continue;
+			const userData = this.userMap.get(words[0].speaker);
+			if (!userData?.user.enabled) continue;
+			max = Math.max(max, words.length);
+		}
+		return max;
 	}
 }

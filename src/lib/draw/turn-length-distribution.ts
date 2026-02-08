@@ -2,11 +2,13 @@ import type p5 from 'p5';
 import { get } from 'svelte/store';
 import UserStore from '../../stores/userStore';
 import ConfigStore, { type ConfigStoreType } from '../../stores/configStore';
+import HoverStore, { type HoverState } from '../../stores/hoverStore';
+import TranscriptStore from '../../stores/transcriptStore';
 import { showTooltip } from '../../stores/tooltipStore';
 import type { DataPoint } from '../../models/dataPoint';
 import type { User } from '../../models/user';
 import type { Bounds } from './types/bounds';
-import { withDimming, formatTurnPreviewLines } from './draw-utils';
+import { withDimming, formatTurnPreviewLines, createUserMap, getCrossHighlight } from './draw-utils';
 import { normalizeWord } from '../core/string-utils';
 
 const LEFT_MARGIN = 60;
@@ -50,6 +52,8 @@ export class TurnLengthDistribution {
 	private userMap: Map<string, User>;
 	private speakers: string[];
 	private config: ConfigStoreType;
+	private hover: HoverState;
+	private fullTranscriptMaxBinCount: number;
 	// Absolute grid coordinates (bounds.xy + grid offsets)
 	private gx: number;
 	private gy: number;
@@ -60,15 +64,18 @@ export class TurnLengthDistribution {
 		this.sk = sk;
 		this.bounds = bounds;
 		const users = get(UserStore);
-		this.userMap = new Map(users.map((u) => [u.name, u]));
+		this.userMap = createUserMap(users);
 		this.speakers = users.filter((u) => u.enabled).map((u) => u.name);
 		this.config = get(ConfigStore);
+		this.hover = get(HoverStore);
 		const leftMargin = Math.min(LEFT_MARGIN, bounds.width * MAX_MARGIN_RATIO);
 		const bottomMargin = Math.min(BOTTOM_MARGIN, bounds.height * MAX_MARGIN_RATIO);
 		this.gx = bounds.x + leftMargin;
 		this.gy = bounds.y + 10;
 		this.gw = bounds.width - leftMargin - 10;
 		this.gh = bounds.height - bottomMargin - 10;
+		// Pre-compute max bin count from full transcript for stable scaling
+		this.fullTranscriptMaxBinCount = this.computeFullTranscriptMaxBinCount();
 	}
 
 	draw(turns: TurnSummary[]): { snippetPoints: DataPoint[]; hoveredSpeaker: string | null } {
@@ -77,8 +84,14 @@ export class TurnLengthDistribution {
 		const bins = this.binTurns(turns);
 		if (bins.length === 0) return { snippetPoints: [], hoveredSpeaker: null };
 
-		const maxCount = Math.max(...bins.map((b) => b.totalCount));
-		if (maxCount === 0) return { snippetPoints: [], hoveredSpeaker: null };
+		const visibleMaxCount = Math.max(...bins.map((b) => b.totalCount));
+		if (visibleMaxCount === 0) return { snippetPoints: [], hoveredSpeaker: null };
+
+		// Use full transcript max when scaling to full transcript
+		const maxCount =
+			!this.config.scaleToVisibleData && this.fullTranscriptMaxBinCount > 0
+				? Math.max(visibleMaxCount, this.fullTranscriptMaxBinCount)
+				: visibleMaxCount;
 
 		// Filter bin contents by search term while keeping axes stable
 		if (this.config.wordToSearch) {
@@ -102,8 +115,12 @@ export class TurnLengthDistribution {
 
 		const localX = this.sk.mouseX - this.gx;
 		const localY = this.sk.mouseY - this.gy;
-		const mouseInGrid = this.sk.overRect(this.bounds.x, this.bounds.y, this.bounds.width, this.bounds.height)
-			&& localX >= 0 && localX < this.gw && localY >= 0 && localY < this.gh;
+		const mouseInGrid =
+			this.sk.overRect(this.bounds.x, this.bounds.y, this.bounds.width, this.bounds.height) &&
+			localX >= 0 &&
+			localX < this.gw &&
+			localY >= 0 &&
+			localY < this.gh;
 		const hoveredBinIndex = mouseInGrid ? Math.floor(localX / barWidth) : -1;
 
 		this.drawYAxis(maxCount);
@@ -140,10 +157,7 @@ export class TurnLengthDistribution {
 	private drawBars(bins: Bin[], maxCount: number, barWidth: number, hoveredBinIndex: number, localY: number): HoveredSegment | null {
 		let hoveredSegment: HoveredSegment | null = null;
 
-		const hl = this.config.dashboardHighlightSpeaker;
-		const hlTurns = this.config.dashboardHighlightAllTurns;
-		const mouseInPanel = this.sk.overRect(this.bounds.x, this.bounds.y, this.bounds.width, this.bounds.height);
-		const crossHighlightActive = this.config.dashboardToggle && (hl != null || hlTurns != null) && !mouseInPanel;
+		const crossHighlight = getCrossHighlight(this.sk, this.bounds, this.config.dashboardToggle, this.hover);
 
 		for (let b = 0; b < bins.length; b++) {
 			const bin = bins[b];
@@ -158,10 +172,10 @@ export class TurnLengthDistribution {
 				const h = (turns.length / maxCount) * this.gh;
 				const y = this.gy + this.gh - yOffset - h;
 
-				const shouldDim = crossHighlightActive && (
-					(hlTurns != null && !turns.some((t) => hlTurns.includes(t.dataPoint.turnNumber))) ||
-					(hl != null && speaker !== hl)
-				);
+				const shouldDim =
+					crossHighlight.active &&
+					((crossHighlight.turns != null && !turns.some((t) => crossHighlight.turns!.includes(t.dataPoint.turnNumber))) ||
+						(crossHighlight.speaker != null && speaker !== crossHighlight.speaker));
 				withDimming(this.sk.drawingContext, shouldDim, () => {
 					const user = this.userMap.get(speaker);
 					const c = this.sk.color(user!.color);
@@ -228,9 +242,7 @@ export class TurnLengthDistribution {
 		let binSize: number;
 		let numBins: number;
 
-		const targetBins = this.config.turnLengthBinCount > 0
-			? this.config.turnLengthBinCount
-			: TARGET_BIN_COUNT;
+		const targetBins = this.config.turnLengthBinCount > 0 ? this.config.turnLengthBinCount : TARGET_BIN_COUNT;
 
 		if (range === 0) {
 			binSize = 1;
@@ -264,5 +276,44 @@ export class TurnLengthDistribution {
 		}
 
 		return bins;
+	}
+
+	/**
+	 * Computes the max bin count from the full transcript for stable scaling.
+	 */
+	private computeFullTranscriptMaxBinCount(): number {
+		const transcript = get(TranscriptStore);
+		if (transcript.wordArray.length === 0) return 0;
+
+		// Build turn summaries from full transcript
+		const turnMap = new Map<number, { wordCount: number }>();
+		for (const word of transcript.wordArray) {
+			const existing = turnMap.get(word.turnNumber);
+			if (existing) {
+				existing.wordCount++;
+			} else {
+				turnMap.set(word.turnNumber, { wordCount: 1 });
+			}
+		}
+
+		const turns = Array.from(turnMap.values());
+		if (turns.length === 0) return 0;
+
+		const wordCounts = turns.map((t) => t.wordCount);
+		const maxWordCount = Math.max(...wordCounts);
+		const minWordCount = Math.min(...wordCounts);
+		const range = maxWordCount - minWordCount;
+
+		const targetBins = this.config.turnLengthBinCount > 0 ? this.config.turnLengthBinCount : TARGET_BIN_COUNT;
+		const binSize = range === 0 ? 1 : Math.max(1, Math.ceil(range / targetBins));
+		const numBins = range === 0 ? 1 : Math.ceil(range / binSize) + 1;
+
+		const binCounts = new Array(numBins).fill(0);
+		for (const turn of turns) {
+			const binIndex = Math.min(numBins - 1, Math.floor((turn.wordCount - minWordCount) / binSize));
+			binCounts[binIndex]++;
+		}
+
+		return Math.max(...binCounts);
 	}
 }

@@ -10,14 +10,7 @@
 		onkeydown?: (e: KeyboardEvent) => void;
 	}
 
-	let {
-		icon: Icon,
-		tooltip = '',
-		id = '',
-		disabled = false,
-		onclick,
-		onkeydown
-	}: Props = $props();
+	let { icon: Icon, tooltip = '', id = '', disabled = false, onclick, onkeydown }: Props = $props();
 
 	function handleClick(e: MouseEvent) {
 		if (!disabled) {

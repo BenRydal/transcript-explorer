@@ -90,12 +90,7 @@
 				<button class="timing-mode-btn" class:active={timingMode === 'untimed'} onclick={() => setTimingMode('untimed')} title="No timestamps">
 					Untimed
 				</button>
-				<button
-					class="timing-mode-btn"
-					class:active={timingMode === 'startOnly'}
-					onclick={() => setTimingMode('startOnly')}
-					title="Start times only"
-				>
+				<button class="timing-mode-btn" class:active={timingMode === 'startOnly'} onclick={() => setTimingMode('startOnly')} title="Start times only">
 					Start
 				</button>
 				<button
@@ -140,12 +135,7 @@
 	</div>
 </div>
 
-<ConfirmModal
-	bind:isOpen={showConfirmModal}
-	title="Change Timing Mode?"
-	message={confirmMessage}
-	onconfirm={onConfirm}
-/>
+<ConfirmModal bind:isOpen={showConfirmModal} title="Change Timing Mode?" message={confirmMessage} onconfirm={onConfirm} />
 
 <style>
 	.editor-toolbar {

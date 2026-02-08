@@ -5,17 +5,14 @@
 
 import { DataPoint } from '../../models/dataPoint';
 import { Transcript, type TimingMode } from '../../models/transcript';
+import type { User } from '../../models/user';
 import type { TranscriptionSegment } from './transcription-service';
 import type { ParseResult } from './text-parser';
 import { USER_COLORS } from '../constants/ui';
 import { calculateTranscriptStats } from './transcript-stats';
 import { splitIntoWordTokens } from './string-utils';
 
-export interface User {
-	name: string;
-	color: string;
-	enabled: boolean;
-}
+export type { User };
 
 export interface TranscriptCreationResult {
 	transcript: Transcript;
@@ -88,11 +85,7 @@ function createTranscriptFromTimedSegments(
 	return { transcript, users: [{ name: defaultSpeaker, color: defaultColor, enabled: true }] };
 }
 
-export function createTranscriptFromWhisper(
-	segments: TranscriptionSegment[],
-	videoDuration: number,
-	defaultColor: string
-): TranscriptCreationResult {
+export function createTranscriptFromWhisper(segments: TranscriptionSegment[], videoDuration: number, defaultColor: string): TranscriptCreationResult {
 	return createTranscriptFromTimedSegments(segments, 'SPEAKER 1', defaultColor, videoDuration || undefined);
 }
 
@@ -106,10 +99,7 @@ export function createTranscriptFromWhisper(
  * @param parseResult - Parsed turns with optional timing
  * @param timingModeOverride - Override auto-detected timing mode (used by CSV parser)
  */
-export function createTranscriptFromParsedText(
-	parseResult: ParseResult,
-	timingModeOverride?: TimingMode
-): TranscriptCreationResult {
+export function createTranscriptFromParsedText(parseResult: ParseResult, timingModeOverride?: TimingMode): TranscriptCreationResult {
 	const wordArray: DataPoint[] = [];
 	const hasTimestamps = parseResult.hasTimestamps;
 

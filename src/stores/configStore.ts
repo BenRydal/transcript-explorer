@@ -1,6 +1,4 @@
 import { writable, derived } from 'svelte/store';
-import type { DataPoint } from '../models/dataPoint';
-import type { Bounds } from '../lib/draw/types/bounds';
 
 export type GardenSortOrder = 'default' | 'words' | 'turns' | 'alpha';
 
@@ -13,6 +11,9 @@ export interface ConfigStoreType {
 	dashboardToggle: boolean;
 	speakerHeatmapToggle: boolean;
 	turnLengthToggle: boolean;
+	speakerFingerprintToggle: boolean;
+	questionFlowToggle: boolean;
+	wordJourneyToggle: boolean;
 	silenceOverlapToggle: boolean;
 	separateToggle: boolean;
 	sortToggle: boolean;
@@ -22,11 +23,7 @@ export interface ConfigStoreType {
 	repeatedWordsToggle: boolean;
 	animationRate: number;
 	repeatWordSliderValue: number;
-	hoveredDataPoint: DataPoint | null;
-	overflowBounds: Bounds[];
-	arrayOfFirstWords: DataPoint[];
 	wordToSearch: string;
-	hoveredSpeakerInGarden: string | null;
 	// Start-only mode settings
 	preserveGapsBetweenTurns: boolean;
 	speechRateWordsPerSecond: number;
@@ -36,10 +33,6 @@ export interface ConfigStoreType {
 	dashboardPanels: string[];
 	// Speaker Garden settings
 	gardenSortOrder: GardenSortOrder;
-	// Dashboard cross-highlighting (written by previous frame's applyDrawResult)
-	dashboardHighlightSpeaker: string | null;
-	dashboardHighlightTurn: number | null;
-	dashboardHighlightAllTurns: number[] | null;
 	// Word Rain settings
 	wordRainMinFrequency: number;
 	wordRainTemporalBinning: boolean;
@@ -54,6 +47,10 @@ export interface ConfigStoreType {
 	turnLengthBinCount: number;
 	// Legend overlay
 	legendVisible: boolean;
+	// Speaker Fingerprint settings
+	fingerprintOverlayMode: boolean;
+	// Visualization scaling
+	scaleToVisibleData: boolean;
 }
 
 export const DASHBOARD_PANEL_OPTIONS = [
@@ -63,7 +60,10 @@ export const DASHBOARD_PANEL_OPTIONS = [
 	{ key: 'turnNetwork', label: 'Turn Network' },
 	{ key: 'wordRain', label: 'Word Rain' },
 	{ key: 'speakerHeatmap', label: 'Speaker Heatmap' },
-	{ key: 'turnLength', label: 'Turn Length' }
+	{ key: 'turnLength', label: 'Turn Length' },
+	{ key: 'speakerFingerprint', label: 'Speaker Fingerprint' },
+	{ key: 'questionFlow', label: 'Question Flow' },
+	{ key: 'wordJourney', label: 'Word Journey' }
 ] as const;
 
 export const initialConfig: ConfigStoreType = {
@@ -75,6 +75,9 @@ export const initialConfig: ConfigStoreType = {
 	dashboardToggle: false,
 	speakerHeatmapToggle: false,
 	turnLengthToggle: false,
+	speakerFingerprintToggle: false,
+	questionFlowToggle: false,
+	wordJourneyToggle: false,
 	silenceOverlapToggle: true,
 	separateToggle: false,
 	sortToggle: false,
@@ -84,11 +87,7 @@ export const initialConfig: ConfigStoreType = {
 	repeatedWordsToggle: false,
 	animationRate: 3,
 	repeatWordSliderValue: 5,
-	hoveredDataPoint: null,
-	overflowBounds: [],
-	arrayOfFirstWords: [],
 	wordToSearch: '',
-	hoveredSpeakerInGarden: null,
 	// Start-only mode settings (default: estimate from speech rate)
 	preserveGapsBetweenTurns: true,
 	speechRateWordsPerSecond: 3,
@@ -98,9 +97,6 @@ export const initialConfig: ConfigStoreType = {
 	gardenSortOrder: 'default',
 	// Dashboard panel selection
 	dashboardPanels: ['turnChart', 'contributionCloud', 'speakerGarden'],
-	dashboardHighlightSpeaker: null,
-	dashboardHighlightTurn: null,
-	dashboardHighlightAllTurns: null,
 	wordRainMinFrequency: 1,
 	wordRainTemporalBinning: false,
 	wordRainBinCount: 8,
@@ -109,7 +105,9 @@ export const initialConfig: ConfigStoreType = {
 	turnNetworkMinTransitions: 1,
 	heatmapBinCount: 0,
 	turnLengthBinCount: 0,
-	legendVisible: true
+	legendVisible: true,
+	fingerprintOverlayMode: true,
+	scaleToVisibleData: false
 };
 
 const ConfigStore = writable<ConfigStoreType>(initialConfig);

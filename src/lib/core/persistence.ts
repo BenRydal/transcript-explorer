@@ -2,7 +2,7 @@ import { browser } from '$app/environment';
 import { get } from 'svelte/store';
 import { DataPoint } from '../../models/dataPoint';
 import { Transcript, type TimingMode } from '../../models/transcript';
-import { User } from '../../models/user';
+import type { User } from '../../models/user';
 import TranscriptStore from '../../stores/transcriptStore';
 import UserStore from '../../stores/userStore';
 
@@ -126,13 +126,7 @@ export function restoreState(): boolean {
 
 	const transcript = new Transcript();
 	transcript.wordArray = state.transcript.wordArray.map((dp) => {
-		const dataPoint = new DataPoint(
-			dp.speaker,
-			dp.turnNumber,
-			dp.word,
-			dp.startTime,
-			dp.endTime
-		);
+		const dataPoint = new DataPoint(dp.speaker, dp.turnNumber, dp.word, dp.startTime, dp.endTime);
 		dataPoint.count = dp.count;
 		return dataPoint;
 	});
@@ -146,7 +140,7 @@ export function restoreState(): boolean {
 	transcript.mostFrequentWord = state.transcript.mostFrequentWord;
 	transcript.timingMode = state.transcript.timingMode;
 
-	const users = state.users.map((u) => new User(u.color, u.enabled, u.name));
+	const users: User[] = state.users.map((u) => ({ name: u.name, color: u.color, enabled: u.enabled }));
 
 	TranscriptStore.set(transcript);
 	UserStore.set(users);

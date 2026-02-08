@@ -133,7 +133,14 @@
 </script>
 
 {#if showAdvancedControls}
-	<div class="video-controls" onmousedown={(e) => e.stopPropagation()} onclick={(e) => e.stopPropagation()} role="toolbar" tabindex="0" onkeydown={(e) => e.stopPropagation()}>
+	<div
+		class="video-controls"
+		onmousedown={(e) => e.stopPropagation()}
+		onclick={(e) => e.stopPropagation()}
+		role="toolbar"
+		tabindex="0"
+		onkeydown={(e) => e.stopPropagation()}
+	>
 		<!-- Skip backward -->
 		<button class="control-btn" onclick={handleSkipBackward} aria-label="Skip back 5 seconds" title="-5s">
 			<svg viewBox="0 0 24 24" fill="currentColor">

@@ -1,5 +1,23 @@
 <script lang="ts">
-	import { CircleHelp, CloudUpload, FilePlus, Video, VideoOff, Check, Settings as SettingsIcon, Text, ChartBar, Menu, X, Keyboard, GraduationCap, Landmark, Mic, Search, Settings2 } from '@lucide/svelte';
+	import {
+		CircleHelp,
+		CloudUpload,
+		FilePlus,
+		Video,
+		VideoOff,
+		Check,
+		Settings as SettingsIcon,
+		Text,
+		ChartBar,
+		Menu,
+		X,
+		Keyboard,
+		GraduationCap,
+		Landmark,
+		Mic,
+		Search,
+		Settings2
+	} from '@lucide/svelte';
 	import IconButton from './IconButton.svelte';
 	import ConfigStore, { type ConfigStoreType, type GardenSortOrder } from '../../stores/configStore';
 
@@ -34,7 +52,7 @@
 		onopenSettings,
 		oncreateNewTranscript,
 		onwordSearch,
-		onconfigChange,
+		onconfigChange
 	}: Props = $props();
 
 	let mobileMenuOpen = $state(false);
@@ -43,7 +61,19 @@
 
 	// --- Data ---
 
-	const techniqueToggleOptions = ['speakerGardenToggle', 'turnChartToggle', 'contributionCloudToggle', 'turnNetworkToggle', 'wordRainToggle', 'speakerHeatmapToggle', 'turnLengthToggle', 'dashboardToggle'] as const;
+	const techniqueToggleOptions = [
+		'speakerGardenToggle',
+		'turnChartToggle',
+		'contributionCloudToggle',
+		'turnNetworkToggle',
+		'wordRainToggle',
+		'speakerFingerprintToggle',
+		'speakerHeatmapToggle',
+		'turnLengthToggle',
+		'questionFlowToggle',
+		'wordJourneyToggle',
+		'dashboardToggle'
+	] as const;
 	const regularVisualizationToggles = techniqueToggleOptions.filter((t) => t !== 'dashboardToggle');
 
 	const exampleOptions = [
@@ -61,7 +91,10 @@
 		turnNetwork: 'Turn Network',
 		wordRain: 'Word Rain',
 		speakerHeatmap: 'Speaker Heatmap',
-		turnLength: 'Turn Length'
+		turnLength: 'Turn Length',
+		speakerFingerprint: 'Speaker Fingerprint',
+		questionFlow: 'Question Flow',
+		wordJourney: 'Word Journey'
 	};
 
 	const GARDEN_SORT_OPTIONS: { order: GardenSortOrder; label: string }[] = [
@@ -78,30 +111,24 @@
 	type PanelGardenSort = { type: 'gardenSort' };
 	type PanelOption = PanelToggle | PanelSlider | PanelGardenSort;
 
-	const formatBinCount = (v: number) => v === 0 ? 'Auto' : String(v);
+	const formatBinCount = (v: number) => (v === 0 ? 'Auto' : String(v));
 
 	const panelOptionsMap: Record<string, PanelOption[]> = {
-		speakerGarden: [
-			{ type: 'toggle', key: 'stopWordsToggle', label: 'Hide Stop Words' },
-			{ type: 'gardenSort' }
-		],
+		speakerGarden: [{ type: 'gardenSort' }],
 		turnChart: [
 			{ type: 'toggle', key: 'separateToggle', label: 'Group by Speaker' },
-			{ type: 'toggle', key: 'silenceOverlapToggle', label: 'Silence Overlap' },
-			{ type: 'toggle', key: 'stopWordsToggle', label: 'Hide Stop Words' }
+			{ type: 'toggle', key: 'silenceOverlapToggle', label: 'Silence Overlap' }
 		],
 		contributionCloud: [
 			{ type: 'toggle', key: 'separateToggle', label: 'Group by Speaker' },
 			{ type: 'toggle', key: 'sortToggle', label: 'Sort by Frequency' },
 			{ type: 'toggle', key: 'lastWordToggle', label: 'Emphasize Last Word' },
 			{ type: 'toggle', key: 'echoWordsToggle', label: 'Echo Last Words' },
-			{ type: 'toggle', key: 'stopWordsToggle', label: 'Hide Stop Words' },
 			{ type: 'toggle', key: 'repeatedWordsToggle', label: 'Only Repeated Words' },
 			{ type: 'slider', key: 'repeatWordSliderValue', label: 'Size Range', min: 2, max: 30 }
 		],
 		wordRain: [
 			{ type: 'toggle', key: 'separateToggle', label: 'Group by Speaker' },
-			{ type: 'toggle', key: 'stopWordsToggle', label: 'Hide Stop Words' },
 			{ type: 'toggle', key: 'wordRainTemporalBinning', label: 'Temporal Binning' },
 			{ type: 'slider', key: 'wordRainMinFrequency', label: 'Min Frequency', min: 1, max: 10 },
 			{ type: 'slider', key: 'wordRainBinCount', label: 'Bin Count', min: 4, max: 20 }
@@ -109,17 +136,11 @@
 		turnNetwork: [
 			{ type: 'toggle', key: 'turnNetworkHideSelfLoops', label: 'Hide Self-Loops' },
 			{ type: 'toggle', key: 'turnNetworkWeightByWords', label: 'Weight by Words' },
-			{ type: 'toggle', key: 'stopWordsToggle', label: 'Hide Stop Words' },
 			{ type: 'slider', key: 'turnNetworkMinTransitions', label: 'Min Transitions', min: 1, max: 20 }
 		],
-		speakerHeatmap: [
-			{ type: 'toggle', key: 'stopWordsToggle', label: 'Hide Stop Words' },
-			{ type: 'slider', key: 'heatmapBinCount', label: 'Bin Count', min: 0, max: 60, formatValue: formatBinCount }
-		],
-		turnLength: [
-			{ type: 'toggle', key: 'stopWordsToggle', label: 'Hide Stop Words' },
-			{ type: 'slider', key: 'turnLengthBinCount', label: 'Bin Count', min: 0, max: 60, formatValue: formatBinCount }
-		]
+		speakerHeatmap: [{ type: 'slider', key: 'heatmapBinCount', label: 'Bin Count', min: 0, max: 60, formatValue: formatBinCount }],
+		turnLength: [{ type: 'slider', key: 'turnLengthBinCount', label: 'Bin Count', min: 0, max: 60, formatValue: formatBinCount }],
+		speakerFingerprint: [{ type: 'toggle', key: 'fingerprintOverlayMode', label: 'Overlay' }]
 	};
 
 	// --- Derived state ---
@@ -129,9 +150,7 @@
 		return activeToggle ? activeToggle.replace('Toggle', '') : '';
 	});
 
-	let activeVisualizationName = $derived(
-		activePanelKey ? PANEL_LABELS[activePanelKey] ?? 'Dashboard' : 'Select'
-	);
+	let activeVisualizationName = $derived(activePanelKey ? (PANEL_LABELS[activePanelKey] ?? 'Dashboard') : 'Select');
 
 	let hiddenSliderKeys = $derived.by(() => {
 		const hidden = new Set<keyof ConfigStoreType>();
@@ -213,7 +232,11 @@
 			}
 		};
 		document.addEventListener('click', handleClick, true);
-		return { destroy() { document.removeEventListener('click', handleClick, true); } };
+		return {
+			destroy() {
+				document.removeEventListener('click', handleClick, true);
+			}
+		};
 	}
 
 	function clickOutside(node: HTMLElement) {
@@ -223,7 +246,11 @@
 			}
 		};
 		document.addEventListener('click', handleClick, true);
-		return { destroy() { document.removeEventListener('click', handleClick, true); } };
+		return {
+			destroy() {
+				document.removeEventListener('click', handleClick, true);
+			}
+		};
 	}
 </script>
 
@@ -312,7 +339,10 @@
 						<hr class="my-1 border-t border-gray-200" />
 						<li>
 							<div class="flex items-center w-full p-0 rounded {$ConfigStore.dashboardToggle ? 'bg-success/15' : ''}">
-								<button onclick={() => toggleSelection('dashboardToggle', techniqueToggleOptions)} class="flex-1 text-left flex items-center px-3 py-1.5">
+								<button
+									onclick={() => toggleSelection('dashboardToggle', techniqueToggleOptions)}
+									class="flex-1 text-left flex items-center px-3 py-1.5"
+								>
 									<span class="w-4 h-4 mr-2 inline-flex items-center justify-center flex-shrink-0">
 										{#if $ConfigStore.dashboardToggle}<Check size={16} />{/if}
 									</span>
@@ -335,7 +365,10 @@
 						{#each options as option}
 							{#if isOptionVisible(option)}
 								{#if option.type === 'toggle'}
-									<button onclick={() => toggleSelectionOnly(option.key)} class="w-full text-left flex items-center text-sm py-1 px-1 rounded hover:bg-base-200">
+									<button
+										onclick={() => toggleSelectionOnly(option.key)}
+										class="w-full text-left flex items-center text-sm py-1 px-1 rounded hover:bg-base-200"
+									>
 										<span class="w-4 h-4 mr-2 inline-flex items-center justify-center flex-shrink-0">
 											{#if $ConfigStore[option.key]}<Check size={14} />{/if}
 										</span>
@@ -343,7 +376,9 @@
 									</button>
 								{:else if option.type === 'slider'}
 									<div class="py-1 px-1">
-										<label for={option.key} class="text-sm text-gray-600">{option.label}: {option.formatValue ? option.formatValue($ConfigStore[option.key] as number) : $ConfigStore[option.key]}</label>
+										<label for={option.key} class="text-sm text-gray-600"
+											>{option.label}: {option.formatValue ? option.formatValue($ConfigStore[option.key] as number) : $ConfigStore[option.key]}</label
+										>
 										<input
 											id={option.key}
 											type="range"
@@ -359,7 +394,10 @@
 										<label class="text-sm text-gray-600">Sort By</label>
 									</div>
 									{#each GARDEN_SORT_OPTIONS as sortOpt}
-										<button onclick={() => setGardenSort(sortOpt.order)} class="w-full text-left flex items-center text-sm py-1 px-1 rounded hover:bg-base-200">
+										<button
+											onclick={() => setGardenSort(sortOpt.order)}
+											class="w-full text-left flex items-center text-sm py-1 px-1 rounded hover:bg-base-200"
+										>
 											<span class="w-4 h-4 mr-2 inline-flex items-center justify-center flex-shrink-0">
 												{#if $ConfigStore.gardenSortOrder === sortOpt.order}<Check size={14} />{/if}
 											</span>
@@ -459,7 +497,10 @@
 				<p class="text-xs uppercase tracking-wider text-gray-500 mb-2">Example Data</p>
 				<select
 					class="select select-bordered w-full"
-					onchange={(e) => { onloadExample?.(e.currentTarget.value); mobileMenuOpen = false; }}
+					onchange={(e) => {
+						onloadExample?.(e.currentTarget.value);
+						mobileMenuOpen = false;
+					}}
 				>
 					<option value="" disabled selected={!selectedExample}>Examples</option>
 					{#each exampleOptions as item}
@@ -475,7 +516,10 @@
 					{#each regularVisualizationToggles as toggle}
 						<button
 							class="btn btn-sm {$ConfigStore[toggle] ? 'btn-primary' : 'btn-ghost'}"
-							onclick={() => { toggleSelection(toggle, techniqueToggleOptions); mobileMenuOpen = false; }}
+							onclick={() => {
+								toggleSelection(toggle, techniqueToggleOptions);
+								mobileMenuOpen = false;
+							}}
 						>
 							{formatToggleName(toggle)}
 						</button>
@@ -483,7 +527,10 @@
 					<div class="w-full border-t border-gray-200 my-1"></div>
 					<button
 						class="btn btn-sm {$ConfigStore.dashboardToggle ? 'btn-primary' : 'btn-ghost'}"
-						onclick={() => { toggleSelection('dashboardToggle', techniqueToggleOptions); mobileMenuOpen = false; }}
+						onclick={() => {
+							toggleSelection('dashboardToggle', techniqueToggleOptions);
+							mobileMenuOpen = false;
+						}}
 					>
 						Dashboard
 					</button>
@@ -493,7 +540,13 @@
 			<!-- Search -->
 			<div>
 				<p class="text-xs uppercase tracking-wider text-gray-500 mb-2">Search</p>
-				<input type="text" placeholder="Filter words..." value={$ConfigStore.wordToSearch} oninput={handleWordSearch} class="input input-bordered input-sm w-full" />
+				<input
+					type="text"
+					placeholder="Filter words..."
+					value={$ConfigStore.wordToSearch}
+					oninput={handleWordSearch}
+					class="input input-bordered input-sm w-full"
+				/>
 			</div>
 
 			<!-- Options -->
@@ -506,7 +559,9 @@
 							</button>
 						{:else if option.type === 'slider'}
 							<div class="w-full mt-1">
-								<label for={option.key} class="text-sm">{option.label}: {option.formatValue ? option.formatValue($ConfigStore[option.key] as number) : $ConfigStore[option.key]}</label>
+								<label for={option.key} class="text-sm"
+									>{option.label}: {option.formatValue ? option.formatValue($ConfigStore[option.key] as number) : $ConfigStore[option.key]}</label
+								>
 								<input
 									id={option.key}
 									type="range"
@@ -555,14 +610,20 @@
 				<div class="flex flex-wrap gap-2">
 					<button
 						class="btn btn-sm {isEditorVisible ? 'btn-primary' : 'btn-ghost'}"
-						onclick={() => { ontoggleEditor?.(); mobileMenuOpen = false; }}
+						onclick={() => {
+							ontoggleEditor?.();
+							mobileMenuOpen = false;
+						}}
 					>
 						<Text size={16} class="mr-1" />
 						Editor
 					</button>
 					<button
 						class="btn btn-sm {isVideoVisible ? 'btn-primary' : 'btn-ghost'}"
-						onclick={() => { ontoggleVideo?.(); mobileMenuOpen = false; }}
+						onclick={() => {
+							ontoggleVideo?.();
+							mobileMenuOpen = false;
+						}}
 						disabled={!isVideoLoaded}
 					>
 						{#if isVideoVisible}
@@ -574,25 +635,52 @@
 					</button>
 					<button
 						class="btn btn-sm btn-outline border-gray-400 disabled:opacity-50"
-						onclick={() => { ontoggleTranscribeMode?.(); mobileMenuOpen = false; }}
+						onclick={() => {
+							ontoggleTranscribeMode?.();
+							mobileMenuOpen = false;
+						}}
 						disabled={!isVideoLoaded}
 					>
 						<Keyboard size={16} class="mr-1" />
 						Transcribe
 					</button>
-					<button class="btn btn-sm btn-ghost" onclick={() => { onopenUpload?.(); mobileMenuOpen = false; }}>
+					<button
+						class="btn btn-sm btn-ghost"
+						onclick={() => {
+							onopenUpload?.();
+							mobileMenuOpen = false;
+						}}
+					>
 						<CloudUpload size={16} class="mr-1" />
 						Upload
 					</button>
-					<button class="btn btn-sm btn-ghost" onclick={() => { oncreateNewTranscript?.(); mobileMenuOpen = false; }}>
+					<button
+						class="btn btn-sm btn-ghost"
+						onclick={() => {
+							oncreateNewTranscript?.();
+							mobileMenuOpen = false;
+						}}
+					>
 						<FilePlus size={16} class="mr-1" />
 						New
 					</button>
-					<button class="btn btn-sm btn-ghost" onclick={() => { onopenHelp?.(); mobileMenuOpen = false; }}>
+					<button
+						class="btn btn-sm btn-ghost"
+						onclick={() => {
+							onopenHelp?.();
+							mobileMenuOpen = false;
+						}}
+					>
 						<CircleHelp size={16} class="mr-1" />
 						Help
 					</button>
-					<button class="btn btn-sm btn-ghost" onclick={() => { onopenSettings?.(); mobileMenuOpen = false; }}>
+					<button
+						class="btn btn-sm btn-ghost"
+						onclick={() => {
+							onopenSettings?.();
+							mobileMenuOpen = false;
+						}}
+					>
 						<SettingsIcon size={16} class="mr-1" />
 						Settings
 					</button>

@@ -51,7 +51,9 @@
 {#if isOpen}
 	<div
 		class="modal modal-open"
-		onclick={(e) => { if (e.target === e.currentTarget) handleClose(); }}
+		onclick={(e) => {
+			if (e.target === e.currentTarget) handleClose();
+		}}
 		onkeydown={(e) => {
 			if (e.key === 'Escape' && !isTranscribing) handleClose();
 		}}

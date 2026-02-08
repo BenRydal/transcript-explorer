@@ -23,6 +23,7 @@ import type { User } from '../../models/user';
 import type { Bounds } from './types/bounds';
 import { calculateScaling, getWordWidth, type Scaling } from './contribution-cloud-scaling';
 import { DEFAULT_SPEAKER_COLOR } from '../constants/ui';
+import { createUserMap } from './draw-utils';
 
 export { clearScalingCache } from './contribution-cloud-scaling';
 
@@ -67,18 +68,20 @@ export class ContributionCloud {
 	users: User[];
 	config: ConfigStoreType;
 	userMap: Map<string, User>;
+	fullTranscriptMaxCount: number;
 
 	constructor(sk: p5, bounds: Bounds) {
 		this.sk = sk;
 		this.bounds = bounds;
 		this.users = get(UserStore);
 		this.config = get(ConfigStore);
-		this.userMap = new Map(this.users.map((user) => [user.name, user]));
+		this.userMap = createUserMap(this.users);
+		this.fullTranscriptMaxCount = get(TranscriptStore).maxCountOfMostRepeatedWord;
 	}
 
 	draw(words: DataPoint[]): { hoveredWord: DataPoint | null; hasOverflow: boolean; hoveredSpeaker: string | null } {
 		const layoutWords = words.filter((w) => this.isWordVisible(w));
-		const scaling = calculateScaling(this.sk, layoutWords, this.bounds, this.config);
+		const scaling = calculateScaling(this.sk, layoutWords, this.bounds, this.config, this.fullTranscriptMaxCount);
 		const cacheKey = this.getBufferCacheKey(layoutWords.length);
 
 		if (cacheKey !== bufferCache.cacheKey || !bufferCache.buffer) {
@@ -234,7 +237,13 @@ export class ContributionCloud {
 				this.sk.noFill();
 				this.sk.stroke(color);
 				this.sk.strokeWeight(isHovered ? HOVER_OUTLINE_WEIGHT : 1);
-				this.sk.rect(screenX - padding, screenY - pos.ascent - padding, pos.width + padding * 2, pos.ascent + pos.descent + padding * 2, isHovered ? 4 : 3);
+				this.sk.rect(
+					screenX - padding,
+					screenY - pos.ascent - padding,
+					pos.width + padding * 2,
+					pos.ascent + pos.descent + padding * 2,
+					isHovered ? 4 : 3
+				);
 			}
 		}
 	}
@@ -279,9 +288,7 @@ export class ContributionCloud {
 	}
 
 	getTurnContext(word: DataPoint, allPositions: WordPosition[]): string | null {
-		const turnPositions = allPositions
-			.filter((p) => p.word.turnNumber === word.turnNumber)
-			.sort((a, b) => a.word.startTime - b.word.startTime);
+		const turnPositions = allPositions.filter((p) => p.word.turnNumber === word.turnNumber).sort((a, b) => a.word.startTime - b.word.startTime);
 
 		if (turnPositions.length === 0) return null;
 

@@ -6,8 +6,7 @@ export function extractYouTubeVideoId(input: string): string | null {
 	const trimmed = input?.trim();
 	if (!trimmed) return null;
 
-	const isValidId = (id: string | null | undefined): id is string =>
-		typeof id === 'string' && /^[a-zA-Z0-9_-]{11}$/.test(id);
+	const isValidId = (id: string | null | undefined): id is string => typeof id === 'string' && /^[a-zA-Z0-9_-]{11}$/.test(id);
 
 	if (isValidId(trimmed)) return trimmed;
 

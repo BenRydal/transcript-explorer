@@ -56,11 +56,20 @@
 </script>
 
 {#if isOpen}
-	<div class="modal modal-open" onclick={(e) => { if (e.target === e.currentTarget) isOpen = false; }} onkeydown={handleKeydown} role="dialog" aria-modal="true">
+	<div
+		class="modal modal-open"
+		onclick={(e) => {
+			if (e.target === e.currentTarget) isOpen = false;
+		}}
+		onkeydown={handleKeydown}
+		role="dialog"
+		aria-modal="true"
+		tabindex="-1"
+	>
 		<div class="modal-box w-11/12 max-w-lg">
 			<div class="flex justify-between mb-4">
 				<h3 class="font-bold text-lg">Upload Files</h3>
-				<button class="btn btn-circle btn-sm" onclick={() => (isOpen = false)}>
+				<button class="btn btn-circle btn-sm" onclick={() => (isOpen = false)} aria-label="Close">
 					<svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
 						<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
 					</svg>
@@ -72,8 +81,14 @@
 				class="border-2 border-dashed rounded-lg p-8 text-center cursor-pointer transition-colors {isDraggingOver
 					? 'border-primary bg-primary/10'
 					: 'border-gray-300 hover:border-gray-400'}"
-				ondrop={(e) => { e.preventDefault(); ondrop?.(e); }}
-				ondragover={(e) => { e.preventDefault(); ondragover?.(e); }}
+				ondrop={(e) => {
+					e.preventDefault();
+					ondrop?.(e);
+				}}
+				ondragover={(e) => {
+					e.preventDefault();
+					ondragover?.(e);
+				}}
 				ondragleave={() => ondragleave?.()}
 				onclick={() => onopenFileDialog?.()}
 				onkeydown={handleDropzoneKeydown}
@@ -98,7 +113,8 @@
 					<span class="badge badge-outline">.mp4</span>
 				</div>
 				<p class="text-xs text-gray-500 mt-2">
-					CSV/TXT files should contain transcript data with speaker and content columns. SRT/VTT subtitle files are also supported. MP4 files will be used as video overlay.
+					CSV/TXT files should contain transcript data with speaker and content columns. SRT/VTT subtitle files are also supported. MP4 files will be
+					used as video overlay.
 				</p>
 			</div>
 

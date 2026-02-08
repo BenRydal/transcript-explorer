@@ -12,12 +12,14 @@ import type p5 from 'p5';
 import { get } from 'svelte/store';
 import UserStore from '../../stores/userStore';
 import ConfigStore, { type ConfigStoreType } from '../../stores/configStore';
+import HoverStore, { type HoverState } from '../../stores/hoverStore';
+import TranscriptStore from '../../stores/transcriptStore';
 import { showTooltip } from '../../stores/tooltipStore';
 import type { DataPoint } from '../../models/dataPoint';
 import type { User } from '../../models/user';
 import type { Bounds } from './types/bounds';
 import { DEFAULT_SPEAKER_COLOR } from '../constants/ui';
-import { withDimming } from './draw-utils';
+import { withDimming, createUserMap, getCrossHighlight } from './draw-utils';
 
 const MIN_NODE_RADIUS_RATIO = 0.04;
 const MAX_NODE_RADIUS_RATIO = 0.12;
@@ -73,17 +75,19 @@ interface Layout {
 	centerY: number;
 }
 
-type HoveredElement = {
-	type: 'node';
-	speaker: string;
-	snippetPoints: DataPoint[];
-	node: NodeLayout;
-} | {
-	type: 'edge';
-	speaker: string;
-	snippetPoints: DataPoint[];
-	edge: EdgeLayout;
-};
+type HoveredElement =
+	| {
+			type: 'node';
+			speaker: string;
+			snippetPoints: DataPoint[];
+			node: NodeLayout;
+	  }
+	| {
+			type: 'edge';
+			speaker: string;
+			snippetPoints: DataPoint[];
+			edge: EdgeLayout;
+	  };
 
 // --- Geometry helpers ---
 
@@ -122,7 +126,10 @@ function getCurvedEdgeGeometry(fromNode: NodeLayout, toNode: NodeLayout) {
 	const curveOffset = dist * CURVE_OFFSET_FACTOR;
 
 	return {
-		startX, startY, endX, endY,
+		startX,
+		startY,
+		endX,
+		endY,
 		cpX: (startX + endX) / 2 + -uy * curveOffset,
 		cpY: (startY + endY) / 2 + ux * curveOffset
 	};
@@ -137,39 +144,42 @@ export class TurnNetwork {
 	private selfLoopRadius: number;
 	private minDim: number;
 	private config: ConfigStoreType;
+	private hover: HoverState;
+	private fullTranscriptMaxWordCount: number;
 
 	constructor(sk: p5, bounds: Bounds) {
 		this.sk = sk;
 		this.bounds = bounds;
-		this.userMap = new Map(get(UserStore).map((u) => [u.name, u]));
+		this.userMap = createUserMap(get(UserStore));
 		this.config = get(ConfigStore);
+		this.hover = get(HoverStore);
 		this.minDim = Math.min(bounds.width, bounds.height);
 		this.selfLoopRadius = Math.max(15, this.minDim * SELF_LOOP_RADIUS_RATIO);
+		// For full transcript scaling, use the pre-computed largest word count by speaker
+		const transcript = get(TranscriptStore);
+		this.fullTranscriptMaxWordCount = transcript.largestNumOfWordsByASpeaker;
 	}
 
 	draw(data: NetworkData): { snippetPoints: DataPoint[]; hoveredSpeaker: string | null; edgeTurns: number[] | null } {
 		const layout = this.buildLayout(data);
 		const hovered = this.findHovered(layout);
 
-		const hl = this.config.dashboardHighlightSpeaker;
-		const hlTurns = this.config.dashboardHighlightAllTurns;
-		const mouseInPanel = this.sk.overRect(this.bounds.x, this.bounds.y, this.bounds.width, this.bounds.height);
-		const crossHighlightActive = this.config.dashboardToggle && (hl != null || hlTurns != null) && !mouseInPanel;
+		const crossHighlight = getCrossHighlight(this.sk, this.bounds, this.config.dashboardToggle, this.hover);
 
 		for (const edge of layout.edges) {
-			const shouldDim = crossHighlightActive && (
-				(hlTurns != null && !edge.turnStartPoints.some((p) => hlTurns.includes(p.turnNumber))) ||
-				(hl != null && edge.from !== hl && edge.to !== hl)
-			);
+			const shouldDim =
+				crossHighlight.active &&
+				((crossHighlight.turns != null && !edge.turnStartPoints.some((p) => crossHighlight.turns!.includes(p.turnNumber))) ||
+					(crossHighlight.speaker != null && edge.from !== crossHighlight.speaker && edge.to !== crossHighlight.speaker));
 			withDimming(this.sk.drawingContext, shouldDim, () => {
 				this.drawEdge(edge, layout, false);
 			});
 		}
 		for (const node of layout.nodes) {
-			const shouldDim = crossHighlightActive && (
-				(hlTurns != null && !node.turnStartPoints.some((p) => hlTurns.includes(p.turnNumber))) ||
-				(hl != null && node.speaker !== hl)
-			);
+			const shouldDim =
+				crossHighlight.active &&
+				((crossHighlight.turns != null && !node.turnStartPoints.some((p) => crossHighlight.turns!.includes(p.turnNumber))) ||
+					(crossHighlight.speaker != null && node.speaker !== crossHighlight.speaker));
 			withDimming(this.sk.drawingContext, shouldDim, () => {
 				this.drawNode(node, false);
 			});
@@ -183,9 +193,7 @@ export class TurnNetwork {
 			this.showTooltipFor(hovered, layout);
 		}
 
-		const edgeTurns = hovered?.type === 'edge'
-			? hovered.edge.turnStartPoints.flatMap((p) => [p.turnNumber - 1, p.turnNumber])
-			: null;
+		const edgeTurns = hovered?.type === 'edge' ? hovered.edge.turnStartPoints.flatMap((p) => [p.turnNumber - 1, p.turnNumber]) : null;
 		return { snippetPoints: hovered?.snippetPoints ?? [], hoveredSpeaker: hovered?.speaker ?? null, edgeTurns };
 	}
 
@@ -195,16 +203,18 @@ export class TurnNetwork {
 		const centerX = this.bounds.x + this.bounds.width / 2;
 		const centerY = this.bounds.y + this.bounds.height / 2 + this.selfLoopRadius;
 
-		const speakers = Array.from(data.speakerStats.keys()).filter(
-			(s) => this.userMap.get(s)?.enabled
-		);
+		const speakers = Array.from(data.speakerStats.keys()).filter((s) => this.userMap.get(s)?.enabled);
 		if (speakers.length === 0) {
 			return { nodes: [], nodeMap: new Map(), edges: [], maxWeight: 0, centerX, centerY };
 		}
 
 		let maxWordCount = 0;
-		for (const stats of data.speakerStats.values()) {
-			if (stats.wordCount > maxWordCount) maxWordCount = stats.wordCount;
+		if (!this.config.scaleToVisibleData && this.fullTranscriptMaxWordCount > 0) {
+			maxWordCount = this.fullTranscriptMaxWordCount;
+		} else {
+			for (const stats of data.speakerStats.values()) {
+				if (stats.wordCount > maxWordCount) maxWordCount = stats.wordCount;
+			}
 		}
 
 		const layoutRadius = this.minDim * LAYOUT_RADIUS_FACTOR;
@@ -450,8 +460,7 @@ export class TurnNetwork {
 				`Initiated ${plural(initiated)}  ·  Received ${plural(received)}</span>`;
 		} else {
 			content =
-				`<b>${hovered.edge.from} → ${hovered.edge.to}</b>\n` +
-				`<span style="font-size: 0.85em; opacity: 0.7">${plural(hovered.edge.weight)}</span>`;
+				`<b>${hovered.edge.from} → ${hovered.edge.to}</b>\n` + `<span style="font-size: 0.85em; opacity: 0.7">${plural(hovered.edge.weight)}</span>`;
 		}
 
 		showTooltip(this.sk.mouseX, this.sk.mouseY, content, color, this.bounds.y + this.bounds.height);

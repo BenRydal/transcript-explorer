@@ -14,17 +14,19 @@
 		ArrowRight,
 		Minus,
 		ChartBar,
-		Columns3
+		Columns3,
+		Hexagon,
+		Star,
+		Diamond,
+		HelpCircle,
+		MessageCircle
 	} from '@lucide/svelte';
 	import type { Component } from 'svelte';
 	import ConfigStore from '../../stores/configStore';
 	import TranscriptStore from '../../stores/transcriptStore';
 	import UserStore from '../../stores/userStore';
 
-	type LegendItem = { label: string } & (
-		| { icon: Component; iconColor?: string }
-		| { speakerColors: true }
-	);
+	type LegendItem = { label: string } & ({ icon: Component; iconColor?: string } | { speakerColors: true });
 
 	const videoItem = (label: string): LegendItem => ({
 		icon: Video,
@@ -35,7 +37,7 @@
 	let isUntimed = $derived($TranscriptStore.timingMode === 'untimed');
 
 	let legendData = $derived.by(() => {
-		const v = (label: string): LegendItem[] => isUntimed ? [] : [videoItem(label)];
+		const v = (label: string): LegendItem[] => (isUntimed ? [] : [videoItem(label)]);
 
 		return {
 			speakerGarden: {
@@ -105,6 +107,37 @@
 					{ speakerColors: true, label: 'Color \u2192 speaker' },
 					...v('Click bar \u2192 play related turns')
 				]
+			},
+			speakerFingerprint: {
+				title: 'Speaker Fingerprint',
+				items: [
+					{ icon: Hexagon, label: 'Larger shape \u2192 higher values' },
+					{ speakerColors: true, label: 'Color \u2192 speaker' },
+					...v('Click shape \u2192 play examples')
+				]
+			},
+			wordJourney: {
+				title: 'Word Journey',
+				items: [
+					{ icon: Clock, label: `Horizontal position \u2192 ${isUntimed ? 'word count' : 'time'}` },
+					{ icon: Star, label: 'Star \u2192 first overall occurrence' },
+					{ icon: Diamond, label: 'Diamond \u2192 first by speaker' },
+					{ icon: Circle, label: 'Circle \u2192 other occurrences' },
+					{ speakerColors: true, label: 'Color \u2192 speaker' },
+					...v('Click dot \u2192 play from occurrence')
+				]
+			},
+			questionFlow: {
+				title: 'Question Flow',
+				items: [
+					{ icon: Clock, label: `Horizontal position \u2192 ${isUntimed ? 'word count' : 'time'}` },
+					{ icon: HelpCircle, label: 'Circle with ? \u2192 question' },
+					{ icon: MessageCircle, label: 'Circle \u2192 answer' },
+					{ icon: Circle, label: 'Node size \u2192 word count' },
+					{ icon: ArrowRight, label: 'Arc \u2192 question to answer' },
+					{ speakerColors: true, label: 'Color \u2192 speaker' },
+					...v('Click node \u2192 play Q&A')
+				]
 			}
 		} as Record<string, { title: string; items: LegendItem[] }>;
 	});
@@ -116,7 +149,10 @@
 		['wordRainToggle', 'wordRain'],
 		['speakerHeatmapToggle', 'speakerHeatmap'],
 		['turnNetworkToggle', 'turnNetwork'],
-		['turnLengthToggle', 'turnLength']
+		['turnLengthToggle', 'turnLength'],
+		['speakerFingerprintToggle', 'speakerFingerprint'],
+		['wordJourneyToggle', 'wordJourney'],
+		['questionFlowToggle', 'questionFlow']
 	] as const;
 
 	let legend = $derived.by(() => {
@@ -132,8 +168,7 @@
 
 	let speakerGradient = $derived.by(() => {
 		const colors = $UserStore.filter((u) => u.enabled).map((u) => u.color);
-		if (colors.length === 0) return '';
-		if (colors.length === 1) return colors[0];
+		if (colors.length <= 1) return colors[0] ?? '';
 		return `linear-gradient(to right, ${colors.join(', ')})`;
 	});
 

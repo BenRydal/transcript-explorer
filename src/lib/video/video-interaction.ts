@@ -5,7 +5,7 @@
 
 import { get } from 'svelte/store';
 import VideoStore, { stopPlayback, playFrom, playSnippets } from '../../stores/videoStore';
-import ConfigStore from '../../stores/configStore';
+import HoverStore from '../../stores/hoverStore';
 import TranscriptStore from '../../stores/transcriptStore';
 
 /**
@@ -29,8 +29,8 @@ export function handleVisualizationClick(): void {
 
 	if (get(TranscriptStore).timingMode === 'untimed') return;
 
-	const config = get(ConfigStore);
-	const { hoveredDataPoint, arrayOfFirstWords } = config;
+	const hoverState = get(HoverStore);
+	const { hoveredDataPoint, arrayOfFirstWords } = hoverState;
 
 	if (hoveredDataPoint) {
 		playFrom(hoveredDataPoint);

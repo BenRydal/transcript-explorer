@@ -14,7 +14,7 @@
 
 	let containerEl: HTMLDivElement;
 	let youtubeContainerEl: HTMLDivElement;
-	let videoEl: HTMLVideoElement;
+	let videoEl = $state<HTMLVideoElement>();
 	let player: VideoPlayer | null = $state(null);
 	// Use a stable ID for the YouTube container
 	const youtubeContainerId = 'youtube-player-container';

@@ -136,7 +136,6 @@
 			$P5Store.fillSelectedData();
 		}
 	};
-
 </script>
 
 <div class="flex flex-col w-11/12 h-full py-3">
