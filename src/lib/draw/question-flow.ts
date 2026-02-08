@@ -337,16 +337,25 @@ export class QuestionFlow {
 		this.sk.pop();
 	}
 
+	private static readonly TOOLTIP_MAX_WORDS = 50;
+
+	private truncateText(text: string): string {
+		const words = text.split(/\s+/);
+		if (words.length <= QuestionFlow.TOOLTIP_MAX_WORDS) return text;
+		const remaining = words.length - QuestionFlow.TOOLTIP_MAX_WORDS;
+		return words.slice(0, QuestionFlow.TOOLTIP_MAX_WORDS).join(' ') + `... (${remaining} more words)`;
+	}
+
 	private showPairTooltip(pair: QuestionAnswerPair): void {
 		const qUser = this.userMap.get(pair.questionSpeaker);
 		const qColor = qUser?.color || '#999999';
 
-		let content = `<span style="color: ${qColor}"><b>${pair.questionSpeaker}</b> asks:\n"${pair.questionContent}"</span>`;
+		let content = `<span style="color: ${qColor}"><b>${pair.questionSpeaker}</b> asks:\n"${this.truncateText(pair.questionContent)}"</span>`;
 
 		if (pair.answerSpeaker && pair.answerContent) {
 			const aUser = this.userMap.get(pair.answerSpeaker);
 			const aColor = aUser?.color || '#999999';
-			content += `\n\n<span style="color: ${aColor}"><b>${pair.answerSpeaker}</b> responds:\n"${pair.answerContent}"</span>`;
+			content += `\n\n<span style="color: ${aColor}"><b>${pair.answerSpeaker}</b> responds:\n"${this.truncateText(pair.answerContent)}"</span>`;
 		} else {
 			content += '\n\n<span style="opacity: 0.6">(No immediate answer)</span>';
 		}
