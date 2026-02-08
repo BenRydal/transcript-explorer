@@ -114,24 +114,21 @@
 	const formatBinCount = (v: number) => (v === 0 ? 'Auto' : String(v));
 
 	const panelOptionsMap: Record<string, PanelOption[]> = {
-		speakerGarden: [{ type: 'toggle', key: 'stopWordsToggle', label: 'Hide Stop Words' }, { type: 'gardenSort' }],
+		speakerGarden: [{ type: 'gardenSort' }],
 		turnChart: [
 			{ type: 'toggle', key: 'separateToggle', label: 'Group by Speaker' },
-			{ type: 'toggle', key: 'silenceOverlapToggle', label: 'Silence Overlap' },
-			{ type: 'toggle', key: 'stopWordsToggle', label: 'Hide Stop Words' }
+			{ type: 'toggle', key: 'silenceOverlapToggle', label: 'Silence Overlap' }
 		],
 		contributionCloud: [
 			{ type: 'toggle', key: 'separateToggle', label: 'Group by Speaker' },
 			{ type: 'toggle', key: 'sortToggle', label: 'Sort by Frequency' },
 			{ type: 'toggle', key: 'lastWordToggle', label: 'Emphasize Last Word' },
 			{ type: 'toggle', key: 'echoWordsToggle', label: 'Echo Last Words' },
-			{ type: 'toggle', key: 'stopWordsToggle', label: 'Hide Stop Words' },
 			{ type: 'toggle', key: 'repeatedWordsToggle', label: 'Only Repeated Words' },
 			{ type: 'slider', key: 'repeatWordSliderValue', label: 'Size Range', min: 2, max: 30 }
 		],
 		wordRain: [
 			{ type: 'toggle', key: 'separateToggle', label: 'Group by Speaker' },
-			{ type: 'toggle', key: 'stopWordsToggle', label: 'Hide Stop Words' },
 			{ type: 'toggle', key: 'wordRainTemporalBinning', label: 'Temporal Binning' },
 			{ type: 'slider', key: 'wordRainMinFrequency', label: 'Min Frequency', min: 1, max: 10 },
 			{ type: 'slider', key: 'wordRainBinCount', label: 'Bin Count', min: 4, max: 20 }
@@ -139,20 +136,16 @@
 		turnNetwork: [
 			{ type: 'toggle', key: 'turnNetworkHideSelfLoops', label: 'Hide Self-Loops' },
 			{ type: 'toggle', key: 'turnNetworkWeightByWords', label: 'Weight by Words' },
-			{ type: 'toggle', key: 'stopWordsToggle', label: 'Hide Stop Words' },
 			{ type: 'slider', key: 'turnNetworkMinTransitions', label: 'Min Transitions', min: 1, max: 20 }
 		],
 		speakerHeatmap: [
-			{ type: 'toggle', key: 'stopWordsToggle', label: 'Hide Stop Words' },
 			{ type: 'slider', key: 'heatmapBinCount', label: 'Bin Count', min: 0, max: 60, formatValue: formatBinCount }
 		],
 		turnLength: [
-			{ type: 'toggle', key: 'stopWordsToggle', label: 'Hide Stop Words' },
 			{ type: 'slider', key: 'turnLengthBinCount', label: 'Bin Count', min: 0, max: 60, formatValue: formatBinCount }
 		],
 		speakerFingerprint: [
-			{ type: 'toggle', key: 'fingerprintOverlayMode', label: 'Overlay Mode' },
-			{ type: 'toggle', key: 'stopWordsToggle', label: 'Hide Stop Words' }
+			{ type: 'toggle', key: 'fingerprintOverlayMode', label: 'Overlay Mode' }
 		]
 	};
 
