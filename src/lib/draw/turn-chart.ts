@@ -165,15 +165,37 @@ export class TurnChart {
 	drawTimeline(): void {
 		const start = this.bounds.x;
 		const end = this.bounds.x + this.bounds.width;
-		const height = this.yPosHalfHeight;
+		const y = this.yPosHalfHeight;
 		const tickLength = CANVAS_SPACING / 2;
 		this.sk.stroke(0);
 		this.sk.strokeWeight(2);
 		this.sk.fill(0);
 		// Draw timeline and ticks
-		this.sk.line(start, height - tickLength, start, height + tickLength);
-		this.sk.line(end, height - tickLength, end, height + tickLength);
-		this.sk.line(start, height, end, height);
+		this.sk.line(start, y - tickLength, start, y + tickLength);
+		this.sk.line(end, y - tickLength, end, y + tickLength);
+		this.sk.line(start, y, end, y);
+
+		// Time labels
+		const isUntimed = this.transcript.timingMode === 'untimed';
+		if (isUntimed) return;
+		const numTicks = Math.min(8, Math.floor(this.bounds.width / 60));
+		this.sk.textSize(Math.max(10, Math.min(13, this.bounds.height * 0.035)));
+		this.sk.fill(0);
+		this.sk.noStroke();
+		this.sk.textAlign(this.sk.CENTER, this.sk.TOP);
+		const duration = this.timeline.rightMarker - this.timeline.leftMarker;
+		for (let i = 0; i <= numTicks; i++) {
+			const frac = i / numTicks;
+			const time = this.timeline.leftMarker + frac * duration;
+			const x = start + frac * this.bounds.width;
+			// Tick mark
+			this.sk.stroke(0);
+			this.sk.strokeWeight(1);
+			this.sk.line(x, y, x, y + tickLength);
+			// Label
+			this.sk.noStroke();
+			this.sk.text(formatTimeCompact(time), x, y + tickLength + 2);
+		}
 	}
 
 	/** Draws turn bubbles */
