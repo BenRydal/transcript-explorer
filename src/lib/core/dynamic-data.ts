@@ -69,280 +69,52 @@ export interface SpeakerFingerprintData {
 const ratio = (num: number, denom: number): number => (denom > 0 ? num / denom : 0);
 
 // Interrogative words for question detection
-const QUESTION_STARTERS = new Set([
-	'what',
-	'who',
-	'where',
-	'when',
-	'why',
-	'how',
-	'is',
-	'are',
-	'was',
-	'were',
-	'am',
-	'do',
-	'does',
-	'did',
-	'can',
-	'could',
-	'will',
-	'would',
-	'should',
-	'shall',
-	'may',
-	'might',
-	'have',
-	'has',
-	'had'
-]);
+const QUESTION_STARTERS = new Set(
+	'what who where when why how is are was were am do does did can could will would should shall may might have has had'.split(' ')
+);
 
 // Module-level stop words Set (created once, shared by all instances)
-const STOP_WORDS = new Set([
-	// Articles
-	'a',
-	'an',
-	'the',
-	// Conjunctions
-	'and',
-	'or',
-	'but',
-	'if',
-	'then',
-	'than',
-	'because',
-	'while',
-	'until',
-	'although',
-	'though',
-	// Prepositions
-	'of',
-	'to',
-	'in',
-	'from',
-	'by',
-	'with',
-	'as',
-	'at',
-	'for',
-	'on',
-	'about',
-	'into',
-	'during',
-	'after',
-	'before',
-	'above',
-	'below',
-	'around',
-	'between',
-	'under',
-	'out',
-	'over',
-	'through',
-	'off',
-	// Pronouns
-	'i',
-	'you',
-	'he',
-	'she',
-	'it',
-	'we',
-	'they',
-	'me',
-	'him',
-	'her',
-	'us',
-	'them',
-	'my',
-	'your',
-	'his',
-	'its',
-	'our',
-	'their',
-	'that',
-	'which',
-	'who',
-	'whom',
-	'whose',
-	'what',
-	'this',
-	'these',
-	'those',
-	// Quantifiers
-	'all',
-	'any',
-	'some',
-	'each',
-	'every',
-	'both',
-	'either',
-	'neither',
-	'more',
-	'most',
-	'less',
-	'least',
-	'much',
-	'many',
-	'few',
-	'such',
-	'other',
-	'another',
-	'same',
-	// Be/Have/Do verbs
-	'is',
-	'are',
-	'was',
-	'were',
-	'am',
-	'be',
-	'been',
-	'being',
-	'have',
-	'has',
-	'had',
-	'having',
-	'do',
-	'does',
-	'did',
-	'doing',
-	// Modal verbs
-	'can',
-	'could',
-	'will',
-	'would',
-	'may',
-	'might',
-	'must',
-	'shall',
-	'should',
-	// Common verbs
-	'get',
-	'got',
-	'getting',
-	'go',
-	'going',
-	'gone',
-	'went',
-	'come',
-	'coming',
-	'came',
-	'make',
-	'made',
-	'making',
-	'know',
-	'knew',
-	'known',
-	'think',
-	'thought',
-	'say',
-	'said',
-	'see',
-	'saw',
-	'seen',
-	// Adverbs
-	'not',
-	'no',
-	'yes',
-	'here',
-	'there',
-	'when',
-	'where',
-	'how',
-	'why',
-	'up',
-	'down',
-	'even',
-	'very',
-	'just',
-	'so',
-	'only',
-	'now',
-	'still',
-	'also',
-	'too',
-	'well',
-	'really',
-	'quite',
-	'rather',
-	'always',
-	'never',
-	'often',
-	'sometimes',
-	'already',
-	'again',
-	'back',
-	'away',
-	// Contractions
-	"don't",
-	"doesn't",
-	"didn't",
-	"won't",
-	"can't",
-	"couldn't",
-	"wouldn't",
-	"shouldn't",
-	"isn't",
-	"aren't",
-	"wasn't",
-	"weren't",
-	"haven't",
-	"hasn't",
-	"hadn't",
-	"i'm",
-	"you're",
-	"he's",
-	"she's",
-	"it's",
-	"we're",
-	"they're",
-	"i've",
-	"you've",
-	"we've",
-	"they've",
-	"i'll",
-	"you'll",
-	"he'll",
-	"she'll",
-	"we'll",
-	"they'll",
-	"i'd",
-	"you'd",
-	"he'd",
-	"she'd",
-	"we'd",
-	"they'd",
-	"that's",
-	"there's",
-	"here's",
-	"what's",
-	"who's",
-	"let's",
-	// Spoken fillers
-	'uh',
-	'um',
-	'like',
-	'yeah',
-	'okay',
-	'ok',
-	'oh',
-	'ah',
-	'gonna',
-	'wanna',
-	'gotta',
-	'kinda',
-	'sorta',
-	'basically',
-	'actually',
-	'literally',
-	'right',
-	'mean'
-]);
+const STOP_WORDS = new Set(
+	[
+		// Articles, conjunctions, prepositions
+		'a an the and or but if then than because while until although though',
+		'of to in from by with as at for on about into during after before',
+		'above below around between under out over through off',
+		// Pronouns
+		'i you he she it we they me him her us them my your his its our their',
+		'that which who whom whose what this these those',
+		// Quantifiers
+		'all any some each every both either neither more most less least',
+		'much many few such other another same',
+		// Be/Have/Do/Modal verbs
+		'is are was were am be been being have has had having do does did doing',
+		'can could will would may might must shall should',
+		// Common verbs (only semantically empty ones; know/think/say/see kept visible)
+		'get got getting goes go going gone went come coming came',
+		'make made making',
+		// Adverbs
+		'not no yes here there when where how why up down even very just so',
+		'only now still also too well really quite rather always never often',
+		'sometimes already again back away',
+		// Contractions
+		"don't doesn't didn't won't can't couldn't wouldn't shouldn't",
+		"isn't aren't wasn't weren't haven't hasn't hadn't",
+		"i'm you're he's she's it's we're they're",
+		"i've you've we've they've i'll you'll he'll she'll we'll they'll",
+		"i'd you'd he'd she'd we'd they'd that's there's here's what's who's let's",
+		// Spoken fillers
+		'uh um like yeah okay ok oh ah gonna wanna gotta kinda sorta',
+		'basically actually literally right mean'
+	]
+		.join(' ')
+		.split(' ')
+);
 
 let config: ConfigStoreType;
-let wordArray: DataPoint[] = [];
 
+// Subscription kept for change-detection: clears caches when relevant toggles change.
+// Intentionally module-level (lives for app lifetime, no cleanup needed).
 ConfigStore.subscribe((value) => {
-	// Clear caches when count-related settings change
 	if (
 		config &&
 		(config.lastWordToggle !== value.lastWordToggle ||
@@ -357,9 +129,14 @@ ConfigStore.subscribe((value) => {
 	config = value;
 });
 
-TranscriptStore.subscribe((value) => {
-	wordArray = value.wordArray || [];
-});
+interface TurnData {
+	speaker: string;
+	content: string;
+	firstWord: DataPoint;
+	startTime: number;
+	endTime: number;
+	wordCount: number;
+}
 
 export class DynamicData {
 	endIndex: number = 0;
@@ -378,6 +155,40 @@ export class DynamicData {
 		return STOP_WORDS.has(normalizeWord(stringWord));
 	}
 
+	/** Builds per-turn aggregated data from a words array. */
+	private buildTurnData(words: DataPoint[]): Map<number, TurnData> {
+		const turnData = new Map<number, TurnData>();
+		for (const word of words) {
+			const existing = turnData.get(word.turnNumber);
+			if (existing) {
+				existing.content += ' ' + word.word;
+				existing.wordCount++;
+				if (word.endTime > existing.endTime) existing.endTime = word.endTime;
+			} else {
+				turnData.set(word.turnNumber, {
+					speaker: word.speaker,
+					content: word.word,
+					firstWord: word,
+					startTime: word.startTime,
+					endTime: word.endTime,
+					wordCount: 1
+				});
+			}
+		}
+		return turnData;
+	}
+
+	/** Checks if a turn's content is a question (has '?' or starts with interrogative word). */
+	private isQuestionTurn(turn: TurnData): boolean {
+		if (turn.content.includes('?')) return true;
+		const firstWord = turn.content.split(' ')[0];
+		return QUESTION_STARTERS.has(normalizeWord(firstWord));
+	}
+
+	private getEnabledSpeakers(): Set<string> {
+		return new Set(get(UserStore).filter((u) => u.enabled).map((u) => u.name));
+	}
+
 	isInTimeRange(startTime: number, endTime: number): boolean {
 		const timeline = get(TimelineStore);
 		return startTime >= timeline.leftMarker && endTime <= timeline.rightMarker;
@@ -390,6 +201,7 @@ export class DynamicData {
 	 * so that counts reflect only the visible range.
 	 */
 	getProcessedWords(filterByTimeRange = false): DataPoint[] {
+		const wordArray = get(TranscriptStore).wordArray || [];
 		let slice = wordArray.slice(0, this.endIndex);
 
 		if (filterByTimeRange) {
@@ -425,12 +237,18 @@ export class DynamicData {
 		return result;
 	}
 
-	getDynamicArrayForSpeakerGarden(): Record<string, DataPoint[]> {
-		const categorized: Record<string, DataPoint[]> = {};
-		for (const word of this.getProcessedWords(true)) {
-			if (!categorized[word.speaker]) categorized[word.speaker] = [];
-			categorized[word.speaker].push(word);
+	private groupBy<K extends string | number>(words: DataPoint[], keyFn: (w: DataPoint) => K): Record<K, DataPoint[]> {
+		const grouped = {} as Record<K, DataPoint[]>;
+		for (const word of words) {
+			const key = keyFn(word);
+			if (!grouped[key]) grouped[key] = [];
+			grouped[key].push(word);
 		}
+		return grouped;
+	}
+
+	getDynamicArrayForSpeakerGarden(): Record<string, DataPoint[]> {
+		const categorized = this.groupBy(this.getProcessedWords(true), (w) => w.speaker);
 
 		const sortOrder = config.gardenSortOrder;
 		if (sortOrder === 'default') return categorized;
@@ -452,20 +270,11 @@ export class DynamicData {
 				break;
 		}
 
-		const sorted: Record<string, DataPoint[]> = {};
-		for (const [key, value] of entries) {
-			sorted[key] = value;
-		}
-		return sorted;
+		return Object.fromEntries(entries) as Record<string, DataPoint[]>;
 	}
 
 	getDynamicArrayForTurnChart(): Record<number, DataPoint[]> {
-		const categorized: Record<number, DataPoint[]> = {};
-		for (const word of this.getProcessedWords(true)) {
-			if (!categorized[word.turnNumber]) categorized[word.turnNumber] = [];
-			categorized[word.turnNumber].push(word);
-		}
-		return categorized;
+		return this.groupBy(this.getProcessedWords(true), (w) => w.turnNumber);
 	}
 
 	getDynamicArraySortedForContributionCloud(): DataPoint[] {
@@ -491,20 +300,13 @@ export class DynamicData {
 	}
 
 	getTurnSummaries(): { speaker: string; wordCount: number; firstDataPoint: DataPoint; content: string }[] {
-		const words = this.getProcessedWords(true);
-		const turnMap = new Map<number, { speaker: string; wordCount: number; firstDataPoint: DataPoint; content: string }>();
-
-		for (const word of words) {
-			const existing = turnMap.get(word.turnNumber);
-			if (existing) {
-				existing.wordCount++;
-				existing.content += ' ' + word.word;
-			} else {
-				turnMap.set(word.turnNumber, { speaker: word.speaker, wordCount: 1, firstDataPoint: word, content: word.word });
-			}
-		}
-
-		return Array.from(turnMap.values());
+		const turnData = this.buildTurnData(this.getProcessedWords(true));
+		return Array.from(turnData.values()).map((t) => ({
+			speaker: t.speaker,
+			wordCount: t.wordCount,
+			firstDataPoint: t.firstWord,
+			content: t.content
+		}));
 	}
 
 	getDynamicArrayForTurnNetwork(): NetworkData {
@@ -582,52 +384,29 @@ export class DynamicData {
 		const visibleWords = this.getProcessedWords(true);
 		if (visibleWords.length === 0) return [];
 
-		const enabledSpeakers = new Set(get(UserStore).filter((u) => u.enabled).map((u) => u.name));
+		const enabledSpeakers = this.getEnabledSpeakers();
 		if (enabledSpeakers.size === 0) return [];
 
 		const timeline = get(TimelineStore);
 		const hasTiming = timeline.endTime > 0 && visibleWords.some((w) => w.startTime !== w.endTime);
 
-		// Aggregate data by speaker from visible words
-		const speakerData = new Map<string, { wordCount: number; turns: Set<number>; turnContents: Map<number, string[]> }>();
-		const turnInfo = new Map<number, { speaker: string; startTime: number; endTime: number }>();
-		const turnFirstWords = new Map<number, DataPoint>();
+		const turnData = this.buildTurnData(visibleWords);
 
-		for (const word of visibleWords) {
-			// Track first word of each turn for video playback
-			if (!turnFirstWords.has(word.turnNumber)) {
-				turnFirstWords.set(word.turnNumber, word);
-			}
-
-			// Aggregate speaker data
-			let data = speakerData.get(word.speaker);
+		// Aggregate per-speaker stats from turn data
+		const speakerTurns = new Map<string, { wordCount: number; turnNumbers: Set<number> }>();
+		for (const [turnNum, turn] of turnData) {
+			let data = speakerTurns.get(turn.speaker);
 			if (!data) {
-				data = { wordCount: 0, turns: new Set(), turnContents: new Map() };
-				speakerData.set(word.speaker, data);
+				data = { wordCount: 0, turnNumbers: new Set() };
+				speakerTurns.set(turn.speaker, data);
 			}
-			data.wordCount++;
-			data.turns.add(word.turnNumber);
-
-			// Build turn content for question detection
-			let turnWords = data.turnContents.get(word.turnNumber);
-			if (!turnWords) {
-				turnWords = [];
-				data.turnContents.set(word.turnNumber, turnWords);
-			}
-			turnWords.push(word.word);
-
-			// Track turn timing for interruption detection
-			const existing = turnInfo.get(word.turnNumber);
-			if (!existing) {
-				turnInfo.set(word.turnNumber, { speaker: word.speaker, startTime: word.startTime, endTime: word.endTime });
-			} else if (word.endTime > existing.endTime) {
-				existing.endTime = word.endTime;
-			}
+			data.wordCount += turn.wordCount;
+			data.turnNumbers.add(turnNum);
 		}
 
 		// Detect interruptions and consecutive turns
-		const turnOrder = Array.from(turnInfo.entries())
-			.map(([turnNumber, info]) => ({ turnNumber, ...info }))
+		const turnOrder = Array.from(turnData.entries())
+			.map(([turnNumber, t]) => ({ turnNumber, speaker: t.speaker, startTime: t.startTime, endTime: t.endTime }))
 			.sort((a, b) => a.startTime - b.startTime);
 
 		const interruptingTurns = new Set<number>();
@@ -641,22 +420,17 @@ export class DynamicData {
 			}
 		}
 
-		// Compute total turns for participation rate
-		let totalTurns = 0;
-		for (const data of speakerData.values()) {
-			totalTurns += data.turns.size;
-		}
+		const totalTurns = turnData.size;
 
 		// Get max values for normalization
 		let maxValues: { avgTurnLength: number; participation: number };
 		if (!scaleToVisibleData) {
 			maxValues = this.computeFullTranscriptMaxValues();
 		} else {
-			// First pass: compute max values from visible/enabled speakers
 			let maxAvg = 0, maxPart = 0;
-			for (const [speaker, data] of speakerData) {
+			for (const [speaker, data] of speakerTurns) {
 				if (!enabledSpeakers.has(speaker)) continue;
-				const turnCount = data.turns.size;
+				const turnCount = data.turnNumbers.size;
 				maxAvg = Math.max(maxAvg, ratio(data.wordCount, turnCount));
 				maxPart = Math.max(maxPart, ratio(turnCount, totalTurns));
 			}
@@ -666,25 +440,19 @@ export class DynamicData {
 		// Build fingerprints for each enabled speaker
 		const fingerprints: SpeakerFingerprintData[] = [];
 
-		for (const [speaker, data] of speakerData) {
+		for (const [speaker, data] of speakerTurns) {
 			if (!enabledSpeakers.has(speaker)) continue;
 
-			const turnCount = data.turns.size;
+			const turnCount = data.turnNumbers.size;
 
-			// Identify question turns
+			// Classify turns using shared turnData
 			const questionTurnNumbers = new Set<number>();
-			for (const [turnNum, words] of data.turnContents) {
-				const hasQuestionMark = words.some((w) => w.includes('?'));
-				const startsWithQuestion = QUESTION_STARTERS.has(normalizeWord(words[0] || ''));
-				if (hasQuestionMark || startsWithQuestion) {
-					questionTurnNumbers.add(turnNum);
-				}
-			}
-
-			// Identify interruption and consecutive turns for this speaker
 			const interruptionTurnNumbers = new Set<number>();
 			const consecutiveTurnNumbers = new Set<number>();
-			for (const turnNum of data.turns) {
+			for (const turnNum of data.turnNumbers) {
+				const turn = turnData.get(turnNum);
+				if (!turn) continue;
+				if (this.isQuestionTurn(turn)) questionTurnNumbers.add(turnNum);
 				if (interruptingTurns.has(turnNum)) interruptionTurnNumbers.add(turnNum);
 				if (consecutiveTurns.has(turnNum)) consecutiveTurnNumbers.add(turnNum);
 			}
@@ -697,10 +465,10 @@ export class DynamicData {
 			const rawInterruptions = hasTiming ? ratio(interruptionTurnNumbers.size, turnCount) : 0;
 
 			// Build turn first words arrays for video playback
-			const allTurnFirstWords = Array.from(data.turns)
+			const allTurnFirstWords = Array.from(data.turnNumbers)
 				.sort((a, b) => a - b)
-				.map((turnNum) => turnFirstWords.get(turnNum)!)
-				.filter(Boolean);
+				.map((turnNum) => turnData.get(turnNum)?.firstWord)
+				.filter((w): w is DataPoint => w != null);
 
 			fingerprints.push({
 				speaker,
@@ -713,7 +481,6 @@ export class DynamicData {
 				rawConsecutiveRate: rawConsecutive,
 				rawQuestionRate: rawQuestions,
 				rawInterruptionRate: rawInterruptions,
-				// Radar values: max-normalized for turn length & participation, raw for rates
 				avgTurnLength: ratio(avgTurnLength, maxValues.avgTurnLength),
 				participationRate: ratio(rawParticipation, maxValues.participation),
 				consecutiveRate: rawConsecutive,
@@ -735,9 +502,10 @@ export class DynamicData {
 	 * Does NOT filter by time range (that's the point - it's the full transcript).
 	 */
 	private computeFullTranscriptMaxValues(): { avgTurnLength: number; participation: number } {
+		const wordArray = get(TranscriptStore).wordArray || [];
 		if (wordArray.length === 0) return { avgTurnLength: 0, participation: 0 };
 
-		const enabledSpeakers = new Set(get(UserStore).filter((u) => u.enabled).map((u) => u.name));
+		const enabledSpeakers = this.getEnabledSpeakers();
 		const filterStopWords = config.stopWordsToggle;
 
 		// Aggregate from full wordArray, respecting filters
@@ -758,17 +526,15 @@ export class DynamicData {
 		}
 
 		let totalTurns = 0;
+		for (const data of speakerData.values()) totalTurns += data.turns.size;
+
+		let maxAvg = 0, maxPart = 0;
 		for (const data of speakerData.values()) {
-			totalTurns += data.turns.size;
+			maxAvg = Math.max(maxAvg, ratio(data.wordCount, data.turns.size));
+			maxPart = Math.max(maxPart, ratio(data.turns.size, totalTurns));
 		}
 
-		let maxAvgTurnLength = 0, maxParticipation = 0;
-		for (const data of speakerData.values()) {
-			maxAvgTurnLength = Math.max(maxAvgTurnLength, ratio(data.wordCount, data.turns.size));
-			maxParticipation = Math.max(maxParticipation, ratio(data.turns.size, totalTurns));
-		}
-
-		return { avgTurnLength: maxAvgTurnLength, participation: maxParticipation };
+		return { avgTurnLength: maxAvg, participation: maxPart };
 	}
 
 	/**
@@ -779,75 +545,43 @@ export class DynamicData {
 		const words = this.getProcessedWords(true);
 		if (words.length === 0) return [];
 
-		const users = get(UserStore);
-		const enabledSpeakers = new Set(users.filter((u) => u.enabled).map((u) => u.name));
-
-		// Build turn data: content, first word, speaker
-		const turnData = new Map<number, { speaker: string; content: string; firstWord: DataPoint; startTime: number }>();
-		for (const word of words) {
-			const existing = turnData.get(word.turnNumber);
-			if (existing) {
-				existing.content += ' ' + word.word;
-			} else {
-				turnData.set(word.turnNumber, {
-					speaker: word.speaker,
-					content: word.word,
-					firstWord: word,
-					startTime: word.startTime
-				});
-			}
-		}
-
-		// Get sorted turn numbers
+		const enabledSpeakers = this.getEnabledSpeakers();
+		const turnData = this.buildTurnData(words);
 		const turnNumbers = Array.from(turnData.keys()).sort((a, b) => a - b);
-
-		// Identify question turns
-		const isQuestionTurn = (turnNum: number): boolean => {
-			const data = turnData.get(turnNum);
-			if (!data) return false;
-			const content = data.content;
-			// Has question mark
-			if (content.includes('?')) return true;
-			// Starts with interrogative word
-			const firstWord = content.split(' ')[0];
-			return QUESTION_STARTERS.has(normalizeWord(firstWord));
-		};
-
 		const pairs: QuestionAnswerPair[] = [];
 
 		for (let i = 0; i < turnNumbers.length; i++) {
 			const turnNum = turnNumbers[i];
-			const data = turnData.get(turnNum)!;
+			const turn = turnData.get(turnNum);
+			if (!turn) continue;
 
-			// Skip if speaker is disabled
-			if (!enabledSpeakers.has(data.speaker)) continue;
-
-			if (!isQuestionTurn(turnNum)) continue;
+			if (!enabledSpeakers.has(turn.speaker)) continue;
+			if (!this.isQuestionTurn(turn)) continue;
 
 			// Look for next turn by a different speaker as the "answer"
-			let answerTurn: number | null = null;
-			let answerData: { speaker: string; content: string; firstWord: DataPoint; startTime: number } | null = null;
+			let answerTurn: TurnData | null = null;
+			let answerTurnNum: number | null = null;
 
 			for (let j = i + 1; j < turnNumbers.length; j++) {
-				const nextTurnNum = turnNumbers[j];
-				const nextData = turnData.get(nextTurnNum)!;
-				if (nextData.speaker !== data.speaker && enabledSpeakers.has(nextData.speaker)) {
-					answerTurn = nextTurnNum;
-					answerData = nextData;
+				const nextTurn = turnData.get(turnNumbers[j]);
+				if (!nextTurn) continue;
+				if (nextTurn.speaker !== turn.speaker && enabledSpeakers.has(nextTurn.speaker)) {
+					answerTurn = nextTurn;
+					answerTurnNum = turnNumbers[j];
 					break;
 				}
 			}
 
 			pairs.push({
 				questionTurn: turnNum,
-				questionSpeaker: data.speaker,
-				questionFirstWord: data.firstWord,
-				questionContent: data.content,
-				answerTurn,
-				answerSpeaker: answerData?.speaker ?? null,
-				answerFirstWord: answerData?.firstWord ?? null,
-				answerContent: answerData?.content ?? null,
-				startTime: data.startTime
+				questionSpeaker: turn.speaker,
+				questionFirstWord: turn.firstWord,
+				questionContent: turn.content,
+				answerTurn: answerTurnNum,
+				answerSpeaker: answerTurn?.speaker ?? null,
+				answerFirstWord: answerTurn?.firstWord ?? null,
+				answerContent: answerTurn?.content ?? null,
+				startTime: turn.startTime
 			});
 		}
 
@@ -863,23 +597,12 @@ export class DynamicData {
 		const words = this.getProcessedWords(true);
 		if (words.length === 0) return { word: searchWord, occurrences: [] };
 
-		const users = get(UserStore);
-		const enabledSpeakers = new Set(users.filter((u) => u.enabled).map((u) => u.name));
-
-		// Build turn content map
-		const turnContent = new Map<number, string>();
-		for (const word of words) {
-			const existing = turnContent.get(word.turnNumber);
-			if (existing) {
-				turnContent.set(word.turnNumber, existing + ' ' + word.word);
-			} else {
-				turnContent.set(word.turnNumber, word.word);
-			}
-		}
+		const enabledSpeakers = this.getEnabledSpeakers();
+		const turnData = this.buildTurnData(words);
 
 		const normalizedSearch = normalizeWord(searchWord);
 		const occurrences: WordOccurrence[] = [];
-		const speakerFirstOccurrence = new Map<string, boolean>();
+		const speakerFirstOccurrence = new Set<string>();
 		let isFirstOverall = true;
 
 		for (const word of words) {
@@ -887,9 +610,7 @@ export class DynamicData {
 			if (!normalizeWord(word.word).includes(normalizedSearch)) continue;
 
 			const isFirstBySpeaker = !speakerFirstOccurrence.has(word.speaker);
-			if (isFirstBySpeaker) {
-				speakerFirstOccurrence.set(word.speaker, true);
-			}
+			if (isFirstBySpeaker) speakerFirstOccurrence.add(word.speaker);
 
 			occurrences.push({
 				speaker: word.speaker,
@@ -899,13 +620,12 @@ export class DynamicData {
 				isFirst: isFirstOverall,
 				isFirstBySpeaker,
 				matchedWord: word.word,
-				turnContent: turnContent.get(word.turnNumber) || ''
+				turnContent: turnData.get(word.turnNumber)?.content || ''
 			});
 
 			isFirstOverall = false;
 		}
 
-		// Sort by startTime
 		occurrences.sort((a, b) => a.startTime - b.startTime);
 
 		return { word: searchWord, occurrences };
