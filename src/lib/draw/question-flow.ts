@@ -10,7 +10,7 @@ import type { DataPoint } from '../../models/dataPoint';
 import type { User } from '../../models/user';
 import type { Bounds } from './types/bounds';
 import type { QuestionAnswerPair } from '../core/dynamic-data';
-import { withDimming, createUserMap, getCrossHighlight } from './draw-utils';
+import { withDimming, createUserMap, getCrossHighlight, drawTimeAxis } from './draw-utils';
 
 const LEFT_MARGIN = 80;
 const RIGHT_MARGIN = 20;
@@ -86,7 +86,7 @@ export class QuestionFlow {
 		this.drawSpeakerLabels();
 
 		// Draw timeline axis
-		this.drawTimeAxis();
+		drawTimeAxis(this.sk, this.bounds, this, this.timeline);
 
 		// Render all pairs
 		const rendered = this.renderPairs(pairs, wordCounts, maxWords);
@@ -137,39 +137,6 @@ export class QuestionFlow {
 			this.sk.strokeWeight(1);
 			this.sk.line(this.gx, y, this.gx + this.gw, y);
 		}
-	}
-
-	private drawTimeAxis(): void {
-		const fontSize = Math.max(8, Math.min(10, this.bounds.height * 0.025));
-		this.sk.textSize(fontSize);
-		this.sk.fill(120);
-		this.sk.noStroke();
-		this.sk.textAlign(this.sk.CENTER, this.sk.TOP);
-
-		const duration = this.timeline.rightMarker - this.timeline.leftMarker;
-		const numTicks = Math.min(8, Math.floor(this.gw / 60));
-
-		for (let i = 0; i <= numTicks; i++) {
-			const frac = i / numTicks;
-			const time = this.timeline.leftMarker + frac * duration;
-			const x = this.gx + frac * this.gw;
-
-			// Tick mark
-			this.sk.stroke(200);
-			this.sk.strokeWeight(1);
-			this.sk.line(x, this.gy + this.gh, x, this.gy + this.gh + 5);
-
-			// Time label
-			this.sk.noStroke();
-			this.sk.fill(120);
-			this.sk.text(this.formatTime(time), x, this.gy + this.gh + 8);
-		}
-	}
-
-	private formatTime(seconds: number): string {
-		const mins = Math.floor(seconds / 60);
-		const secs = Math.floor(seconds % 60);
-		return `${mins}:${secs.toString().padStart(2, '0')}`;
 	}
 
 	private renderPairs(pairs: QuestionAnswerPair[], wordCounts: { qWords: number; aWords: number }[], maxWords: number): RenderedPair[] {

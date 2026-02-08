@@ -2,6 +2,7 @@ import type p5 from 'p5';
 import type { User } from '../../models/user';
 import type { HoverState } from '../../stores/hoverStore';
 import type { Bounds } from './types/bounds';
+import { formatTimeCompact } from '../core/time-utils';
 
 const DIM_ALPHA = 0.2;
 
@@ -63,6 +64,41 @@ export function getCrossHighlight(sk: p5, bounds: Bounds, dashboardToggle: boole
 		turn: hlTurn,
 		turns: hlTurns
 	};
+}
+
+/**
+ * Draws a horizontal time axis with tick marks and labels below the grid area.
+ */
+export function drawTimeAxis(
+	sk: p5,
+	bounds: Bounds,
+	grid: { gx: number; gy: number; gw: number; gh: number },
+	timeline: { leftMarker: number; rightMarker: number }
+): void {
+	const fontSize = Math.max(8, Math.min(10, bounds.height * 0.025));
+	sk.textSize(fontSize);
+	sk.fill(120);
+	sk.noStroke();
+	sk.textAlign(sk.CENTER, sk.TOP);
+
+	const duration = timeline.rightMarker - timeline.leftMarker;
+	const numTicks = Math.min(8, Math.floor(grid.gw / 60));
+
+	for (let i = 0; i <= numTicks; i++) {
+		const frac = i / numTicks;
+		const time = timeline.leftMarker + frac * duration;
+		const x = grid.gx + frac * grid.gw;
+
+		// Tick mark
+		sk.stroke(200);
+		sk.strokeWeight(1);
+		sk.line(x, grid.gy + grid.gh, x, grid.gy + grid.gh + 5);
+
+		// Time label
+		sk.noStroke();
+		sk.fill(120);
+		sk.text(formatTimeCompact(time), x, grid.gy + grid.gh + 8);
+	}
 }
 
 const TOOLTIP_MAX_TURNS = 4;
