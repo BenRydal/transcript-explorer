@@ -64,11 +64,12 @@
 		onkeydown={handleKeydown}
 		role="dialog"
 		aria-modal="true"
+		tabindex="-1"
 	>
 		<div class="modal-box w-11/12 max-w-lg">
 			<div class="flex justify-between mb-4">
 				<h3 class="font-bold text-lg">Upload Files</h3>
-				<button class="btn btn-circle btn-sm" onclick={() => (isOpen = false)}>
+				<button class="btn btn-circle btn-sm" onclick={() => (isOpen = false)} aria-label="Close">
 					<svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
 						<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
 					</svg>

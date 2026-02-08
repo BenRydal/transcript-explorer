@@ -265,7 +265,7 @@
 	<!-- Start Time Column (shown in startOnly and startEnd modes) -->
 	{#if showStartTime}
 		{#if editMode === 'startTime'}
-			<div class="time-edit-container" onclick={(e) => e.stopPropagation()}>
+			<div class="time-edit-container" onclick={(e) => e.stopPropagation()} role="presentation">
 				{#if $VideoStore.isLoaded}
 					<button class="time-capture-btn capture-start-btn" onclick={captureStartTime} title="Set IN point from video">
 						<span class="capture-bracket">[</span>
@@ -295,7 +295,7 @@
 	<!-- End Time Column (shown only in startEnd mode) -->
 	{#if showEndTime}
 		{#if editMode === 'endTime'}
-			<div class="time-edit-container" onclick={(e) => e.stopPropagation()}>
+			<div class="time-edit-container" onclick={(e) => e.stopPropagation()} role="presentation">
 				<input type="text" class="time-input" bind:value={editedEndTime} onkeydown={handleEditKeydown} onblur={saveEndTime} placeholder="End" />
 				{#if $VideoStore.isLoaded}
 					<button class="time-capture-btn capture-end-btn" onclick={captureEndTime} title="Set OUT point from video">
@@ -344,7 +344,7 @@
 
 	<!-- Content -->
 	{#if editMode === 'content'}
-		<div class="content-edit-container" onclick={(e) => e.stopPropagation()}>
+		<div class="content-edit-container" onclick={(e) => e.stopPropagation()} role="presentation">
 			<textarea class="content-textarea" bind:value={editedContent} onkeydown={handleEditKeydown} onblur={saveContent} use:autoresize></textarea>
 			<div class="edit-hint">Enter to save, Esc to cancel</div>
 		</div>
@@ -363,7 +363,7 @@
 
 	<!-- Action buttons (visible on hover) -->
 	{#if isHovering}
-		<div class="row-actions" onclick={(e) => e.stopPropagation()}>
+		<div class="row-actions" onclick={(e) => e.stopPropagation()} role="presentation">
 			<button class="action-btn add-btn" onclick={handleAddAfter} title="Add turn after">
 				<svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" viewBox="0 0 20 20" fill="currentColor">
 					<path fill-rule="evenodd" d="M10 3a1 1 0 011 1v5h5a1 1 0 110 2h-5v5a1 1 0 11-2 0v-5H4a1 1 0 110-2h5V4a1 1 0 011-1z" clip-rule="evenodd" />
