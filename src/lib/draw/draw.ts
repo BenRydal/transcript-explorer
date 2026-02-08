@@ -178,8 +178,7 @@ export class Draw {
 
 	updateSpeakerFingerprint(pos: Bounds): DrawResult {
 		const fingerprint = new SpeakerFingerprint(this.sk, pos);
-		// Pass scaleToFullTranscript based on config (inverted: !scaleToVisibleData)
-		const { snippetPoints, hoveredSpeaker } = fingerprint.draw(this.sk.dynamicData.getSpeakerFingerprints(!currConfig.scaleToVisibleData));
+		const { snippetPoints, hoveredSpeaker } = fingerprint.draw(this.sk.dynamicData.getSpeakerFingerprints(currConfig.scaleToVisibleData));
 		return result({ arrayOfFirstWords: snippetPoints, hoveredSpeaker });
 	}
 

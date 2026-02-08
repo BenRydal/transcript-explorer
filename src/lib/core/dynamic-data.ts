@@ -569,16 +569,16 @@ export class DynamicData {
 	/**
 	 * Computes speaker fingerprint data for radar chart visualization.
 	 *
-	 * When scaleToFullTranscript is true (default):
+	 * When scaleToVisibleData is false (default):
 	 * - Raw values computed from REVEALED words (cumulative as you animate)
 	 * - Max values from FULL transcript (fixed reference)
 	 * - Values grow as content is revealed, reaching final shape at 100%
 	 *
-	 * When scaleToFullTranscript is false:
+	 * When scaleToVisibleData is true:
 	 * - Both raw and max values from currently visible words
 	 * - Values normalized within the visible selection
 	 */
-	getSpeakerFingerprints(scaleToFullTranscript = true): SpeakerFingerprintData[] {
+	getSpeakerFingerprints(scaleToVisibleData = false): SpeakerFingerprintData[] {
 		const visibleWords = this.getProcessedWords(true);
 		if (visibleWords.length === 0) return [];
 
@@ -649,7 +649,7 @@ export class DynamicData {
 
 		// Get max values for normalization
 		let maxValues: { avgTurnLength: number; participation: number };
-		if (scaleToFullTranscript) {
+		if (!scaleToVisibleData) {
 			maxValues = this.computeFullTranscriptMaxValues();
 		} else {
 			// First pass: compute max values from visible/enabled speakers
