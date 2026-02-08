@@ -28,13 +28,7 @@ import { createUserMap } from './draw-utils';
 const NUM_AXES = 5;
 const AXIS_LABELS = ['Turn Length', 'Participation', 'Consecutive', 'Questions', 'Interrupts'];
 const AXIS_LABELS_FULL = ['Turn Length', 'Participation', 'Consecutive Turns', 'Questions', 'Interruptions'];
-const AXIS_KEYS: (keyof SpeakerFingerprintData)[] = [
-	'avgTurnLength',
-	'participationRate',
-	'consecutiveRate',
-	'questionRate',
-	'interruptionRate'
-];
+const AXIS_KEYS: (keyof SpeakerFingerprintData)[] = ['avgTurnLength', 'participationRate', 'consecutiveRate', 'questionRate', 'interruptionRate'];
 
 const MIN_RADAR_RADIUS = 60;
 const RADAR_PADDING = 50;

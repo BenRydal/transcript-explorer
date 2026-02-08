@@ -158,23 +158,21 @@
 				{/if}
 
 				<!-- Word Filtering -->
-			<div class="flex flex-col border-t pt-4">
-				<p class="font-medium mb-2">Word Filtering</p>
-				<label class="flex items-center gap-2 cursor-pointer">
-					<input
-						type="checkbox"
-						class="checkbox checkbox-sm"
-						checked={$ConfigStore.stopWordsToggle}
-						onchange={() => handleConfigChange('stopWordsToggle', !$ConfigStore.stopWordsToggle)}
-					/>
-					<span class="text-sm">Hide stop words</span>
-				</label>
-				<p class="text-xs text-gray-500 mt-1">
-					Removes common words (the, is, and, etc.) from all visualizations.
-				</p>
-			</div>
+				<div class="flex flex-col border-t pt-4">
+					<p class="font-medium mb-2">Word Filtering</p>
+					<label class="flex items-center gap-2 cursor-pointer">
+						<input
+							type="checkbox"
+							class="checkbox checkbox-sm"
+							checked={$ConfigStore.stopWordsToggle}
+							onchange={() => handleConfigChange('stopWordsToggle', !$ConfigStore.stopWordsToggle)}
+						/>
+						<span class="text-sm">Hide stop words</span>
+					</label>
+					<p class="text-xs text-gray-500 mt-1">Removes common words (the, is, and, etc.) from all visualizations.</p>
+				</div>
 
-			<!-- Visualization Scaling -->
+				<!-- Visualization Scaling -->
 				<div class="flex flex-col border-t pt-4">
 					<p class="font-medium mb-2">Visualization Scaling</p>
 					<label class="flex items-center gap-2 cursor-pointer">

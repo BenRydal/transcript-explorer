@@ -186,7 +186,11 @@ export class DynamicData {
 	}
 
 	private getEnabledSpeakers(): Set<string> {
-		return new Set(get(UserStore).filter((u) => u.enabled).map((u) => u.name));
+		return new Set(
+			get(UserStore)
+				.filter((u) => u.enabled)
+				.map((u) => u.name)
+		);
 	}
 
 	isInTimeRange(startTime: number, endTime: number): boolean {
@@ -411,7 +415,8 @@ export class DynamicData {
 		const interruptingTurns = new Set<number>();
 		const consecutiveTurns = new Set<number>();
 		for (let i = 1; i < turnOrder.length; i++) {
-			const prev = turnOrder[i - 1], curr = turnOrder[i];
+			const prev = turnOrder[i - 1],
+				curr = turnOrder[i];
 			if (curr.speaker === prev.speaker) {
 				consecutiveTurns.add(curr.turnNumber);
 			} else if (hasTiming && curr.startTime < prev.endTime) {
@@ -426,7 +431,8 @@ export class DynamicData {
 		if (!scaleToVisibleData) {
 			maxValues = this.computeFullTranscriptMaxValues();
 		} else {
-			let maxAvg = 0, maxPart = 0;
+			let maxAvg = 0,
+				maxPart = 0;
 			for (const [speaker, data] of speakerTurns) {
 				if (!enabledSpeakers.has(speaker)) continue;
 				const turnCount = data.turnNumbers.size;
@@ -527,7 +533,8 @@ export class DynamicData {
 		let totalTurns = 0;
 		for (const data of speakerData.values()) totalTurns += data.turns.size;
 
-		let maxAvg = 0, maxPart = 0;
+		let maxAvg = 0,
+			maxPart = 0;
 		for (const data of speakerData.values()) {
 			maxAvg = Math.max(maxAvg, ratio(data.wordCount, data.turns.size));
 			maxPart = Math.max(maxPart, ratio(data.turns.size, totalTurns));
