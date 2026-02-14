@@ -85,7 +85,6 @@
 		'wordJourneyToggle',
 		'dashboardToggle'
 	] as const;
-	const regularVisualizationToggles = techniqueToggleOptions.filter((t) => t !== 'dashboardToggle');
 
 	const exampleOptions = [
 		{ value: 'example-1', label: 'Kindergarten Activity', icon: GraduationCap },
@@ -231,21 +230,22 @@
 	}
 
 	function handleConfigChangeFromInput(e: Event, key: keyof ConfigStoreType) {
-		onconfigChange?.({ key, value: parseFloat((e.target as HTMLInputElement).value) });
+		if (!(e.target instanceof HTMLInputElement)) return;
+		const value = parseFloat(e.target.value);
+		if (isNaN(value)) return;
+		onconfigChange?.({ key, value });
 	}
 
 	function handleWordSearch(event: Event) {
-		onwordSearch?.((event.target as HTMLInputElement).value.trim());
-	}
-
-	function truncateExample(name: string): string {
-		return !name ? 'Examples' : name.length > 8 ? name.slice(0, 5) + '...' : name;
+		if (!(event.target instanceof HTMLInputElement)) return;
+		onwordSearch?.(event.target.value.trim());
 	}
 
 	// --- Svelte actions ---
 
 	function clickOutsideAction(node: HTMLElement, onClickOutside: () => void) {
 		const handleClick = (event: MouseEvent) => {
+			if (!node.isConnected || !event.target) return;
 			if (!node.contains(event.target as Node)) onClickOutside();
 		};
 		document.addEventListener('click', handleClick, true);
@@ -256,7 +256,7 @@
 		};
 	}
 
-	function clickOutsideViz(node: HTMLElement) {
+	function clickOutsideDropdowns(node: HTMLElement) {
 		return clickOutsideAction(node, () => {
 			vizDropdownOpen = false;
 			settingsPanelOpen = false;
@@ -287,10 +287,10 @@
 		<!-- Example Data Dropdown -->
 		<details class="dropdown" use:clickOutside data-tour="examples">
 			<summary
-				class="flex justify-between items-center rounded border border-gray-300 px-3 py-1.5 bg-white text-sm font-medium text-gray-700 hover:bg-gray-50 cursor-pointer"
+				class="flex justify-between items-center rounded border border-gray-300 px-3 py-1.5 bg-white text-sm font-medium text-gray-700 hover:bg-gray-50 cursor-pointer max-w-[10rem]"
 				title={selectedExample || 'Examples'}
 			>
-				<span class="truncate">{truncateExample(selectedExample)}</span>
+				<span class="truncate">{selectedExample || 'Examples'}</span>
 				<ChevronDown size={12} class="ml-2 flex-shrink-0" />
 			</summary>
 			<ul class="menu dropdown-content rounded-box z-[1] w-56 p-2 shadow bg-base-100 max-h-[60vh] overflow-y-auto overflow-x-hidden">
@@ -313,7 +313,7 @@
 		<div class="divider divider-horizontal mx-1 h-8"></div>
 
 		<!-- Visualization Grid Popover -->
-		<div class="relative" use:clickOutsideViz data-tour="viz-modes">
+		<div class="relative" use:clickOutsideDropdowns data-tour="viz-modes">
 			<button class="btn btn-sm gap-1 flex items-center" title={activeVisualizationName} onclick={() => (vizDropdownOpen = !vizDropdownOpen)}>
 				<ActiveVizIcon size={16} />
 				<span class="max-w-[6rem] truncate">{activeVisualizationName}</span>
@@ -457,6 +457,7 @@
 				class="btn btn-sm gap-1 {isEditorVisible ? 'btn-primary' : ''}"
 				onclick={() => ontoggleEditor?.()}
 				title={isEditorVisible ? 'Hide Editor' : 'Show Editor'}
+				aria-label={isEditorVisible ? 'Hide Editor' : 'Show Editor'}
 			>
 				<Text size={16} />
 				Editor
@@ -465,6 +466,7 @@
 				class="btn btn-sm btn-square {isVideoVisible ? 'btn-primary' : ''}"
 				onclick={() => ontoggleVideo?.()}
 				title={isVideoVisible ? 'Hide Video' : 'Show Video'}
+				aria-label={isVideoVisible ? 'Hide Video' : 'Show Video'}
 				disabled={!isVideoLoaded}
 			>
 				{#if isVideoVisible}
@@ -524,29 +526,32 @@
 			<!-- Visualization Mode -->
 			<div>
 				<p class="text-xs uppercase tracking-wider text-gray-500 mb-2">Visualization</p>
-				<div class="flex flex-wrap gap-2">
-					{#each regularVisualizationToggles as toggle}
-						<button
-							class="btn btn-sm {$ConfigStore[toggle] ? 'btn-primary' : 'btn-ghost'}"
-							onclick={() => {
-								toggleSelection(toggle, techniqueToggleOptions);
-								mobileMenuOpen = false;
-							}}
-						>
-							{formatToggleName(toggle)}
-						</button>
-					{/each}
-					<div class="w-full border-t border-gray-200 my-1"></div>
-					<button
-						class="btn btn-sm {$ConfigStore.dashboardToggle ? 'btn-primary' : 'btn-ghost'}"
-						onclick={() => {
-							toggleSelection('dashboardToggle', techniqueToggleOptions);
-							mobileMenuOpen = false;
-						}}
-					>
-						Dashboard
-					</button>
-				</div>
+				{#each vizCategories as category, ci}
+					<p class="text-[10px] uppercase tracking-widest text-gray-400 font-semibold mb-1.5 {ci > 0 ? 'mt-2' : ''}">{category.label}</p>
+					<div class="flex flex-wrap gap-2">
+						{#each category.items as toggle}
+							<button
+								class="btn btn-sm {$ConfigStore[toggle] ? 'btn-primary' : 'btn-ghost'}"
+								onclick={() => {
+									toggleSelection(toggle, techniqueToggleOptions);
+									mobileMenuOpen = false;
+								}}
+							>
+								{formatToggleName(toggle)}
+							</button>
+						{/each}
+					</div>
+				{/each}
+				<div class="w-full border-t border-gray-200 my-2"></div>
+				<button
+					class="btn btn-sm {$ConfigStore.dashboardToggle ? 'btn-primary' : 'btn-ghost'}"
+					onclick={() => {
+						toggleSelection('dashboardToggle', techniqueToggleOptions);
+						mobileMenuOpen = false;
+					}}
+				>
+					Dashboard
+				</button>
 			</div>
 
 			<!-- Search -->
