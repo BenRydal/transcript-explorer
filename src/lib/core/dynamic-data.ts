@@ -395,9 +395,22 @@ export class DynamicData {
 
 		const turnData = this.buildTurnData(visibleWords);
 
+		// Filter turns by search term if active
+		let matchingTurnNumbers: Set<number> | null = null;
+		if (config.wordToSearch) {
+			const searchTerm = normalizeWord(config.wordToSearch);
+			matchingTurnNumbers = new Set<number>();
+			for (const [turnNum, turn] of turnData) {
+				if (normalizeWord(turn.content).includes(searchTerm)) {
+					matchingTurnNumbers.add(turnNum);
+				}
+			}
+		}
+
 		// Aggregate per-speaker stats from turn data
 		const speakerTurns = new Map<string, { wordCount: number; turnNumbers: Set<number> }>();
 		for (const [turnNum, turn] of turnData) {
+			if (matchingTurnNumbers && !matchingTurnNumbers.has(turnNum)) continue;
 			let data = speakerTurns.get(turn.speaker);
 			if (!data) {
 				data = { wordCount: 0, turnNumbers: new Set() };
@@ -424,7 +437,7 @@ export class DynamicData {
 			}
 		}
 
-		const totalTurns = turnData.size;
+		const totalTurns = matchingTurnNumbers ? matchingTurnNumbers.size : turnData.size;
 
 		// Get max values for normalization
 		let maxValues: { avgTurnLength: number; participation: number };
