@@ -69,6 +69,7 @@
 
 	let mobileMenuOpen = $state(false);
 	let vizDropdownOpen = $state(false);
+	let settingsPanelOpen = $state(false);
 
 	// --- Data ---
 
@@ -189,11 +190,11 @@
 		return hidden;
 	});
 
-	let dashboardOptionsByPanel = $derived.by(() => {
-		return $ConfigStore.dashboardPanels
+	let dashboardOptionsByPanel = $derived(
+		$ConfigStore.dashboardPanels
 			.filter((key) => key in panelOptionsMap)
-			.map((key) => ({ key, label: PANEL_LABELS[key] ?? key, options: panelOptionsMap[key] }));
-	});
+			.map((key) => ({ key, label: PANEL_LABELS[key] ?? key, options: panelOptionsMap[key] }))
+	);
 
 	let hasActiveSettings = $derived(
 		(activePanelKey === 'dashboard' && dashboardOptionsByPanel.length > 0) ||
@@ -256,7 +257,10 @@
 	}
 
 	function clickOutsideViz(node: HTMLElement) {
-		return clickOutsideAction(node, () => (vizDropdownOpen = false));
+		return clickOutsideAction(node, () => {
+			vizDropdownOpen = false;
+			settingsPanelOpen = false;
+		});
 	}
 
 	function clickOutside(node: HTMLElement) {
@@ -400,10 +404,22 @@
 								Dashboard
 							</button>
 						</div>
+
+						{#if hasActiveSettings}
+							<hr class="my-2.5 border-t border-gray-200" />
+							<button
+								class="w-full flex items-center gap-2 px-1 py-1.5 text-sm rounded hover:bg-gray-100 transition-colors
+									{settingsPanelOpen ? 'text-primary' : 'text-gray-500'}"
+								onclick={() => (settingsPanelOpen = !settingsPanelOpen)}
+							>
+								<SettingsIcon size={14} />
+								<span class="truncate">{activeVisualizationName} Settings</span>
+							</button>
+						{/if}
 					</div>
 
 					<!-- Settings side panel -->
-					{#if hasActiveSettings}
+					{#if hasActiveSettings && settingsPanelOpen}
 						<div class="rounded-lg w-52 py-3 px-3 shadow-lg bg-base-100 border border-gray-200 max-h-[70vh] overflow-y-auto">
 							{#if activePanelKey === 'dashboard'}
 								<p class="text-[10px] uppercase tracking-widest text-gray-400 font-semibold mb-2">Dashboard</p>
