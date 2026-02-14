@@ -371,10 +371,22 @@
 
 				<div class="absolute top-full left-0 mt-1 z-[1] flex items-start gap-1">
 					<!-- Grid panel -->
-					<div class="rounded-lg w-72 py-3 px-3 shadow-lg bg-base-100 border border-gray-200">
+					<div class="rounded-lg w-80 py-3 px-3 shadow-lg bg-base-100 border border-gray-200">
+						{#if hasActiveSettings}
+							<button
+								class="w-full flex items-center gap-2 px-1 py-1.5 mb-2.5 text-sm rounded hover:bg-gray-100 transition-colors
+									{settingsPanelOpen ? 'text-primary' : 'text-gray-500'}"
+								onclick={() => (settingsPanelOpen = !settingsPanelOpen)}
+							>
+								<SettingsIcon size={14} />
+								<span class="truncate">{activeVisualizationName} Settings</span>
+							</button>
+							<hr class="mb-2.5 border-t border-gray-200" />
+						{/if}
+
 						{#each vizCategories as category, ci}
 							<p class="text-[10px] uppercase tracking-widest text-gray-400 font-semibold mb-1.5 {ci > 0 ? 'mt-3' : ''}">{category.label}</p>
-							<div class="grid grid-cols-3 gap-1.5">
+							<div class="grid grid-cols-4 gap-1.5">
 								{#each category.items as toggle}
 									{@const panelKey = toggle.replace('Toggle', '')}
 									{@const isActive = $ConfigStore[toggle]}
@@ -394,7 +406,7 @@
 						{/each}
 
 						<hr class="my-2.5 border-t border-gray-200" />
-						<div class="grid grid-cols-3 gap-1.5">
+						<div class="grid grid-cols-4 gap-1.5">
 							<button
 								class="flex flex-col items-center gap-1 rounded-lg px-2 py-2 text-xs cursor-pointer transition-colors
 									{$ConfigStore.dashboardToggle ? 'bg-primary/10 text-primary ring-1 ring-primary/30 font-medium' : 'text-gray-600 hover:bg-gray-100'}"
@@ -404,18 +416,6 @@
 								Dashboard
 							</button>
 						</div>
-
-						{#if hasActiveSettings}
-							<hr class="my-2.5 border-t border-gray-200" />
-							<button
-								class="w-full flex items-center gap-2 px-1 py-1.5 text-sm rounded hover:bg-gray-100 transition-colors
-									{settingsPanelOpen ? 'text-primary' : 'text-gray-500'}"
-								onclick={() => (settingsPanelOpen = !settingsPanelOpen)}
-							>
-								<SettingsIcon size={14} />
-								<span class="truncate">{activeVisualizationName} Settings</span>
-							</button>
-						{/if}
 					</div>
 
 					<!-- Settings side panel -->

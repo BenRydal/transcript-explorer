@@ -48,6 +48,18 @@
 
 	let count = $derived($ConfigStore.dashboardPanels.length);
 	let openPopoverIndex = $state<number | null>(null);
+	let panelRefs: HTMLElement[] = $state([]);
+
+	$effect(() => {
+		if (openPopoverIndex === null) return;
+		const handleClick = (event: MouseEvent) => {
+			if (!panelRefs[openPopoverIndex!]?.contains(event.target as Node)) {
+				openPopoverIndex = null;
+			}
+		};
+		document.addEventListener('click', handleClick, true);
+		return () => document.removeEventListener('click', handleClick, true);
+	});
 
 	function selectViz(index: number, key: string) {
 		ConfigStore.update((store) => {
@@ -89,7 +101,7 @@
 	{#each $ConfigStore.dashboardPanels as panelKey, i}
 		{@const info = PANEL_ICONS[panelKey]}
 		<div class="panel-cell" class:span-two={count === 3 && i === 0}>
-			<div class="relative flex justify-end pointer-events-auto">
+			<div class="relative flex justify-end pointer-events-auto" bind:this={panelRefs[i]}>
 				<!-- Icon trigger -->
 				<button
 					class="p-1.5 rounded-md bg-white/70 hover:bg-white/90 border border-gray-300 shadow-sm transition-colors"
@@ -125,11 +137,6 @@
 		</div>
 	{/each}
 </div>
-
-<!-- svelte-ignore a11y_no_static_element_interactions -->
-{#if openPopoverIndex !== null}
-	<div class="fixed inset-0 z-[49]" onclick={() => (openPopoverIndex = null)} onkeydown={() => {}}></div>
-{/if}
 
 <style>
 	.dashboard-overlay {
