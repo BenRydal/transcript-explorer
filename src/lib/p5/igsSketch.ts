@@ -192,10 +192,7 @@ export const igsSketch = (p5: any) => {
 	p5.handleSpeakerFilterClick = () => {
 		if (!editorState?.config?.isVisible) return;
 		const isSpeakerViz =
-			currConfig?.speakerGardenToggle ||
-			currConfig?.speakerFingerprintToggle ||
-			currConfig?.turnNetworkToggle ||
-			currConfig?.dashboardToggle;
+			currConfig?.speakerGardenToggle || currConfig?.speakerFingerprintToggle || currConfig?.turnNetworkToggle || currConfig?.dashboardToggle;
 		if (!isSpeakerViz) return;
 
 		const hoveredSpeaker = hoverState.hoveredSpeaker;

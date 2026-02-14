@@ -77,8 +77,7 @@ export class QuestionFlow {
 			const searchTerm = normalizeWord(this.config.wordToSearch);
 			pairs = pairs.filter(
 				(p) =>
-					normalizeWord(p.questionContent).includes(searchTerm) ||
-					(p.answerContent != null && normalizeWord(p.answerContent).includes(searchTerm))
+					normalizeWord(p.questionContent).includes(searchTerm) || (p.answerContent != null && normalizeWord(p.answerContent).includes(searchTerm))
 			);
 			if (pairs.length === 0) {
 				this.drawEmptyState();

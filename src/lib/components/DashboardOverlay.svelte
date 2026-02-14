@@ -121,7 +121,11 @@
 								{@const isUsed = $ConfigStore.dashboardPanels.some((k, j) => j !== i && k === option.key)}
 								<button
 									class="flex flex-col items-center gap-0.5 rounded-md px-1 py-1.5 text-[10px] cursor-pointer transition-colors
-										{isActive ? 'bg-primary/10 text-primary ring-1 ring-primary/30 font-medium' : isUsed ? 'text-gray-300 cursor-not-allowed' : 'text-gray-600 hover:bg-gray-100'}"
+										{isActive
+										? 'bg-primary/10 text-primary ring-1 ring-primary/30 font-medium'
+										: isUsed
+											? 'text-gray-300 cursor-not-allowed'
+											: 'text-gray-600 hover:bg-gray-100'}"
 									onclick={() => selectViz(i, option.key)}
 									disabled={isUsed}
 									title={option.label}

@@ -196,8 +196,7 @@
 	);
 
 	let hasActiveSettings = $derived(
-		(activePanelKey === 'dashboard' && dashboardOptionsByPanel.length > 0) ||
-			(!!activePanelKey && !!panelOptionsMap[activePanelKey])
+		(activePanelKey === 'dashboard' && dashboardOptionsByPanel.length > 0) || (!!activePanelKey && !!panelOptionsMap[activePanelKey])
 	);
 
 	// --- Functions ---
