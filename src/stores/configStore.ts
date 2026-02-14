@@ -1,6 +1,6 @@
 import { writable, derived } from 'svelte/store';
 
-export type GardenSortOrder = 'default' | 'words' | 'turns' | 'alpha';
+export type SpeakerSortOrder = 'default' | 'words' | 'turns' | 'alpha';
 
 export interface ConfigStoreType {
 	speakerGardenToggle: boolean;
@@ -31,8 +31,8 @@ export interface ConfigStoreType {
 	snippetDurationSeconds: number;
 	// Dashboard panel selection
 	dashboardPanels: string[];
-	// Speaker Garden settings
-	gardenSortOrder: GardenSortOrder;
+	// Speaker sort order (shared across Speaker Garden, Turn Network, etc.)
+	speakerSortOrder: SpeakerSortOrder;
 	// Word Rain settings
 	wordRainMinFrequency: number;
 	wordRainTemporalBinning: boolean;
@@ -93,8 +93,8 @@ export const initialConfig: ConfigStoreType = {
 	speechRateWordsPerSecond: 3,
 	// Video playback settings
 	snippetDurationSeconds: 2,
-	// Speaker Garden settings
-	gardenSortOrder: 'default',
+	// Speaker sort order (used by Speaker Garden, Turn Network, etc.)
+	speakerSortOrder: 'default',
 	// Dashboard panel selection
 	dashboardPanels: ['turnChart', 'contributionCloud', 'speakerGarden'],
 	wordRainMinFrequency: 1,

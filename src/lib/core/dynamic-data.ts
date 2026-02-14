@@ -251,28 +251,35 @@ export class DynamicData {
 		return grouped;
 	}
 
-	getDynamicArrayForSpeakerGarden(): Record<string, DataPoint[]> {
-		const categorized = this.groupBy(this.getProcessedWords(true), (w) => w.speaker);
+	/**
+	 * Sorts speaker entries by the current speakerSortOrder config.
+	 * Each entry is [speakerName, { wordCount, turnCount }].
+	 */
+	private sortSpeakerEntries<T>(entries: [string, T][], getStats: (v: T) => { wordCount: number; turnCount: number }): void {
+		const sortOrder = config.speakerSortOrder;
+		if (sortOrder === 'default') return;
 
-		const sortOrder = config.gardenSortOrder;
-		if (sortOrder === 'default') return categorized;
-
-		const entries = Object.entries(categorized);
 		switch (sortOrder) {
 			case 'words':
-				entries.sort((a, b) => b[1].length - a[1].length);
+				entries.sort((a, b) => getStats(b[1]).wordCount - getStats(a[1]).wordCount);
 				break;
 			case 'turns':
-				entries.sort((a, b) => {
-					const turnsA = new Set(a[1].map((w) => w.turnNumber)).size;
-					const turnsB = new Set(b[1].map((w) => w.turnNumber)).size;
-					return turnsB - turnsA;
-				});
+				entries.sort((a, b) => getStats(b[1]).turnCount - getStats(a[1]).turnCount);
 				break;
 			case 'alpha':
 				entries.sort((a, b) => a[0].localeCompare(b[0]));
 				break;
 		}
+	}
+
+	getDynamicArrayForSpeakerGarden(): Record<string, DataPoint[]> {
+		const categorized = this.groupBy(this.getProcessedWords(true), (w) => w.speaker);
+
+		const entries = Object.entries(categorized);
+		this.sortSpeakerEntries(entries, (words) => ({
+			wordCount: words.length,
+			turnCount: new Set(words.map((w) => w.turnNumber)).size
+		}));
 
 		return Object.fromEntries(entries) as Record<string, DataPoint[]>;
 	}
@@ -369,7 +376,12 @@ export class DynamicData {
 			}
 		}
 
-		return { transitions, speakerStats, searchMatchingTurns, turnWordCounts };
+		// Sort speakerStats map by the shared speaker sort order
+		const statsEntries = Array.from(speakerStats.entries());
+		this.sortSpeakerEntries(statsEntries, (s) => s);
+		const sortedStats = new Map(statsEntries);
+
+		return { transitions, speakerStats: sortedStats, searchMatchingTurns, turnWordCounts };
 	}
 
 	/**

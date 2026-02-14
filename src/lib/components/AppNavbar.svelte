@@ -19,7 +19,7 @@
 		Settings2
 	} from '@lucide/svelte';
 	import IconButton from './IconButton.svelte';
-	import ConfigStore, { type ConfigStoreType, type GardenSortOrder } from '../../stores/configStore';
+	import ConfigStore, { type ConfigStoreType, type SpeakerSortOrder } from '../../stores/configStore';
 
 	interface Props {
 		selectedExample?: string;
@@ -97,7 +97,7 @@
 		wordJourney: 'Word Journey'
 	};
 
-	const GARDEN_SORT_OPTIONS: { order: GardenSortOrder; label: string }[] = [
+	const SPEAKER_SORT_OPTIONS: { order: SpeakerSortOrder; label: string }[] = [
 		{ order: 'default', label: 'Appearance' },
 		{ order: 'words', label: 'Word Count' },
 		{ order: 'turns', label: 'Turn Count' },
@@ -108,13 +108,13 @@
 
 	type PanelToggle = { type: 'toggle'; key: keyof ConfigStoreType; label: string };
 	type PanelSlider = { type: 'slider'; key: keyof ConfigStoreType; label: string; min: number; max: number; formatValue?: (v: number) => string };
-	type PanelGardenSort = { type: 'gardenSort' };
-	type PanelOption = PanelToggle | PanelSlider | PanelGardenSort;
+	type PanelSpeakerSort = { type: 'speakerSort' };
+	type PanelOption = PanelToggle | PanelSlider | PanelSpeakerSort;
 
 	const formatBinCount = (v: number) => (v === 0 ? 'Auto' : String(v));
 
 	const panelOptionsMap: Record<string, PanelOption[]> = {
-		speakerGarden: [{ type: 'gardenSort' }],
+		speakerGarden: [{ type: 'speakerSort' }],
 		turnChart: [
 			{ type: 'toggle', key: 'separateToggle', label: 'Group by Speaker' },
 			{ type: 'toggle', key: 'silenceOverlapToggle', label: 'Silence Overlap' }
@@ -134,6 +134,7 @@
 			{ type: 'slider', key: 'wordRainBinCount', label: 'Bin Count', min: 4, max: 20 }
 		],
 		turnNetwork: [
+			{ type: 'speakerSort' },
 			{ type: 'toggle', key: 'turnNetworkHideSelfLoops', label: 'Hide Self-Loops' },
 			{ type: 'toggle', key: 'turnNetworkWeightByWords', label: 'Weight by Words' },
 			{ type: 'slider', key: 'turnNetworkMinTransitions', label: 'Min Transitions', min: 1, max: 20 }
@@ -194,8 +195,8 @@
 		ConfigStore.update((store) => ({ ...store, [selection]: !store[selection] }));
 	}
 
-	function setGardenSort(order: GardenSortOrder) {
-		ConfigStore.update((store) => ({ ...store, gardenSortOrder: order }));
+	function setSpeakerSort(order: SpeakerSortOrder) {
+		ConfigStore.update((store) => ({ ...store, speakerSortOrder: order }));
 	}
 
 	function handleConfigChangeFromInput(e: Event, key: keyof ConfigStoreType) {
@@ -389,21 +390,22 @@
 											oninput={(e) => handleConfigChangeFromInput(e, option.key)}
 										/>
 									</div>
-								{:else if option.type === 'gardenSort'}
+								{:else if option.type === 'speakerSort'}
 									<div class="py-1 px-1">
 										<label class="text-sm text-gray-600">Sort By</label>
 									</div>
-									{#each GARDEN_SORT_OPTIONS as sortOpt}
+									{#each SPEAKER_SORT_OPTIONS as sortOpt}
 										<button
-											onclick={() => setGardenSort(sortOpt.order)}
+											onclick={() => setSpeakerSort(sortOpt.order)}
 											class="w-full text-left flex items-center text-sm py-1 px-1 rounded hover:bg-base-200"
 										>
 											<span class="w-4 h-4 mr-2 inline-flex items-center justify-center flex-shrink-0">
-												{#if $ConfigStore.gardenSortOrder === sortOpt.order}<Check size={14} />{/if}
+												{#if $ConfigStore.speakerSortOrder === sortOpt.order}<Check size={14} />{/if}
 											</span>
 											{sortOpt.label}
 										</button>
 									{/each}
+									<hr class="my-1 border-t border-gray-200" />
 								{/if}
 							{/if}
 						{/each}
@@ -572,18 +574,19 @@
 									oninput={(e) => handleConfigChangeFromInput(e, option.key)}
 								/>
 							</div>
-						{:else if option.type === 'gardenSort'}
+						{:else if option.type === 'speakerSort'}
 							<label class="text-sm text-gray-600">Sort By</label>
 							<div class="flex flex-wrap gap-1 w-full">
-								{#each GARDEN_SORT_OPTIONS as sortOpt}
+								{#each SPEAKER_SORT_OPTIONS as sortOpt}
 									<button
-										class="btn btn-xs {$ConfigStore.gardenSortOrder === sortOpt.order ? 'btn-primary' : 'btn-ghost'}"
-										onclick={() => setGardenSort(sortOpt.order)}
+										class="btn btn-xs {$ConfigStore.speakerSortOrder === sortOpt.order ? 'btn-primary' : 'btn-ghost'}"
+										onclick={() => setSpeakerSort(sortOpt.order)}
 									>
 										{sortOpt.label}
 									</button>
 								{/each}
 							</div>
+							<hr class="my-1 border-t border-gray-200" />
 						{/if}
 					{/if}
 				{/each}
