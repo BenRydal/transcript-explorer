@@ -143,8 +143,8 @@ const LINE_PATTERNS: Array<{
 /** Result from parsing a single line */
 type LineParseResult = { type: 'turn'; turn: ParsedTurn; format: DetectedFormat } | { type: 'continuation'; content: string };
 
-function parseLine(trimmedLine: string): LineParseResult {
-	for (const { name, pattern, parse } of LINE_PATTERNS) {
+function parseLine(trimmedLine: string, patterns = LINE_PATTERNS): LineParseResult {
+	for (const { name, pattern, parse } of patterns) {
 		const match = trimmedLine.match(pattern);
 		if (match) {
 			const turn = parse(match);
@@ -221,26 +221,18 @@ export function parseTranscriptText(text: string, forceFormat?: DetectedFormat):
 	let continuationLineCount = 0;
 	let totalLineCount = 0;
 
-	const forcedPattern = forceFormat && forceFormat !== 'mixed' && forceFormat !== 'plain' ? LINE_PATTERNS.find((p) => p.name === forceFormat) : null;
+	const activePatterns =
+		forceFormat && forceFormat !== 'mixed' && forceFormat !== 'plain' ? LINE_PATTERNS.filter((p) => p.name === forceFormat) : LINE_PATTERNS;
 
-	for (const line of text.split(/\r?\n/)) {
+	for (const line of text.split(/\r\n|\r|\n/)) {
 		const trimmed = line.trim();
 		if (!trimmed) continue;
 		totalLineCount++;
 
-		if (forcedPattern) {
-			const match = trimmed.match(forcedPattern.pattern);
-			const turn = match ? forcedPattern.parse(match) : null;
-			if (turn) {
-				addTurn(state, turn, forceFormat!);
-			} else {
-				appendToLastTurn(state, trimmed);
-				continuationLineCount++;
-			}
-		} else if (forceFormat === 'plain') {
+		if (forceFormat === 'plain') {
 			addTurn(state, createTurn('SPEAKER 1', trimmed), 'plain');
 		} else {
-			const result = parseLine(trimmed);
+			const result = parseLine(trimmed, activePatterns);
 			if (result.type === 'turn') {
 				addTurn(state, result.turn, result.format);
 			} else {
