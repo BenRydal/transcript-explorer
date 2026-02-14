@@ -325,7 +325,7 @@
 							{#if option.type === 'toggle'}
 								<button
 									onclick={() => toggleSelectionOnly(option.key)}
-									class="w-full text-left flex items-center text-sm py-1 px-1 rounded hover:bg-base-200"
+									class="w-full text-left flex items-center text-sm py-1 px-1 rounded hover:bg-base-200 cursor-pointer"
 								>
 									<span class="w-4 h-4 mr-2 inline-flex items-center justify-center flex-shrink-0">
 										{#if $ConfigStore[option.key]}<Check size={14} />{/if}
@@ -354,7 +354,7 @@
 								{#each SPEAKER_SORT_OPTIONS as sortOpt}
 									<button
 										onclick={() => setSpeakerSort(sortOpt.order)}
-										class="w-full text-left flex items-center text-sm py-1 px-1 rounded hover:bg-base-200"
+										class="w-full text-left flex items-center text-sm py-1 px-1 rounded hover:bg-base-200 cursor-pointer"
 									>
 										<span class="w-4 h-4 mr-2 inline-flex items-center justify-center flex-shrink-0">
 											{#if $ConfigStore.speakerSortOrder === sortOpt.order}<Check size={14} />{/if}
@@ -368,12 +368,12 @@
 					{/each}
 				{/snippet}
 
-				<div class="absolute top-full left-0 mt-1 z-[1] flex items-start gap-1">
+				<div class="absolute top-full left-0 mt-1 z-[60] flex items-start gap-1">
 					<!-- Grid panel -->
 					<div class="rounded-lg w-80 py-3 px-3 shadow-lg bg-base-100 border border-gray-200">
 						{#if hasActiveSettings}
 							<button
-								class="w-full flex items-center gap-2 px-1 py-1.5 mb-2.5 text-sm rounded hover:bg-gray-100 transition-colors
+								class="w-full flex items-center gap-2 px-1 py-1.5 mb-2.5 text-sm rounded hover:bg-gray-100 transition-colors cursor-pointer
 									{settingsPanelOpen ? 'text-primary' : 'text-gray-500'}"
 								onclick={() => (settingsPanelOpen = !settingsPanelOpen)}
 							>
