@@ -333,7 +333,7 @@ export class TurnChart {
 					h: MARKER_HEIGHT,
 					color: OVERLAP_COLOR,
 					firstDataPoint: turns[j].firstDataPoint,
-					tooltipContent: `<b>Overlap · ${formatDuration(duration)}</b>\n<span style="font-size: 0.85em; opacity: 0.7">${turns[i].speaker} & ${turns[j].speaker}\n${formatTimeCompact(start)} - ${formatTimeCompact(end)}</span>`
+					tooltipContent: `<b>Overlap · ${formatDuration(duration)}</b>\n<span style="font-size: 0.85em; opacity: 0.7"><span style="color: ${this.userMap.get(turns[i].speaker)?.user.color ?? '#fff'}">${turns[i].speaker}</span> & <span style="color: ${this.userMap.get(turns[j].speaker)?.user.color ?? '#fff'}">${turns[j].speaker}</span>\n${formatTimeCompact(start)} - ${formatTimeCompact(end)}</span>`
 				});
 			}
 		}
@@ -354,7 +354,7 @@ export class TurnChart {
 				h: MARKER_HEIGHT,
 				color: GAP_COLOR,
 				firstDataPoint: turns[i].firstDataPoint,
-				tooltipContent: `<b>Silence · ${formatDuration(gapDuration)}</b>\n<span style="font-size: 0.85em; opacity: 0.7">${turns[i].speaker} → ${turns[i + 1].speaker}\n${formatTimeCompact(turns[i].endTime)} - ${formatTimeCompact(turns[i + 1].startTime)}</span>`
+				tooltipContent: `<b>Silence · ${formatDuration(gapDuration)}</b>\n<span style="font-size: 0.85em; opacity: 0.7"><span style="color: ${this.userMap.get(turns[i].speaker)?.user.color ?? '#fff'}">${turns[i].speaker}</span> → <span style="color: ${this.userMap.get(turns[i + 1].speaker)?.user.color ?? '#fff'}">${turns[i + 1].speaker}</span>\n${formatTimeCompact(turns[i].endTime)} - ${formatTimeCompact(turns[i + 1].startTime)}</span>`
 			});
 		}
 		return markers;
