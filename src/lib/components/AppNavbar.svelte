@@ -8,7 +8,6 @@
 		Check,
 		Settings as SettingsIcon,
 		Text,
-		ChartBar,
 		Menu,
 		X,
 		Keyboard,
@@ -182,6 +181,7 @@
 	});
 
 	let activeVisualizationName = $derived(activePanelKey ? (PANEL_LABELS[activePanelKey] ?? 'Dashboard') : 'Select');
+	let ActiveVizIcon = $derived(TILE_INFO[activePanelKey]?.icon ?? LayoutDashboard);
 
 	let hiddenSliderKeys = $derived.by(() => {
 		const hidden = new Set<keyof ConfigStoreType>();
@@ -315,7 +315,7 @@
 		<!-- Visualization Grid Popover -->
 		<div class="relative" use:clickOutsideViz data-tour="viz-modes">
 			<button class="btn btn-sm gap-1 flex items-center" title={activeVisualizationName} onclick={() => (vizDropdownOpen = !vizDropdownOpen)}>
-				<ChartBar size={16} />
+				<ActiveVizIcon size={16} />
 				<span class="max-w-[6rem] truncate">{activeVisualizationName}</span>
 				<ChevronDown size={12} class="flex-shrink-0" />
 			</button>
