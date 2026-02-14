@@ -16,8 +16,20 @@
 		Landmark,
 		Mic,
 		Search,
-		Settings2
+		Flower2,
+		Grid3x3,
+		Fingerprint,
+		ChartNoAxesGantt,
+		ChartBarStacked,
+		ChartNetwork,
+		MessageCircleQuestionMark,
+		Cloud,
+		CloudRain,
+		Route,
+		LayoutDashboard,
+		ChevronDown
 	} from '@lucide/svelte';
+	import type { Component } from 'svelte';
 	import IconButton from './IconButton.svelte';
 	import ConfigStore, { type ConfigStoreType, type SpeakerSortOrder } from '../../stores/configStore';
 
@@ -56,7 +68,6 @@
 	}: Props = $props();
 
 	let mobileMenuOpen = $state(false);
-	let optionsFlyoutPanel = $state<string | null>(null);
 	let vizDropdownOpen = $state(false);
 
 	// --- Data ---
@@ -97,6 +108,25 @@
 		wordJourney: 'Word Journey'
 	};
 
+	const vizCategories: { label: string; items: (keyof ConfigStoreType)[] }[] = [
+		{ label: 'Speaker', items: ['speakerGardenToggle', 'speakerHeatmapToggle', 'speakerFingerprintToggle'] },
+		{ label: 'Turn', items: ['turnChartToggle', 'turnNetworkToggle', 'turnLengthToggle', 'questionFlowToggle'] },
+		{ label: 'Word', items: ['contributionCloudToggle', 'wordRainToggle', 'wordJourneyToggle'] }
+	];
+
+	const TILE_INFO: Record<string, { label: string; icon: Component }> = {
+		speakerGarden: { label: 'Garden', icon: Flower2 },
+		speakerHeatmap: { label: 'Heatmap', icon: Grid3x3 },
+		speakerFingerprint: { label: 'Fingerprint', icon: Fingerprint },
+		turnChart: { label: 'Chart', icon: ChartNoAxesGantt },
+		turnLength: { label: 'Length', icon: ChartBarStacked },
+		turnNetwork: { label: 'Network', icon: ChartNetwork },
+		questionFlow: { label: 'Question', icon: MessageCircleQuestionMark },
+		contributionCloud: { label: 'Cloud', icon: Cloud },
+		wordRain: { label: 'Rain', icon: CloudRain },
+		wordJourney: { label: 'Journey', icon: Route }
+	};
+
 	const SPEAKER_SORT_OPTIONS: { order: SpeakerSortOrder; label: string }[] = [
 		{ order: 'default', label: 'Appearance' },
 		{ order: 'words', label: 'Word Count' },
@@ -104,12 +134,11 @@
 		{ order: 'alpha', label: 'A–Z' }
 	];
 
-	// --- Panel options config ---
+	// --- Panel options ---
 
 	type PanelToggle = { type: 'toggle'; key: keyof ConfigStoreType; label: string };
 	type PanelSlider = { type: 'slider'; key: keyof ConfigStoreType; label: string; min: number; max: number; formatValue?: (v: number) => string };
-	type PanelSpeakerSort = { type: 'speakerSort' };
-	type PanelOption = PanelToggle | PanelSlider | PanelSpeakerSort;
+	type PanelOption = PanelToggle | PanelSlider | { type: 'speakerSort' };
 
 	const formatBinCount = (v: number) => (v === 0 ? 'Auto' : String(v));
 
@@ -166,6 +195,11 @@
 			.map((key) => ({ key, label: PANEL_LABELS[key] ?? key, options: panelOptionsMap[key] }));
 	});
 
+	let hasActiveSettings = $derived(
+		(activePanelKey === 'dashboard' && dashboardOptionsByPanel.length > 0) ||
+			(!!activePanelKey && !!panelOptionsMap[activePanelKey])
+	);
+
 	// --- Functions ---
 
 	function formatToggleName(toggle: string) {
@@ -177,11 +211,7 @@
 		return option.type !== 'slider' || !hiddenSliderKeys.has(option.key);
 	}
 
-	function toggleSelection(selection: string, toggleOptions: readonly string[]) {
-		if (optionsFlyoutPanel !== null) {
-			const panelKey = selection === 'dashboardToggle' ? 'dashboard' : selection.replace('Toggle', '');
-			optionsFlyoutPanel = panelKey === 'dashboard' || panelOptionsMap[panelKey]?.length ? panelKey : null;
-		}
+	function toggleSelection(selection: string, toggleOptions: readonly (keyof ConfigStoreType)[]) {
 		ConfigStore.update((store) => {
 			const updates: Record<string, boolean> = {};
 			toggleOptions.forEach((key) => {
@@ -191,7 +221,7 @@
 		});
 	}
 
-	function toggleSelectionOnly(selection: string) {
+	function toggleSelectionOnly(selection: keyof ConfigStoreType) {
 		ConfigStore.update((store) => ({ ...store, [selection]: !store[selection] }));
 	}
 
@@ -204,33 +234,18 @@
 	}
 
 	function handleWordSearch(event: Event) {
-		const value = (event.target as HTMLInputElement).value;
-		onwordSearch?.(value.trim());
+		onwordSearch?.((event.target as HTMLInputElement).value.trim());
 	}
 
 	function truncateExample(name: string): string {
-		if (!name) return 'Examples';
-		return name.length > 8 ? name.slice(0, 5) + '...' : name;
-	}
-
-	function toggleFlyout(panelKey: string, event: MouseEvent) {
-		event.stopPropagation();
-		optionsFlyoutPanel = optionsFlyoutPanel === panelKey ? null : panelKey;
-	}
-
-	function toggleVizDropdown() {
-		vizDropdownOpen = !vizDropdownOpen;
-		if (!vizDropdownOpen) optionsFlyoutPanel = null;
+		return !name ? 'Examples' : name.length > 8 ? name.slice(0, 5) + '...' : name;
 	}
 
 	// --- Svelte actions ---
 
-	function clickOutsideViz(node: HTMLElement) {
+	function clickOutsideAction(node: HTMLElement, onClickOutside: () => void) {
 		const handleClick = (event: MouseEvent) => {
-			if (!node.contains(event.target as Node)) {
-				vizDropdownOpen = false;
-				optionsFlyoutPanel = null;
-			}
+			if (!node.contains(event.target as Node)) onClickOutside();
 		};
 		document.addEventListener('click', handleClick, true);
 		return {
@@ -240,18 +255,12 @@
 		};
 	}
 
+	function clickOutsideViz(node: HTMLElement) {
+		return clickOutsideAction(node, () => (vizDropdownOpen = false));
+	}
+
 	function clickOutside(node: HTMLElement) {
-		const handleClick = (event: MouseEvent) => {
-			if (!node.contains(event.target as Node)) {
-				node.removeAttribute('open');
-			}
-		};
-		document.addEventListener('click', handleClick, true);
-		return {
-			destroy() {
-				document.removeEventListener('click', handleClick, true);
-			}
-		};
+		return clickOutsideAction(node, () => node.removeAttribute('open'));
 	}
 </script>
 
@@ -278,9 +287,7 @@
 				title={selectedExample || 'Examples'}
 			>
 				<span class="truncate">{truncateExample(selectedExample)}</span>
-				<svg class="w-3 h-3 ml-2 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-					<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" />
-				</svg>
+				<ChevronDown size={12} class="ml-2 flex-shrink-0" />
 			</summary>
 			<ul class="menu dropdown-content rounded-box z-[1] w-56 p-2 shadow bg-base-100 max-h-[60vh] overflow-y-auto overflow-x-hidden">
 				{#each exampleOptions as item}
@@ -301,125 +308,112 @@
 
 		<div class="divider divider-horizontal mx-1 h-8"></div>
 
-		<!-- Visualization Dropdown with Options Flyout -->
+		<!-- Visualization Grid Popover -->
 		<div class="relative" use:clickOutsideViz data-tour="viz-modes">
-			<button class="btn btn-sm gap-1 flex items-center" title={activeVisualizationName} onclick={toggleVizDropdown}>
+			<button class="btn btn-sm gap-1 flex items-center" title={activeVisualizationName} onclick={() => (vizDropdownOpen = !vizDropdownOpen)}>
 				<ChartBar size={16} />
 				<span class="max-w-[6rem] truncate">{activeVisualizationName}</span>
-				<svg class="w-3 h-3 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-					<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" />
-				</svg>
+				<ChevronDown size={12} class="flex-shrink-0" />
 			</button>
 			{#if vizDropdownOpen}
-				<div class="absolute top-full left-0 mt-1 z-[1] flex">
-					<ul class="menu rounded-box w-52 p-2 shadow bg-base-100">
-						{#each regularVisualizationToggles as toggle}
-							{@const isActive = $ConfigStore[toggle]}
-							{@const panelKey = toggle.replace('Toggle', '')}
-							{@const hasOptions = panelOptionsMap[panelKey]?.length > 0}
-							<li>
-								<div class="flex items-center w-full p-0 rounded {isActive ? 'bg-success/15' : ''}">
-									<button onclick={() => toggleSelection(toggle, techniqueToggleOptions)} class="flex-1 text-left flex items-center px-3 py-1.5">
-										<span class="w-4 h-4 mr-2 inline-flex items-center justify-center flex-shrink-0">
-											{#if isActive}<Check size={16} />{/if}
-										</span>
-										{formatToggleName(toggle)}
-									</button>
-									{#if hasOptions}
-										<button
-											class="px-2 py-1.5 rounded hover:bg-base-200 flex-shrink-0 text-gray-400"
-											onclick={(e) => toggleFlyout(panelKey, e)}
-											title="Options"
-										>
-											<Settings2 size={14} />
-										</button>
-									{/if}
-								</div>
-							</li>
-						{/each}
-						<hr class="my-1 border-t border-gray-200" />
-						<li>
-							<div class="flex items-center w-full p-0 rounded {$ConfigStore.dashboardToggle ? 'bg-success/15' : ''}">
+				{#snippet optionsList(options: PanelOption[])}
+					{#each options as option}
+						{#if isOptionVisible(option)}
+							{#if option.type === 'toggle'}
 								<button
-									onclick={() => toggleSelection('dashboardToggle', techniqueToggleOptions)}
-									class="flex-1 text-left flex items-center px-3 py-1.5"
+									onclick={() => toggleSelectionOnly(option.key)}
+									class="w-full text-left flex items-center text-sm py-1 px-1 rounded hover:bg-base-200"
 								>
 									<span class="w-4 h-4 mr-2 inline-flex items-center justify-center flex-shrink-0">
-										{#if $ConfigStore.dashboardToggle}<Check size={16} />{/if}
+										{#if $ConfigStore[option.key]}<Check size={14} />{/if}
 									</span>
-									Dashboard
+									{option.label}
 								</button>
-								{#if $ConfigStore.dashboardToggle && dashboardOptionsByPanel.length > 0}
-									<button
-										class="px-2 py-1.5 rounded hover:bg-base-200 flex-shrink-0 text-gray-400"
-										onclick={(e) => toggleFlyout('dashboard', e)}
-										title="Options"
+							{:else if option.type === 'slider'}
+								<div class="py-1 px-1">
+									<label for={option.key} class="text-sm text-gray-600"
+										>{option.label}: {option.formatValue ? option.formatValue($ConfigStore[option.key] as number) : $ConfigStore[option.key]}</label
 									>
-										<Settings2 size={14} />
-									</button>
-								{/if}
-							</div>
-						</li>
-					</ul>
-
-					{#snippet optionsList(options: PanelOption[])}
-						{#each options as option}
-							{#if isOptionVisible(option)}
-								{#if option.type === 'toggle'}
+									<input
+										id={option.key}
+										type="range"
+										min={option.min}
+										max={option.max}
+										value={$ConfigStore[option.key]}
+										class="range range-sm w-full"
+										oninput={(e) => handleConfigChangeFromInput(e, option.key)}
+									/>
+								</div>
+							{:else if option.type === 'speakerSort'}
+								<div class="py-1 px-1">
+									<p class="text-sm text-gray-600">Sort By</p>
+								</div>
+								{#each SPEAKER_SORT_OPTIONS as sortOpt}
 									<button
-										onclick={() => toggleSelectionOnly(option.key)}
+										onclick={() => setSpeakerSort(sortOpt.order)}
 										class="w-full text-left flex items-center text-sm py-1 px-1 rounded hover:bg-base-200"
 									>
 										<span class="w-4 h-4 mr-2 inline-flex items-center justify-center flex-shrink-0">
-											{#if $ConfigStore[option.key]}<Check size={14} />{/if}
+											{#if $ConfigStore.speakerSortOrder === sortOpt.order}<Check size={14} />{/if}
 										</span>
-										{option.label}
+										{sortOpt.label}
 									</button>
-								{:else if option.type === 'slider'}
-									<div class="py-1 px-1">
-										<label for={option.key} class="text-sm text-gray-600"
-											>{option.label}: {option.formatValue ? option.formatValue($ConfigStore[option.key] as number) : $ConfigStore[option.key]}</label
-										>
-										<input
-											id={option.key}
-											type="range"
-											min={option.min}
-											max={option.max}
-											value={$ConfigStore[option.key]}
-											class="range range-sm w-full"
-											oninput={(e) => handleConfigChangeFromInput(e, option.key)}
-										/>
-									</div>
-								{:else if option.type === 'speakerSort'}
-									<div class="py-1 px-1">
-										<label class="text-sm text-gray-600">Sort By</label>
-									</div>
-									{#each SPEAKER_SORT_OPTIONS as sortOpt}
-										<button
-											onclick={() => setSpeakerSort(sortOpt.order)}
-											class="w-full text-left flex items-center text-sm py-1 px-1 rounded hover:bg-base-200"
-										>
-											<span class="w-4 h-4 mr-2 inline-flex items-center justify-center flex-shrink-0">
-												{#if $ConfigStore.speakerSortOrder === sortOpt.order}<Check size={14} />{/if}
-											</span>
-											{sortOpt.label}
-										</button>
-									{/each}
-									<hr class="my-1 border-t border-gray-200" />
-								{/if}
+								{/each}
+								<hr class="my-1 border-t border-gray-200" />
 							{/if}
-						{/each}
-					{/snippet}
+						{/if}
+					{/each}
+				{/snippet}
 
-					{#if optionsFlyoutPanel}
-						<div class="rounded-box w-56 p-3 shadow bg-base-100 ml-1 max-h-[70vh] overflow-y-auto">
-							{#if optionsFlyoutPanel === 'dashboard'}
+				<div class="absolute top-full left-0 mt-1 z-[1] flex items-start gap-1">
+					<!-- Grid panel -->
+					<div class="rounded-lg w-72 py-3 px-3 shadow-lg bg-base-100 border border-gray-200">
+						{#each vizCategories as category, ci}
+							<p class="text-[10px] uppercase tracking-widest text-gray-400 font-semibold mb-1.5 {ci > 0 ? 'mt-3' : ''}">{category.label}</p>
+							<div class="grid grid-cols-3 gap-1.5">
+								{#each category.items as toggle}
+									{@const panelKey = toggle.replace('Toggle', '')}
+									{@const isActive = $ConfigStore[toggle]}
+									{@const tile = TILE_INFO[panelKey]}
+									<button
+										class="flex flex-col items-center gap-1 rounded-lg px-2 py-2 text-xs cursor-pointer transition-colors
+											{isActive ? 'bg-primary/10 text-primary ring-1 ring-primary/30 font-medium' : 'text-gray-600 hover:bg-gray-100'}"
+										onclick={() => toggleSelection(toggle, techniqueToggleOptions)}
+									>
+										{#if tile}
+											<tile.icon size={18} strokeWidth={isActive ? 2.2 : 1.5} />
+										{/if}
+										{tile?.label ?? panelKey}
+									</button>
+								{/each}
+							</div>
+						{/each}
+
+						<hr class="my-2.5 border-t border-gray-200" />
+						<div class="grid grid-cols-3 gap-1.5">
+							<button
+								class="flex flex-col items-center gap-1 rounded-lg px-2 py-2 text-xs cursor-pointer transition-colors
+									{$ConfigStore.dashboardToggle ? 'bg-primary/10 text-primary ring-1 ring-primary/30 font-medium' : 'text-gray-600 hover:bg-gray-100'}"
+								onclick={() => toggleSelection('dashboardToggle', techniqueToggleOptions)}
+							>
+								<LayoutDashboard size={18} strokeWidth={$ConfigStore.dashboardToggle ? 2.2 : 1.5} />
+								Dashboard
+							</button>
+						</div>
+					</div>
+
+					<!-- Settings side panel -->
+					{#if hasActiveSettings}
+						<div class="rounded-lg w-52 py-3 px-3 shadow-lg bg-base-100 border border-gray-200 max-h-[70vh] overflow-y-auto">
+							{#if activePanelKey === 'dashboard'}
+								<p class="text-[10px] uppercase tracking-widest text-gray-400 font-semibold mb-2">Dashboard</p>
 								{#each dashboardOptionsByPanel as panel, i}
-									<p class="text-xs uppercase tracking-wider text-gray-500 font-semibold mb-1 {i > 0 ? 'mt-3' : ''}">{panel.label}</p>
+									<p class="text-xs text-gray-500 font-medium mb-1 {i > 0 ? 'mt-3' : ''}">{panel.label}</p>
 									{@render optionsList(panel.options)}
 								{/each}
-							{:else if panelOptionsMap[optionsFlyoutPanel]}
-								{@render optionsList(panelOptionsMap[optionsFlyoutPanel])}
+							{:else}
+								<p class="text-[10px] uppercase tracking-widest text-gray-400 font-semibold mb-2">{PANEL_LABELS[activePanelKey]}</p>
+								{@render optionsList(panelOptionsMap[activePanelKey])}
 							{/if}
 						</div>
 					{/if}
@@ -575,7 +569,7 @@
 								/>
 							</div>
 						{:else if option.type === 'speakerSort'}
-							<label class="text-sm text-gray-600">Sort By</label>
+							<p class="text-sm text-gray-600">Sort By</p>
 							<div class="flex flex-wrap gap-1 w-full">
 								{#each SPEAKER_SORT_OPTIONS as sortOpt}
 									<button
