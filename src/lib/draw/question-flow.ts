@@ -11,6 +11,7 @@ import type { User } from '../../models/user';
 import type { Bounds } from './types/bounds';
 import type { QuestionAnswerPair } from '../core/dynamic-data';
 import { withDimming, createUserMap, getCrossHighlight, drawTimeAxis } from './draw-utils';
+import { normalizeWord } from '../core/string-utils';
 
 const LEFT_MARGIN = 80;
 const RIGHT_MARGIN = 20;
@@ -69,6 +70,19 @@ export class QuestionFlow {
 		if (pairs.length === 0 || this.speakers.length === 0) {
 			this.drawEmptyState();
 			return { hoveredDataPoint: null, hoveredSpeaker: null };
+		}
+
+		// Filter pairs by search term
+		if (this.config.wordToSearch) {
+			const searchTerm = normalizeWord(this.config.wordToSearch);
+			pairs = pairs.filter(
+				(p) =>
+					normalizeWord(p.questionContent).includes(searchTerm) || (p.answerContent != null && normalizeWord(p.answerContent).includes(searchTerm))
+			);
+			if (pairs.length === 0) {
+				this.drawEmptyState();
+				return { hoveredDataPoint: null, hoveredSpeaker: null };
+			}
 		}
 
 		// Calculate word counts for sizing
