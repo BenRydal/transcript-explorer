@@ -101,10 +101,10 @@
 	{#each $ConfigStore.dashboardPanels as panelKey, i}
 		{@const info = PANEL_ICONS[panelKey]}
 		<div class="panel-cell" class:span-two={count === 3 && i === 0}>
-			<div class="relative flex justify-end pointer-events-auto" bind:this={panelRefs[i]}>
+			<div class="relative flex justify-end" bind:this={panelRefs[i]}>
 				<!-- Icon trigger -->
 				<button
-					class="p-1.5 rounded-md bg-white/70 hover:bg-white/90 border border-gray-300 shadow-sm transition-colors"
+					class="p-1.5 rounded-md bg-white/70 hover:bg-white/90 border border-gray-300 shadow-sm transition-colors pointer-events-auto"
 					onclick={() => (openPopoverIndex = openPopoverIndex === i ? null : i)}
 					title={info.label}
 				>
@@ -113,7 +113,7 @@
 
 				<!-- Icon grid popover -->
 				{#if openPopoverIndex === i}
-					<div class="absolute top-full right-0 mt-1 z-[52] rounded-lg py-2 px-2 shadow-lg bg-base-100 border border-gray-200 w-44">
+					<div class="absolute top-full right-0 mt-1 z-[52] rounded-lg py-2 px-2 shadow-lg bg-base-100 border border-gray-200 w-44 pointer-events-auto">
 						<div class="grid grid-cols-3 gap-1">
 							{#each DASHBOARD_PANEL_OPTIONS as option}
 								{@const tile = PANEL_ICONS[option.key]}

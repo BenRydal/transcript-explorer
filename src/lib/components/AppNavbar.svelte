@@ -174,10 +174,7 @@
 
 	// --- Derived state ---
 
-	let activePanelKey = $derived.by(() => {
-		const activeToggle = techniqueToggleOptions.find((t) => $ConfigStore[t]);
-		return activeToggle ? activeToggle.replace('Toggle', '') : '';
-	});
+	let activePanelKey = $derived(techniqueToggleOptions.find((t) => $ConfigStore[t])?.replace('Toggle', '') ?? '');
 
 	let activeVisualizationName = $derived(activePanelKey ? (PANEL_LABELS[activePanelKey] ?? 'Dashboard') : 'Select');
 	let ActiveVizIcon = $derived(TILE_INFO[activePanelKey]?.icon ?? LayoutDashboard);
@@ -202,12 +199,16 @@
 	// --- Functions ---
 
 	function formatToggleName(toggle: string) {
-		if (toggle === 'dashboardToggle') return 'Dashboard';
 		return PANEL_LABELS[toggle.replace('Toggle', '')] ?? toggle;
 	}
 
 	function isOptionVisible(option: PanelOption): boolean {
 		return option.type !== 'slider' || !hiddenSliderKeys.has(option.key);
+	}
+
+	function sliderLabel(option: PanelSlider): string {
+		const value = $ConfigStore[option.key] as number;
+		return `${option.label}: ${option.formatValue ? option.formatValue(value) : value}`;
 	}
 
 	function toggleSelection(selection: string, toggleOptions: readonly (keyof ConfigStoreType)[]) {
@@ -292,7 +293,7 @@
 				<span class="truncate">{selectedExample || 'Examples'}</span>
 				<ChevronDown size={12} class="ml-2 flex-shrink-0" />
 			</summary>
-			<ul class="menu dropdown-content rounded-box z-[1] w-56 p-2 shadow bg-base-100 max-h-[60vh] overflow-y-auto overflow-x-hidden">
+			<ul class="menu dropdown-content rounded-box z-[60] w-56 p-2 shadow bg-base-100 max-h-[60vh] overflow-y-auto overflow-x-hidden">
 				{#each exampleOptions as item}
 					{@const Icon = item.icon}
 					<li class="w-full">
@@ -333,12 +334,9 @@
 									{option.label}
 								</button>
 							{:else if option.type === 'slider'}
-								<div class="py-1 px-1">
-									<label for={option.key} class="text-sm text-gray-600"
-										>{option.label}: {option.formatValue ? option.formatValue($ConfigStore[option.key] as number) : $ConfigStore[option.key]}</label
-									>
+								<label class="block py-1 px-1">
+									<span class="text-sm text-gray-600">{sliderLabel(option)}</span>
 									<input
-										id={option.key}
 										type="range"
 										min={option.min}
 										max={option.max}
@@ -346,7 +344,7 @@
 										class="range range-sm w-full"
 										oninput={(e) => handleConfigChangeFromInput(e, option.key)}
 									/>
-								</div>
+								</label>
 							{:else if option.type === 'speakerSort'}
 								<div class="py-1 px-1">
 									<p class="text-sm text-gray-600">Sort By</p>
@@ -574,12 +572,9 @@
 								{option.label}
 							</button>
 						{:else if option.type === 'slider'}
-							<div class="w-full mt-1">
-								<label for={option.key} class="text-sm"
-									>{option.label}: {option.formatValue ? option.formatValue($ConfigStore[option.key] as number) : $ConfigStore[option.key]}</label
-								>
+							<label class="w-full mt-1 block">
+								<span class="text-sm">{sliderLabel(option)}</span>
 								<input
-									id={option.key}
 									type="range"
 									min={option.min}
 									max={option.max}
@@ -587,7 +582,7 @@
 									class="range range-sm w-full"
 									oninput={(e) => handleConfigChangeFromInput(e, option.key)}
 								/>
-							</div>
+							</label>
 						{:else if option.type === 'speakerSort'}
 							<p class="text-sm text-gray-600">Sort By</p>
 							<div class="flex flex-wrap gap-1 w-full">
