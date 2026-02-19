@@ -4,6 +4,7 @@ import TranscriptStore from '../../stores/transcriptStore';
 import TimelineStore from '../../stores/timelineStore';
 import UserStore from '../../stores/userStore';
 import ConfigStore, { type ConfigStoreType } from '../../stores/configStore';
+import VideoStore from '../../stores/videoStore';
 import { showTooltip } from '../../stores/tooltipStore';
 import { formatTimeCompact } from '../core/time-utils';
 import type { DataPoint } from '../../models/dataPoint';
@@ -12,6 +13,7 @@ import type { Transcript } from '../../models/transcript';
 import type { Timeline } from '../../models/timeline';
 import type { Bounds } from './types/bounds';
 import { CANVAS_SPACING } from '../constants/ui';
+import { drawPlayhead } from './draw-utils';
 
 function formatDuration(seconds: number): string {
 	return `${Math.round(seconds)}s`;
@@ -143,6 +145,23 @@ export class TurnChart {
 		}
 		if (this.stripBounds) {
 			this.drawAnnotationStrip(sortedAnimationWordArray);
+		}
+
+		// Playhead: video playing → video time, animating → animation time, otherwise → follow mouse
+		const videoState = get(VideoStore);
+		const isTimed = this.transcript.timingMode !== 'untimed';
+		const playheadRegion: Bounds = { x: this.bounds.x, y: this.bounds.y, width: this.bounds.width, height: this.panelBottom - this.bounds.y };
+		let playheadTime: number | null = null;
+		if (videoState.isLoaded && videoState.isPlaying && isTimed) {
+			playheadTime = videoState.currentTime;
+		} else if (this.timeline.isAnimating) {
+			playheadTime = this.timeline.currTime;
+		} else if (this.sk.overRect(this.bounds.x, this.bounds.y, this.bounds.width, this.panelBottom - this.bounds.y)) {
+			const frac = (this.sk.mouseX - this.bounds.x) / this.bounds.width;
+			playheadTime = this.timeline.leftMarker + frac * (this.timeline.rightMarker - this.timeline.leftMarker);
+		}
+		if (playheadTime !== null) {
+			drawPlayhead(this.sk, playheadTime, this.timeline.leftMarker, this.timeline.rightMarker, playheadRegion);
 		}
 
 		const turn = this.userSelectedTurn.turn;

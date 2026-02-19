@@ -101,6 +101,24 @@ export function drawTimeAxis(
 	}
 }
 
+const PLAYHEAD_COLOR = '#ef4444';
+const PLAYHEAD_WEIGHT = 1.5;
+
+/**
+ * Draws a vertical playhead line at the given time position within a region.
+ */
+export function drawPlayhead(sk: p5, currTime: number, leftMarker: number, rightMarker: number, region: Bounds): void {
+	if (currTime <= leftMarker || currTime > rightMarker) return;
+	const range = rightMarker - leftMarker;
+	if (range <= 0) return;
+	const x = region.x + ((currTime - leftMarker) / range) * region.width;
+	sk.push();
+	sk.stroke(PLAYHEAD_COLOR);
+	sk.strokeWeight(PLAYHEAD_WEIGHT);
+	sk.line(x, region.y, x, region.y + region.height);
+	sk.pop();
+}
+
 const TOOLTIP_MAX_TURNS = 4;
 const TOOLTIP_PREVIEW_WORDS = 8;
 const TURN_SEPARATOR = '<span style="opacity: 0.2">———</span>';
