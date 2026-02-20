@@ -68,11 +68,11 @@
 	let csvPreview = $state<CSVPreview | null>(null);
 
 	const PREVIEW_ROW_COUNT = 10;
-	const emptyStats = { parseResult: null, speakerCount: 0, turnCount: 0, wordCount: 0, timingMode: null } as const;
+	const emptyStats = { parseResult: null, speakerCount: 0, turnCount: 0, wordCount: 0, timingMode: null, error: null } as const;
 
 	function recomputePreviewStats(preview: CSVPreview): CSVPreview {
 		if (!allRequiredMapped(preview.columnMatches, preview.columnOverrides)) {
-			return { ...preview, ...emptyStats, error: null };
+			return { ...preview, ...emptyStats };
 		}
 		const mapping = buildFinalMapping(preview.columnMatches, preview.columnOverrides);
 		const remapped = remapData(preview.rawData, mapping);
@@ -99,6 +99,7 @@
 
 	function confirmCSVImport() {
 		if (!csvPreview?.parseResult) return;
+		if (!allRequiredMapped(csvPreview.columnMatches, csvPreview.columnOverrides)) return;
 		clearState();
 		core.clearTranscriptData();
 		applyTranscriptResult(createTranscriptFromParsedText(csvPreview.parseResult, csvPreview.parseResult.detectedTimingMode));

@@ -87,7 +87,7 @@ function getRowStartTime(row: Record<string, unknown>): number | null {
 export function parseCSVRows(
 	rows: Record<string, unknown>[],
 	speechRateWordsPerSecond: number = 3
-): ParseResult & { detectedTimingMode: TimingMode } {
+): ParseResult {
 	const state: CSVParseState = {
 		turns: [],
 		speakerSet: new Set(),

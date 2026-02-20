@@ -1,7 +1,7 @@
 <script lang="ts">
 	import { CloudUpload, ArrowLeft, X, Check, CircleAlert } from '@lucide/svelte';
 	import { extractYouTubeVideoId } from '$lib/core/url-utils';
-	import { isRequired, allRequiredMapped } from '$lib/core/column-mapper';
+	import { isRequired, allRequiredMapped, type ColumnMatch } from '$lib/core/column-mapper';
 	import type { CSVPreview } from '../../models/csv-preview';
 	import type { TimingMode } from '../../models/transcript';
 
@@ -148,6 +148,10 @@
 							&mdash; Timing: {timingModeLabels[csvPreview.timingMode]}
 						{/if}
 					</div>
+				{:else if !canImport()}
+					<div class="text-sm text-gray-500 mb-3">
+						Map the "speaker" and "content" columns to preview and import data.
+					</div>
 				{/if}
 
 				<!-- Column mapping -->
@@ -179,9 +183,6 @@
 										<option value={col}>{col}</option>
 									{/each}
 								</select>
-								{#if effective && !match.isExact}
-									<span class="text-xs text-gray-500">({Math.round(match.score * 100)}% match)</span>
-								{/if}
 								{#if !effective && required}
 									<span class="text-xs text-error">required</span>
 								{/if}

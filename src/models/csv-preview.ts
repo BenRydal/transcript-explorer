@@ -9,7 +9,7 @@ export interface CSVPreview {
 	columnMatches: ColumnMatch[];
 	columnOverrides: Record<string, string | null>;
 	rawData: Record<string, unknown>[];
-	parseResult: (ParseResult & { detectedTimingMode: TimingMode }) | null;
+	parseResult: ParseResult | null;
 	speakerCount: number;
 	turnCount: number;
 	wordCount: number;
