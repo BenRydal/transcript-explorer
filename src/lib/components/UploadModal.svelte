@@ -149,43 +149,33 @@
 						{/if}
 					</div>
 				{:else if !canImport()}
-					<div class="text-sm text-gray-500 mb-3">
-						Map the "speaker" and "content" columns to preview and import data.
-					</div>
+					<div class="text-sm text-gray-500 mb-3">Map the "speaker" and "content" columns to preview and import data.</div>
 				{/if}
 
 				<!-- Column mapping -->
+				{@const expectedLabels: Record<string, string> = { speaker: 'Speaker', content: 'Content', start: 'Start Time', end: 'End Time' }}
 				<div class="flex flex-col gap-2 mb-4">
 					{#each csvPreview.columnMatches as match}
 						{@const effective = getEffectiveMatch(match)}
 						{@const required = isRequired(match.expected)}
 						<div class="flex items-center gap-2">
-							<span class="text-sm font-medium w-16">{match.expected}</span>
-							{#if match.isExact && !(match.expected in csvPreview.columnOverrides)}
-								<!-- Exact match: green badge -->
-								<span class="badge badge-success badge-sm gap-1">
-									<Check size={12} />
-									{match.expected}
-								</span>
-							{:else}
-								<!-- Fuzzy match or no match: show dropdown -->
-								<select
-									class="select select-bordered select-xs flex-1 max-w-48"
-									value={effective ?? ''}
-									aria-label="Map CSV column to {match.expected}"
-									onchange={(e) => {
-										const val = (e.target as HTMLSelectElement).value;
-										oncolumnMappingChange?.(match.expected, val || null);
-									}}
-								>
-									<option value="">{required ? '— Select column —' : '— Skip —'}</option>
-									{#each csvPreview.allColumns as col}
-										<option value={col}>{col}</option>
-									{/each}
-								</select>
-								{#if !effective && required}
-									<span class="text-xs text-error">required</span>
-								{/if}
+							<span class="text-sm font-medium w-20">{expectedLabels[match.expected] ?? match.expected}</span>
+							<select
+								class="select select-bordered select-xs flex-1 max-w-48"
+								value={effective ?? ''}
+								aria-label="Map CSV column to {expectedLabels[match.expected] ?? match.expected}"
+								onchange={(e) => {
+									const val = (e.target as HTMLSelectElement).value;
+									oncolumnMappingChange?.(match.expected, val || null);
+								}}
+							>
+								<option value="">{required ? '— Select column —' : '— Skip —'}</option>
+								{#each csvPreview.allColumns as col}
+									<option value={col}>{col}</option>
+								{/each}
+							</select>
+							{#if !effective && required}
+								<span class="text-xs text-error">required</span>
 							{/if}
 						</div>
 					{/each}
@@ -198,7 +188,7 @@
 						<thead>
 							<tr>
 								{#each csvPreview.allColumns as col}
-									<th class={!mappedCsvCols.has(col) ? 'text-gray-400' : ''}>{col}</th>
+									<th class={mappedCsvCols.has(col) ? 'font-bold border-b-2 border-primary' : 'text-gray-400'}>{col}</th>
 								{/each}
 							</tr>
 						</thead>

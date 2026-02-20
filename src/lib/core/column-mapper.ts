@@ -15,10 +15,7 @@ function levenshtein(a: string, b: string): number {
 	for (let j = 0; j <= n; j++) dp[0][j] = j;
 	for (let i = 1; i <= m; i++) {
 		for (let j = 1; j <= n; j++) {
-			dp[i][j] =
-				a[i - 1] === b[j - 1]
-					? dp[i - 1][j - 1]
-					: 1 + Math.min(dp[i - 1][j], dp[i][j - 1], dp[i - 1][j - 1]);
+			dp[i][j] = a[i - 1] === b[j - 1] ? dp[i - 1][j - 1] : 1 + Math.min(dp[i - 1][j], dp[i][j - 1], dp[i - 1][j - 1]);
 		}
 	}
 	return dp[m][n];
@@ -35,9 +32,7 @@ const FUZZY_THRESHOLD = 0.6;
 export function mapColumns(csvColumns: string[]): ColumnMatch[] {
 	const validCsvColumns = csvColumns.filter((c) => c && c.trim());
 	const requiredColumns = HEADERS_SIMPLE_TRANSCRIPT;
-	const optionalColumns = HEADERS_TRANSCRIPT_WITH_TIME.filter(
-		(c) => !requiredColumns.includes(c)
-	);
+	const optionalColumns = HEADERS_TRANSCRIPT_WITH_TIME.filter((c) => !requiredColumns.includes(c));
 	const allExpected = [...requiredColumns, ...optionalColumns];
 	const used = new Set<string>();
 	const results: ColumnMatch[] = [];
@@ -82,10 +77,7 @@ export function isRequired(column: string): boolean {
 	return HEADERS_SIMPLE_TRANSCRIPT.includes(column);
 }
 
-export function allRequiredMapped(
-	matches: ColumnMatch[],
-	overrides: Record<string, string | null>
-): boolean {
+export function allRequiredMapped(matches: ColumnMatch[], overrides: Record<string, string | null>): boolean {
 	return HEADERS_SIMPLE_TRANSCRIPT.every((col) => {
 		const override = overrides[col];
 		if (override !== undefined) return override !== null;
@@ -94,10 +86,7 @@ export function allRequiredMapped(
 	});
 }
 
-export function buildFinalMapping(
-	matches: ColumnMatch[],
-	overrides: Record<string, string | null>
-): Record<string, string> {
+export function buildFinalMapping(matches: ColumnMatch[], overrides: Record<string, string | null>): Record<string, string> {
 	if (matches.length === 0) return {};
 	const mapping: Record<string, string> = {};
 	for (const match of matches) {
@@ -110,10 +99,7 @@ export function buildFinalMapping(
 	return mapping;
 }
 
-export function remapData(
-	data: Record<string, unknown>[],
-	mapping: Record<string, string>
-): Record<string, unknown>[] {
+export function remapData(data: Record<string, unknown>[], mapping: Record<string, string>): Record<string, unknown>[] {
 	return data.map((row) => {
 		const newRow: Record<string, unknown> = {};
 		for (const [expected, original] of Object.entries(mapping)) {

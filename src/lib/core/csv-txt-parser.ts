@@ -84,10 +84,7 @@ function getRowStartTime(row: Record<string, unknown>): number | null {
  * Parses CSV rows with speaker/content columns and optional start/end times.
  * Handles timing inference when end times are missing.
  */
-export function parseCSVRows(
-	rows: Record<string, unknown>[],
-	speechRateWordsPerSecond: number = 3
-): ParseResult {
+export function parseCSVRows(rows: Record<string, unknown>[], speechRateWordsPerSecond: number = 3): ParseResult {
 	const state: CSVParseState = {
 		turns: [],
 		speakerSet: new Set(),
