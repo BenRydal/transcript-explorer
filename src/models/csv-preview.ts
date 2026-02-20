@@ -1,0 +1,18 @@
+import type { ColumnMatch } from '$lib/core/column-mapper';
+import type { ParseResult } from '$lib/core/text-parser';
+import type { TimingMode } from './transcript';
+
+export interface CSVPreview {
+	fileName: string;
+	rawRows: Record<string, unknown>[];
+	allColumns: string[];
+	columnMatches: ColumnMatch[];
+	columnOverrides: Record<string, string | null>;
+	rawData: Record<string, unknown>[];
+	parseResult: (ParseResult & { detectedTimingMode: TimingMode }) | null;
+	speakerCount: number;
+	turnCount: number;
+	wordCount: number;
+	timingMode: TimingMode | null;
+	error: string | null;
+}

@@ -8,7 +8,7 @@
 	// Stores
 	import UserStore from '../stores/userStore';
 	import P5Store from '../stores/p5Store';
-	import VideoStore, { toggleVisibility as toggleVideoVisibility, reset as resetVideo, loadVideo } from '../stores/videoStore';
+	import VideoStore, { toggleVisibility as toggleVideoVisibility, loadVideo } from '../stores/videoStore';
 	import EditorStore, { editorLayoutKey } from '../stores/editorStore';
 	import TimelineStore from '../stores/timelineStore';
 	import ConfigStore, { filterToggleKey } from '../stores/configStore';
@@ -33,6 +33,8 @@
 	import { parseSubtitleText } from '$lib/core/subtitle-parser';
 	import { parseCSVRows, parseTXTLines } from '$lib/core/csv-txt-parser';
 	import { testTranscript } from '$lib/core/core-utils';
+	import { mapColumns, allRequiredMapped, buildFinalMapping, remapData } from '$lib/core/column-mapper';
+	import type { CSVPreview } from '../models/csv-preview';
 	import { filterValidFiles, createUploadEntries, type UploadedFile } from '$lib/core/file-upload';
 	import { getPersistedTimestamp, restoreState, clearState, saveStateDebounced, saveStateImmediate } from '$lib/core/persistence';
 	import { getMaxTime, applyTimingModeToWordArray } from '$lib/core/timing-utils';
@@ -60,6 +62,54 @@
 	import VisualizationLegend from '$lib/components/VisualizationLegend.svelte';
 
 	import type { TranscriptionResult } from '$lib/core/transcription-service';
+	import type { TimingMode } from '../models/transcript';
+	import { splitIntoWords } from '$lib/core/string-utils';
+
+	let csvPreview = $state<CSVPreview | null>(null);
+
+	const PREVIEW_ROW_COUNT = 10;
+	const emptyStats = { parseResult: null, speakerCount: 0, turnCount: 0, wordCount: 0, timingMode: null } as const;
+
+	function recomputePreviewStats(preview: CSVPreview): CSVPreview {
+		if (!allRequiredMapped(preview.columnMatches, preview.columnOverrides)) {
+			return { ...preview, ...emptyStats, error: null };
+		}
+		const mapping = buildFinalMapping(preview.columnMatches, preview.columnOverrides);
+		const remapped = remapData(preview.rawData, mapping);
+		const parseResult = parseCSVRows(remapped, get(ConfigStore).speechRateWordsPerSecond);
+		if (parseResult.turns.length === 0) {
+			return { ...preview, ...emptyStats, error: 'No valid turns found after mapping columns.' };
+		}
+		return {
+			...preview,
+			parseResult,
+			speakerCount: parseResult.speakers.length,
+			turnCount: parseResult.turns.length,
+			wordCount: parseResult.turns.reduce((sum, t) => sum + splitIntoWords(t.content).length, 0),
+			timingMode: parseResult.detectedTimingMode,
+			error: null
+		};
+	}
+
+	function handleColumnMappingChange(expected: string, csvColumn: string | null) {
+		if (!csvPreview) return;
+		const updated = { ...csvPreview, columnOverrides: { ...csvPreview.columnOverrides, [expected]: csvColumn } };
+		csvPreview = recomputePreviewStats(updated);
+	}
+
+	function confirmCSVImport() {
+		if (!csvPreview?.parseResult) return;
+		clearState();
+		core.clearTranscriptData();
+		applyTranscriptResult(createTranscriptFromParsedText(csvPreview.parseResult, csvPreview.parseResult.detectedTimingMode));
+		csvPreview = null;
+		uploadedFiles = [];
+		showUploadModal = false;
+	}
+
+	function cancelCSVPreview() {
+		csvPreview = null;
+	}
 
 	// Modal state
 	let showDataPopup = $state(false);
@@ -264,7 +314,7 @@
 			// Load each CSV file for the example
 			for (const fileName of example.files) {
 				const file = await core.fetchExampleFile(exampleId, fileName);
-				await processFile(file);
+				await processFile(file, { skipPreview: true });
 			}
 
 			// Load example video
@@ -455,22 +505,48 @@
 		});
 	}
 
-	async function processFile(file: File): Promise<void> {
+	async function processFile(file: File, { skipPreview = false } = {}): Promise<void> {
 		const fileName = file.name.toLowerCase();
 
 		if (fileName.endsWith('.csv') || file.type === 'text/csv') {
 			const results = await parseCSVFile(file);
-			if (!testTranscript(results)) {
-				throw new Error('Invalid CSV format. Required columns: "speaker" and "content".');
+			const allColumns = results.meta.fields || [];
+			const rawData = results.data as Record<string, unknown>[];
+			const columnMatches = mapColumns(allColumns);
+			const columnOverrides: Record<string, string | null> = {};
+
+			if (skipPreview) {
+				// For examples / skip-preview: require exact matches
+				const isValid = testTranscript(results);
+				if (!isValid) {
+					throw new Error('Invalid CSV format. Required columns: "speaker" and "content".');
+				}
+				const speechRate = get(ConfigStore).speechRateWordsPerSecond;
+				const parseResult = parseCSVRows(results.data, speechRate);
+				if (parseResult.turns.length === 0) {
+					throw new Error('No valid turns found in CSV. Check that rows have speaker and content values.');
+				}
+				clearState();
+				core.clearTranscriptData();
+				applyTranscriptResult(createTranscriptFromParsedText(parseResult, parseResult.detectedTimingMode));
+			} else {
+				// Build preview with column mapping
+				const preview: CSVPreview = {
+					fileName: file.name,
+					rawRows: rawData.slice(0, PREVIEW_ROW_COUNT),
+					allColumns,
+					columnMatches,
+					columnOverrides,
+					rawData,
+					parseResult: null,
+					speakerCount: 0,
+					turnCount: 0,
+					wordCount: 0,
+					timingMode: null,
+					error: null
+				};
+				csvPreview = recomputePreviewStats(preview);
 			}
-			const speechRate = get(ConfigStore).speechRateWordsPerSecond;
-			const parseResult = parseCSVRows(results.data, speechRate);
-			if (parseResult.turns.length === 0) {
-				throw new Error('No valid turns found in CSV. Check that rows have speaker and content values.');
-			}
-			clearState();
-			core.clearTranscriptData();
-			applyTranscriptResult(createTranscriptFromParsedText(parseResult, parseResult.detectedTimingMode));
 		} else if (fileName.endsWith('.txt')) {
 			const text = await readFileAsText(file);
 			const parseResult = parseTXTLines(text.split(/\r?\n/));
@@ -483,9 +559,15 @@
 		} else if (fileName.endsWith('.mp4') || file.type === 'video/mp4') {
 			pendingVideoFile = file;
 			core.prepVideoFromFile(URL.createObjectURL(file));
-			setTimeout(() => {
-				pendingVideoDuration = get(VideoStore).duration || 0;
-			}, 1000);
+			const pollDuration = (elapsed: number) => {
+				const duration = get(VideoStore).duration;
+				if (duration > 0) {
+					pendingVideoDuration = duration;
+				} else if (elapsed < 5000) {
+					setTimeout(() => pollDuration(elapsed + 200), 200);
+				}
+			};
+			pollDuration(0);
 		} else if (fileName.endsWith('.srt') || fileName.endsWith('.vtt')) {
 			const text = await readFileAsText(file);
 			const parseResult = parseSubtitleText(text);
@@ -612,6 +694,7 @@
 			{isDraggingOver}
 			{pendingVideoFile}
 			{uploadedFiles}
+			{csvPreview}
 			ondrop={handleDrop}
 			ondragover={handleDragOver}
 			ondragleave={handleDragLeave}
@@ -623,6 +706,9 @@
 				showUploadModal = false;
 				showPasteModal = true;
 			}}
+			onconfirmImport={confirmCSVImport}
+			oncancelPreview={cancelCSVPreview}
+			oncolumnMappingChange={handleColumnMappingChange}
 		/>
 
 		<PasteModal bind:isOpen={showPasteModal} onimport={handlePasteImport} />

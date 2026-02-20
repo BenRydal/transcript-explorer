@@ -48,12 +48,13 @@
 
 	let count = $derived($ConfigStore.dashboardPanels.length);
 	let openPopoverIndex = $state<number | null>(null);
-	let panelRefs: HTMLElement[] = $state([]);
+	let panelRefs: (HTMLElement | null)[] = $state([]);
 
 	$effect(() => {
 		if (openPopoverIndex === null) return;
+		const currentIndex = openPopoverIndex;
 		const handleClick = (event: MouseEvent) => {
-			if (!panelRefs[openPopoverIndex!]?.contains(event.target as Node)) {
+			if (!panelRefs[currentIndex]?.contains(event.target as Node)) {
 				openPopoverIndex = null;
 			}
 		};
@@ -113,7 +114,9 @@
 
 				<!-- Icon grid popover -->
 				{#if openPopoverIndex === i}
-					<div class="absolute top-full right-0 mt-1 z-[52] rounded-lg py-2 px-2 shadow-lg bg-base-100 border border-gray-200 w-44 pointer-events-auto">
+					<div
+						class="absolute top-full right-0 mt-1 z-[52] rounded-lg py-2 px-2 shadow-lg bg-base-100 border border-gray-200 w-44 pointer-events-auto"
+					>
 						<div class="grid grid-cols-3 gap-1">
 							{#each DASHBOARD_PANEL_OPTIONS as option}
 								{@const tile = PANEL_ICONS[option.key]}
