@@ -1,0 +1,4 @@
+speaker,content
+SPEAKER 1,This is a transcript not a code file
+SPEAKER 2,It has speaker and content columns
+SPEAKER 1,So it should not be detected as codes

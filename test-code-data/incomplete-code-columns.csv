@@ -1,0 +1,4 @@
+code,notes
+question,This row has a code column but no turn or time columns
+answer,Should be detected as incomplete code format
+elaboration,Missing the turn or start/end columns

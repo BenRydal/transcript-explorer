@@ -1,0 +1,6 @@
+start,end,code
+0:00,0:30,greeting
+0:30,2:15,discussion
+2:15,5:00,argument
+5:00,7:45,resolution
+7:45,10:00,closing

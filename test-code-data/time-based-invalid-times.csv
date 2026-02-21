@@ -1,0 +1,8 @@
+start,end,code
+0,30,valid
+abc,60,bad_start
+30,xyz,bad_end
+,45,missing_start
+60,,missing_end
+-5,30,negative_start
+90,120,valid_2
