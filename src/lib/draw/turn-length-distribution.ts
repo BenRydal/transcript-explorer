@@ -1,16 +1,9 @@
-import type p5 from 'p5';
-import { get } from 'svelte/store';
-import UserStore from '../../stores/userStore';
-import ConfigStore, { type ConfigStoreType } from '../../stores/configStore';
-import HoverStore, { type HoverState } from '../../stores/hoverStore';
-import TranscriptStore from '../../stores/transcriptStore';
 import { showTooltip } from '../../stores/tooltipStore';
 import type { DataPoint } from '../../models/dataPoint';
-import type { User } from '../../models/user';
 import type { Bounds } from './types/bounds';
-import { withDimming, formatTurnPreviewLines, createUserMap, getCrossHighlight, getDominantCodeColor, buildCodeColorMap } from './draw-utils';
-import CodeStore from '../../stores/codeStore';
+import { withDimming, formatTurnPreviewLines, getCrossHighlight, getDominantCodeColor } from './draw-utils';
 import { normalizeWord } from '../core/string-utils';
+import { DrawContext } from './draw-context';
 
 const LEFT_MARGIN = 60;
 const BOTTOM_MARGIN = 40;
@@ -48,29 +41,20 @@ interface HoveredSegment {
 }
 
 export class TurnLengthDistribution {
-	private sk: p5;
+	private ctx: DrawContext;
 	private bounds: Bounds;
-	private userMap: Map<string, User>;
 	private speakers: string[];
-	private config: ConfigStoreType;
-	private hover: HoverState;
 	private fullTranscriptMaxBinCount: number;
-	private codeColorMap: Map<string, string>;
 	// Absolute grid coordinates (bounds.xy + grid offsets)
 	private gx: number;
 	private gy: number;
 	private gw: number;
 	private gh: number;
 
-	constructor(sk: p5, bounds: Bounds) {
-		this.sk = sk;
+	constructor(ctx: DrawContext, bounds: Bounds) {
+		this.ctx = ctx;
 		this.bounds = bounds;
-		const users = get(UserStore);
-		this.userMap = createUserMap(users);
-		this.speakers = users.filter((u) => u.enabled).map((u) => u.name);
-		this.config = get(ConfigStore);
-		this.hover = get(HoverStore);
-		this.codeColorMap = buildCodeColorMap(get(CodeStore));
+		this.speakers = this.ctx.users.filter((u) => u.enabled).map((u) => u.name);
 		const leftMargin = Math.min(LEFT_MARGIN, bounds.width * MAX_MARGIN_RATIO);
 		const bottomMargin = Math.min(BOTTOM_MARGIN, bounds.height * MAX_MARGIN_RATIO);
 		this.gx = bounds.x + leftMargin;
@@ -92,13 +76,13 @@ export class TurnLengthDistribution {
 
 		// Use full transcript max when scaling to full transcript
 		const maxCount =
-			!this.config.scaleToVisibleData && this.fullTranscriptMaxBinCount > 0
+			!this.ctx.config.scaleToVisibleData && this.fullTranscriptMaxBinCount > 0
 				? Math.max(visibleMaxCount, this.fullTranscriptMaxBinCount)
 				: visibleMaxCount;
 
 		// Filter bin contents by search term while keeping axes stable
-		if (this.config.wordToSearch) {
-			const searchTerm = normalizeWord(this.config.wordToSearch);
+		if (this.ctx.config.wordToSearch) {
+			const searchTerm = normalizeWord(this.ctx.config.wordToSearch);
 			for (const bin of bins) {
 				for (const [speaker, binTurns] of bin.speakers) {
 					const filtered = binTurns.filter((t) => t.content.toLowerCase().includes(searchTerm));
@@ -116,10 +100,10 @@ export class TurnLengthDistribution {
 
 		const barWidth = this.gw / bins.length;
 
-		const localX = this.sk.mouseX - this.gx;
-		const localY = this.sk.mouseY - this.gy;
+		const localX = this.ctx.sk.mouseX - this.gx;
+		const localY = this.ctx.sk.mouseY - this.gy;
 		const mouseInGrid =
-			this.sk.overRect(this.bounds.x, this.bounds.y, this.bounds.width, this.bounds.height) &&
+			this.ctx.sk.overRect(this.bounds.x, this.bounds.y, this.bounds.width, this.bounds.height) &&
 			localX >= 0 &&
 			localX < this.gw &&
 			localY >= 0 &&
@@ -141,26 +125,26 @@ export class TurnLengthDistribution {
 	}
 
 	private drawYAxis(maxCount: number): void {
-		this.sk.textSize(Math.max(8, Math.min(10, this.bounds.height * 0.03)));
-		this.sk.textAlign(this.sk.RIGHT, this.sk.CENTER);
-		this.sk.noStroke();
+		this.ctx.sk.textSize(Math.max(8, Math.min(10, this.bounds.height * 0.03)));
+		this.ctx.sk.textAlign(this.ctx.sk.RIGHT, this.ctx.sk.CENTER);
+		this.ctx.sk.noStroke();
 		for (let i = 0; i <= Y_TICKS; i++) {
 			const frac = i / Y_TICKS;
 			const val = Math.round(frac * maxCount);
 			const y = this.gy + this.gh - frac * this.gh;
-			this.sk.fill(120);
-			this.sk.text(String(val), this.gx - 8, y);
-			this.sk.stroke(240);
-			this.sk.strokeWeight(1);
-			this.sk.line(this.gx, y, this.gx + this.gw, y);
-			this.sk.noStroke();
+			this.ctx.sk.fill(120);
+			this.ctx.sk.text(String(val), this.gx - 8, y);
+			this.ctx.sk.stroke(240);
+			this.ctx.sk.strokeWeight(1);
+			this.ctx.sk.line(this.gx, y, this.gx + this.gw, y);
+			this.ctx.sk.noStroke();
 		}
 	}
 
 	private drawBars(bins: Bin[], maxCount: number, barWidth: number, hoveredBinIndex: number, localY: number): HoveredSegment | null {
 		let hoveredSegment: HoveredSegment | null = null;
 
-		const crossHighlight = getCrossHighlight(this.sk, this.bounds, this.config.dashboardToggle, this.hover);
+		const crossHighlight = getCrossHighlight(this.ctx.sk, this.bounds, this.ctx.config.dashboardToggle, this.ctx.hover);
 
 		for (let b = 0; b < bins.length; b++) {
 			const bin = bins[b];
@@ -179,13 +163,13 @@ export class TurnLengthDistribution {
 					crossHighlight.active &&
 					((crossHighlight.turns != null && !turns.some((t) => crossHighlight.turns!.includes(t.dataPoint.turnNumber))) ||
 						(crossHighlight.speaker != null && speaker !== crossHighlight.speaker));
-				withDimming(this.sk.drawingContext, shouldDim, () => {
-					const user = this.userMap.get(speaker);
-					const barColor = getDominantCodeColor(turns.map((t) => t.dataPoint), user!.color, this.codeColorMap, this.config.codeColorMode);
-					const c = this.sk.color(barColor);
+				withDimming(this.ctx.sk.drawingContext, shouldDim, () => {
+					const user = this.ctx.userMap.get(speaker);
+					const barColor = getDominantCodeColor(turns.map((t) => t.dataPoint), user!.color, this.ctx.codeColorMap, this.ctx.config.codeColorMode);
+					const c = this.ctx.sk.color(barColor);
 					c.setAlpha(200);
-					this.sk.fill(c);
-					this.sk.rect(x, y, w, h, 1);
+					this.ctx.sk.fill(c);
+					this.ctx.sk.rect(x, y, w, h, 1);
 				});
 
 				if (b === hoveredBinIndex) {
@@ -205,40 +189,40 @@ export class TurnLengthDistribution {
 
 	private drawXAxis(bins: Bin[], barWidth: number): void {
 		const fontSize = Math.max(8, Math.min(10, this.bounds.height * 0.03));
-		this.sk.textSize(fontSize);
-		this.sk.fill(120);
-		this.sk.noStroke();
-		this.sk.textAlign(this.sk.CENTER, this.sk.TOP);
+		this.ctx.sk.textSize(fontSize);
+		this.ctx.sk.fill(120);
+		this.ctx.sk.noStroke();
+		this.ctx.sk.textAlign(this.ctx.sk.CENTER, this.ctx.sk.TOP);
 		const labelInterval = Math.max(1, Math.floor(bins.length / 10));
 		for (let b = 0; b < bins.length; b += labelInterval) {
 			const bin = bins[b];
 			const label = bin.minLength === bin.maxLength ? String(bin.minLength) : `${bin.minLength}-${bin.maxLength}`;
-			this.sk.text(label, this.gx + b * barWidth + barWidth / 2, this.gy + this.gh + 5);
+			this.ctx.sk.text(label, this.gx + b * barWidth + barWidth / 2, this.gy + this.gh + 5);
 		}
 
-		this.sk.textSize(fontSize + 1);
-		this.sk.fill(100);
-		this.sk.text('Words per turn', this.gx + this.gw / 2, this.gy + this.gh + 5 + fontSize + 4);
+		this.ctx.sk.textSize(fontSize + 1);
+		this.ctx.sk.fill(100);
+		this.ctx.sk.text('Words per turn', this.gx + this.gw / 2, this.gy + this.gh + 5 + fontSize + 4);
 	}
 
 	private drawHoverEffect(hovered: HoveredSegment, barWidth: number, bins: Bin[]): void {
-		const user = this.userMap.get(hovered.speaker);
+		const user = this.ctx.userMap.get(hovered.speaker);
 		const hoverTurns = bins[hovered.binIndex].speakers.get(hovered.speaker);
-		const hoverColor = hoverTurns && hoverTurns.length > 0 ? getDominantCodeColor(hoverTurns.map((t) => t.dataPoint), user?.color || '#cccccc', this.codeColorMap, this.config.codeColorMode) : user?.color || '#cccccc';
-		this.sk.noFill();
-		this.sk.stroke(hoverColor);
-		this.sk.strokeWeight(HOVER_OUTLINE_WEIGHT);
-		this.sk.rect(this.gx + hovered.binIndex * barWidth + BAR_PADDING, hovered.y, barWidth - BAR_PADDING * 2, hovered.h, 1);
+		const hoverColor = hoverTurns && hoverTurns.length > 0 ? getDominantCodeColor(hoverTurns.map((t) => t.dataPoint), user?.color || '#cccccc', this.ctx.codeColorMap, this.ctx.config.codeColorMode) : user?.color || '#cccccc';
+		this.ctx.sk.noFill();
+		this.ctx.sk.stroke(hoverColor);
+		this.ctx.sk.strokeWeight(HOVER_OUTLINE_WEIGHT);
+		this.ctx.sk.rect(this.gx + hovered.binIndex * barWidth + BAR_PADDING, hovered.y, barWidth - BAR_PADDING * 2, hovered.h, 1);
 	}
 
 	private showSegmentTooltip(hovered: HoveredSegment, bins: Bin[]): void {
 		const bin = bins[hovered.binIndex];
 		const turns = bin.speakers.get(hovered.speaker)!;
-		const user = this.userMap.get(hovered.speaker);
+		const user = this.ctx.userMap.get(hovered.speaker);
 		const multiTurn = turns.length > 1;
 		const content = `<b>${hovered.speaker}</b> · ${turns.length} turn${multiTurn ? 's' : ''}\n${formatTurnPreviewLines(turns)}`;
-		const tooltipColor = turns.length > 0 ? getDominantCodeColor(turns.map((t) => t.dataPoint), user?.color || '#cccccc', this.codeColorMap, this.config.codeColorMode) : user?.color || '#cccccc';
-		showTooltip(this.sk.mouseX, this.sk.mouseY, content, tooltipColor, this.bounds.y + this.bounds.height);
+		const tooltipColor = turns.length > 0 ? getDominantCodeColor(turns.map((t) => t.dataPoint), user?.color || '#cccccc', this.ctx.codeColorMap, this.ctx.config.codeColorMode) : user?.color || '#cccccc';
+		showTooltip(this.ctx.sk.mouseX, this.ctx.sk.mouseY, content, tooltipColor, this.bounds.y + this.bounds.height);
 	}
 
 	private binTurns(turns: TurnSummary[]): Bin[] {
@@ -249,7 +233,7 @@ export class TurnLengthDistribution {
 		let binSize: number;
 		let numBins: number;
 
-		const targetBins = this.config.turnLengthBinCount > 0 ? this.config.turnLengthBinCount : TARGET_BIN_COUNT;
+		const targetBins = this.ctx.config.turnLengthBinCount > 0 ? this.ctx.config.turnLengthBinCount : TARGET_BIN_COUNT;
 
 		if (range === 0) {
 			binSize = 1;
@@ -289,12 +273,11 @@ export class TurnLengthDistribution {
 	 * Computes the max bin count from the full transcript for stable scaling.
 	 */
 	private computeFullTranscriptMaxBinCount(): number {
-		const transcript = get(TranscriptStore);
-		if (transcript.wordArray.length === 0) return 0;
+		if (this.ctx.transcript.wordArray.length === 0) return 0;
 
 		// Build turn summaries from full transcript
 		const turnMap = new Map<number, { wordCount: number }>();
-		for (const word of transcript.wordArray) {
+		for (const word of this.ctx.transcript.wordArray) {
 			const existing = turnMap.get(word.turnNumber);
 			if (existing) {
 				existing.wordCount++;
@@ -311,7 +294,7 @@ export class TurnLengthDistribution {
 		const minWordCount = Math.min(...wordCounts);
 		const range = maxWordCount - minWordCount;
 
-		const targetBins = this.config.turnLengthBinCount > 0 ? this.config.turnLengthBinCount : TARGET_BIN_COUNT;
+		const targetBins = this.ctx.config.turnLengthBinCount > 0 ? this.ctx.config.turnLengthBinCount : TARGET_BIN_COUNT;
 		const binSize = range === 0 ? 1 : Math.max(1, Math.ceil(range / targetBins));
 		const numBins = range === 0 ? 1 : Math.ceil(range / binSize) + 1;
 

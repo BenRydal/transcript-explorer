@@ -10,11 +10,12 @@ import { TurnLengthDistribution } from './turn-length-distribution';
 import { SpeakerFingerprint } from './speaker-fingerprint';
 import { QuestionFlow } from './question-flow';
 import { WordJourney } from './word-journey';
-import ConfigStore, { type ConfigStoreType } from '../../stores/configStore';
 import HoverStore from '../../stores/hoverStore';
 import { resetTooltipFrame, finalizeTooltipFrame } from '../../stores/tooltipStore';
 import type { Bounds } from './types/bounds';
 import { CANVAS_SPACING } from '../constants/ui';
+import { DrawContext } from './draw-context';
+import type { ConfigStoreType } from '../../stores/configStore';
 
 interface DrawResult {
 	hover: DataPoint | null;
@@ -32,12 +33,6 @@ const emptyResult: DrawResult = { hover: null, hoveredSpeaker: null, arrayOfFirs
 function result(overrides: Partial<DrawResult>): DrawResult {
 	return { ...emptyResult, ...overrides };
 }
-
-let currConfig: ConfigStoreType;
-
-ConfigStore.subscribe((data) => {
-	currConfig = data;
-});
 
 /** Panels that produce turn-level (not just speaker-level) cross-highlighting */
 const TURN_LEVEL_SOURCES = new Set(['turnChart', 'contributionCloud', 'speakerHeatmap']);
@@ -65,13 +60,15 @@ export class Draw {
 	drawViz(): void {
 		resetTooltipFrame();
 
+		const ctx = new DrawContext(this.sk);
+
 		let drawResult: DrawResult;
-		const activePanel = TOGGLE_TO_PANEL.find(([toggle]) => currConfig[toggle]);
+		const activePanel = TOGGLE_TO_PANEL.find(([toggle]) => ctx.config[toggle]);
 
 		if (activePanel) {
-			drawResult = this.updatePanel(activePanel[1], this.getFullScreenBounds());
+			drawResult = this.updatePanel(activePanel[1], this.getFullScreenBounds(), ctx);
 		} else {
-			drawResult = this.drawDashboard();
+			drawResult = this.drawDashboard(ctx);
 		}
 
 		this.applyDrawResult(drawResult, !activePanel);
@@ -107,95 +104,95 @@ export class Draw {
 		});
 	}
 
-	updatePanel(key: string, bounds: Bounds): DrawResult {
+	updatePanel(key: string, bounds: Bounds, ctx: DrawContext): DrawResult {
 		switch (key) {
 			case 'speakerGarden':
-				return this.updateSpeakerGarden(bounds);
+				return this.updateSpeakerGarden(bounds, ctx);
 			case 'turnChart':
-				return this.updateTurnChart(bounds);
+				return this.updateTurnChart(bounds, ctx);
 			case 'contributionCloud':
-				return this.updateContributionCloud(bounds);
+				return this.updateContributionCloud(bounds, ctx);
 			case 'turnNetwork':
-				return this.updateTurnNetwork(bounds);
+				return this.updateTurnNetwork(bounds, ctx);
 			case 'wordRain':
-				return this.updateWordRain(bounds);
+				return this.updateWordRain(bounds, ctx);
 			case 'speakerHeatmap':
-				return this.updateSpeakerHeatmap(bounds);
+				return this.updateSpeakerHeatmap(bounds, ctx);
 			case 'turnLength':
-				return this.updateTurnLengthDistribution(bounds);
+				return this.updateTurnLengthDistribution(bounds, ctx);
 			case 'speakerFingerprint':
-				return this.updateSpeakerFingerprint(bounds);
+				return this.updateSpeakerFingerprint(bounds, ctx);
 			case 'questionFlow':
-				return this.updateQuestionFlow(bounds);
+				return this.updateQuestionFlow(bounds, ctx);
 			case 'wordJourney':
-				return this.updateWordJourney(bounds);
+				return this.updateWordJourney(bounds, ctx);
 			default:
 				return result({});
 		}
 	}
 
-	updateSpeakerGarden(pos: Bounds): DrawResult {
-		const garden = new SpeakerGarden(this.sk, pos);
+	updateSpeakerGarden(pos: Bounds, ctx: DrawContext): DrawResult {
+		const garden = new SpeakerGarden(ctx, pos);
 		const { hoveredSpeaker } = garden.draw(this.sk.dynamicData.getDynamicArrayForSpeakerGarden());
 		return result({ hoveredSpeaker, arrayOfFirstWords: garden.localArrayOfFirstWords });
 	}
 
-	updateTurnChart(pos: Bounds): DrawResult {
-		const turnChart = new TurnChart(this.sk, pos);
+	updateTurnChart(pos: Bounds, ctx: DrawContext): DrawResult {
+		const turnChart = new TurnChart(ctx, pos);
 		const { hoveredSpeaker } = turnChart.draw(this.sk.dynamicData.getDynamicArrayForTurnChart());
 		return result({ hover: turnChart.userSelectedTurn.turn[0] ?? turnChart.annotationHover ?? null, hoveredSpeaker });
 	}
 
-	updateSpeakerHeatmap(pos: Bounds): DrawResult {
-		const heatmap = new SpeakerHeatmap(this.sk, pos);
+	updateSpeakerHeatmap(pos: Bounds, ctx: DrawContext): DrawResult {
+		const heatmap = new SpeakerHeatmap(ctx, pos);
 		const { hoveredCell, hoveredSpeaker } = heatmap.draw(this.sk.dynamicData.getProcessedWords(true));
 		return result({ hover: hoveredCell, hoveredSpeaker });
 	}
 
-	updateTurnLengthDistribution(pos: Bounds): DrawResult {
-		const viz = new TurnLengthDistribution(this.sk, pos);
+	updateTurnLengthDistribution(pos: Bounds, ctx: DrawContext): DrawResult {
+		const viz = new TurnLengthDistribution(ctx, pos);
 		const { snippetPoints, hoveredSpeaker } = viz.draw(this.sk.dynamicData.getTurnSummaries());
 		return result({ arrayOfFirstWords: snippetPoints, hoveredSpeaker });
 	}
 
-	updateTurnNetwork(pos: Bounds): DrawResult {
-		const turnNetwork = new TurnNetwork(this.sk, pos);
+	updateTurnNetwork(pos: Bounds, ctx: DrawContext): DrawResult {
+		const turnNetwork = new TurnNetwork(ctx, pos);
 		const { snippetPoints, hoveredSpeaker, edgeTurns } = turnNetwork.draw(this.sk.dynamicData.getDynamicArrayForTurnNetwork());
 		return result({ arrayOfFirstWords: snippetPoints, hoveredSpeaker, edgeTurns });
 	}
 
-	updateWordRain(pos: Bounds): DrawResult {
-		const wordRain = new WordRain(this.sk, pos);
+	updateWordRain(pos: Bounds, ctx: DrawContext): DrawResult {
+		const wordRain = new WordRain(ctx, pos);
 		const { hoveredOccurrences, hoveredSpeaker, hasOverflow } = wordRain.draw(this.sk.dynamicData.getProcessedWords(true));
 		return result({ arrayOfFirstWords: hoveredOccurrences, hoveredSpeaker, overflowBounds: hasOverflow ? [pos] : [] });
 	}
 
-	updateContributionCloud(pos: Bounds): DrawResult {
-		const contributionCloud = new ContributionCloud(this.sk, pos);
+	updateContributionCloud(pos: Bounds, ctx: DrawContext): DrawResult {
+		const contributionCloud = new ContributionCloud(ctx, pos);
 		const { hoveredWord, hasOverflow, hoveredSpeaker } = contributionCloud.draw(this.sk.dynamicData.getDynamicArraySortedForContributionCloud());
 		return result({ hover: hoveredWord ?? null, overflowBounds: hasOverflow ? [pos] : [], hoveredSpeaker });
 	}
 
-	updateSpeakerFingerprint(pos: Bounds): DrawResult {
-		const fingerprint = new SpeakerFingerprint(this.sk, pos);
-		const { snippetPoints, hoveredSpeaker } = fingerprint.draw(this.sk.dynamicData.getSpeakerFingerprints(currConfig.scaleToVisibleData));
+	updateSpeakerFingerprint(pos: Bounds, ctx: DrawContext): DrawResult {
+		const fingerprint = new SpeakerFingerprint(ctx, pos);
+		const { snippetPoints, hoveredSpeaker } = fingerprint.draw(this.sk.dynamicData.getSpeakerFingerprints(ctx.config.scaleToVisibleData));
 		return result({ arrayOfFirstWords: snippetPoints, hoveredSpeaker });
 	}
 
-	updateQuestionFlow(pos: Bounds): DrawResult {
-		const viz = new QuestionFlow(this.sk, pos);
+	updateQuestionFlow(pos: Bounds, ctx: DrawContext): DrawResult {
+		const viz = new QuestionFlow(ctx, pos);
 		const { hoveredDataPoint, hoveredSpeaker } = viz.draw(this.sk.dynamicData.getQuestionAnswerPairs());
 		return result({ hover: hoveredDataPoint, hoveredSpeaker });
 	}
 
-	updateWordJourney(pos: Bounds): DrawResult {
-		const viz = new WordJourney(this.sk, pos);
-		const { hoveredDataPoint, hoveredSpeaker } = viz.draw(this.sk.dynamicData.getWordJourney(currConfig.wordToSearch));
+	updateWordJourney(pos: Bounds, ctx: DrawContext): DrawResult {
+		const viz = new WordJourney(ctx, pos);
+		const { hoveredDataPoint, hoveredSpeaker } = viz.draw(this.sk.dynamicData.getWordJourney(ctx.config.wordToSearch));
 		return result({ hover: hoveredDataPoint, hoveredSpeaker });
 	}
 
-	drawDashboard(): DrawResult {
-		const panels = currConfig.dashboardPanels;
+	drawDashboard(ctx: DrawContext): DrawResult {
+		const panels = ctx.config.dashboardPanels;
 		const boundsArray = this.getDashboardLayout(panels.length);
 		this.drawDashboardDividers(boundsArray, panels.length);
 
@@ -207,7 +204,7 @@ export class Draw {
 		const mergedOverflowBounds: Bounds[] = [];
 
 		for (let i = 0; i < panels.length; i++) {
-			const panelResult = this.updatePanel(panels[i], boundsArray[i]);
+			const panelResult = this.updatePanel(panels[i], boundsArray[i], ctx);
 			const hasHover = panelResult.hover != null || panelResult.hoveredSpeaker != null;
 
 			if (!hoverSource && hasHover) {

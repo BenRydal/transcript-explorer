@@ -1,17 +1,10 @@
-import type p5 from 'p5';
-import { get } from 'svelte/store';
-import UserStore from '../../stores/userStore';
-import TimelineStore from '../../stores/timelineStore';
-import ConfigStore, { type ConfigStoreType } from '../../stores/configStore';
-import HoverStore, { type HoverState } from '../../stores/hoverStore';
 import { showTooltip } from '../../stores/tooltipStore';
 import { formatTimeCompact } from '../core/time-utils';
 import type { DataPoint } from '../../models/dataPoint';
-import type { User } from '../../models/user';
 import type { Bounds } from './types/bounds';
 import type { WordOccurrence } from '../core/dynamic-data';
-import { withDimming, createUserMap, getCrossHighlight, drawTimeAxis, getWordColor, buildCodeColorMap } from './draw-utils';
-import CodeStore from '../../stores/codeStore';
+import { withDimming, getCrossHighlight, drawTimeAxis, getWordColor } from './draw-utils';
+import { DrawContext } from './draw-context';
 
 const LEFT_MARGIN = 80;
 const RIGHT_MARGIN = 20;
@@ -30,13 +23,9 @@ interface RenderedOccurrence {
 }
 
 export class WordJourney {
-	private sk: p5;
+	private ctx: DrawContext;
 	private bounds: Bounds;
-	private userMap: Map<string, User>;
 	private speakers: string[];
-	private config: ConfigStoreType;
-	private hover: HoverState;
-	private codeColorMap: Map<string, string>;
 	private timeline: { leftMarker: number; rightMarker: number };
 	// Grid coordinates
 	private gx: number;
@@ -44,17 +33,11 @@ export class WordJourney {
 	private gw: number;
 	private gh: number;
 
-	constructor(sk: p5, bounds: Bounds) {
-		this.sk = sk;
+	constructor(ctx: DrawContext, bounds: Bounds) {
+		this.ctx = ctx;
 		this.bounds = bounds;
-		const users = get(UserStore);
-		this.userMap = createUserMap(users);
-		this.speakers = users.filter((u) => u.enabled).map((u) => u.name);
-		this.config = get(ConfigStore);
-		this.hover = get(HoverStore);
-		this.codeColorMap = buildCodeColorMap(get(CodeStore));
-		const tl = get(TimelineStore);
-		this.timeline = { leftMarker: tl.leftMarker, rightMarker: tl.rightMarker };
+		this.speakers = this.ctx.users.filter((u) => u.enabled).map((u) => u.name);
+		this.timeline = { leftMarker: this.ctx.timeline.leftMarker, rightMarker: this.ctx.timeline.rightMarker };
 
 		this.gx = bounds.x + LEFT_MARGIN;
 		this.gy = bounds.y + TOP_MARGIN;
@@ -80,7 +63,7 @@ export class WordJourney {
 		this.drawSpeakerLanes();
 
 		// Draw timeline axis
-		drawTimeAxis(this.sk, this.bounds, this, this.timeline);
+		drawTimeAxis(this.ctx.sk, this.bounds, this, this.timeline);
 
 		// Render occurrences
 		const rendered = this.renderOccurrences(data.occurrences);
@@ -103,19 +86,19 @@ export class WordJourney {
 	}
 
 	private drawCenteredMessage(message: string): void {
-		this.sk.fill(120);
-		this.sk.noStroke();
-		this.sk.textAlign(this.sk.CENTER, this.sk.CENTER);
-		this.sk.textSize(20);
-		this.sk.text(message, this.bounds.x + this.bounds.width / 2, this.bounds.y + this.bounds.height / 2);
+		this.ctx.sk.fill(120);
+		this.ctx.sk.noStroke();
+		this.ctx.sk.textAlign(this.ctx.sk.CENTER, this.ctx.sk.CENTER);
+		this.ctx.sk.textSize(20);
+		this.ctx.sk.text(message, this.bounds.x + this.bounds.width / 2, this.bounds.y + this.bounds.height / 2);
 	}
 
 	private drawTitle(word: string, count: number): void {
-		this.sk.fill(80);
-		this.sk.noStroke();
-		this.sk.textAlign(this.sk.LEFT, this.sk.TOP);
-		this.sk.textSize(Math.max(10, Math.min(14, this.bounds.height * 0.03)));
-		this.sk.text(`"${word}" - ${count} occurrence${count !== 1 ? 's' : ''}`, this.bounds.x + 10, this.bounds.y + 8);
+		this.ctx.sk.fill(80);
+		this.ctx.sk.noStroke();
+		this.ctx.sk.textAlign(this.ctx.sk.LEFT, this.ctx.sk.TOP);
+		this.ctx.sk.textSize(Math.max(10, Math.min(14, this.bounds.height * 0.03)));
+		this.ctx.sk.text(`"${word}" - ${count} occurrence${count !== 1 ? 's' : ''}`, this.bounds.x + 10, this.bounds.y + 8);
 	}
 
 	private drawSpeakerLanes(): void {
@@ -123,23 +106,23 @@ export class WordJourney {
 
 		for (let i = 0; i < this.speakers.length; i++) {
 			const speaker = this.speakers[i];
-			const user = this.userMap.get(speaker);
+			const user = this.ctx.userMap.get(speaker);
 			const y = this.gy + laneHeight * i + laneHeight / 2;
 
 			// Speaker label
-			this.sk.textSize(Math.max(9, Math.min(11, this.bounds.height * 0.025)));
-			this.sk.textAlign(this.sk.RIGHT, this.sk.CENTER);
-			this.sk.noStroke();
-			this.sk.fill(user?.color || '#666666');
-			this.sk.text(speaker, this.gx - 10, y);
+			this.ctx.sk.textSize(Math.max(9, Math.min(11, this.bounds.height * 0.025)));
+			this.ctx.sk.textAlign(this.ctx.sk.RIGHT, this.ctx.sk.CENTER);
+			this.ctx.sk.noStroke();
+			this.ctx.sk.fill(user?.color || '#666666');
+			this.ctx.sk.text(speaker, this.gx - 10, y);
 
 			// Lane line (horizontal track)
-			this.sk.stroke(user?.color || '#cccccc');
-			this.sk.strokeWeight(LANE_LINE_WEIGHT);
-			const c = this.sk.color(user?.color || '#cccccc');
+			this.ctx.sk.stroke(user?.color || '#cccccc');
+			this.ctx.sk.strokeWeight(LANE_LINE_WEIGHT);
+			const c = this.ctx.sk.color(user?.color || '#cccccc');
 			c.setAlpha(60);
-			this.sk.stroke(c);
-			this.sk.line(this.gx, y, this.gx + this.gw, y);
+			this.ctx.sk.stroke(c);
+			this.ctx.sk.line(this.gx, y, this.gx + this.gw, y);
 		}
 	}
 
@@ -159,15 +142,15 @@ export class WordJourney {
 	}
 
 	private findHoveredOccurrence(rendered: RenderedOccurrence[]): RenderedOccurrence | null {
-		if (!this.sk.overRect(this.bounds.x, this.bounds.y, this.bounds.width, this.bounds.height)) {
+		if (!this.ctx.sk.overRect(this.bounds.x, this.bounds.y, this.bounds.width, this.bounds.height)) {
 			return null;
 		}
 
-		const mx = this.sk.mouseX;
-		const my = this.sk.mouseY;
+		const mx = this.ctx.sk.mouseX;
+		const my = this.ctx.sk.mouseY;
 
 		for (const ro of rendered) {
-			if (this.sk.dist(mx, my, ro.x, ro.y) <= ro.radius + 4) {
+			if (this.ctx.sk.dist(mx, my, ro.x, ro.y) <= ro.radius + 4) {
 				return ro;
 			}
 		}
@@ -176,10 +159,10 @@ export class WordJourney {
 	}
 
 	private drawOccurrences(rendered: RenderedOccurrence[], hoveredOcc: RenderedOccurrence | null): void {
-		const crossHighlight = getCrossHighlight(this.sk, this.bounds, this.config.dashboardToggle, this.hover);
+		const crossHighlight = getCrossHighlight(this.ctx.sk, this.bounds, this.ctx.config.dashboardToggle, this.ctx.hover);
 
 		// Draw connecting lines between consecutive occurrences
-		this.sk.strokeWeight(1);
+		this.ctx.sk.strokeWeight(1);
 		for (let i = 1; i < rendered.length; i++) {
 			const prev = rendered[i - 1];
 			const curr = rendered[i];
@@ -190,33 +173,33 @@ export class WordJourney {
 				prev.occurrence.speaker !== crossHighlight.speaker &&
 				curr.occurrence.speaker !== crossHighlight.speaker;
 
-			withDimming(this.sk.drawingContext, shouldDim, () => {
-				const c = this.sk.color(150);
+			withDimming(this.ctx.sk.drawingContext, shouldDim, () => {
+				const c = this.ctx.sk.color(150);
 				c.setAlpha(80);
-				this.sk.stroke(c);
-				this.sk.line(prev.x, prev.y, curr.x, curr.y);
+				this.ctx.sk.stroke(c);
+				this.ctx.sk.line(prev.x, prev.y, curr.x, curr.y);
 			});
 		}
 
 		// Draw dots
 		for (const ro of rendered) {
 			const isHovered = hoveredOcc === ro;
-			const user = this.userMap.get(ro.occurrence.speaker);
-			const color = this.sk.color(getWordColor(ro.occurrence.dataPoint.codes, user?.color || '#999999', this.codeColorMap, this.config.codeColorMode));
+			const user = this.ctx.userMap.get(ro.occurrence.speaker);
+			const color = this.ctx.sk.color(getWordColor(ro.occurrence.dataPoint.codes, user?.color || '#999999', this.ctx.codeColorMap, this.ctx.config.codeColorMode));
 
 			const shouldDim = crossHighlight.active && crossHighlight.speaker != null && ro.occurrence.speaker !== crossHighlight.speaker;
 
-			withDimming(this.sk.drawingContext, shouldDim, () => {
+			withDimming(this.ctx.sk.drawingContext, shouldDim, () => {
 				// Draw dot
 				if (isHovered) {
-					this.sk.stroke(color);
-					this.sk.strokeWeight(HOVER_OUTLINE_WEIGHT);
+					this.ctx.sk.stroke(color);
+					this.ctx.sk.strokeWeight(HOVER_OUTLINE_WEIGHT);
 				} else {
-					this.sk.noStroke();
+					this.ctx.sk.noStroke();
 				}
 
 				color.setAlpha(220);
-				this.sk.fill(color);
+				this.ctx.sk.fill(color);
 
 				if (ro.occurrence.isFirst) {
 					// First overall occurrence: star shape
@@ -226,7 +209,7 @@ export class WordJourney {
 					this.drawDiamond(ro.x, ro.y, ro.radius);
 				} else {
 					// Regular occurrence: circle
-					this.sk.ellipse(ro.x, ro.y, ro.radius * 2, ro.radius * 2);
+					this.ctx.sk.ellipse(ro.x, ro.y, ro.radius * 2, ro.radius * 2);
 				}
 			});
 		}
@@ -237,21 +220,21 @@ export class WordJourney {
 		const outerRadius = radius;
 		const innerRadius = radius * 0.5;
 
-		this.sk.beginShape();
+		this.ctx.sk.beginShape();
 		for (let i = 0; i < points * 2; i++) {
-			const angle = (this.sk.TWO_PI * i) / (points * 2) - this.sk.HALF_PI;
+			const angle = (this.ctx.sk.TWO_PI * i) / (points * 2) - this.ctx.sk.HALF_PI;
 			const r = i % 2 === 0 ? outerRadius : innerRadius;
-			this.sk.vertex(x + this.sk.cos(angle) * r, y + this.sk.sin(angle) * r);
+			this.ctx.sk.vertex(x + this.ctx.sk.cos(angle) * r, y + this.ctx.sk.sin(angle) * r);
 		}
-		this.sk.endShape(this.sk.CLOSE);
+		this.ctx.sk.endShape(this.ctx.sk.CLOSE);
 	}
 
 	private drawDiamond(x: number, y: number, radius: number): void {
-		this.sk.quad(x, y - radius, x + radius, y, x, y + radius, x - radius, y);
+		this.ctx.sk.quad(x, y - radius, x + radius, y, x, y + radius, x - radius, y);
 	}
 
 	private showOccurrenceTooltip(occ: WordOccurrence): void {
-		const user = this.userMap.get(occ.speaker);
+		const user = this.ctx.userMap.get(occ.speaker);
 		const turnText = this.highlightWordInText(occ.turnContent, occ.matchedWord);
 
 		let content = `<b>${occ.speaker}</b>\n${turnText}`;
@@ -264,8 +247,8 @@ export class WordJourney {
 
 		content += `\n<span style="font-size: 0.85em; opacity: 0.6">Turn ${occ.turnNumber} · ${formatTimeCompact(occ.startTime)}</span>`;
 
-		const tooltipColor = getWordColor(occ.dataPoint.codes, user?.color || '#999999', this.codeColorMap, this.config.codeColorMode);
-		showTooltip(this.sk.mouseX, this.sk.mouseY, content, tooltipColor, this.bounds.y + this.bounds.height);
+		const tooltipColor = getWordColor(occ.dataPoint.codes, user?.color || '#999999', this.ctx.codeColorMap, this.ctx.config.codeColorMode);
+		showTooltip(this.ctx.sk.mouseX, this.ctx.sk.mouseY, content, tooltipColor, this.bounds.y + this.bounds.height);
 	}
 
 	private highlightWordInText(text: string, matchedWord: string): string {

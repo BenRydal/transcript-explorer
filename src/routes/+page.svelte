@@ -557,6 +557,11 @@
 			// Check if this is a code file (before checking transcript)
 			if (testCodeFile(results)) {
 				if (skipPreview) {
+					const fields = results.meta.fields || [];
+					const formatLabel = getCodeFormatLabel(fields);
+					if (formatLabel === 'Unknown') {
+						throw new Error('Unrecognized code file format. Expected columns: "turn" + "code", "start_turn" + "end_turn" + "code", or "start" + "end".');
+					}
 					applyCodeFileResults(results, file.name);
 					return;
 				}

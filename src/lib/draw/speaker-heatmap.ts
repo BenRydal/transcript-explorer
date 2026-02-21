@@ -1,21 +1,11 @@
-import type p5 from 'p5';
-import { get } from 'svelte/store';
-import UserStore from '../../stores/userStore';
-import ConfigStore, { type ConfigStoreType } from '../../stores/configStore';
-import HoverStore, { type HoverState } from '../../stores/hoverStore';
-import TranscriptStore from '../../stores/transcriptStore';
-import TimelineStore from '../../stores/timelineStore';
 import { showTooltip } from '../../stores/tooltipStore';
 import { formatTimeCompact } from '../core/time-utils';
 import type { DataPoint } from '../../models/dataPoint';
-import type { User } from '../../models/user';
-import type { Transcript } from '../../models/transcript';
-import type { Timeline } from '../../models/timeline';
 import type { Bounds } from './types/bounds';
 import { DEFAULT_SPEAKER_COLOR } from '../constants/ui';
-import { withDimming, formatTurnPreviewLines, createUserMap, getCrossHighlight, getDominantCodeColor, buildCodeColorMap } from './draw-utils';
-import CodeStore from '../../stores/codeStore';
+import { withDimming, formatTurnPreviewLines, getCrossHighlight, getDominantCodeColor } from './draw-utils';
 import { normalizeWord } from '../core/string-utils';
+import { DrawContext } from './draw-context';
 
 const LEFT_MARGIN = 100;
 const BOTTOM_MARGIN = 30;
@@ -46,41 +36,27 @@ interface HoveredCell {
 }
 
 export class SpeakerHeatmap {
-	private sk: p5;
+	private ctx: DrawContext;
 	private bounds: Bounds;
-	private users: User[];
-	private userMap: Map<string, User>;
-	private timeline: Timeline;
-	private transcript: Transcript;
-	private config: ConfigStoreType;
-	private hover: HoverState;
 	private fullTranscriptMaxCellCount: number | null = null;
-	private codeColorMap: Map<string, string>;
 
-	constructor(sk: p5, bounds: Bounds) {
-		this.sk = sk;
+	constructor(ctx: DrawContext, bounds: Bounds) {
+		this.ctx = ctx;
 		this.bounds = bounds;
-		this.users = get(UserStore);
-		this.userMap = createUserMap(this.users);
-		this.timeline = get(TimelineStore);
-		this.transcript = get(TranscriptStore);
-		this.config = get(ConfigStore);
-		this.hover = get(HoverStore);
-		this.codeColorMap = buildCodeColorMap(get(CodeStore));
 	}
 
 	draw(words: DataPoint[]): { hoveredCell: DataPoint | null; hoveredSpeaker: string | null } {
-		const speakers = this.users.filter((u) => u.enabled).map((u) => u.name);
+		const speakers = this.ctx.users.filter((u) => u.enabled).map((u) => u.name);
 		const grid = this.getGridBounds();
-		const numBins = this.config.heatmapBinCount > 0 ? this.config.heatmapBinCount : Math.max(1, Math.floor(grid.width / TARGET_CELL_WIDTH));
+		const numBins = this.ctx.config.heatmapBinCount > 0 ? this.ctx.config.heatmapBinCount : Math.max(1, Math.floor(grid.width / TARGET_CELL_WIDTH));
 
 		if (speakers.length === 0) return { hoveredCell: null, hoveredSpeaker: null };
 
-		const searchTerm = this.config.wordToSearch ? normalizeWord(this.config.wordToSearch) : '';
+		const searchTerm = this.ctx.config.wordToSearch ? normalizeWord(this.ctx.config.wordToSearch) : '';
 		const binnedData = this.binWords(words, numBins, speakers);
 
 		// When scaling to full transcript, use the global max cell count
-		if (!this.config.scaleToVisibleData) {
+		if (!this.ctx.config.scaleToVisibleData) {
 			if (this.fullTranscriptMaxCellCount === null) {
 				this.fullTranscriptMaxCellCount = this.binFullTranscript(numBins, speakers).maxCellCount;
 			}
@@ -114,22 +90,22 @@ export class SpeakerHeatmap {
 	}
 
 	private drawSpeakerLabels(speakers: string[], grid: Bounds, cellHeight: number): void {
-		this.sk.textSize(Math.min(12, cellHeight * 0.7));
-		this.sk.textAlign(this.sk.RIGHT, this.sk.CENTER);
-		this.sk.noStroke();
+		this.ctx.sk.textSize(Math.min(12, cellHeight * 0.7));
+		this.ctx.sk.textAlign(this.ctx.sk.RIGHT, this.ctx.sk.CENTER);
+		this.ctx.sk.noStroke();
 		const labelWidth = grid.x - this.bounds.x - 10;
 		for (let row = 0; row < speakers.length; row++) {
-			const user = this.userMap.get(speakers[row]);
-			this.sk.fill(user?.color || DEFAULT_SPEAKER_COLOR);
+			const user = this.ctx.userMap.get(speakers[row]);
+			this.ctx.sk.fill(user?.color || DEFAULT_SPEAKER_COLOR);
 			const label = this.truncateLabel(speakers[row], labelWidth);
-			this.sk.text(label, grid.x - 8, grid.y + row * cellHeight + cellHeight / 2);
+			this.ctx.sk.text(label, grid.x - 8, grid.y + row * cellHeight + cellHeight / 2);
 		}
 	}
 
 	private drawCells(binnedData: BinnedData, speakers: string[], grid: Bounds, cellWidth: number, cellHeight: number, searchTerm: string): void {
-		const crossHighlight = getCrossHighlight(this.sk, this.bounds, this.config.dashboardToggle, this.hover);
+		const crossHighlight = getCrossHighlight(this.ctx.sk, this.bounds, this.ctx.config.dashboardToggle, this.ctx.hover);
 
-		this.sk.noStroke();
+		this.ctx.sk.noStroke();
 		for (let col = 0; col < binnedData.bins.length; col++) {
 			const bin = binnedData.bins[col];
 			for (let row = 0; row < speakers.length; row++) {
@@ -144,21 +120,21 @@ export class SpeakerHeatmap {
 					((crossHighlight.turns != null && !cellWords.some((w) => crossHighlight.turns!.includes(w.turnNumber))) ||
 						(crossHighlight.speaker != null && speakers[row] !== crossHighlight.speaker) ||
 						(crossHighlight.turn != null && !cellWords.some((w) => w.turnNumber === crossHighlight.turn)));
-				withDimming(this.sk.drawingContext, shouldDim, () => {
+				withDimming(this.ctx.sk.drawingContext, shouldDim, () => {
 					if (cellWords.length > 0) {
-						const user = this.userMap.get(speakers[row]);
-						const cellColor = getDominantCodeColor(cellWords, user?.color || DEFAULT_SPEAKER_COLOR, this.codeColorMap, this.config.codeColorMode);
-						let alpha = this.sk.map(cellWords.length, 0, binnedData.maxCellCount, MIN_OPACITY, MAX_OPACITY);
+						const user = this.ctx.userMap.get(speakers[row]);
+						const cellColor = getDominantCodeColor(cellWords, user?.color || DEFAULT_SPEAKER_COLOR, this.ctx.codeColorMap, this.ctx.config.codeColorMode);
+						let alpha = this.ctx.sk.map(cellWords.length, 0, binnedData.maxCellCount, MIN_OPACITY, MAX_OPACITY);
 						if (searchTerm && !this.cellMatchesSearch(cellWords, searchTerm)) {
 							alpha *= 0.2;
 						}
-						const c = this.sk.color(cellColor);
+						const c = this.ctx.sk.color(cellColor);
 						c.setAlpha(alpha);
-						this.sk.fill(c);
+						this.ctx.sk.fill(c);
 					} else {
-						this.sk.fill(245);
+						this.ctx.sk.fill(245);
 					}
-					this.sk.rect(x, y, cw, ch);
+					this.ctx.sk.rect(x, y, cw, ch);
 				});
 			}
 		}
@@ -168,24 +144,24 @@ export class SpeakerHeatmap {
 		const numBins = binnedData.bins.length;
 		if (numBins === 0) return;
 
-		const isUntimed = this.transcript.timingMode === 'untimed';
-		this.sk.textSize(Math.max(8, Math.min(10, this.bounds.height * 0.03)));
-		this.sk.fill(120);
-		this.sk.noStroke();
+		const isUntimed = this.ctx.transcript.timingMode === 'untimed';
+		this.ctx.sk.textSize(Math.max(8, Math.min(10, this.bounds.height * 0.03)));
+		this.ctx.sk.fill(120);
+		this.ctx.sk.noStroke();
 
 		const labelStep = Math.max(1, Math.floor(numBins / TIME_LABEL_COUNT));
-		this.sk.textAlign(this.sk.CENTER, this.sk.TOP);
+		this.ctx.sk.textAlign(this.ctx.sk.CENTER, this.ctx.sk.TOP);
 		for (let col = 0; col < numBins - labelStep / 2; col += labelStep) {
 			const bin = binnedData.bins[col];
 			const label = isUntimed ? String(Math.round(bin.startTime)) : formatTimeCompact(bin.startTime);
-			this.sk.text(label, grid.x + col * cellWidth + cellWidth / 2, grid.y + grid.height + 5);
+			this.ctx.sk.text(label, grid.x + col * cellWidth + cellWidth / 2, grid.y + grid.height + 5);
 		}
 
 		// Always label the end
 		const lastBin = binnedData.bins[numBins - 1];
 		const label = isUntimed ? String(Math.round(lastBin.endTime)) : formatTimeCompact(lastBin.endTime);
-		this.sk.textAlign(this.sk.RIGHT, this.sk.TOP);
-		this.sk.text(label, grid.x + grid.width, grid.y + grid.height + 5);
+		this.ctx.sk.textAlign(this.ctx.sk.RIGHT, this.ctx.sk.TOP);
+		this.ctx.sk.text(label, grid.x + grid.width, grid.y + grid.height + 5);
 	}
 
 	private findHoveredCell(
@@ -196,12 +172,12 @@ export class SpeakerHeatmap {
 		cellHeight: number,
 		searchTerm: string
 	): HoveredCell | null {
-		if (!this.sk.overRect(this.bounds.x, this.bounds.y, this.bounds.width, this.bounds.height)) {
+		if (!this.ctx.sk.overRect(this.bounds.x, this.bounds.y, this.bounds.width, this.bounds.height)) {
 			return null;
 		}
 
-		const localX = this.sk.mouseX - grid.x;
-		const localY = this.sk.mouseY - grid.y;
+		const localX = this.ctx.sk.mouseX - grid.x;
+		const localY = this.ctx.sk.mouseY - grid.y;
 		if (localX < 0 || localX >= grid.width || localY < 0 || localY >= grid.height) {
 			return null;
 		}
@@ -220,17 +196,17 @@ export class SpeakerHeatmap {
 	}
 
 	private drawHoverEffect(hovered: HoveredCell, grid: Bounds, cellWidth: number, cellHeight: number): void {
-		const user = this.userMap.get(hovered.speaker);
-		this.sk.noFill();
-		this.sk.stroke(user?.color || DEFAULT_SPEAKER_COLOR);
-		this.sk.strokeWeight(HOVER_OUTLINE_WEIGHT);
-		this.sk.rect(grid.x + hovered.col * cellWidth, grid.y + hovered.row * cellHeight, cellWidth, cellHeight);
+		const user = this.ctx.userMap.get(hovered.speaker);
+		this.ctx.sk.noFill();
+		this.ctx.sk.stroke(user?.color || DEFAULT_SPEAKER_COLOR);
+		this.ctx.sk.strokeWeight(HOVER_OUTLINE_WEIGHT);
+		this.ctx.sk.rect(grid.x + hovered.col * cellWidth, grid.y + hovered.row * cellHeight, cellWidth, cellHeight);
 	}
 
 	private showCellTooltip(hovered: HoveredCell, binnedData: BinnedData): void {
 		const bin = binnedData.bins[hovered.col];
-		const user = this.userMap.get(hovered.speaker);
-		const isUntimed = this.transcript.timingMode === 'untimed';
+		const user = this.ctx.userMap.get(hovered.speaker);
+		const isUntimed = this.ctx.transcript.timingMode === 'untimed';
 		const timeRange = isUntimed
 			? `Words ${Math.round(bin.startTime)}-${Math.round(bin.endTime)}`
 			: `${formatTimeCompact(bin.startTime)} - ${formatTimeCompact(bin.endTime)}`;
@@ -249,8 +225,8 @@ export class SpeakerHeatmap {
 		const multiTurn = turns.length > 1;
 
 		const content = `<b>${hovered.speaker}</b> · ${turns.length} turn${multiTurn ? 's' : ''} · ${timeRange}\n${formatTurnPreviewLines(turns)}`;
-		const tooltipColor = getDominantCodeColor(hovered.words, user?.color || DEFAULT_SPEAKER_COLOR, this.codeColorMap, this.config.codeColorMode);
-		showTooltip(this.sk.mouseX, this.sk.mouseY, content, tooltipColor, this.bounds.y + this.bounds.height);
+		const tooltipColor = getDominantCodeColor(hovered.words, user?.color || DEFAULT_SPEAKER_COLOR, this.ctx.codeColorMap, this.ctx.config.codeColorMode);
+		showTooltip(this.ctx.sk.mouseX, this.ctx.sk.mouseY, content, tooltipColor, this.bounds.y + this.bounds.height);
 	}
 
 	private cellMatchesSearch(words: DataPoint[], searchTerm: string): boolean {
@@ -258,16 +234,16 @@ export class SpeakerHeatmap {
 	}
 
 	private truncateLabel(text: string, maxWidth: number): string {
-		if (this.sk.textWidth(text) <= maxWidth) return text;
+		if (this.ctx.sk.textWidth(text) <= maxWidth) return text;
 		let truncated = text;
-		while (truncated.length > 0 && this.sk.textWidth(truncated + '...') > maxWidth) {
+		while (truncated.length > 0 && this.ctx.sk.textWidth(truncated + '...') > maxWidth) {
 			truncated = truncated.slice(0, -1);
 		}
 		return truncated + '...';
 	}
 
 	private binWords(words: DataPoint[], numBins: number, speakers: string[]): BinnedData {
-		const range = this.timeline.rightMarker - this.timeline.leftMarker;
+		const range = this.ctx.timeline.rightMarker - this.ctx.timeline.leftMarker;
 		if (range <= 0) return { bins: [], maxCellCount: 0 };
 
 		const binWidth = range / numBins;
@@ -278,14 +254,14 @@ export class SpeakerHeatmap {
 				speakerMap[speaker] = [];
 			}
 			bins.push({
-				startTime: this.timeline.leftMarker + i * binWidth,
-				endTime: this.timeline.leftMarker + (i + 1) * binWidth,
+				startTime: this.ctx.timeline.leftMarker + i * binWidth,
+				endTime: this.ctx.timeline.leftMarker + (i + 1) * binWidth,
 				speakers: speakerMap
 			});
 		}
 
 		for (const word of words) {
-			const binIndex = Math.floor((word.startTime - this.timeline.leftMarker) / binWidth);
+			const binIndex = Math.floor((word.startTime - this.ctx.timeline.leftMarker) / binWidth);
 			const clampedIndex = Math.max(0, Math.min(numBins - 1, binIndex));
 			const bin = bins[clampedIndex];
 			if (!bin.speakers[word.speaker]) bin.speakers[word.speaker] = [];
@@ -307,13 +283,13 @@ export class SpeakerHeatmap {
 	 * Bins the full transcript wordArray to find the global max cell count.
 	 */
 	private binFullTranscript(numBins: number, speakers: string[]): { maxCellCount: number } {
-		const fullRange = this.transcript.totalTimeInSeconds || this.timeline.endTime;
+		const fullRange = this.ctx.transcript.totalTimeInSeconds || this.ctx.timeline.endTime;
 		if (fullRange <= 0) return { maxCellCount: 0 };
 
 		const binWidth = fullRange / numBins;
 		const cellCounts = new Map<string, number>();
 
-		for (const word of this.transcript.wordArray) {
+		for (const word of this.ctx.transcript.wordArray) {
 			const binIndex = Math.min(numBins - 1, Math.max(0, Math.floor(word.startTime / binWidth)));
 			const key = `${binIndex}-${word.speaker}`;
 			cellCounts.set(key, (cellCounts.get(key) || 0) + 1);
