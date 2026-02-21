@@ -43,11 +43,11 @@ export function testCodeFile(results: PapaParseResults): boolean {
 
 	// Valid code formats
 	if (fields.includes('turn') && fields.includes('code')) return true;
-	if (fields.includes('start_turn') && fields.includes('end_turn') && fields.includes('code')) return true;
+	if (fields.includes('turn_start') && fields.includes('turn_end') && fields.includes('code')) return true;
 	if (fields.includes('start') && fields.includes('end')) return true;
 
 	// Looks code-like but incomplete (has code-related columns without speaker+content)
-	const codeRelatedColumns = ['code', 'turn', 'start_turn', 'end_turn'];
+	const codeRelatedColumns = ['code', 'turn', 'turn_start', 'turn_end'];
 	if (codeRelatedColumns.some((col) => fields.includes(col))) return true;
 
 	return false;
@@ -58,7 +58,7 @@ export function testCodeFile(results: PapaParseResults): boolean {
  */
 export function getCodeFormatLabel(fields: string[]): string {
 	if (fields.includes('turn') && fields.includes('code')) return 'Turn-based';
-	if (fields.includes('start_turn') && fields.includes('end_turn') && fields.includes('code')) return 'Turn range';
+	if (fields.includes('turn_start') && fields.includes('turn_end') && fields.includes('code')) return 'Turn range';
 	if (fields.includes('start') && fields.includes('end')) return 'Time-based';
 	return 'Unknown';
 }
@@ -98,8 +98,8 @@ export function parseCodeFile(results: PapaParseResults, fileName: string): Pars
 		return parseTurnCodeRows(rows);
 	}
 
-	// Turn-range-based: start_turn+end_turn+code
-	if (fields.includes('start_turn') && fields.includes('end_turn') && fields.includes('code')) {
+	// Turn-range-based: turn_start+turn_end+code
+	if (fields.includes('turn_start') && fields.includes('turn_end') && fields.includes('code')) {
 		return parseTurnRangeCodeRows(rows);
 	}
 
@@ -136,8 +136,8 @@ function parseTurnRangeCodeRows(rows: Record<string, unknown>[]): ParsedCodes {
 
 	for (const row of rows) {
 		const code = String(row['code'] ?? '').trim();
-		const startTurn = Number(row['start_turn']);
-		const endTurn = Number(row['end_turn']);
+		const startTurn = Number(row['turn_start']);
+		const endTurn = Number(row['turn_end']);
 		if (!code || isNaN(startTurn) || isNaN(endTurn) || startTurn < 1 || endTurn < 1) continue;
 		if (endTurn < startTurn) continue;
 		if (endTurn - startTurn + 1 > 10000) {

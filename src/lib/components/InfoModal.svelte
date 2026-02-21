@@ -336,22 +336,22 @@
 								<table class="w-full text-xs">
 									<thead class="bg-gray-100">
 										<tr>
-											<th class="px-2 py-1 text-left font-medium text-gray-700">turn</th>
 											<th class="px-2 py-1 text-left font-medium text-gray-700">code</th>
+											<th class="px-2 py-1 text-left font-medium text-gray-700">turn</th>
 										</tr>
 									</thead>
 									<tbody class="font-mono">
 										<tr class="border-t border-gray-100">
+											<td class="px-2 py-1">math reasoning</td>
 											<td class="px-2 py-1">3</td>
-											<td class="px-2 py-1">math reasoning</td>
 										</tr>
 										<tr class="border-t border-gray-100">
+											<td class="px-2 py-1">math reasoning</td>
 											<td class="px-2 py-1">4</td>
-											<td class="px-2 py-1">math reasoning</td>
 										</tr>
 										<tr class="border-t border-gray-100">
+											<td class="px-2 py-1">group discussion</td>
 											<td class="px-2 py-1">7</td>
-											<td class="px-2 py-1">off-task</td>
 										</tr>
 									</tbody>
 								</table>
@@ -365,21 +365,21 @@
 								<table class="w-full text-xs">
 									<thead class="bg-gray-100">
 										<tr>
-											<th class="px-2 py-1 text-left font-medium text-gray-700">start_turn</th>
-											<th class="px-2 py-1 text-left font-medium text-gray-700">end_turn</th>
 											<th class="px-2 py-1 text-left font-medium text-gray-700">code</th>
+											<th class="px-2 py-1 text-left font-medium text-gray-700">turn_start</th>
+											<th class="px-2 py-1 text-left font-medium text-gray-700">turn_end</th>
 										</tr>
 									</thead>
 									<tbody class="font-mono">
 										<tr class="border-t border-gray-100">
+											<td class="px-2 py-1">math reasoning</td>
 											<td class="px-2 py-1">3</td>
 											<td class="px-2 py-1">4</td>
-											<td class="px-2 py-1">math reasoning</td>
 										</tr>
 										<tr class="border-t border-gray-100">
+											<td class="px-2 py-1">group discussion</td>
 											<td class="px-2 py-1">7</td>
 											<td class="px-2 py-1">7</td>
-											<td class="px-2 py-1">off-task</td>
 										</tr>
 									</tbody>
 								</table>
@@ -393,26 +393,26 @@
 								<table class="w-full text-xs">
 									<thead class="bg-gray-100">
 										<tr>
+											<th class="px-2 py-1 text-left font-medium text-gray-700">code</th>
 											<th class="px-2 py-1 text-left font-medium text-gray-700">start</th>
 											<th class="px-2 py-1 text-left font-medium text-gray-700">end</th>
-											<th class="px-2 py-1 text-left font-medium text-gray-700">code</th>
 										</tr>
 									</thead>
 									<tbody class="font-mono">
 										<tr class="border-t border-gray-100">
+											<td class="px-2 py-1">math reasoning</td>
 											<td class="px-2 py-1">10.5</td>
 											<td class="px-2 py-1">18.2</td>
-											<td class="px-2 py-1">math reasoning</td>
 										</tr>
 										<tr class="border-t border-gray-100">
+											<td class="px-2 py-1">group discussion</td>
 											<td class="px-2 py-1">25.0</td>
 											<td class="px-2 py-1">30.0</td>
-											<td class="px-2 py-1">off-task</td>
 										</tr>
 									</tbody>
 								</table>
 							</div>
-							<p class="text-xs text-gray-500 mt-2">Requires a timed transcript</p>
+							<p class="text-xs text-gray-500 mt-2">Requires a timed transcript. Times can be in seconds, MM:SS, or HH:MM:SS</p>
 						</div>
 
 						<div class="bg-gray-50 rounded-lg p-4">

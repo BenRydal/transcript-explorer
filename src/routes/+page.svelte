@@ -563,7 +563,7 @@
 					const fields = results.meta.fields || [];
 					const formatLabel = getCodeFormatLabel(fields);
 					if (formatLabel === 'Unknown') {
-						throw new Error('Unrecognized code file format. Expected columns: "turn" + "code", "start_turn" + "end_turn" + "code", or "start" + "end".');
+						throw new Error('Unrecognized code file format. Expected columns: "turn" + "code", "turn_start" + "turn_end" + "code", or "start" + "end".');
 					}
 					applyCodeFileResults(results, file.name);
 					return;
@@ -576,7 +576,7 @@
 
 				let error: string | null = null;
 				if (formatLabel === 'Unknown') {
-					error = 'Unrecognized code file format. Expected columns: "turn" + "code", "start_turn" + "end_turn" + "code", or "start" + "end".';
+					error = 'Unrecognized code file format. Expected columns: "turn" + "code", "turn_start" + "turn_end" + "code", or "start" + "end".';
 				} else if (transcript.wordArray.length === 0) {
 					error = 'Load a transcript first, then load a code file to apply codes to it.';
 				} else if (formatLabel === 'Time-based' && transcript.timingMode === 'untimed') {
