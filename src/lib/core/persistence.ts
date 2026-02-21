@@ -5,6 +5,8 @@ import { Transcript, type TimingMode } from '../../models/transcript';
 import type { User } from '../../models/user';
 import TranscriptStore from '../../stores/transcriptStore';
 import UserStore from '../../stores/userStore';
+import CodeStore, { type CodeEntry } from '../../stores/codeStore';
+import ConfigStore from '../../stores/configStore';
 
 const STORAGE_KEY = 'transcript-explorer-autosave';
 
@@ -15,6 +17,7 @@ interface PersistedDataPoint {
 	endTime: number;
 	word: string;
 	count: number;
+	codes?: string[];
 }
 
 interface PersistedTranscript {
@@ -39,6 +42,9 @@ interface PersistedUser {
 interface PersistedState {
 	transcript: PersistedTranscript;
 	users: PersistedUser[];
+	codes?: CodeEntry[];
+	codeColorMode?: boolean;
+	showUncoded?: boolean;
 	savedAt: number;
 }
 
@@ -49,6 +55,8 @@ export function saveState(): void {
 
 	const transcript = get(TranscriptStore);
 	const users = get(UserStore);
+	const codes = get(CodeStore);
+	const config = get(ConfigStore);
 
 	if (transcript.wordArray.length === 0) {
 		return;
@@ -62,7 +70,8 @@ export function saveState(): void {
 				startTime: dp.startTime,
 				endTime: dp.endTime,
 				word: dp.word,
-				count: dp.count
+				count: dp.count,
+				codes: dp.codes.length > 0 ? dp.codes : undefined
 			})),
 			totalTimeInSeconds: transcript.totalTimeInSeconds,
 			totalConversationTurns: transcript.totalConversationTurns,
@@ -79,6 +88,9 @@ export function saveState(): void {
 			name: u.name,
 			color: u.color
 		})),
+		codes: codes.length > 0 ? codes : undefined,
+		codeColorMode: config.codeColorMode || undefined,
+		showUncoded: config.showUncoded === false ? false : undefined,
 		savedAt: Date.now()
 	};
 
@@ -128,6 +140,7 @@ export function restoreState(): boolean {
 	transcript.wordArray = state.transcript.wordArray.map((dp) => {
 		const dataPoint = new DataPoint(dp.speaker, dp.turnNumber, dp.word, dp.startTime, dp.endTime);
 		dataPoint.count = dp.count;
+		dataPoint.codes = Array.isArray(dp.codes) ? dp.codes : [];
 		return dataPoint;
 	});
 	transcript.totalTimeInSeconds = state.transcript.totalTimeInSeconds;
@@ -144,6 +157,11 @@ export function restoreState(): boolean {
 
 	TranscriptStore.set(transcript);
 	UserStore.set(users);
+
+	if (state.codes && state.codes.length > 0) {
+		CodeStore.set(state.codes);
+		ConfigStore.update((c) => ({ ...c, codeColorMode: state.codeColorMode ?? false, showUncoded: state.showUncoded ?? true }));
+	}
 
 	return true;
 }

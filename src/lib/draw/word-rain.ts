@@ -13,7 +13,8 @@ import type { Transcript } from '../../models/transcript';
 import type { Timeline } from '../../models/timeline';
 import type { Bounds } from './types/bounds';
 import { DEFAULT_SPEAKER_COLOR } from '../constants/ui';
-import { withDimming, createUserMap, getCrossHighlight, type CrossHighlight } from './draw-utils';
+import { withDimming, createUserMap, getCrossHighlight, getDominantCodeColor, buildCodeColorMap, type CrossHighlight } from './draw-utils';
+import CodeStore from '../../stores/codeStore';
 import { normalizeWord, toTitleCase } from '../core/string-utils';
 
 const MAX_SAMPLE_TURNS = 4;
@@ -83,6 +84,7 @@ export class WordRain {
 	private config: ConfigStoreType;
 	private hover: HoverState;
 	private fullTranscriptMaxCount: number;
+	private codeColorMap: Map<string, string>;
 
 	constructor(sk: p5, bounds: Bounds) {
 		this.sk = sk;
@@ -92,6 +94,7 @@ export class WordRain {
 		this.transcript = get(TranscriptStore);
 		this.config = get(ConfigStore);
 		this.hover = get(HoverStore);
+		this.codeColorMap = buildCodeColorMap(get(CodeStore));
 		this.searchTerm = this.config.wordToSearch ? normalizeWord(this.config.wordToSearch) : '';
 		this.fullTranscriptMaxCount = this.transcript.maxCountOfMostRepeatedWord;
 	}
@@ -423,10 +426,11 @@ export class WordRain {
 
 			let color: string;
 			if (speakerColor) {
-				color = speakerColor;
+				color = getDominantCodeColor(agg.occurrences, speakerColor, this.codeColorMap, this.config.codeColorMode);
 			} else {
 				const user = this.userMap.get(agg.dominantSpeaker);
-				color = agg.dominantCount / agg.count > DOMINANCE_THRESHOLD ? user?.color || DEFAULT_SPEAKER_COLOR : SHARED_WORD_COLOR;
+				const resolvedColor = agg.dominantCount / agg.count > DOMINANCE_THRESHOLD ? user?.color || DEFAULT_SPEAKER_COLOR : SHARED_WORD_COLOR;
+				color = getDominantCodeColor(agg.occurrences, resolvedColor, this.codeColorMap, this.config.codeColorMode);
 			}
 
 			placed.push({

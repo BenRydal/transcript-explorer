@@ -10,7 +10,8 @@ import type { DataPoint } from '../../models/dataPoint';
 import type { User } from '../../models/user';
 import type { Bounds } from './types/bounds';
 import type { QuestionAnswerPair } from '../core/dynamic-data';
-import { withDimming, createUserMap, getCrossHighlight, drawTimeAxis } from './draw-utils';
+import { withDimming, createUserMap, getCrossHighlight, drawTimeAxis, getWordColor, buildCodeColorMap } from './draw-utils';
+import CodeStore from '../../stores/codeStore';
 import { normalizeWord } from '../core/string-utils';
 
 const LEFT_MARGIN = 80;
@@ -41,6 +42,7 @@ export class QuestionFlow {
 	private hover: HoverState;
 	private timeline: { leftMarker: number; rightMarker: number };
 	private fullTranscriptMaxWords: number;
+	private codeColorMap: Map<string, string>;
 	// Grid coordinates
 	private gx: number;
 	private gy: number;
@@ -55,6 +57,7 @@ export class QuestionFlow {
 		this.speakers = users.filter((u) => u.enabled).map((u) => u.name);
 		this.config = get(ConfigStore);
 		this.hover = get(HoverStore);
+		this.codeColorMap = buildCodeColorMap(get(CodeStore));
 		const tl = get(TimelineStore);
 		this.timeline = { leftMarker: tl.leftMarker, rightMarker: tl.rightMarker };
 		// Use largest turn length as proxy for max words in Q/A pairs
@@ -224,7 +227,7 @@ export class QuestionFlow {
 
 			withDimming(this.sk.drawingContext, shouldDim, () => {
 				const user = this.userMap.get(rp.pair.questionSpeaker);
-				const color = user?.color || '#999999';
+				const color = getWordColor(rp.pair.questionFirstWord.codes, user?.color || '#999999', this.codeColorMap, this.config.codeColorMode);
 				this.sk.noFill();
 				this.sk.stroke(color);
 				this.sk.strokeWeight(isHovered ? 2 : 1);
@@ -250,7 +253,7 @@ export class QuestionFlow {
 			// Question node
 			withDimming(this.sk.drawingContext, shouldDim, () => {
 				const qUser = this.userMap.get(rp.pair.questionSpeaker);
-				const qColor = this.sk.color(qUser?.color || '#999999');
+				const qColor = this.sk.color(getWordColor(rp.pair.questionFirstWord.codes, qUser?.color || '#999999', this.codeColorMap, this.config.codeColorMode));
 
 				if (isHovered) {
 					this.sk.stroke(qColor);
@@ -276,7 +279,7 @@ export class QuestionFlow {
 			if (rp.ax !== null && rp.ay !== null && rp.pair.answerSpeaker) {
 				withDimming(this.sk.drawingContext, shouldDim, () => {
 					const aUser = this.userMap.get(rp.pair.answerSpeaker!);
-					const aColor = this.sk.color(aUser?.color || '#999999');
+					const aColor = this.sk.color(getWordColor(rp.pair.answerFirstWord!.codes, aUser?.color || '#999999', this.codeColorMap, this.config.codeColorMode));
 
 					if (isHovered) {
 						this.sk.stroke(aColor);
@@ -329,13 +332,13 @@ export class QuestionFlow {
 
 	private showPairTooltip(pair: QuestionAnswerPair): void {
 		const qUser = this.userMap.get(pair.questionSpeaker);
-		const qColor = qUser?.color || '#999999';
+		const qColor = getWordColor(pair.questionFirstWord.codes, qUser?.color || '#999999', this.codeColorMap, this.config.codeColorMode);
 
 		let content = `<span style="color: ${qColor}"><b>${pair.questionSpeaker}</b> asks:\n"${this.truncateText(pair.questionContent)}"</span>`;
 
 		if (pair.answerSpeaker && pair.answerContent) {
 			const aUser = this.userMap.get(pair.answerSpeaker);
-			const aColor = aUser?.color || '#999999';
+			const aColor = pair.answerFirstWord ? getWordColor(pair.answerFirstWord.codes, aUser?.color || '#999999', this.codeColorMap, this.config.codeColorMode) : aUser?.color || '#999999';
 			content += `\n\n<span style="color: ${aColor}"><b>${pair.answerSpeaker}</b> responds:\n"${this.truncateText(pair.answerContent)}"</span>`;
 		} else {
 			content += '\n\n<span style="opacity: 0.6">(No immediate answer)</span>';

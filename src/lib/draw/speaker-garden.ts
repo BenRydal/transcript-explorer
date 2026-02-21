@@ -20,9 +20,10 @@ import type { DataPoint } from '../../models/dataPoint';
 import type { User } from '../../models/user';
 import type { Bounds } from './types/bounds';
 import { normalizeWord } from '../core/string-utils';
-import { withDimming, createUserMap, getCrossHighlight } from './draw-utils';
+import { withDimming, createUserMap, getCrossHighlight, getDominantCodeColor, buildCodeColorMap } from './draw-utils';
 import { CANVAS_SPACING } from '../constants/ui';
 import { drawFlower } from './flower-drawing';
+import CodeStore from '../../stores/codeStore';
 
 const MIN_FLOWER_SIZE = 25; // Minimum flower radius so small speakers are still visible
 
@@ -49,12 +50,14 @@ export class SpeakerGarden {
 	yPosBottom: number;
 	maxFlowerRadius: number;
 	hoveredSpeaker: string | null;
+	codeColorMap: Map<string, string>;
 
 	constructor(sk: p5, pos: Bounds) {
 		this.sk = sk;
 		this.users = get(UserStore);
 		this.userMap = createUserMap(this.users);
 		this.config = get(ConfigStore);
+		this.codeColorMap = buildCodeColorMap(get(CodeStore));
 		this.hover = get(HoverStore);
 		const transcript = get(TranscriptStore);
 		// When scaleToVisibleData is enabled, we'll compute these in draw() from visible data
@@ -119,7 +122,8 @@ export class SpeakerGarden {
 		const metrics = this.calculateMetrics(tempTurnArray);
 		const user = this.userMap.get(tempTurnArray[0].speaker);
 		if (!user) return;
-		const color = this.sk.color(user.color);
+		const resolvedColor = getDominantCodeColor(tempTurnArray, user.color, this.codeColorMap, this.config.codeColorMode);
+		const color = this.sk.color(resolvedColor);
 		this.drawFlowerVisualization(color, metrics, tempTurnArray);
 	}
 

@@ -10,7 +10,8 @@ import type { DataPoint } from '../../models/dataPoint';
 import type { User } from '../../models/user';
 import type { Bounds } from './types/bounds';
 import type { WordOccurrence } from '../core/dynamic-data';
-import { withDimming, createUserMap, getCrossHighlight, drawTimeAxis } from './draw-utils';
+import { withDimming, createUserMap, getCrossHighlight, drawTimeAxis, getWordColor, buildCodeColorMap } from './draw-utils';
+import CodeStore from '../../stores/codeStore';
 
 const LEFT_MARGIN = 80;
 const RIGHT_MARGIN = 20;
@@ -35,6 +36,7 @@ export class WordJourney {
 	private speakers: string[];
 	private config: ConfigStoreType;
 	private hover: HoverState;
+	private codeColorMap: Map<string, string>;
 	private timeline: { leftMarker: number; rightMarker: number };
 	// Grid coordinates
 	private gx: number;
@@ -50,6 +52,7 @@ export class WordJourney {
 		this.speakers = users.filter((u) => u.enabled).map((u) => u.name);
 		this.config = get(ConfigStore);
 		this.hover = get(HoverStore);
+		this.codeColorMap = buildCodeColorMap(get(CodeStore));
 		const tl = get(TimelineStore);
 		this.timeline = { leftMarker: tl.leftMarker, rightMarker: tl.rightMarker };
 
@@ -199,7 +202,7 @@ export class WordJourney {
 		for (const ro of rendered) {
 			const isHovered = hoveredOcc === ro;
 			const user = this.userMap.get(ro.occurrence.speaker);
-			const color = this.sk.color(user?.color || '#999999');
+			const color = this.sk.color(getWordColor(ro.occurrence.dataPoint.codes, user?.color || '#999999', this.codeColorMap, this.config.codeColorMode));
 
 			const shouldDim = crossHighlight.active && crossHighlight.speaker != null && ro.occurrence.speaker !== crossHighlight.speaker;
 
@@ -261,7 +264,8 @@ export class WordJourney {
 
 		content += `\n<span style="font-size: 0.85em; opacity: 0.6">Turn ${occ.turnNumber} · ${formatTimeCompact(occ.startTime)}</span>`;
 
-		showTooltip(this.sk.mouseX, this.sk.mouseY, content, user?.color || '#999999', this.bounds.y + this.bounds.height);
+		const tooltipColor = getWordColor(occ.dataPoint.codes, user?.color || '#999999', this.codeColorMap, this.config.codeColorMode);
+		showTooltip(this.sk.mouseX, this.sk.mouseY, content, tooltipColor, this.bounds.y + this.bounds.height);
 	}
 
 	private highlightWordInText(text: string, matchedWord: string): string {

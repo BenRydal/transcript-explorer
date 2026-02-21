@@ -33,8 +33,10 @@
 	import { parseSubtitleText } from '$lib/core/subtitle-parser';
 	import { parseCSVRows, parseTXTLines } from '$lib/core/csv-txt-parser';
 	import { testTranscript } from '$lib/core/core-utils';
+	import { testCodeFile, parseCodeFile, applyCodesByTurn, applyCodesByTime, updateCodeStoreWithNewCodes, getCodeFormatLabel, extractCodeNames } from '$lib/core/code-utils';
+	import CodeStore from '../stores/codeStore';
 	import { mapColumns, allRequiredMapped, buildFinalMapping, remapData } from '$lib/core/column-mapper';
-	import type { CSVPreview } from '../models/csv-preview';
+	import type { CSVPreview, CodePreview } from '../models/csv-preview';
 	import { filterValidFiles, createUploadEntries, type UploadedFile } from '$lib/core/file-upload';
 	import { getPersistedTimestamp, restoreState, clearState, saveStateDebounced, saveStateImmediate } from '$lib/core/persistence';
 	import { getMaxTime, applyTimingModeToWordArray } from '$lib/core/timing-utils';
@@ -66,6 +68,7 @@
 	import { splitIntoWords } from '$lib/core/string-utils';
 
 	let csvPreview = $state<CSVPreview | null>(null);
+	let codePreview = $state<CodePreview | null>(null);
 
 	const PREVIEW_ROW_COUNT = 10;
 	const emptyStats = { parseResult: null, speakerCount: 0, turnCount: 0, wordCount: 0, timingMode: null, error: null } as const;
@@ -110,6 +113,42 @@
 
 	function cancelCSVPreview() {
 		csvPreview = null;
+	}
+
+	function applyCodeFileResults(results: Papa.ParseResult<Record<string, unknown>>, fileName: string) {
+		const transcript = get(TranscriptStore);
+		if (transcript.wordArray.length === 0) {
+			throw new Error('Load a transcript first, then load a code file to apply codes to it.');
+		}
+		const parsedCodes = parseCodeFile(results, fileName);
+		if (parsedCodes.type === 'turn') {
+			applyCodesByTurn(transcript.wordArray, parsedCodes);
+		} else {
+			if (transcript.timingMode === 'untimed') {
+				throw new Error('Time-based code files require a timed transcript. Use turn-based codes for untimed transcripts.');
+			}
+			applyCodesByTime(transcript.wordArray, parsedCodes);
+		}
+		updateCodeStoreWithNewCodes(parsedCodes);
+		TranscriptStore.update((t) => t);
+		p5Instance?.fillAllData?.();
+		notifications.success(`Loaded ${parsedCodes.type === 'turn' ? 'turn' : 'time'}-based codes from ${fileName}`);
+	}
+
+	function confirmCodeImport() {
+		if (!codePreview) return;
+		try {
+			applyCodeFileResults(codePreview.papaResults, codePreview.fileName);
+			codePreview = null;
+			uploadedFiles = [];
+			showUploadModal = false;
+		} catch (err) {
+			notifications.error(err instanceof Error ? err.message : 'Failed to apply codes');
+		}
+	}
+
+	function cancelCodePreview() {
+		codePreview = null;
 	}
 
 	// Modal state
@@ -182,6 +221,9 @@
 		if (!isRestoringState) saveStateDebounced();
 	});
 	UserStore.subscribe(() => {
+		if (!isRestoringState) saveStateDebounced();
+	});
+	CodeStore.subscribe(() => {
 		if (!isRestoringState) saveStateDebounced();
 	});
 
@@ -511,6 +553,41 @@
 
 		if (fileName.endsWith('.csv') || file.type === 'text/csv') {
 			const results = await parseCSVFile(file);
+
+			// Check if this is a code file (before checking transcript)
+			if (testCodeFile(results)) {
+				if (skipPreview) {
+					applyCodeFileResults(results, file.name);
+					return;
+				}
+
+				const fields = results.meta.fields || [];
+				const rows = results.data as Record<string, unknown>[];
+				const formatLabel = getCodeFormatLabel(fields);
+				const transcript = get(TranscriptStore);
+
+				let error: string | null = null;
+				if (formatLabel === 'Unknown') {
+					error = 'Unrecognized code file format. Expected columns: "turn" + "code", "start_turn" + "end_turn" + "code", or "start" + "end".';
+				} else if (transcript.wordArray.length === 0) {
+					error = 'Load a transcript first, then load a code file to apply codes to it.';
+				} else if (formatLabel === 'Time-based' && transcript.timingMode === 'untimed') {
+					error = 'Time-based code files require a timed transcript. Use turn-based codes for untimed transcripts.';
+				}
+
+				codePreview = {
+					fileName: file.name,
+					formatLabel,
+					rawRows: rows.slice(0, PREVIEW_ROW_COUNT),
+					allColumns: fields,
+					codeNames: extractCodeNames(rows, fields, file.name),
+					rowCount: rows.length,
+					papaResults: results,
+					error
+				};
+				return;
+			}
+
 			const allColumns = results.meta.fields || [];
 			const rawData = results.data as Record<string, unknown>[];
 			const columnMatches = mapColumns(allColumns);
@@ -696,6 +773,7 @@
 			{pendingVideoFile}
 			{uploadedFiles}
 			{csvPreview}
+			{codePreview}
 			ondrop={handleDrop}
 			ondragover={handleDragOver}
 			ondragleave={handleDragLeave}
@@ -710,6 +788,8 @@
 			onconfirmImport={confirmCSVImport}
 			oncancelPreview={cancelCSVPreview}
 			oncolumnMappingChange={handleColumnMappingChange}
+			onconfirmCodeImport={confirmCodeImport}
+			oncancelCodePreview={cancelCodePreview}
 		/>
 
 		<PasteModal bind:isOpen={showPasteModal} onimport={handlePasteImport} />
@@ -725,7 +805,7 @@
 		/>
 
 		<div class="btm-nav flex justify-between min-h-20" style="position: relative;">
-			<SpeakerControls />
+			<SpeakerControls showCodes={$CodeStore.length > 0} />
 			<div class="flex-1 bg-[#f6f5f3]" data-tour="timeline">
 				<TimelinePanel />
 			</div>

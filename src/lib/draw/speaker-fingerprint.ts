@@ -21,7 +21,8 @@ import type { Bounds } from './types/bounds';
 import type { SpeakerFingerprintData } from '../core/dynamic-data';
 import { DEFAULT_SPEAKER_COLOR } from '../constants/ui';
 import { toTitleCase } from '../core/string-utils';
-import { createUserMap } from './draw-utils';
+import { createUserMap, getDominantCodeColor, buildCodeColorMap } from './draw-utils';
+import CodeStore from '../../stores/codeStore';
 
 // --- Constants ---
 
@@ -56,12 +57,14 @@ export class SpeakerFingerprint {
 	private userMap: Map<string, User>;
 	private config: ConfigStoreType;
 	private hasTiming: boolean;
+	private codeColorMap: Map<string, string>;
 
 	constructor(sk: p5, bounds: Bounds) {
 		this.sk = sk;
 		this.bounds = bounds;
 		this.userMap = createUserMap(get(UserStore));
 		this.config = get(ConfigStore);
+		this.codeColorMap = buildCodeColorMap(get(CodeStore));
 		const transcript = get(TranscriptStore);
 		this.hasTiming = transcript.timingMode !== 'untimed';
 	}
@@ -136,8 +139,7 @@ export class SpeakerFingerprint {
 			this.drawSpeakerPolygon(fp, cellX, cellY, cellRadius, hoveredVertex?.speaker === fp.speaker);
 
 			// Draw speaker name below
-			const color = this.userMap.get(fp.speaker)?.color || DEFAULT_SPEAKER_COLOR;
-			this.sk.fill(color);
+			this.sk.fill(this.resolveSpeakerColor(fp));
 			this.sk.noStroke();
 			this.sk.textAlign(this.sk.CENTER, this.sk.TOP);
 			this.sk.textSize(11);
@@ -233,7 +235,7 @@ export class SpeakerFingerprint {
 	}
 
 	private drawSpeakerPolygon(fp: SpeakerFingerprintData, cx: number, cy: number, radius: number, isHovered: boolean): void {
-		const color = this.sk.color(this.userMap.get(fp.speaker)?.color || DEFAULT_SPEAKER_COLOR);
+		const color = this.sk.color(this.resolveSpeakerColor(fp));
 		const vertices = this.getPolygonVertices(fp, cx, cy, radius);
 
 		// Draw filled polygon
@@ -369,10 +371,15 @@ export class SpeakerFingerprint {
 		}
 	}
 
+	private resolveSpeakerColor(fp: SpeakerFingerprintData): string {
+		const baseColor = this.userMap.get(fp.speaker)?.color || DEFAULT_SPEAKER_COLOR;
+		return getDominantCodeColor(fp.allTurnFirstWords || [], baseColor, this.codeColorMap, this.config.codeColorMode);
+	}
+
 	// --- Tooltip ---
 
 	private showTooltipFor(fp: SpeakerFingerprintData): void {
-		const color = this.userMap.get(fp.speaker)?.color || DEFAULT_SPEAKER_COLOR;
+		const color = this.resolveSpeakerColor(fp);
 		const pct = (v: number) => `${Math.round(v * 100)}%`;
 		const avgTurnWords = fp.totalTurns > 0 ? (fp.totalWords / fp.totalTurns).toFixed(1) : '0';
 		const totalConversationTurns =

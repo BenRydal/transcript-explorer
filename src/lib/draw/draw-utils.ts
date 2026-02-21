@@ -1,5 +1,7 @@
 import type p5 from 'p5';
+import type { DataPoint } from '../../models/dataPoint';
 import type { User } from '../../models/user';
+import type { CodeEntry } from '../../stores/codeStore';
 import type { HoverState } from '../../stores/hoverStore';
 import type { Bounds } from './types/bounds';
 import { formatTimeCompact } from '../core/time-utils';
@@ -149,4 +151,87 @@ export function formatTurnPreviewLines(turns: TurnPreview[]): string {
 		turnLines.push(`<span style="font-size: 0.85em; opacity: 0.5">...and ${remaining} more turn${remaining !== 1 ? 's' : ''}</span>`);
 	}
 	return turnLines.join('\n' + TURN_SEPARATOR + '\n');
+}
+
+const NO_CODE_COLOR = '#999999';
+const MULTI_CODE_COLOR = '#000000';
+
+/**
+ * Pre-compute a map from enabled code names to their colors.
+ * Build once per draw cycle and pass to getWordColor/getDominantCodeColor.
+ */
+export function buildCodeColorMap(codeEntries: CodeEntry[]): Map<string, string> {
+	const map = new Map<string, string>();
+	for (const e of codeEntries) {
+		if (e.enabled) map.set(e.code, e.color);
+	}
+	return map;
+}
+
+/**
+ * Get the display color for a word, respecting code color mode.
+ * When codeColorMode is off: speaker color.
+ * When codeColorMode is on: gray (uncoded), code color (one code), black (multiple codes).
+ */
+export function getWordColor(
+	codes: string[],
+	speakerColor: string,
+	codeColorMap: Map<string, string>,
+	codeColorMode: boolean
+): string {
+	if (!codeColorMode) return speakerColor;
+	if (codes.length === 0) return NO_CODE_COLOR;
+
+	const matchingColors: string[] = [];
+	for (const code of codes) {
+		const color = codeColorMap.get(code);
+		if (color) matchingColors.push(color);
+	}
+
+	if (matchingColors.length === 0) return NO_CODE_COLOR;
+	if (matchingColors.length === 1) return matchingColors[0];
+	return MULTI_CODE_COLOR;
+}
+
+/**
+ * Get the dominant code color for an aggregate group of DataPoints.
+ * Counts how many words have each code across all points and returns the most frequent code's color.
+ * Falls back to gray if no codes, black if there's an exact tie between multiple codes.
+ */
+export function getDominantCodeColor(
+	points: DataPoint[],
+	speakerColor: string,
+	codeColorMap: Map<string, string>,
+	codeColorMode: boolean
+): string {
+	if (!codeColorMode || points.length === 0) return speakerColor;
+
+	const codeCounts = new Map<string, number>();
+	for (const dp of points) {
+		for (const code of dp.codes) {
+			codeCounts.set(code, (codeCounts.get(code) ?? 0) + 1);
+		}
+	}
+
+	if (codeCounts.size === 0) return NO_CODE_COLOR;
+
+	// Find the code(s) with the highest count
+	let maxCount = 0;
+	let topCodes: string[] = [];
+	for (const [code, count] of codeCounts) {
+		if (count > maxCount) {
+			maxCount = count;
+			topCodes = [code];
+		} else if (count === maxCount) {
+			topCodes.push(code);
+		}
+	}
+
+	if (topCodes.length === 1) {
+		const color = codeColorMap.get(topCodes[0]);
+		return color ?? NO_CODE_COLOR;
+	}
+
+	// Exact tie between multiple codes
+	return MULTI_CODE_COLOR;
 }

@@ -8,7 +8,8 @@ import { showTooltip } from '../../stores/tooltipStore';
 import type { DataPoint } from '../../models/dataPoint';
 import type { User } from '../../models/user';
 import type { Bounds } from './types/bounds';
-import { withDimming, formatTurnPreviewLines, createUserMap, getCrossHighlight } from './draw-utils';
+import { withDimming, formatTurnPreviewLines, createUserMap, getCrossHighlight, getDominantCodeColor, buildCodeColorMap } from './draw-utils';
+import CodeStore from '../../stores/codeStore';
 import { normalizeWord } from '../core/string-utils';
 
 const LEFT_MARGIN = 60;
@@ -54,6 +55,7 @@ export class TurnLengthDistribution {
 	private config: ConfigStoreType;
 	private hover: HoverState;
 	private fullTranscriptMaxBinCount: number;
+	private codeColorMap: Map<string, string>;
 	// Absolute grid coordinates (bounds.xy + grid offsets)
 	private gx: number;
 	private gy: number;
@@ -68,6 +70,7 @@ export class TurnLengthDistribution {
 		this.speakers = users.filter((u) => u.enabled).map((u) => u.name);
 		this.config = get(ConfigStore);
 		this.hover = get(HoverStore);
+		this.codeColorMap = buildCodeColorMap(get(CodeStore));
 		const leftMargin = Math.min(LEFT_MARGIN, bounds.width * MAX_MARGIN_RATIO);
 		const bottomMargin = Math.min(BOTTOM_MARGIN, bounds.height * MAX_MARGIN_RATIO);
 		this.gx = bounds.x + leftMargin;
@@ -128,7 +131,7 @@ export class TurnLengthDistribution {
 		this.drawXAxis(bins, barWidth);
 
 		if (hoveredSegment) {
-			this.drawHoverEffect(hoveredSegment, barWidth);
+			this.drawHoverEffect(hoveredSegment, barWidth, bins);
 			this.showSegmentTooltip(hoveredSegment, bins);
 			const binTurns = bins[hoveredSegment.binIndex].speakers.get(hoveredSegment.speaker)!;
 			return { snippetPoints: binTurns.map((t) => t.dataPoint), hoveredSpeaker: hoveredSegment.speaker };
@@ -178,7 +181,8 @@ export class TurnLengthDistribution {
 						(crossHighlight.speaker != null && speaker !== crossHighlight.speaker));
 				withDimming(this.sk.drawingContext, shouldDim, () => {
 					const user = this.userMap.get(speaker);
-					const c = this.sk.color(user!.color);
+					const barColor = getDominantCodeColor(turns.map((t) => t.dataPoint), user!.color, this.codeColorMap, this.config.codeColorMode);
+					const c = this.sk.color(barColor);
 					c.setAlpha(200);
 					this.sk.fill(c);
 					this.sk.rect(x, y, w, h, 1);
@@ -217,10 +221,12 @@ export class TurnLengthDistribution {
 		this.sk.text('Words per turn', this.gx + this.gw / 2, this.gy + this.gh + 5 + fontSize + 4);
 	}
 
-	private drawHoverEffect(hovered: HoveredSegment, barWidth: number): void {
+	private drawHoverEffect(hovered: HoveredSegment, barWidth: number, bins: Bin[]): void {
 		const user = this.userMap.get(hovered.speaker);
+		const hoverTurns = bins[hovered.binIndex].speakers.get(hovered.speaker);
+		const hoverColor = hoverTurns && hoverTurns.length > 0 ? getDominantCodeColor(hoverTurns.map((t) => t.dataPoint), user?.color || '#cccccc', this.codeColorMap, this.config.codeColorMode) : user?.color || '#cccccc';
 		this.sk.noFill();
-		this.sk.stroke(user?.color || '#cccccc');
+		this.sk.stroke(hoverColor);
 		this.sk.strokeWeight(HOVER_OUTLINE_WEIGHT);
 		this.sk.rect(this.gx + hovered.binIndex * barWidth + BAR_PADDING, hovered.y, barWidth - BAR_PADDING * 2, hovered.h, 1);
 	}
@@ -231,7 +237,8 @@ export class TurnLengthDistribution {
 		const user = this.userMap.get(hovered.speaker);
 		const multiTurn = turns.length > 1;
 		const content = `<b>${hovered.speaker}</b> · ${turns.length} turn${multiTurn ? 's' : ''}\n${formatTurnPreviewLines(turns)}`;
-		showTooltip(this.sk.mouseX, this.sk.mouseY, content, user?.color || '#cccccc', this.bounds.y + this.bounds.height);
+		const tooltipColor = turns.length > 0 ? getDominantCodeColor(turns.map((t) => t.dataPoint), user?.color || '#cccccc', this.codeColorMap, this.config.codeColorMode) : user?.color || '#cccccc';
+		showTooltip(this.sk.mouseX, this.sk.mouseY, content, tooltipColor, this.bounds.y + this.bounds.height);
 	}
 
 	private binTurns(turns: TurnSummary[]): Bin[] {

@@ -13,7 +13,8 @@ import type { Transcript } from '../../models/transcript';
 import type { Timeline } from '../../models/timeline';
 import type { Bounds } from './types/bounds';
 import { CANVAS_SPACING } from '../constants/ui';
-import { drawPlayhead } from './draw-utils';
+import CodeStore from '../../stores/codeStore';
+import { drawPlayhead, getWordColor, buildCodeColorMap } from './draw-utils';
 
 function formatDuration(seconds: number): string {
 	return `${Math.round(seconds)}s`;
@@ -76,11 +77,13 @@ export class TurnChart {
 	private stripBounds: Bounds | null;
 	private panelBottom: number;
 	private maxTurnLength: number;
+	private codeColorMap: Map<string, string>;
 
 	constructor(sk: p5, pos: Bounds) {
 		this.sk = sk;
 		this.transcript = get(TranscriptStore);
 		this.config = get(ConfigStore);
+		this.codeColorMap = buildCodeColorMap(get(CodeStore));
 		const showStrip = this.transcript.timingMode !== 'untimed' && this.config.silenceOverlapToggle;
 		const stripHeight = showStrip ? Math.max(MIN_STRIP_HEIGHT, Math.min(MAX_STRIP_HEIGHT, pos.height * STRIP_HEIGHT_RATIO)) : 0;
 		this.bounds = {
@@ -226,11 +229,12 @@ export class TurnChart {
 		const xCenter = xStart + width / 2;
 		const [height, yCenter] = this.getCoordinates(turnArray.length, speakerIndex);
 
-		this.setStrokes(this.sk.color(user.color));
+		const color = getWordColor(turnData.codes, user.color, this.codeColorMap, this.config.codeColorMode);
+		this.setStrokes(this.sk.color(color));
 		this.sk.ellipse(xCenter, yCenter, width, height);
 
 		if (this.sk.overRect(xStart, yCenter - height / 2, width, height)) {
-			this.userSelectedTurn = { turn: turnArray, color: user.color, xCenter, yCenter, width, height };
+			this.userSelectedTurn = { turn: turnArray, color, xCenter, yCenter, width, height };
 		}
 	}
 

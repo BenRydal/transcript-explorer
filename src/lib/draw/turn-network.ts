@@ -19,7 +19,8 @@ import type { DataPoint } from '../../models/dataPoint';
 import type { User } from '../../models/user';
 import type { Bounds } from './types/bounds';
 import { DEFAULT_SPEAKER_COLOR } from '../constants/ui';
-import { withDimming, createUserMap, getCrossHighlight } from './draw-utils';
+import { withDimming, createUserMap, getCrossHighlight, getDominantCodeColor, buildCodeColorMap } from './draw-utils';
+import CodeStore from '../../stores/codeStore';
 
 const MIN_NODE_RADIUS_RATIO = 0.04;
 const MAX_NODE_RADIUS_RATIO = 0.12;
@@ -146,6 +147,7 @@ export class TurnNetwork {
 	private config: ConfigStoreType;
 	private hover: HoverState;
 	private fullTranscriptMaxWordCount: number;
+	private codeColorMap: Map<string, string>;
 
 	constructor(sk: p5, bounds: Bounds) {
 		this.sk = sk;
@@ -153,6 +155,7 @@ export class TurnNetwork {
 		this.userMap = createUserMap(get(UserStore));
 		this.config = get(ConfigStore);
 		this.hover = get(HoverStore);
+		this.codeColorMap = buildCodeColorMap(get(CodeStore));
 		this.minDim = Math.min(bounds.width, bounds.height);
 		this.selfLoopRadius = Math.max(15, this.minDim * SELF_LOOP_RADIUS_RATIO);
 		// For full transcript scaling, use the pre-computed largest word count by speaker
@@ -282,7 +285,8 @@ export class TurnNetwork {
 	// --- Drawing ---
 
 	private drawNode(node: NodeLayout, highlight: boolean): void {
-		const color = node.user?.color || DEFAULT_SPEAKER_COLOR;
+		const baseColor = node.user?.color || DEFAULT_SPEAKER_COLOR;
+		const color = getDominantCodeColor(node.turnStartPoints, baseColor, this.codeColorMap, this.config.codeColorMode);
 		const fillColor = this.sk.color(color);
 		fillColor.setAlpha(highlight ? 255 : 200);
 
@@ -307,7 +311,9 @@ export class TurnNetwork {
 		const toNode = layout.nodeMap.get(edge.to);
 		if (!fromNode || !toNode) return;
 
-		const edgeColor = this.sk.color(fromNode.user?.color || DEFAULT_SPEAKER_COLOR);
+		const baseEdgeColor = fromNode.user?.color || DEFAULT_SPEAKER_COLOR;
+		const resolvedEdgeColor = getDominantCodeColor(edge.turnStartPoints, baseEdgeColor, this.codeColorMap, this.config.codeColorMode);
+		const edgeColor = this.sk.color(resolvedEdgeColor);
 		edgeColor.setAlpha(highlight ? 255 : 150);
 		const weight = this.edgeWeight(edge.weight, layout.maxWeight) + (highlight ? 1 : 0);
 
@@ -441,7 +447,8 @@ export class TurnNetwork {
 	// --- Tooltips ---
 
 	private showTooltipFor(hovered: HoveredElement, layout: Layout): void {
-		const color = this.userMap.get(hovered.speaker)?.color || DEFAULT_SPEAKER_COLOR;
+		const baseTooltipColor = this.userMap.get(hovered.speaker)?.color || DEFAULT_SPEAKER_COLOR;
+		const color = getDominantCodeColor(hovered.snippetPoints, baseTooltipColor, this.codeColorMap, this.config.codeColorMode);
 		let content: string;
 
 		const unit = this.config.turnNetworkWeightByWords ? 'word' : 'transition';

@@ -13,7 +13,8 @@ import type { Transcript } from '../../models/transcript';
 import type { Timeline } from '../../models/timeline';
 import type { Bounds } from './types/bounds';
 import { DEFAULT_SPEAKER_COLOR } from '../constants/ui';
-import { withDimming, formatTurnPreviewLines, createUserMap, getCrossHighlight } from './draw-utils';
+import { withDimming, formatTurnPreviewLines, createUserMap, getCrossHighlight, getDominantCodeColor, buildCodeColorMap } from './draw-utils';
+import CodeStore from '../../stores/codeStore';
 import { normalizeWord } from '../core/string-utils';
 
 const LEFT_MARGIN = 100;
@@ -54,6 +55,7 @@ export class SpeakerHeatmap {
 	private config: ConfigStoreType;
 	private hover: HoverState;
 	private fullTranscriptMaxCellCount: number | null = null;
+	private codeColorMap: Map<string, string>;
 
 	constructor(sk: p5, bounds: Bounds) {
 		this.sk = sk;
@@ -64,6 +66,7 @@ export class SpeakerHeatmap {
 		this.transcript = get(TranscriptStore);
 		this.config = get(ConfigStore);
 		this.hover = get(HoverStore);
+		this.codeColorMap = buildCodeColorMap(get(CodeStore));
 	}
 
 	draw(words: DataPoint[]): { hoveredCell: DataPoint | null; hoveredSpeaker: string | null } {
@@ -144,11 +147,12 @@ export class SpeakerHeatmap {
 				withDimming(this.sk.drawingContext, shouldDim, () => {
 					if (cellWords.length > 0) {
 						const user = this.userMap.get(speakers[row]);
+						const cellColor = getDominantCodeColor(cellWords, user?.color || DEFAULT_SPEAKER_COLOR, this.codeColorMap, this.config.codeColorMode);
 						let alpha = this.sk.map(cellWords.length, 0, binnedData.maxCellCount, MIN_OPACITY, MAX_OPACITY);
 						if (searchTerm && !this.cellMatchesSearch(cellWords, searchTerm)) {
 							alpha *= 0.2;
 						}
-						const c = this.sk.color(user!.color);
+						const c = this.sk.color(cellColor);
 						c.setAlpha(alpha);
 						this.sk.fill(c);
 					} else {
@@ -245,7 +249,8 @@ export class SpeakerHeatmap {
 		const multiTurn = turns.length > 1;
 
 		const content = `<b>${hovered.speaker}</b> · ${turns.length} turn${multiTurn ? 's' : ''} · ${timeRange}\n${formatTurnPreviewLines(turns)}`;
-		showTooltip(this.sk.mouseX, this.sk.mouseY, content, user?.color || DEFAULT_SPEAKER_COLOR, this.bounds.y + this.bounds.height);
+		const tooltipColor = getDominantCodeColor(hovered.words, user?.color || DEFAULT_SPEAKER_COLOR, this.codeColorMap, this.config.codeColorMode);
+		showTooltip(this.sk.mouseX, this.sk.mouseY, content, tooltipColor, this.bounds.y + this.bounds.height);
 	}
 
 	private cellMatchesSearch(words: DataPoint[], searchTerm: string): boolean {

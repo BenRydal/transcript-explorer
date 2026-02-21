@@ -23,7 +23,8 @@ import type { User } from '../../models/user';
 import type { Bounds } from './types/bounds';
 import { calculateScaling, getWordWidth, type Scaling } from './contribution-cloud-scaling';
 import { DEFAULT_SPEAKER_COLOR } from '../constants/ui';
-import { createUserMap } from './draw-utils';
+import { createUserMap, getWordColor, buildCodeColorMap } from './draw-utils';
+import CodeStore from '../../stores/codeStore';
 
 export { clearScalingCache } from './contribution-cloud-scaling';
 
@@ -69,6 +70,7 @@ export class ContributionCloud {
 	config: ConfigStoreType;
 	userMap: Map<string, User>;
 	fullTranscriptMaxCount: number;
+	codeColorMap: Map<string, string>;
 
 	constructor(sk: p5, bounds: Bounds) {
 		this.sk = sk;
@@ -77,6 +79,7 @@ export class ContributionCloud {
 		this.config = get(ConfigStore);
 		this.userMap = createUserMap(this.users);
 		this.fullTranscriptMaxCount = get(TranscriptStore).maxCountOfMostRepeatedWord;
+		this.codeColorMap = buildCodeColorMap(get(CodeStore));
 	}
 
 	draw(words: DataPoint[]): { hoveredWord: DataPoint | null; hasOverflow: boolean; hoveredSpeaker: string | null } {
@@ -102,6 +105,7 @@ export class ContributionCloud {
 
 	getBufferCacheKey(filteredWordCount: number): string {
 		const userStates = this.users.map((u) => `${u.name}:${u.color}:${u.enabled}`).join(',');
+		const codeStates = get(CodeStore).map((c) => `${c.code}:${c.color}:${c.enabled}`).join(',');
 		const timeline = get(TimelineStore);
 		return [
 			this.bounds.x,
@@ -115,7 +119,9 @@ export class ContributionCloud {
 			this.config.repeatWordSliderValue,
 			this.config.dashboardToggle,
 			this.config.wordToSearch || '',
+			this.config.codeColorMode,
 			userStates,
+			codeStates,
 			timeline.leftMarker,
 			timeline.rightMarker
 		].join('|');
@@ -140,7 +146,12 @@ export class ContributionCloud {
 		for (const pos of positions) {
 			buffer.textSize(pos.textSize);
 			buffer.noStroke();
-			pos.user?.enabled ? buffer.fill(pos.user.color) : buffer.fill(255);
+			if (pos.user?.enabled) {
+				const color = getWordColor(pos.word.codes, pos.user.color, this.codeColorMap, this.config.codeColorMode);
+				buffer.fill(color);
+			} else {
+				buffer.fill(255);
+			}
 			buffer.text(stripPunctuation(pos.word.word), pos.x, pos.y);
 		}
 
@@ -227,7 +238,7 @@ export class ContributionCloud {
 				const screenY = this.bounds.y + pos.y;
 				const isHovered = pos.word === hoveredPos.word;
 				const padding = isHovered ? 3 : 2;
-				const color = pos.user?.color || DEFAULT_SPEAKER_COLOR;
+				const color = getWordColor(pos.word.codes, pos.user?.color || DEFAULT_SPEAKER_COLOR, this.codeColorMap, this.config.codeColorMode);
 
 				this.sk.textSize(pos.textSize);
 				this.sk.noStroke();
@@ -284,7 +295,8 @@ export class ContributionCloud {
 
 		content += `\n<span style="font-size: 0.85em; opacity: 0.7">${details.join('  ·  ')}</span>`;
 
-		showTooltip(this.sk.mouseX, this.sk.mouseY, content, user?.color || DEFAULT_SPEAKER_COLOR, this.bounds.y + this.bounds.height);
+		const tooltipColor = getWordColor(word.codes, user?.color || DEFAULT_SPEAKER_COLOR, this.codeColorMap, this.config.codeColorMode);
+		showTooltip(this.sk.mouseX, this.sk.mouseY, content, tooltipColor, this.bounds.y + this.bounds.height);
 	}
 
 	getTurnContext(word: DataPoint, allPositions: WordPosition[]): string | null {

@@ -2,7 +2,7 @@
 	import { CloudUpload, ArrowLeft, X, Check, CircleAlert } from '@lucide/svelte';
 	import { extractYouTubeVideoId } from '$lib/core/url-utils';
 	import { isRequired, allRequiredMapped, type ColumnMatch } from '$lib/core/column-mapper';
-	import type { CSVPreview } from '../../models/csv-preview';
+	import type { CSVPreview, CodePreview } from '../../models/csv-preview';
 	import type { TimingMode } from '../../models/transcript';
 
 	interface Props {
@@ -11,6 +11,7 @@
 		pendingVideoFile?: File | null;
 		uploadedFiles?: Array<{ name: string; type: string; status: string; error?: string }>;
 		csvPreview?: CSVPreview | null;
+		codePreview?: CodePreview | null;
 		ondrop?: (e: DragEvent) => void;
 		ondragover?: (e: DragEvent) => void;
 		ondragleave?: () => void;
@@ -22,6 +23,8 @@
 		onconfirmImport?: () => void;
 		oncancelPreview?: () => void;
 		oncolumnMappingChange?: (expected: string, csvColumn: string | null) => void;
+		onconfirmCodeImport?: () => void;
+		oncancelCodePreview?: () => void;
 	}
 
 	let {
@@ -30,6 +33,7 @@
 		pendingVideoFile = null,
 		uploadedFiles = [],
 		csvPreview = null,
+		codePreview = null,
 		ondrop,
 		ondragover,
 		ondragleave,
@@ -40,7 +44,9 @@
 		onclearFiles,
 		onconfirmImport,
 		oncancelPreview,
-		oncolumnMappingChange
+		oncolumnMappingChange,
+		onconfirmCodeImport,
+		oncancelCodePreview
 	}: Props = $props();
 
 	function getEffectiveMatch(match: ColumnMatch): string | null {
@@ -67,6 +73,8 @@
 		if (e.key === 'Escape') {
 			if (csvPreview) {
 				oncancelPreview?.();
+			} else if (codePreview) {
+				oncancelCodePreview?.();
 			} else {
 				isOpen = false;
 			}
@@ -100,6 +108,7 @@
 		onclick={(e) => {
 			if (e.target === e.currentTarget) {
 				if (csvPreview) oncancelPreview?.();
+				else if (codePreview) oncancelCodePreview?.();
 				else isOpen = false;
 			}
 		}}
@@ -215,6 +224,85 @@
 				<div class="modal-action">
 					<button class="btn" onclick={() => oncancelPreview?.()}>Back</button>
 					<button class="btn btn-primary" onclick={() => onconfirmImport?.()} disabled={!canImport()}>Import</button>
+				</div>
+			{:else if codePreview}
+				<!-- Code Preview -->
+				<div class="flex justify-between items-center mb-4">
+					<div class="flex items-center gap-2">
+						<button class="btn btn-ghost btn-sm btn-square" onclick={() => oncancelCodePreview?.()} aria-label="Back">
+							<ArrowLeft size={18} />
+						</button>
+						<h3 class="font-bold text-lg truncate max-w-[300px]" title={codePreview.fileName}>Preview: {codePreview.fileName}</h3>
+					</div>
+					<button
+						class="btn btn-circle btn-sm"
+						onclick={() => {
+							oncancelCodePreview?.();
+							isOpen = false;
+						}}
+						aria-label="Close"
+					>
+						<X size={20} />
+					</button>
+				</div>
+
+				<!-- Error banner -->
+				{#if codePreview.error}
+					<div class="alert alert-error mb-3 py-2">
+						<CircleAlert size={16} />
+						<span class="text-sm">{codePreview.error}</span>
+					</div>
+				{/if}
+
+				<!-- Summary -->
+				<div class="text-sm text-gray-600 mb-3">
+					{codePreview.formatLabel} codes &mdash;
+					{codePreview.codeNames.length} code{codePreview.codeNames.length !== 1 ? 's' : ''} found,
+					{codePreview.rowCount} row{codePreview.rowCount !== 1 ? 's' : ''}
+				</div>
+
+				<!-- Code names -->
+				{#if codePreview.codeNames.length > 0}
+					<div class="flex flex-wrap gap-1.5 mb-3">
+						{#each codePreview.codeNames as name}
+							<span class="badge badge-sm badge-outline">{name}</span>
+						{/each}
+					</div>
+				{/if}
+
+				<!-- Preview table -->
+				<div class="overflow-x-auto border rounded-lg max-h-56">
+					<table class="table table-xs table-pin-rows">
+						<thead>
+							<tr>
+								{#each codePreview.allColumns as col}
+									<th>{col}</th>
+								{/each}
+							</tr>
+						</thead>
+						<tbody>
+							{#each codePreview.rawRows as row}
+								<tr>
+									{#each codePreview.allColumns as col}
+										<td>
+											<span class="max-w-[200px] truncate block" title={formatCellValue(row[col])}>
+												{formatCellValue(row[col])}
+											</span>
+										</td>
+									{/each}
+								</tr>
+							{/each}
+						</tbody>
+					</table>
+				</div>
+				{#if codePreview.rowCount > codePreview.rawRows.length}
+					<p class="text-xs text-gray-400 mt-1">Showing first {codePreview.rawRows.length} of {codePreview.rowCount} rows</p>
+				{/if}
+
+				<!-- Actions -->
+				<div class="modal-action">
+					<button class="btn" onclick={() => oncancelCodePreview?.()}>Back</button>
+					<button class="btn btn-primary" onclick={() => onconfirmCodeImport?.()} disabled={!!codePreview.error}>Import</button>
 				</div>
 			{:else}
 				<!-- Normal upload UI -->

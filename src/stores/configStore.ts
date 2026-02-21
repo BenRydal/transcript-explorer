@@ -51,6 +51,9 @@ export interface ConfigStoreType {
 	fingerprintOverlayMode: boolean;
 	// Visualization scaling
 	scaleToVisibleData: boolean;
+	// Code coloring
+	codeColorMode: boolean;
+	showUncoded: boolean;
 }
 
 export const DASHBOARD_PANEL_OPTIONS = [
@@ -107,7 +110,9 @@ export const initialConfig: ConfigStoreType = {
 	turnLengthBinCount: 0,
 	legendVisible: true,
 	fingerprintOverlayMode: true,
-	scaleToVisibleData: false
+	scaleToVisibleData: false,
+	codeColorMode: false,
+	showUncoded: true
 };
 
 const ConfigStore = writable<ConfigStoreType>(initialConfig);
