@@ -511,6 +511,9 @@
 
 			try {
 				await processFile(file);
+				if (codePreview && codePreview.fileName === file.name) {
+					uploadedFiles[fileIndex].type = 'Codes (CSV)';
+				}
 				uploadedFiles[fileIndex].status = 'done';
 			} catch (err) {
 				uploadedFiles[fileIndex].status = 'error';
