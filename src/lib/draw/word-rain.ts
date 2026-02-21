@@ -1,20 +1,12 @@
-import type p5 from 'p5';
-import { get } from 'svelte/store';
-import UserStore from '../../stores/userStore';
-import ConfigStore, { type ConfigStoreType } from '../../stores/configStore';
-import HoverStore, { type HoverState } from '../../stores/hoverStore';
-import TranscriptStore from '../../stores/transcriptStore';
-import TimelineStore from '../../stores/timelineStore';
 import { showTooltip } from '../../stores/tooltipStore';
 import { formatTimeCompact } from '../core/time-utils';
 import type { DataPoint } from '../../models/dataPoint';
 import type { User } from '../../models/user';
-import type { Transcript } from '../../models/transcript';
-import type { Timeline } from '../../models/timeline';
 import type { Bounds } from './types/bounds';
 import { DEFAULT_SPEAKER_COLOR } from '../constants/ui';
-import { withDimming, createUserMap, getCrossHighlight, type CrossHighlight } from './draw-utils';
+import { withDimming, getCrossHighlight, getDominantCodeColor, type CrossHighlight } from './draw-utils';
 import { normalizeWord, toTitleCase } from '../core/string-utils';
+import { DrawContext } from './draw-context';
 
 const MAX_SAMPLE_TURNS = 4;
 const CONTEXT_WORDS_BEFORE = 4;
@@ -74,56 +66,46 @@ interface PlacedWord {
 }
 
 export class WordRain {
-	private sk: p5;
+	private ctx: DrawContext;
 	private bounds: Bounds;
-	private userMap: Map<string, User>;
-	private timeline: Timeline;
-	private transcript: Transcript;
 	private searchTerm: string;
-	private config: ConfigStoreType;
-	private hover: HoverState;
 	private fullTranscriptMaxCount: number;
 
-	constructor(sk: p5, bounds: Bounds) {
-		this.sk = sk;
+	constructor(ctx: DrawContext, bounds: Bounds) {
+		this.ctx = ctx;
 		this.bounds = bounds;
-		this.userMap = createUserMap(get(UserStore));
-		this.timeline = get(TimelineStore);
-		this.transcript = get(TranscriptStore);
-		this.config = get(ConfigStore);
-		this.hover = get(HoverStore);
-		this.searchTerm = this.config.wordToSearch ? normalizeWord(this.config.wordToSearch) : '';
-		this.fullTranscriptMaxCount = this.transcript.maxCountOfMostRepeatedWord;
+		this.searchTerm = this.ctx.config.wordToSearch ? normalizeWord(this.ctx.config.wordToSearch) : '';
+		this.fullTranscriptMaxCount = this.ctx.transcript.maxCountOfMostRepeatedWord;
 	}
 
 	draw(words: DataPoint[]): WordRainResult {
-		if (this.config.separateToggle) {
+		if (this.ctx.config.separateToggle) {
 			return this.drawSeparate(words);
 		}
 		return this.drawCombined(words);
 	}
 
 	private drawCombined(words: DataPoint[]): WordRainResult {
-		const visibleWords = words.filter((w) => this.userMap.get(w.speaker)?.enabled !== false);
-		const aggregated = this.config.wordRainTemporalBinning ? this.aggregateWordsInBins(visibleWords) : this.aggregateWords(visibleWords);
+		const visibleWords = words.filter((w) => this.ctx.userMap.get(w.speaker)?.enabled !== false);
+		const aggregated = this.ctx.config.wordRainTemporalBinning ? this.aggregateWordsInBins(visibleWords) : this.aggregateWords(visibleWords);
 		const filtered = this.filterAndSort(aggregated);
 		if (filtered.length === 0) return EMPTY_RAIN_RESULT;
 
 		const placed = this.placeWordsInRegion(filtered, this.bounds, null);
-		if (this.config.wordRainTemporalBinning) {
+		if (this.ctx.config.wordRainTemporalBinning) {
 			this.drawBinDividers(this.bounds);
 		}
 		return this.renderAndHandleHover(placed, filtered.length > placed.length);
 	}
 
 	private drawSeparate(words: DataPoint[]): WordRainResult {
-		const enabledUsers = get(UserStore).filter((u) => u.enabled);
+		const enabledUsers = this.ctx.users.filter((u) => u.enabled);
 		if (enabledUsers.length === 0) return EMPTY_RAIN_RESULT;
 
-		const useBinning = this.config.wordRainTemporalBinning;
+		const useBinning = this.ctx.config.wordRainTemporalBinning;
 		const bySpeaker = useBinning ? this.aggregateWordsBySpeakerInBins(words, enabledUsers) : this.aggregateWordsBySpeaker(words, enabledUsers);
 		const bandHeight = this.bounds.height / enabledUsers.length;
-		const xhl = getCrossHighlight(this.sk, this.bounds, this.config.dashboardToggle, this.hover);
+		const xhl = getCrossHighlight(this.ctx.sk, this.bounds, this.ctx.config.dashboardToggle, this.ctx.hover);
 		const allPlaced: PlacedWord[] = [];
 		let hasOverflow = false;
 
@@ -156,7 +138,7 @@ export class WordRain {
 	}
 
 	private filterAndSort(aggregated: AggregatedWord[]): AggregatedWord[] {
-		const minFreq = this.config.wordRainMinFrequency;
+		const minFreq = this.ctx.config.wordRainMinFrequency;
 		const search = this.searchTerm;
 		const filtered = aggregated.filter((a) => a.count >= minFreq && (!search || a.word.includes(search)));
 		filtered.sort((a, b) => b.count - a.count);
@@ -164,7 +146,7 @@ export class WordRain {
 	}
 
 	private renderAndHandleHover(placed: PlacedWord[], hasOverflow: boolean): WordRainResult {
-		const xhl = getCrossHighlight(this.sk, this.bounds, this.config.dashboardToggle, this.hover);
+		const xhl = getCrossHighlight(this.ctx.sk, this.bounds, this.ctx.config.dashboardToggle, this.ctx.hover);
 		this.renderBars(placed, xhl);
 		this.renderConnectors(placed, xhl);
 		this.renderWords(placed, xhl);
@@ -183,26 +165,26 @@ export class WordRain {
 
 	private drawBandChrome(index: number, bandY: number, bandHeight: number, user: User): void {
 		if (index % 2 === 1) {
-			this.sk.noStroke();
-			const bgColor = this.sk.color(user.color);
+			this.ctx.sk.noStroke();
+			const bgColor = this.ctx.sk.color(user.color);
 			bgColor.setAlpha(SPEAKER_BAND_BG_ALPHA);
-			this.sk.fill(bgColor);
-			this.sk.rect(this.bounds.x, bandY, this.bounds.width, bandHeight);
+			this.ctx.sk.fill(bgColor);
+			this.ctx.sk.rect(this.bounds.x, bandY, this.bounds.width, bandHeight);
 		}
 
 		if (index > 0) {
-			const divColor = this.sk.color(150);
+			const divColor = this.ctx.sk.color(150);
 			divColor.setAlpha(SPEAKER_BAND_DIVIDER_ALPHA);
-			this.sk.stroke(divColor);
-			this.sk.strokeWeight(0.5);
-			this.sk.line(this.bounds.x, bandY, this.bounds.x + this.bounds.width, bandY);
+			this.ctx.sk.stroke(divColor);
+			this.ctx.sk.strokeWeight(0.5);
+			this.ctx.sk.line(this.bounds.x, bandY, this.bounds.x + this.bounds.width, bandY);
 		}
 
-		this.sk.noStroke();
-		this.sk.fill(user.color);
-		this.sk.textSize(SPEAKER_LABEL_SIZE);
-		this.sk.textAlign(this.sk.LEFT, this.sk.TOP);
-		this.sk.text(toTitleCase(user.name), this.bounds.x + 4, bandY + 2);
+		this.ctx.sk.noStroke();
+		this.ctx.sk.fill(user.color);
+		this.ctx.sk.textSize(SPEAKER_LABEL_SIZE);
+		this.ctx.sk.textAlign(this.ctx.sk.LEFT, this.ctx.sk.TOP);
+		this.ctx.sk.text(toTitleCase(user.name), this.bounds.x + 4, bandY + 2);
 	}
 
 	private aggregateWordsBySpeaker(words: DataPoint[], enabledUsers: User[]): Map<string, AggregatedWord[]> {
@@ -245,9 +227,9 @@ export class WordRain {
 	}
 
 	private aggregateWordsInBins(words: DataPoint[]): AggregatedWord[] {
-		const { wordRainBinCount: binCount } = this.config;
-		const left = this.timeline.leftMarker;
-		const range = this.timeline.rightMarker - left;
+		const { wordRainBinCount: binCount } = this.ctx.config;
+		const left = this.ctx.timeline.leftMarker;
+		const range = this.ctx.timeline.rightMarker - left;
 		if (range <= 0) return [];
 		const binWidth = range / binCount;
 
@@ -298,9 +280,9 @@ export class WordRain {
 
 	private aggregateWordsBySpeakerInBins(words: DataPoint[], enabledUsers: User[]): Map<string, AggregatedWord[]> {
 		const enabledNames = new Set(enabledUsers.map((u) => u.name));
-		const { wordRainBinCount: binCount } = this.config;
-		const left = this.timeline.leftMarker;
-		const range = this.timeline.rightMarker - left;
+		const { wordRainBinCount: binCount } = this.ctx.config;
+		const left = this.ctx.timeline.leftMarker;
+		const range = this.ctx.timeline.rightMarker - left;
 		if (range <= 0) return new Map();
 		const binWidth = range / binCount;
 
@@ -345,19 +327,19 @@ export class WordRain {
 	}
 
 	private drawBinDividers(region: Bounds): void {
-		const binCount = this.config.wordRainBinCount;
-		const ctx = this.sk.drawingContext as CanvasRenderingContext2D;
+		const binCount = this.ctx.config.wordRainBinCount;
+		const ctx = this.ctx.sk.drawingContext as CanvasRenderingContext2D;
 		const prevDash = ctx.getLineDash();
 
 		ctx.setLineDash(BIN_DIVIDER_DASH);
-		const c = this.sk.color(150);
+		const c = this.ctx.sk.color(150);
 		c.setAlpha(BIN_DIVIDER_ALPHA);
-		this.sk.stroke(c);
-		this.sk.strokeWeight(1);
+		this.ctx.sk.stroke(c);
+		this.ctx.sk.strokeWeight(1);
 
 		for (let i = 1; i < binCount; i++) {
 			const x = region.x + (i / binCount) * region.width;
-			this.sk.line(x, region.y, x, region.y + region.height);
+			this.ctx.sk.line(x, region.y, x, region.y + region.height);
 		}
 
 		ctx.setLineDash(prevDash);
@@ -370,7 +352,7 @@ export class WordRain {
 	private placeWordsInRegion(filtered: AggregatedWord[], region: Bounds, speakerColor: string | null): PlacedWord[] {
 		if (filtered.length === 0) return [];
 
-		const maxCount = !this.config.scaleToVisibleData && this.fullTranscriptMaxCount > 0 ? this.fullTranscriptMaxCount : filtered[0].count;
+		const maxCount = !this.ctx.config.scaleToVisibleData && this.fullTranscriptMaxCount > 0 ? this.fullTranscriptMaxCount : filtered[0].count;
 		const isSeparate = speakerColor !== null;
 		const labelOffset = isSeparate ? SPEAKER_LABEL_SIZE + 4 : 0;
 		const barSectionHeight = region.height * BAR_SECTION_RATIO;
@@ -381,7 +363,7 @@ export class WordRain {
 
 		const pixelWidth = Math.ceil(region.width);
 		const heightMap = new Float32Array(pixelWidth);
-		const range = this.timeline.rightMarker - this.timeline.leftMarker;
+		const range = this.ctx.timeline.rightMarker - this.ctx.timeline.leftMarker;
 		if (range <= 0) return [];
 
 		const minFloor = isSeparate ? 7 : 8;
@@ -389,7 +371,7 @@ export class WordRain {
 		const placed: PlacedWord[] = [];
 
 		for (const agg of filtered) {
-			const t = (agg.meanTime - this.timeline.leftMarker) / range;
+			const t = (agg.meanTime - this.ctx.timeline.leftMarker) / range;
 			const x = region.x + t * region.width;
 
 			const sizeT = maxCount > 1 ? Math.log(agg.count) / Math.log(maxCount) : 0;
@@ -397,8 +379,8 @@ export class WordRain {
 			const maxSize = Math.max(maxFloor, region.height * TEXT_MAX_RATIO);
 			const textSize = minSize + sizeT * (maxSize - minSize);
 
-			this.sk.textSize(textSize);
-			const wordWidth = this.sk.textWidth(agg.word);
+			this.ctx.sk.textSize(textSize);
+			const wordWidth = this.ctx.sk.textWidth(agg.word);
 
 			let left = Math.round(x - region.x - wordWidth / 2);
 			left = Math.max(0, Math.min(pixelWidth - Math.ceil(wordWidth), left));
@@ -423,10 +405,11 @@ export class WordRain {
 
 			let color: string;
 			if (speakerColor) {
-				color = speakerColor;
+				color = getDominantCodeColor(agg.occurrences, speakerColor, this.ctx.codeColorMap, this.ctx.config.codeColorMode);
 			} else {
-				const user = this.userMap.get(agg.dominantSpeaker);
-				color = agg.dominantCount / agg.count > DOMINANCE_THRESHOLD ? user?.color || DEFAULT_SPEAKER_COLOR : SHARED_WORD_COLOR;
+				const user = this.ctx.userMap.get(agg.dominantSpeaker);
+				const resolvedColor = agg.dominantCount / agg.count > DOMINANCE_THRESHOLD ? user?.color || DEFAULT_SPEAKER_COLOR : SHARED_WORD_COLOR;
+				color = getDominantCodeColor(agg.occurrences, resolvedColor, this.ctx.codeColorMap, this.ctx.config.codeColorMode);
 			}
 
 			placed.push({
@@ -435,8 +418,8 @@ export class WordRain {
 				y: wordY,
 				textSize,
 				width: wordWidth,
-				ascent: this.sk.textAscent(),
-				descent: this.sk.textDescent(),
+				ascent: this.ctx.sk.textAscent(),
+				descent: this.ctx.sk.textDescent(),
 				barY,
 				barH,
 				barW,
@@ -498,81 +481,81 @@ export class WordRain {
 	}
 
 	private renderBars(placed: PlacedWord[], xhl: CrossHighlight): void {
-		this.sk.noStroke();
+		this.ctx.sk.noStroke();
 		for (const pw of placed) {
-			withDimming(this.sk.drawingContext, this.shouldDimWord(xhl, pw), () => {
-				const c = this.sk.color(pw.color);
+			withDimming(this.ctx.sk.drawingContext, this.shouldDimWord(xhl, pw), () => {
+				const c = this.ctx.sk.color(pw.color);
 				c.setAlpha(180);
-				this.sk.fill(c);
+				this.ctx.sk.fill(c);
 				const barX = pw.x + pw.width / 2 - pw.barW / 2;
-				this.sk.rect(barX, pw.barY, pw.barW, pw.barH);
+				this.ctx.sk.rect(barX, pw.barY, pw.barW, pw.barH);
 			});
 		}
 	}
 
 	private renderConnectors(placed: PlacedWord[], xhl: CrossHighlight): void {
 		for (const pw of placed) {
-			withDimming(this.sk.drawingContext, this.shouldDimWord(xhl, pw), () => {
+			withDimming(this.ctx.sk.drawingContext, this.shouldDimWord(xhl, pw), () => {
 				const alpha = CONNECTOR_MIN_ALPHA + pw.countRatio * (CONNECTOR_MAX_ALPHA - CONNECTOR_MIN_ALPHA);
 				const weight = CONNECTOR_MIN_WEIGHT + pw.countRatio * (CONNECTOR_MAX_WEIGHT - CONNECTOR_MIN_WEIGHT);
-				const c = this.sk.color(pw.color);
+				const c = this.ctx.sk.color(pw.color);
 				c.setAlpha(alpha);
-				this.sk.stroke(c);
-				this.sk.strokeWeight(weight);
+				this.ctx.sk.stroke(c);
+				this.ctx.sk.strokeWeight(weight);
 				const centerX = pw.x + pw.width / 2;
-				this.sk.line(centerX, pw.barY + pw.barH, centerX, pw.y - pw.textSize);
+				this.ctx.sk.line(centerX, pw.barY + pw.barH, centerX, pw.y - pw.textSize);
 			});
 		}
 	}
 
 	private renderWords(placed: PlacedWord[], xhl: CrossHighlight): void {
-		this.sk.noStroke();
-		this.sk.textAlign(this.sk.LEFT, this.sk.BASELINE);
+		this.ctx.sk.noStroke();
+		this.ctx.sk.textAlign(this.ctx.sk.LEFT, this.ctx.sk.BASELINE);
 		for (const pw of placed) {
-			withDimming(this.sk.drawingContext, this.shouldDimWord(xhl, pw), () => {
-				this.sk.textSize(pw.textSize);
-				this.sk.fill(pw.color);
-				this.sk.text(pw.agg.word, pw.x, pw.y);
+			withDimming(this.ctx.sk.drawingContext, this.shouldDimWord(xhl, pw), () => {
+				this.ctx.sk.textSize(pw.textSize);
+				this.ctx.sk.fill(pw.color);
+				this.ctx.sk.text(pw.agg.word, pw.x, pw.y);
 			});
 		}
 	}
 
 	private drawTimeLabels(): void {
-		const isUntimed = this.transcript.timingMode === 'untimed';
-		const range = this.timeline.rightMarker - this.timeline.leftMarker;
+		const isUntimed = this.ctx.transcript.timingMode === 'untimed';
+		const range = this.ctx.timeline.rightMarker - this.ctx.timeline.leftMarker;
 		if (range <= 0) return;
 
 		const bottomMargin = Math.max(15, this.bounds.height * BOTTOM_MARGIN_RATIO);
-		this.sk.textSize(Math.max(8, bottomMargin * 0.5));
-		this.sk.fill(120);
-		this.sk.noStroke();
+		this.ctx.sk.textSize(Math.max(8, bottomMargin * 0.5));
+		this.ctx.sk.fill(120);
+		this.ctx.sk.noStroke();
 
 		const labelY = this.bounds.y + this.bounds.height - bottomMargin + 5;
 		const step = range / TIME_LABEL_COUNT;
 
 		for (let i = 0; i <= TIME_LABEL_COUNT; i++) {
-			const time = this.timeline.leftMarker + i * step;
+			const time = this.ctx.timeline.leftMarker + i * step;
 			const x = this.bounds.x + (i / TIME_LABEL_COUNT) * this.bounds.width;
 			const label = isUntimed ? String(Math.round(time)) : formatTimeCompact(time);
-			const align = i === 0 ? this.sk.LEFT : i === TIME_LABEL_COUNT ? this.sk.RIGHT : this.sk.CENTER;
-			this.sk.textAlign(align, this.sk.TOP);
-			this.sk.text(label, x, labelY);
+			const align = i === 0 ? this.ctx.sk.LEFT : i === TIME_LABEL_COUNT ? this.ctx.sk.RIGHT : this.ctx.sk.CENTER;
+			this.ctx.sk.textAlign(align, this.ctx.sk.TOP);
+			this.ctx.sk.text(label, x, labelY);
 		}
 	}
 
 	private findHoveredWord(placed: PlacedWord[]): PlacedWord | null {
-		if (!this.sk.overRect(this.bounds.x, this.bounds.y, this.bounds.width, this.bounds.height)) {
+		if (!this.ctx.sk.overRect(this.bounds.x, this.bounds.y, this.bounds.width, this.bounds.height)) {
 			return null;
 		}
 
 		for (const pw of placed) {
 			// Check word text
-			if (this.sk.overRect(pw.x, pw.y - pw.ascent, pw.width, pw.ascent + pw.descent)) {
+			if (this.ctx.sk.overRect(pw.x, pw.y - pw.ascent, pw.width, pw.ascent + pw.descent)) {
 				return pw;
 			}
 			// Check frequency bar at top
 			const barX = pw.x + pw.width / 2 - pw.barW / 2;
-			if (this.sk.overRect(barX, pw.barY, pw.barW, pw.barH)) {
+			if (this.ctx.sk.overRect(barX, pw.barY, pw.barW, pw.barH)) {
 				return pw;
 			}
 		}
@@ -583,43 +566,43 @@ export class WordRain {
 		const centerX = hovered.x + hovered.width / 2;
 
 		// Semi-transparent overlay
-		this.sk.noStroke();
-		this.sk.fill(255, 255, 255, HOVER_OVERLAY_ALPHA);
-		this.sk.rect(this.bounds.x, this.bounds.y, this.bounds.width, this.bounds.height);
+		this.ctx.sk.noStroke();
+		this.ctx.sk.fill(255, 255, 255, HOVER_OVERLAY_ALPHA);
+		this.ctx.sk.rect(this.bounds.x, this.bounds.y, this.bounds.width, this.bounds.height);
 
 		// Hovered bar
-		const barColor = this.sk.color(hovered.color);
+		const barColor = this.ctx.sk.color(hovered.color);
 		barColor.setAlpha(220);
-		this.sk.fill(barColor);
-		this.sk.rect(centerX - hovered.barW / 2, hovered.barY, hovered.barW, hovered.barH);
+		this.ctx.sk.fill(barColor);
+		this.ctx.sk.rect(centerX - hovered.barW / 2, hovered.barY, hovered.barW, hovered.barH);
 
 		// Connector
 		const weight = CONNECTOR_MIN_WEIGHT + hovered.countRatio * (CONNECTOR_MAX_WEIGHT - CONNECTOR_MIN_WEIGHT);
-		const connColor = this.sk.color(hovered.color);
+		const connColor = this.ctx.sk.color(hovered.color);
 		connColor.setAlpha(160);
-		this.sk.stroke(connColor);
-		this.sk.strokeWeight(weight);
-		this.sk.line(centerX, hovered.barY + hovered.barH, centerX, hovered.y - hovered.textSize);
+		this.ctx.sk.stroke(connColor);
+		this.ctx.sk.strokeWeight(weight);
+		this.ctx.sk.line(centerX, hovered.barY + hovered.barH, centerX, hovered.y - hovered.textSize);
 
 		// Word text
-		this.sk.noStroke();
-		this.sk.textSize(hovered.textSize);
-		this.sk.fill(hovered.color);
-		this.sk.textAlign(this.sk.LEFT, this.sk.BASELINE);
-		this.sk.text(hovered.agg.word, hovered.x, hovered.y);
+		this.ctx.sk.noStroke();
+		this.ctx.sk.textSize(hovered.textSize);
+		this.ctx.sk.fill(hovered.color);
+		this.ctx.sk.textAlign(this.ctx.sk.LEFT, this.ctx.sk.BASELINE);
+		this.ctx.sk.text(hovered.agg.word, hovered.x, hovered.y);
 
 		// Outline box
-		this.sk.noFill();
-		this.sk.stroke(hovered.color);
-		this.sk.strokeWeight(1.5);
-		this.sk.rect(hovered.x - 2, hovered.y - hovered.ascent - 2, hovered.width + 4, hovered.ascent + hovered.descent + 4, 2);
+		this.ctx.sk.noFill();
+		this.ctx.sk.stroke(hovered.color);
+		this.ctx.sk.strokeWeight(1.5);
+		this.ctx.sk.rect(hovered.x - 2, hovered.y - hovered.ascent - 2, hovered.width + 4, hovered.ascent + hovered.descent + 4, 2);
 	}
 
 	private showWordTooltip(hovered: PlacedWord): void {
 		const agg = hovered.agg;
 
 		// Title: word and total count, with bin range if applicable
-		const isUntimed = this.transcript.timingMode === 'untimed';
+		const isUntimed = this.ctx.transcript.timingMode === 'untimed';
 		let title = `"${agg.word}" spoken ${agg.count} time${agg.count === 1 ? '' : 's'}`;
 		if (agg.binRange) {
 			const rangeLabel = isUntimed
@@ -637,7 +620,7 @@ export class WordRain {
 		const sorted = [...speakerCounts.entries()].sort((a, b) => b[1] - a[1]);
 		const breakdown = sorted
 			.map(([speaker, count]) => {
-				const user = this.userMap.get(speaker);
+				const user = this.ctx.userMap.get(speaker);
 				const color = user?.color || DEFAULT_SPEAKER_COLOR;
 				return `<span style="color:${color}">${toTitleCase(speaker)}: ${count}</span>`;
 			})
@@ -650,11 +633,11 @@ export class WordRain {
 			content += `\n<span style="opacity: 0.5">Sample turns:</span>\n<span style="opacity: 0.7">${samples.join('\n')}</span>`;
 		}
 
-		showTooltip(this.sk.mouseX, this.sk.mouseY, content, hovered.color, this.bounds.y + this.bounds.height);
+		showTooltip(this.ctx.sk.mouseX, this.ctx.sk.mouseY, content, hovered.color, this.bounds.y + this.bounds.height);
 	}
 
 	private getSampleContexts(agg: AggregatedWord): string[] {
-		const allWords = this.transcript.wordArray;
+		const allWords = this.ctx.transcript.wordArray;
 		const seenTurns = new Set<number>();
 		const samples: string[] = [];
 

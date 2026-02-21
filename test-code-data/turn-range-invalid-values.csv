@@ -1,0 +1,9 @@
+turn_start,turn_end,code
+1,3,valid
+abc,5,bad_start
+2,xyz,bad_end
+,4,missing_start
+3,,missing_end
+-1,5,negative_start
+1,-3,negative_end
+0,2,zero_start

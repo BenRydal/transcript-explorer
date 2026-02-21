@@ -1,6 +1,6 @@
 <script lang="ts">
 	import { writable, type Writable } from 'svelte/store';
-	import { X, Lightbulb, CirclePlay, CloudUpload, Video, Mic, Pencil, MessageSquare, ShieldCheck, ClipboardPaste, Github } from '@lucide/svelte';
+	import { X, Lightbulb, CirclePlay, CloudUpload, Video, Mic, Pencil, MessageSquare, ShieldCheck, ClipboardPaste, Github, Tags } from '@lucide/svelte';
 
 	interface Props {
 		isModalOpen?: Writable<boolean>;
@@ -12,12 +12,13 @@
 
 	let { isModalOpen = writable(false), onLoadExample = null, onOpenUpload = null, onOpenPaste = null, onStartTour = null }: Props = $props();
 
-	let activeTab: 'start' | 'import' | 'create' = $state('start');
+	let activeTab: 'start' | 'import' | 'create' | 'codes' = $state('start');
 
 	const tabs = [
 		{ id: 'start', label: 'Get Started' },
 		{ id: 'import', label: 'Import Transcript' },
-		{ id: 'create', label: 'Create Transcript' }
+		{ id: 'create', label: 'Create Transcript' },
+		{ id: 'codes', label: 'Import Codes' }
 	] as const;
 
 	const examples = [
@@ -322,6 +323,140 @@
 							</div>
 						</div>
 					</div>
+				{:else if activeTab === 'codes'}
+					<!-- Import Codes Tab -->
+					<p class="text-gray-600 mb-5">
+						Add and interact with qualitative codes to your transcript by uploading a CSV formatted as follows:
+					</p>
+
+					<div class="grid grid-cols-2 gap-4 mb-5">
+						<div class="bg-gray-50 rounded-lg p-4">
+							<h4 class="font-medium text-gray-700 mb-2">Turn + Code</h4>
+							<div class="bg-white border border-gray-200 rounded overflow-hidden">
+								<table class="w-full text-xs">
+									<thead class="bg-gray-100">
+										<tr>
+											<th class="px-2 py-1 text-left font-medium text-gray-700">code</th>
+											<th class="px-2 py-1 text-left font-medium text-gray-700">turn</th>
+										</tr>
+									</thead>
+									<tbody class="font-mono">
+										<tr class="border-t border-gray-100">
+											<td class="px-2 py-1">math reasoning</td>
+											<td class="px-2 py-1">3</td>
+										</tr>
+										<tr class="border-t border-gray-100">
+											<td class="px-2 py-1">math reasoning</td>
+											<td class="px-2 py-1">4</td>
+										</tr>
+										<tr class="border-t border-gray-100">
+											<td class="px-2 py-1">group discussion</td>
+											<td class="px-2 py-1">7</td>
+										</tr>
+									</tbody>
+								</table>
+							</div>
+							<p class="text-xs text-gray-500 mt-2">One row per turn/code pair</p>
+						</div>
+
+						<div class="bg-gray-50 rounded-lg p-4">
+							<h4 class="font-medium text-gray-700 mb-2">Turn Range + Code</h4>
+							<div class="bg-white border border-gray-200 rounded overflow-hidden">
+								<table class="w-full text-xs">
+									<thead class="bg-gray-100">
+										<tr>
+											<th class="px-2 py-1 text-left font-medium text-gray-700">code</th>
+											<th class="px-2 py-1 text-left font-medium text-gray-700">turn_start</th>
+											<th class="px-2 py-1 text-left font-medium text-gray-700">turn_end</th>
+										</tr>
+									</thead>
+									<tbody class="font-mono">
+										<tr class="border-t border-gray-100">
+											<td class="px-2 py-1">math reasoning</td>
+											<td class="px-2 py-1">3</td>
+											<td class="px-2 py-1">4</td>
+										</tr>
+										<tr class="border-t border-gray-100">
+											<td class="px-2 py-1">group discussion</td>
+											<td class="px-2 py-1">7</td>
+											<td class="px-2 py-1">7</td>
+										</tr>
+									</tbody>
+								</table>
+							</div>
+							<p class="text-xs text-gray-500 mt-2">Apply a code across a range of turns</p>
+						</div>
+
+						<div class="bg-gray-50 rounded-lg p-4">
+							<h4 class="font-medium text-gray-700 mb-2">Time Range + Code</h4>
+							<div class="bg-white border border-gray-200 rounded overflow-hidden">
+								<table class="w-full text-xs">
+									<thead class="bg-gray-100">
+										<tr>
+											<th class="px-2 py-1 text-left font-medium text-gray-700">code</th>
+											<th class="px-2 py-1 text-left font-medium text-gray-700">start</th>
+											<th class="px-2 py-1 text-left font-medium text-gray-700">end</th>
+										</tr>
+									</thead>
+									<tbody class="font-mono">
+										<tr class="border-t border-gray-100">
+											<td class="px-2 py-1">math reasoning</td>
+											<td class="px-2 py-1">10.5</td>
+											<td class="px-2 py-1">18.2</td>
+										</tr>
+										<tr class="border-t border-gray-100">
+											<td class="px-2 py-1">group discussion</td>
+											<td class="px-2 py-1">25.0</td>
+											<td class="px-2 py-1">30.0</td>
+										</tr>
+									</tbody>
+								</table>
+							</div>
+							<p class="text-xs text-gray-500 mt-2">Requires a timed transcript. Times can be in seconds, MM:SS, or HH:MM:SS</p>
+						</div>
+
+						<div class="bg-gray-50 rounded-lg p-4">
+							<h4 class="font-medium text-gray-700 mb-2">Time Range Only</h4>
+							<div class="bg-white border border-gray-200 rounded overflow-hidden">
+								<table class="w-full text-xs">
+									<thead class="bg-gray-100">
+										<tr>
+											<th class="px-2 py-1 text-left font-medium text-gray-700">start</th>
+											<th class="px-2 py-1 text-left font-medium text-gray-700">end</th>
+										</tr>
+									</thead>
+									<tbody class="font-mono">
+										<tr class="border-t border-gray-100">
+											<td class="px-2 py-1">10.5</td>
+											<td class="px-2 py-1">18.2</td>
+										</tr>
+										<tr class="border-t border-gray-100">
+											<td class="px-2 py-1">25.0</td>
+											<td class="px-2 py-1">30.0</td>
+										</tr>
+									</tbody>
+								</table>
+							</div>
+							<p class="text-xs text-gray-500 mt-2">The filename becomes the code name</p>
+						</div>
+					</div>
+
+					<div class="bg-amber-50 border border-amber-200 rounded-lg p-4 mb-4">
+						<div class="flex items-start gap-3">
+							<Tags size={20} class="text-amber-600 flex-shrink-0 mt-0.5" />
+							<div>
+								<h4 class="font-medium text-amber-800 mb-1">Using codes</h4>
+								<p class="text-sm text-amber-700">
+									After loading a code file, a <strong>Codes</strong> button appears in the bottom bar. Use it to toggle individual codes on/off, switch to code-based coloring, and hide uncoded data.
+								</p>
+							</div>
+						</div>
+					</div>
+
+					<button class="btn btn-primary" onclick={() => closeAndRun(onOpenUpload)}>
+						<CloudUpload size={20} class="mr-2" />
+						Upload Files
+					</button>
 				{/if}
 			</div>
 

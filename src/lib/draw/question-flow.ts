@@ -1,17 +1,10 @@
-import type p5 from 'p5';
-import { get } from 'svelte/store';
-import UserStore from '../../stores/userStore';
-import TimelineStore from '../../stores/timelineStore';
-import ConfigStore, { type ConfigStoreType } from '../../stores/configStore';
-import HoverStore, { type HoverState } from '../../stores/hoverStore';
-import TranscriptStore from '../../stores/transcriptStore';
 import { showTooltip } from '../../stores/tooltipStore';
 import type { DataPoint } from '../../models/dataPoint';
-import type { User } from '../../models/user';
 import type { Bounds } from './types/bounds';
 import type { QuestionAnswerPair } from '../core/dynamic-data';
-import { withDimming, createUserMap, getCrossHighlight, drawTimeAxis } from './draw-utils';
+import { withDimming, getCrossHighlight, drawTimeAxis, getWordColor } from './draw-utils';
 import { normalizeWord } from '../core/string-utils';
+import { DrawContext } from './draw-context';
 
 const LEFT_MARGIN = 80;
 const RIGHT_MARGIN = 20;
@@ -33,12 +26,9 @@ interface RenderedPair {
 }
 
 export class QuestionFlow {
-	private sk: p5;
+	private ctx: DrawContext;
 	private bounds: Bounds;
-	private userMap: Map<string, User>;
 	private speakers: string[];
-	private config: ConfigStoreType;
-	private hover: HoverState;
 	private timeline: { leftMarker: number; rightMarker: number };
 	private fullTranscriptMaxWords: number;
 	// Grid coordinates
@@ -47,18 +37,13 @@ export class QuestionFlow {
 	private gw: number;
 	private gh: number;
 
-	constructor(sk: p5, bounds: Bounds) {
-		this.sk = sk;
+	constructor(ctx: DrawContext, bounds: Bounds) {
+		this.ctx = ctx;
 		this.bounds = bounds;
-		const users = get(UserStore);
-		this.userMap = createUserMap(users);
-		this.speakers = users.filter((u) => u.enabled).map((u) => u.name);
-		this.config = get(ConfigStore);
-		this.hover = get(HoverStore);
-		const tl = get(TimelineStore);
-		this.timeline = { leftMarker: tl.leftMarker, rightMarker: tl.rightMarker };
+		this.speakers = this.ctx.users.filter((u) => u.enabled).map((u) => u.name);
+		this.timeline = { leftMarker: this.ctx.timeline.leftMarker, rightMarker: this.ctx.timeline.rightMarker };
 		// Use largest turn length as proxy for max words in Q/A pairs
-		this.fullTranscriptMaxWords = get(TranscriptStore).largestTurnLength;
+		this.fullTranscriptMaxWords = this.ctx.transcript.largestTurnLength;
 
 		this.gx = bounds.x + LEFT_MARGIN;
 		this.gy = bounds.y + TOP_MARGIN;
@@ -73,8 +58,8 @@ export class QuestionFlow {
 		}
 
 		// Filter pairs by search term
-		if (this.config.wordToSearch) {
-			const searchTerm = normalizeWord(this.config.wordToSearch);
+		if (this.ctx.config.wordToSearch) {
+			const searchTerm = normalizeWord(this.ctx.config.wordToSearch);
 			pairs = pairs.filter(
 				(p) =>
 					normalizeWord(p.questionContent).includes(searchTerm) || (p.answerContent != null && normalizeWord(p.answerContent).includes(searchTerm))
@@ -94,13 +79,13 @@ export class QuestionFlow {
 		const visibleMaxWords = Math.max(...wordCounts.flatMap((w) => [w.qWords, w.aWords]));
 		// Use full transcript max when scaling to full transcript
 		const maxWords =
-			!this.config.scaleToVisibleData && this.fullTranscriptMaxWords > 0 ? Math.max(visibleMaxWords, this.fullTranscriptMaxWords) : visibleMaxWords;
+			!this.ctx.config.scaleToVisibleData && this.fullTranscriptMaxWords > 0 ? Math.max(visibleMaxWords, this.fullTranscriptMaxWords) : visibleMaxWords;
 
 		// Draw speaker labels on Y axis
 		this.drawSpeakerLabels();
 
 		// Draw timeline axis
-		drawTimeAxis(this.sk, this.bounds, this, this.timeline);
+		drawTimeAxis(this.ctx.sk, this.bounds, this, this.timeline);
 
 		// Render all pairs
 		const rendered = this.renderPairs(pairs, wordCounts, maxWords);
@@ -124,32 +109,32 @@ export class QuestionFlow {
 	}
 
 	private drawEmptyState(): void {
-		this.sk.fill(150);
-		this.sk.noStroke();
-		this.sk.textAlign(this.sk.CENTER, this.sk.CENTER);
-		this.sk.textSize(14);
-		this.sk.text('No questions detected in transcript', this.bounds.x + this.bounds.width / 2, this.bounds.y + this.bounds.height / 2);
+		this.ctx.sk.fill(150);
+		this.ctx.sk.noStroke();
+		this.ctx.sk.textAlign(this.ctx.sk.CENTER, this.ctx.sk.CENTER);
+		this.ctx.sk.textSize(14);
+		this.ctx.sk.text('No questions detected in transcript', this.bounds.x + this.bounds.width / 2, this.bounds.y + this.bounds.height / 2);
 	}
 
 	private drawSpeakerLabels(): void {
-		this.sk.textSize(Math.max(9, Math.min(11, this.bounds.height * 0.025)));
-		this.sk.textAlign(this.sk.RIGHT, this.sk.CENTER);
-		this.sk.noStroke();
+		this.ctx.sk.textSize(Math.max(9, Math.min(11, this.bounds.height * 0.025)));
+		this.ctx.sk.textAlign(this.ctx.sk.RIGHT, this.ctx.sk.CENTER);
+		this.ctx.sk.noStroke();
 
 		const laneHeight = this.gh / this.speakers.length;
 
 		for (let i = 0; i < this.speakers.length; i++) {
 			const speaker = this.speakers[i];
-			const user = this.userMap.get(speaker);
+			const user = this.ctx.userMap.get(speaker);
 			const y = this.gy + laneHeight * i + laneHeight / 2;
 
-			this.sk.fill(user?.color || '#666666');
-			this.sk.text(speaker, this.gx - 10, y);
+			this.ctx.sk.fill(user?.color || '#666666');
+			this.ctx.sk.text(speaker, this.gx - 10, y);
 
 			// Draw lane line
-			this.sk.stroke(230);
-			this.sk.strokeWeight(1);
-			this.sk.line(this.gx, y, this.gx + this.gw, y);
+			this.ctx.sk.stroke(230);
+			this.ctx.sk.strokeWeight(1);
+			this.ctx.sk.line(this.gx, y, this.gx + this.gw, y);
 		}
 	}
 
@@ -186,21 +171,21 @@ export class QuestionFlow {
 	}
 
 	private findHoveredPair(rendered: RenderedPair[]): RenderedPair | null {
-		if (!this.sk.overRect(this.bounds.x, this.bounds.y, this.bounds.width, this.bounds.height)) {
+		if (!this.ctx.sk.overRect(this.bounds.x, this.bounds.y, this.bounds.width, this.bounds.height)) {
 			return null;
 		}
 
-		const mx = this.sk.mouseX;
-		const my = this.sk.mouseY;
+		const mx = this.ctx.sk.mouseX;
+		const my = this.ctx.sk.mouseY;
 
 		for (const rp of rendered) {
 			// Check question node
-			if (this.sk.dist(mx, my, rp.qx, rp.qy) <= rp.qRadius + 4) {
+			if (this.ctx.sk.dist(mx, my, rp.qx, rp.qy) <= rp.qRadius + 4) {
 				return rp;
 			}
 			// Check answer node
 			if (rp.ax !== null && rp.ay !== null) {
-				if (this.sk.dist(mx, my, rp.ax, rp.ay) <= rp.aRadius + 4) {
+				if (this.ctx.sk.dist(mx, my, rp.ax, rp.ay) <= rp.aRadius + 4) {
 					return rp;
 				}
 			}
@@ -210,7 +195,7 @@ export class QuestionFlow {
 	}
 
 	private drawArcsAndNodes(rendered: RenderedPair[], hoveredPair: RenderedPair | null): void {
-		const crossHighlight = getCrossHighlight(this.sk, this.bounds, this.config.dashboardToggle, this.hover);
+		const crossHighlight = getCrossHighlight(this.ctx.sk, this.bounds, this.ctx.config.dashboardToggle, this.ctx.hover);
 
 		// Draw arcs first (behind nodes)
 		for (const rp of rendered) {
@@ -222,16 +207,16 @@ export class QuestionFlow {
 				((crossHighlight.speaker != null && rp.pair.questionSpeaker !== crossHighlight.speaker && rp.pair.answerSpeaker !== crossHighlight.speaker) ||
 					(crossHighlight.turn != null && rp.pair.questionTurn !== crossHighlight.turn && rp.pair.answerTurn !== crossHighlight.turn));
 
-			withDimming(this.sk.drawingContext, shouldDim, () => {
-				const user = this.userMap.get(rp.pair.questionSpeaker);
-				const color = user?.color || '#999999';
-				this.sk.noFill();
-				this.sk.stroke(color);
-				this.sk.strokeWeight(isHovered ? 2 : 1);
+			withDimming(this.ctx.sk.drawingContext, shouldDim, () => {
+				const user = this.ctx.userMap.get(rp.pair.questionSpeaker);
+				const color = getWordColor(rp.pair.questionFirstWord.codes, user?.color || '#999999', this.ctx.codeColorMap, this.ctx.config.codeColorMode);
+				this.ctx.sk.noFill();
+				this.ctx.sk.stroke(color);
+				this.ctx.sk.strokeWeight(isHovered ? 2 : 1);
 
 				// Draw curved arc between question and answer
 				const controlY = Math.min(rp.qy, rp.ay) - ARC_CONTROL_OFFSET;
-				this.sk.bezier(rp.qx, rp.qy, rp.qx, controlY, rp.ax, controlY, rp.ax, rp.ay);
+				this.ctx.sk.bezier(rp.qx, rp.qy, rp.qx, controlY, rp.ax, controlY, rp.ax, rp.ay);
 
 				// Draw arrowhead along the curve near the answer node
 				this.drawArrowhead(rp.qx, rp.qy, rp.ax, rp.ay, controlY, color);
@@ -248,46 +233,46 @@ export class QuestionFlow {
 				rp.pair.answerSpeaker !== crossHighlight.speaker;
 
 			// Question node
-			withDimming(this.sk.drawingContext, shouldDim, () => {
-				const qUser = this.userMap.get(rp.pair.questionSpeaker);
-				const qColor = this.sk.color(qUser?.color || '#999999');
+			withDimming(this.ctx.sk.drawingContext, shouldDim, () => {
+				const qUser = this.ctx.userMap.get(rp.pair.questionSpeaker);
+				const qColor = this.ctx.sk.color(getWordColor(rp.pair.questionFirstWord.codes, qUser?.color || '#999999', this.ctx.codeColorMap, this.ctx.config.codeColorMode));
 
 				if (isHovered) {
-					this.sk.stroke(qColor);
-					this.sk.strokeWeight(HOVER_OUTLINE_WEIGHT);
+					this.ctx.sk.stroke(qColor);
+					this.ctx.sk.strokeWeight(HOVER_OUTLINE_WEIGHT);
 				} else {
-					this.sk.noStroke();
+					this.ctx.sk.noStroke();
 				}
 
 				qColor.setAlpha(200);
-				this.sk.fill(qColor);
-				this.sk.ellipse(rp.qx, rp.qy, rp.qRadius * 2, rp.qRadius * 2);
+				this.ctx.sk.fill(qColor);
+				this.ctx.sk.ellipse(rp.qx, rp.qy, rp.qRadius * 2, rp.qRadius * 2);
 
 				// Question mark indicator
-				this.sk.fill(255);
-				this.sk.noStroke();
-				this.sk.textAlign(this.sk.CENTER, this.sk.CENTER);
+				this.ctx.sk.fill(255);
+				this.ctx.sk.noStroke();
+				this.ctx.sk.textAlign(this.ctx.sk.CENTER, this.ctx.sk.CENTER);
 				const fontSize = Math.max(8, rp.qRadius);
-				this.sk.textSize(fontSize);
-				this.sk.text('?', rp.qx, rp.qy - fontSize * 0.1);
+				this.ctx.sk.textSize(fontSize);
+				this.ctx.sk.text('?', rp.qx, rp.qy - fontSize * 0.1);
 			});
 
 			// Answer node
 			if (rp.ax !== null && rp.ay !== null && rp.pair.answerSpeaker) {
-				withDimming(this.sk.drawingContext, shouldDim, () => {
-					const aUser = this.userMap.get(rp.pair.answerSpeaker!);
-					const aColor = this.sk.color(aUser?.color || '#999999');
+				withDimming(this.ctx.sk.drawingContext, shouldDim, () => {
+					const aUser = this.ctx.userMap.get(rp.pair.answerSpeaker!);
+					const aColor = this.ctx.sk.color(getWordColor(rp.pair.answerFirstWord!.codes, aUser?.color || '#999999', this.ctx.codeColorMap, this.ctx.config.codeColorMode));
 
 					if (isHovered) {
-						this.sk.stroke(aColor);
-						this.sk.strokeWeight(HOVER_OUTLINE_WEIGHT);
+						this.ctx.sk.stroke(aColor);
+						this.ctx.sk.strokeWeight(HOVER_OUTLINE_WEIGHT);
 					} else {
-						this.sk.noStroke();
+						this.ctx.sk.noStroke();
 					}
 
 					aColor.setAlpha(200);
-					this.sk.fill(aColor);
-					this.sk.ellipse(rp.ax!, rp.ay!, rp.aRadius * 2, rp.aRadius * 2);
+					this.ctx.sk.fill(aColor);
+					this.ctx.sk.ellipse(rp.ax!, rp.ay!, rp.aRadius * 2, rp.aRadius * 2);
 				});
 			}
 		}
@@ -309,13 +294,13 @@ export class QuestionFlow {
 		const ty = 3 * mt2 * (controlY - qy) + 3 * t2 * (ay - controlY);
 		const angle = Math.atan2(ty, tx);
 
-		this.sk.fill(color);
-		this.sk.noStroke();
-		this.sk.push();
-		this.sk.translate(px, py);
-		this.sk.rotate(angle);
-		this.sk.triangle(4, 0, -4, -3, -4, 3);
-		this.sk.pop();
+		this.ctx.sk.fill(color);
+		this.ctx.sk.noStroke();
+		this.ctx.sk.push();
+		this.ctx.sk.translate(px, py);
+		this.ctx.sk.rotate(angle);
+		this.ctx.sk.triangle(4, 0, -4, -3, -4, 3);
+		this.ctx.sk.pop();
 	}
 
 	private static readonly TOOLTIP_MAX_WORDS = 50;
@@ -328,19 +313,19 @@ export class QuestionFlow {
 	}
 
 	private showPairTooltip(pair: QuestionAnswerPair): void {
-		const qUser = this.userMap.get(pair.questionSpeaker);
-		const qColor = qUser?.color || '#999999';
+		const qUser = this.ctx.userMap.get(pair.questionSpeaker);
+		const qColor = getWordColor(pair.questionFirstWord.codes, qUser?.color || '#999999', this.ctx.codeColorMap, this.ctx.config.codeColorMode);
 
 		let content = `<span style="color: ${qColor}"><b>${pair.questionSpeaker}</b> asks:\n"${this.truncateText(pair.questionContent)}"</span>`;
 
 		if (pair.answerSpeaker && pair.answerContent) {
-			const aUser = this.userMap.get(pair.answerSpeaker);
-			const aColor = aUser?.color || '#999999';
+			const aUser = this.ctx.userMap.get(pair.answerSpeaker);
+			const aColor = pair.answerFirstWord ? getWordColor(pair.answerFirstWord.codes, aUser?.color || '#999999', this.ctx.codeColorMap, this.ctx.config.codeColorMode) : aUser?.color || '#999999';
 			content += `\n\n<span style="color: ${aColor}"><b>${pair.answerSpeaker}</b> responds:\n"${this.truncateText(pair.answerContent)}"</span>`;
 		} else {
 			content += '\n\n<span style="opacity: 0.6">(No immediate answer)</span>';
 		}
 
-		showTooltip(this.sk.mouseX, this.sk.mouseY, content, qColor, this.bounds.y + this.bounds.height);
+		showTooltip(this.ctx.sk.mouseX, this.ctx.sk.mouseY, content, qColor, this.bounds.y + this.bounds.height);
 	}
 }

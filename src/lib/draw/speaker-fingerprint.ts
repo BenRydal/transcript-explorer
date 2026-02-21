@@ -9,19 +9,14 @@
  * - Interruption rate (raw 0-1, % of own turns that interrupt)
  */
 
-import type p5 from 'p5';
-import { get } from 'svelte/store';
-import UserStore from '../../stores/userStore';
-import ConfigStore, { type ConfigStoreType } from '../../stores/configStore';
-import TranscriptStore from '../../stores/transcriptStore';
 import { showTooltip } from '../../stores/tooltipStore';
 import type { DataPoint } from '../../models/dataPoint';
-import type { User } from '../../models/user';
 import type { Bounds } from './types/bounds';
 import type { SpeakerFingerprintData } from '../core/dynamic-data';
 import { DEFAULT_SPEAKER_COLOR } from '../constants/ui';
 import { toTitleCase } from '../core/string-utils';
-import { createUserMap } from './draw-utils';
+import { getDominantCodeColor } from './draw-utils';
+import { DrawContext } from './draw-context';
 
 // --- Constants ---
 
@@ -51,19 +46,14 @@ type HoveredVertex = { speaker: string; axisIndex: number } | null;
 // --- Main class ---
 
 export class SpeakerFingerprint {
-	private sk: p5;
+	private ctx: DrawContext;
 	private bounds: Bounds;
-	private userMap: Map<string, User>;
-	private config: ConfigStoreType;
 	private hasTiming: boolean;
 
-	constructor(sk: p5, bounds: Bounds) {
-		this.sk = sk;
+	constructor(ctx: DrawContext, bounds: Bounds) {
+		this.ctx = ctx;
 		this.bounds = bounds;
-		this.userMap = createUserMap(get(UserStore));
-		this.config = get(ConfigStore);
-		const transcript = get(TranscriptStore);
-		this.hasTiming = transcript.timingMode !== 'untimed';
+		this.hasTiming = this.ctx.transcript.timingMode !== 'untimed';
 	}
 
 	draw(fingerprints: SpeakerFingerprintData[]): { snippetPoints: DataPoint[]; hoveredSpeaker: string | null } {
@@ -71,7 +61,7 @@ export class SpeakerFingerprint {
 			return { snippetPoints: [], hoveredSpeaker: null };
 		}
 
-		return this.config.fingerprintOverlayMode ? this.drawOverlay(fingerprints) : this.drawSmallMultiples(fingerprints);
+		return this.ctx.config.fingerprintOverlayMode ? this.drawOverlay(fingerprints) : this.drawSmallMultiples(fingerprints);
 	}
 
 	// --- Overlay mode (2-4 speakers) ---
@@ -124,7 +114,7 @@ export class SpeakerFingerprint {
 			const cellX = this.bounds.x + col * cellWidth + cellWidth / 2;
 			const cellY = this.bounds.y + row * cellHeight + cellHeight / 2;
 
-			const isInCell = this.isPointInCell(this.sk.mouseX, this.sk.mouseY, cellX, cellY, cellRadius);
+			const isInCell = this.isPointInCell(this.ctx.sk.mouseX, this.ctx.sk.mouseY, cellX, cellY, cellRadius);
 			if (isInCell) {
 				// Check for vertex hover within this cell
 				const vertexHover = this.findHoveredVertex([fp], cellX, cellY, cellRadius);
@@ -136,12 +126,11 @@ export class SpeakerFingerprint {
 			this.drawSpeakerPolygon(fp, cellX, cellY, cellRadius, hoveredVertex?.speaker === fp.speaker);
 
 			// Draw speaker name below
-			const color = this.userMap.get(fp.speaker)?.color || DEFAULT_SPEAKER_COLOR;
-			this.sk.fill(color);
-			this.sk.noStroke();
-			this.sk.textAlign(this.sk.CENTER, this.sk.TOP);
-			this.sk.textSize(11);
-			this.sk.text(toTitleCase(fp.speaker), cellX, cellY + cellRadius + 5);
+			this.ctx.sk.fill(this.resolveSpeakerColor(fp));
+			this.ctx.sk.noStroke();
+			this.ctx.sk.textAlign(this.ctx.sk.CENTER, this.ctx.sk.TOP);
+			this.ctx.sk.textSize(11);
+			this.ctx.sk.text(toTitleCase(fp.speaker), cellX, cellY + cellRadius + 5);
 		}
 
 		const hoveredSpeaker = hoveredVertex?.speaker ?? null;
@@ -163,34 +152,34 @@ export class SpeakerFingerprint {
 		const rings = minimal ? 2 : GRID_RINGS;
 
 		// Concentric rings
-		this.sk.noFill();
-		this.sk.stroke(200, GRID_OPACITY);
-		this.sk.strokeWeight(1);
+		this.ctx.sk.noFill();
+		this.ctx.sk.stroke(200, GRID_OPACITY);
+		this.ctx.sk.strokeWeight(1);
 		for (let r = 1; r <= rings; r++) {
 			const ringRadius = (radius * r) / rings;
-			this.sk.beginShape();
+			this.ctx.sk.beginShape();
 			for (let i = 0; i < NUM_AXES; i++) {
 				const angle = getAxisAngle(i);
-				this.sk.vertex(cx + Math.cos(angle) * ringRadius, cy + Math.sin(angle) * ringRadius);
+				this.ctx.sk.vertex(cx + Math.cos(angle) * ringRadius, cy + Math.sin(angle) * ringRadius);
 			}
-			this.sk.endShape(this.sk.CLOSE);
+			this.ctx.sk.endShape(this.ctx.sk.CLOSE);
 		}
 
 		// Axis lines
-		this.sk.stroke(180, AXIS_OPACITY);
+		this.ctx.sk.stroke(180, AXIS_OPACITY);
 		for (let i = 0; i < NUM_AXES; i++) {
 			const angle = getAxisAngle(i);
-			this.sk.line(cx, cy, cx + Math.cos(angle) * radius, cy + Math.sin(angle) * radius);
+			this.ctx.sk.line(cx, cy, cx + Math.cos(angle) * radius, cy + Math.sin(angle) * radius);
 		}
 
 		// Scale labels along the top axis
-		this.sk.noStroke();
-		this.sk.fill(100);
-		this.sk.textSize(minimal ? 8 : 9);
-		this.sk.textAlign(this.sk.LEFT, this.sk.CENTER);
+		this.ctx.sk.noStroke();
+		this.ctx.sk.fill(100);
+		this.ctx.sk.textSize(minimal ? 8 : 9);
+		this.ctx.sk.textAlign(this.ctx.sk.LEFT, this.ctx.sk.CENTER);
 		const labels = minimal ? ['Low', 'Most'] : ['Low', 'Med', 'High', 'Most'];
 		for (let r = 1; r <= rings; r++) {
-			this.sk.text(labels[r - 1], cx + 3, cy - (radius * r) / rings);
+			this.ctx.sk.text(labels[r - 1], cx + 3, cy - (radius * r) / rings);
 		}
 	}
 
@@ -203,8 +192,8 @@ export class SpeakerFingerprint {
 	}
 
 	private drawAxisLabelsImpl(cx: number, cy: number, labelRadius: number, textSize: number, defaultFill: number, fullMode: boolean): void {
-		this.sk.noStroke();
-		this.sk.textSize(textSize);
+		this.ctx.sk.noStroke();
+		this.ctx.sk.textSize(textSize);
 		const labels = fullMode ? AXIS_LABELS_FULL : AXIS_LABELS;
 
 		for (let i = 0; i < NUM_AXES; i++) {
@@ -214,47 +203,47 @@ export class SpeakerFingerprint {
 			this.setTextAlignForAngle(angle);
 
 			const isInterruptionsDisabled = AXIS_KEYS[i] === 'interruptionRate' && !this.hasTiming;
-			this.sk.fill(isInterruptionsDisabled ? 180 : defaultFill);
+			this.ctx.sk.fill(isInterruptionsDisabled ? 180 : defaultFill);
 			const label = isInterruptionsDisabled && fullMode ? labels[i] + ' (N/A)' : labels[i];
-			this.sk.text(label, x, y);
+			this.ctx.sk.text(label, x, y);
 		}
 	}
 
 	private setTextAlignForAngle(angle: number): void {
 		if (Math.abs(angle + Math.PI / 2) < 0.1) {
-			this.sk.textAlign(this.sk.CENTER, this.sk.BOTTOM);
+			this.ctx.sk.textAlign(this.ctx.sk.CENTER, this.ctx.sk.BOTTOM);
 		} else if (Math.abs(angle - Math.PI / 2) < 0.1) {
-			this.sk.textAlign(this.sk.CENTER, this.sk.TOP);
+			this.ctx.sk.textAlign(this.ctx.sk.CENTER, this.ctx.sk.TOP);
 		} else if (Math.cos(angle) > 0) {
-			this.sk.textAlign(this.sk.LEFT, this.sk.CENTER);
+			this.ctx.sk.textAlign(this.ctx.sk.LEFT, this.ctx.sk.CENTER);
 		} else {
-			this.sk.textAlign(this.sk.RIGHT, this.sk.CENTER);
+			this.ctx.sk.textAlign(this.ctx.sk.RIGHT, this.ctx.sk.CENTER);
 		}
 	}
 
 	private drawSpeakerPolygon(fp: SpeakerFingerprintData, cx: number, cy: number, radius: number, isHovered: boolean): void {
-		const color = this.sk.color(this.userMap.get(fp.speaker)?.color || DEFAULT_SPEAKER_COLOR);
+		const color = this.ctx.sk.color(this.resolveSpeakerColor(fp));
 		const vertices = this.getPolygonVertices(fp, cx, cy, radius);
 
 		// Draw filled polygon
 		color.setAlpha(isHovered ? POLYGON_HOVER_OPACITY : POLYGON_OPACITY);
-		this.sk.fill(color);
+		this.ctx.sk.fill(color);
 		color.setAlpha(255);
-		this.sk.stroke(color);
-		this.sk.strokeWeight(isHovered ? STROKE_HOVER_WEIGHT : STROKE_WEIGHT);
+		this.ctx.sk.stroke(color);
+		this.ctx.sk.strokeWeight(isHovered ? STROKE_HOVER_WEIGHT : STROKE_WEIGHT);
 
-		this.sk.beginShape();
+		this.ctx.sk.beginShape();
 		for (const v of vertices) {
-			this.sk.vertex(v.x, v.y);
+			this.ctx.sk.vertex(v.x, v.y);
 		}
-		this.sk.endShape(this.sk.CLOSE);
+		this.ctx.sk.endShape(this.ctx.sk.CLOSE);
 
 		// Draw vertex points
-		this.sk.noStroke();
-		this.sk.fill(color);
+		this.ctx.sk.noStroke();
+		this.ctx.sk.fill(color);
 		const dotSize = isHovered ? 6 : 4;
 		for (const v of vertices) {
-			this.sk.ellipse(v.x, v.y, dotSize, dotSize);
+			this.ctx.sk.ellipse(v.x, v.y, dotSize, dotSize);
 		}
 	}
 
@@ -272,12 +261,12 @@ export class SpeakerFingerprint {
 	// --- Hover detection ---
 
 	private findHoveredVertex(fingerprints: SpeakerFingerprintData[], cx: number, cy: number, radius: number): HoveredVertex {
-		if (!this.sk.overRect(this.bounds.x, this.bounds.y, this.bounds.width, this.bounds.height)) {
+		if (!this.ctx.sk.overRect(this.bounds.x, this.bounds.y, this.bounds.width, this.bounds.height)) {
 			return null;
 		}
 
-		const mx = this.sk.mouseX;
-		const my = this.sk.mouseY;
+		const mx = this.ctx.sk.mouseX;
+		const my = this.ctx.sk.mouseY;
 
 		// Check vertex proximity (highest priority)
 		let closestVertex: HoveredVertex = null;
@@ -369,10 +358,15 @@ export class SpeakerFingerprint {
 		}
 	}
 
+	private resolveSpeakerColor(fp: SpeakerFingerprintData): string {
+		const baseColor = this.ctx.userMap.get(fp.speaker)?.color || DEFAULT_SPEAKER_COLOR;
+		return getDominantCodeColor(fp.allTurnFirstWords || [], baseColor, this.ctx.codeColorMap, this.ctx.config.codeColorMode);
+	}
+
 	// --- Tooltip ---
 
 	private showTooltipFor(fp: SpeakerFingerprintData): void {
-		const color = this.userMap.get(fp.speaker)?.color || DEFAULT_SPEAKER_COLOR;
+		const color = this.resolveSpeakerColor(fp);
 		const pct = (v: number) => `${Math.round(v * 100)}%`;
 		const avgTurnWords = fp.totalTurns > 0 ? (fp.totalWords / fp.totalTurns).toFixed(1) : '0';
 		const totalConversationTurns =
@@ -391,6 +385,6 @@ export class SpeakerFingerprint {
 
 		content += `</span>`;
 
-		showTooltip(this.sk.mouseX, this.sk.mouseY, content, color, this.bounds.y + this.bounds.height);
+		showTooltip(this.ctx.sk.mouseX, this.ctx.sk.mouseY, content, color, this.bounds.y + this.bounds.height);
 	}
 }

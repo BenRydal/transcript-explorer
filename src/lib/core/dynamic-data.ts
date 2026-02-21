@@ -3,6 +3,7 @@ import TranscriptStore from '../../stores/transcriptStore';
 import TimelineStore from '../../stores/timelineStore';
 import UserStore from '../../stores/userStore';
 import ConfigStore, { type ConfigStoreType } from '../../stores/configStore';
+import CodeStore, { type CodeEntry } from '../../stores/codeStore';
 import { get } from 'svelte/store';
 import { clearScalingCache, clearCloudBuffer } from '../draw/contribution-cloud';
 import { normalizeWord } from './string-utils';
@@ -111,6 +112,7 @@ const STOP_WORDS = new Set(
 );
 
 let config: ConfigStoreType;
+let codeEntries: CodeEntry[] = [];
 
 // Subscription kept for change-detection: clears caches when relevant toggles change.
 // Intentionally module-level (lives for app lifetime, no cleanup needed).
@@ -127,6 +129,12 @@ ConfigStore.subscribe((value) => {
 		clearCloudBuffer();
 	}
 	config = value;
+});
+
+CodeStore.subscribe((value) => {
+	codeEntries = value;
+	clearScalingCache();
+	clearCloudBuffer();
 });
 
 interface TurnData {
@@ -212,11 +220,19 @@ export class DynamicData {
 			slice = slice.filter((word) => this.isInTimeRange(word.startTime, word.endTime));
 		}
 
+		// Build set of enabled code names for visibility filtering
+		const enabledCodes = codeEntries.length > 0 ? new Set(codeEntries.filter((c) => c.enabled).map((c) => c.code)) : null;
+
 		const result: DataPoint[] = [];
 		const countMap = new Map<string, DataPoint[]>();
 
 		for (const word of slice) {
 			if (config.stopWordsToggle && this.isStopWord(word.word)) continue;
+			// Code visibility: hide words whose codes are all disabled, or uncoded words when showUncoded is off
+			if (enabledCodes) {
+				if (word.codes.length > 0 && !word.codes.some((c) => enabledCodes.has(c))) continue;
+				if (word.codes.length === 0 && !config.showUncoded) continue;
+			}
 
 			const copy = word.copyWith();
 			const countKey = `${word.speaker}\0${normalizeWord(word.word)}`;

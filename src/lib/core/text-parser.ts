@@ -13,6 +13,7 @@
 
 import { toSeconds } from './time-utils';
 import { normalizeSpeakerName } from './string-utils';
+import type { TimingMode } from '../../models/transcript';
 
 // ============ Types ============
 
@@ -32,6 +33,7 @@ export interface ParseResult {
 	speakers: string[];
 	continuationLineCount: number;
 	totalLineCount: number;
+	detectedTimingMode?: TimingMode;
 }
 
 // ============ Helpers ============

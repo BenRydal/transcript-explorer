@@ -1,0 +1,6 @@
+start,end,code
+0,0,zero_duration
+10,10,another_zero
+20,30,normal
+30,30,zero_again
+40,50,normal_2

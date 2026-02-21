@@ -11,10 +11,7 @@
 
 import type p5 from 'p5';
 import { get } from 'svelte/store';
-import UserStore from '../../stores/userStore';
-import ConfigStore, { type ConfigStoreType } from '../../stores/configStore';
-import TranscriptStore from '../../stores/transcriptStore';
-import TimelineStore from '../../stores/timelineStore';
+import CodeStore from '../../stores/codeStore';
 import { showTooltip } from '../../stores/tooltipStore';
 import { formatTimeCompact } from '../core/time-utils';
 import { normalizeWord, stripPunctuation } from '../core/string-utils';
@@ -23,7 +20,8 @@ import type { User } from '../../models/user';
 import type { Bounds } from './types/bounds';
 import { calculateScaling, getWordWidth, type Scaling } from './contribution-cloud-scaling';
 import { DEFAULT_SPEAKER_COLOR } from '../constants/ui';
-import { createUserMap } from './draw-utils';
+import { getWordColor } from './draw-utils';
+import { DrawContext } from './draw-context';
 
 export { clearScalingCache } from './contribution-cloud-scaling';
 
@@ -63,25 +61,19 @@ export function clearCloudBuffer(): void {
 }
 
 export class ContributionCloud {
-	sk: p5;
+	ctx: DrawContext;
 	bounds: Bounds;
-	users: User[];
-	config: ConfigStoreType;
-	userMap: Map<string, User>;
 	fullTranscriptMaxCount: number;
 
-	constructor(sk: p5, bounds: Bounds) {
-		this.sk = sk;
+	constructor(ctx: DrawContext, bounds: Bounds) {
+		this.ctx = ctx;
 		this.bounds = bounds;
-		this.users = get(UserStore);
-		this.config = get(ConfigStore);
-		this.userMap = createUserMap(this.users);
-		this.fullTranscriptMaxCount = get(TranscriptStore).maxCountOfMostRepeatedWord;
+		this.fullTranscriptMaxCount = this.ctx.transcript.maxCountOfMostRepeatedWord;
 	}
 
 	draw(words: DataPoint[]): { hoveredWord: DataPoint | null; hasOverflow: boolean; hoveredSpeaker: string | null } {
 		const layoutWords = words.filter((w) => this.isWordVisible(w));
-		const scaling = calculateScaling(this.sk, layoutWords, this.bounds, this.config, this.fullTranscriptMaxCount);
+		const scaling = calculateScaling(this.ctx.sk, layoutWords, this.bounds, this.ctx.config, this.fullTranscriptMaxCount);
 		const cacheKey = this.getBufferCacheKey(layoutWords.length);
 
 		if (cacheKey !== bufferCache.cacheKey || !bufferCache.buffer) {
@@ -89,7 +81,7 @@ export class ContributionCloud {
 			bufferCache.cacheKey = cacheKey;
 		}
 
-		this.sk.image(bufferCache.buffer!, this.bounds.x, this.bounds.y);
+		this.ctx.sk.image(bufferCache.buffer!, this.bounds.x, this.bounds.y);
 
 		const hoveredWord = this.findHoveredWord(bufferCache.positions);
 		if (hoveredWord) {
@@ -101,23 +93,25 @@ export class ContributionCloud {
 	}
 
 	getBufferCacheKey(filteredWordCount: number): string {
-		const userStates = this.users.map((u) => `${u.name}:${u.color}:${u.enabled}`).join(',');
-		const timeline = get(TimelineStore);
+		const userStates = this.ctx.users.map((u) => `${u.name}:${u.color}:${u.enabled}`).join(',');
+		const codeStates = get(CodeStore).map((c) => `${c.code}:${c.color}:${c.enabled}`).join(',');
 		return [
 			this.bounds.x,
 			this.bounds.y,
 			this.bounds.width,
 			this.bounds.height,
 			filteredWordCount,
-			this.config.separateToggle,
-			this.config.sortToggle,
-			this.config.repeatedWordsToggle,
-			this.config.repeatWordSliderValue,
-			this.config.dashboardToggle,
-			this.config.wordToSearch || '',
+			this.ctx.config.separateToggle,
+			this.ctx.config.sortToggle,
+			this.ctx.config.repeatedWordsToggle,
+			this.ctx.config.repeatWordSliderValue,
+			this.ctx.config.dashboardToggle,
+			this.ctx.config.wordToSearch || '',
+			this.ctx.config.codeColorMode,
 			userStates,
-			timeline.leftMarker,
-			timeline.rightMarker
+			codeStates,
+			this.ctx.timeline.leftMarker,
+			this.ctx.timeline.rightMarker
 		].join('|');
 	}
 
@@ -126,21 +120,26 @@ export class ContributionCloud {
 			bufferCache.buffer.remove();
 		}
 
-		const buffer = this.sk.createGraphics(this.bounds.width, this.bounds.height);
-		buffer.textFont(this.sk.font);
+		const buffer = this.ctx.sk.createGraphics(this.bounds.width, this.bounds.height);
+		buffer.textFont(this.ctx.sk.font);
 
 		const positions = this.calculateWordPositions(words, scaling);
 		bufferCache.positions = positions;
 		bufferCache.hasOverflow = positions.length > 0 && positions[positions.length - 1].y > this.bounds.height;
 
-		if (this.config.separateToggle) {
+		if (this.ctx.config.separateToggle) {
 			this.drawSpeakerBackgrounds(buffer, positions, scaling);
 		}
 
 		for (const pos of positions) {
 			buffer.textSize(pos.textSize);
 			buffer.noStroke();
-			pos.user?.enabled ? buffer.fill(pos.user.color) : buffer.fill(255);
+			if (pos.user?.enabled) {
+				const color = getWordColor(pos.word.codes, pos.user.color, this.ctx.codeColorMap, this.ctx.config.codeColorMode);
+				buffer.fill(color);
+			} else {
+				buffer.fill(255);
+			}
 			buffer.text(stripPunctuation(pos.word.word), pos.x, pos.y);
 		}
 
@@ -157,10 +156,10 @@ export class ContributionCloud {
 			const t = Math.log(word.count) / Math.log(scaling.maxCount);
 			const textSize = scaling.minTextSize + t * (scaling.maxTextSize - scaling.minTextSize);
 			const stripped = stripPunctuation(word.word);
-			const width = getWordWidth(this.sk, stripped, textSize);
+			const width = getWordWidth(this.ctx.sk, stripped, textSize);
 			const isNewSpeaker = prevSpeaker !== null && word.speaker !== prevSpeaker;
 
-			if (this.config.separateToggle && isNewSpeaker) {
+			if (this.ctx.config.separateToggle && isNewSpeaker) {
 				x = 0;
 				y += scaling.newSpeakerGap;
 			} else if (x + width > this.bounds.width) {
@@ -169,21 +168,21 @@ export class ContributionCloud {
 			}
 
 			if (this.passesSearchFilter(word)) {
-				this.sk.textSize(textSize);
+				this.ctx.sk.textSize(textSize);
 				positions.push({
 					word,
 					x,
 					y,
 					textSize,
 					width,
-					ascent: this.sk.textAscent(),
-					descent: this.sk.textDescent(),
-					user: this.userMap.get(word.speaker),
+					ascent: this.ctx.sk.textAscent(),
+					descent: this.ctx.sk.textDescent(),
+					user: this.ctx.userMap.get(word.speaker),
 					isNewSpeaker
 				});
 			}
 
-			x += getWordWidth(this.sk, stripped + ' ', textSize);
+			x += getWordWidth(this.ctx.sk, stripped + ' ', textSize);
 			prevSpeaker = word.speaker;
 		}
 
@@ -216,28 +215,28 @@ export class ContributionCloud {
 	drawHoverEffects(hoveredPos: WordPosition, positions: WordPosition[]): void {
 		const hoveredWordText = hoveredPos.word.word;
 
-		this.sk.noStroke();
-		this.sk.fill(255, OVERLAY_OPACITY);
-		this.sk.rect(this.bounds.x, this.bounds.y, this.bounds.width, this.bounds.height);
+		this.ctx.sk.noStroke();
+		this.ctx.sk.fill(255, OVERLAY_OPACITY);
+		this.ctx.sk.rect(this.bounds.x, this.bounds.y, this.bounds.width, this.bounds.height);
 
-		this.sk.textAlign(this.sk.LEFT, this.sk.BASELINE);
+		this.ctx.sk.textAlign(this.ctx.sk.LEFT, this.ctx.sk.BASELINE);
 		for (const pos of positions) {
 			if (normalizeWord(pos.word.word) === normalizeWord(hoveredWordText)) {
 				const screenX = this.bounds.x + pos.x;
 				const screenY = this.bounds.y + pos.y;
 				const isHovered = pos.word === hoveredPos.word;
 				const padding = isHovered ? 3 : 2;
-				const color = pos.user?.color || DEFAULT_SPEAKER_COLOR;
+				const color = getWordColor(pos.word.codes, pos.user?.color || DEFAULT_SPEAKER_COLOR, this.ctx.codeColorMap, this.ctx.config.codeColorMode);
 
-				this.sk.textSize(pos.textSize);
-				this.sk.noStroke();
-				this.sk.fill(color);
-				this.sk.text(stripPunctuation(pos.word.word), screenX, screenY);
+				this.ctx.sk.textSize(pos.textSize);
+				this.ctx.sk.noStroke();
+				this.ctx.sk.fill(color);
+				this.ctx.sk.text(stripPunctuation(pos.word.word), screenX, screenY);
 
-				this.sk.noFill();
-				this.sk.stroke(color);
-				this.sk.strokeWeight(isHovered ? HOVER_OUTLINE_WEIGHT : 1);
-				this.sk.rect(
+				this.ctx.sk.noFill();
+				this.ctx.sk.stroke(color);
+				this.ctx.sk.strokeWeight(isHovered ? HOVER_OUTLINE_WEIGHT : 1);
+				this.ctx.sk.rect(
 					screenX - padding,
 					screenY - pos.ascent - padding,
 					pos.width + padding * 2,
@@ -249,14 +248,14 @@ export class ContributionCloud {
 	}
 
 	findHoveredWord(positions: WordPosition[]): WordPosition | null {
-		if (!this.sk.overRect(this.bounds.x, this.bounds.y, this.bounds.width, this.bounds.height)) {
+		if (!this.ctx.sk.overRect(this.bounds.x, this.bounds.y, this.bounds.width, this.bounds.height)) {
 			return null;
 		}
 		for (const pos of positions) {
 			if (pos.user?.enabled) {
 				const screenX = this.bounds.x + pos.x;
 				const screenY = this.bounds.y + pos.y;
-				if (this.sk.overRect(screenX, screenY - pos.ascent, pos.width, pos.ascent + pos.descent)) {
+				if (this.ctx.sk.overRect(screenX, screenY - pos.ascent, pos.width, pos.ascent + pos.descent)) {
 					return pos;
 				}
 			}
@@ -277,14 +276,14 @@ export class ContributionCloud {
 		let content = `<b>${word.speaker}</b>\n${turnContext || word.word}`;
 
 		const details = [`×${totalCount}`, `Turn ${word.turnNumber}`];
-		const transcript = get(TranscriptStore);
-		if (transcript.timingMode !== 'untimed' && word.startTime != null) {
+		if (this.ctx.transcript.timingMode !== 'untimed' && word.startTime != null) {
 			details.push(formatTimeCompact(word.startTime));
 		}
 
 		content += `\n<span style="font-size: 0.85em; opacity: 0.7">${details.join('  ·  ')}</span>`;
 
-		showTooltip(this.sk.mouseX, this.sk.mouseY, content, user?.color || DEFAULT_SPEAKER_COLOR, this.bounds.y + this.bounds.height);
+		const tooltipColor = getWordColor(word.codes, user?.color || DEFAULT_SPEAKER_COLOR, this.ctx.codeColorMap, this.ctx.config.codeColorMode);
+		showTooltip(this.ctx.sk.mouseX, this.ctx.sk.mouseY, content, tooltipColor, this.bounds.y + this.bounds.height);
 	}
 
 	getTurnContext(word: DataPoint, allPositions: WordPosition[]): string | null {
@@ -306,17 +305,17 @@ export class ContributionCloud {
 	}
 
 	isWordVisible(word: DataPoint): boolean {
-		const user = this.userMap.get(word.speaker);
+		const user = this.ctx.userMap.get(word.speaker);
 		if (user && !user.enabled) return false;
-		if (this.config.dashboardToggle) {
-			const mouseInPanel = this.sk.overRect(this.bounds.x, this.bounds.y, this.bounds.width, this.bounds.height);
-			if (!mouseInPanel && !this.sk.shouldDraw(word)) return false;
+		if (this.ctx.config.dashboardToggle) {
+			const mouseInPanel = this.ctx.sk.overRect(this.bounds.x, this.bounds.y, this.bounds.width, this.bounds.height);
+			if (!mouseInPanel && !this.ctx.sk.shouldDraw(word)) return false;
 		}
-		if (this.config.repeatedWordsToggle && word.count < this.config.repeatWordSliderValue) return false;
+		if (this.ctx.config.repeatedWordsToggle && word.count < this.ctx.config.repeatWordSliderValue) return false;
 		return true;
 	}
 
 	passesSearchFilter(word: DataPoint): boolean {
-		return !this.config.wordToSearch || normalizeWord(word.word).includes(normalizeWord(this.config.wordToSearch));
+		return !this.ctx.config.wordToSearch || normalizeWord(word.word).includes(normalizeWord(this.ctx.config.wordToSearch));
 	}
 }

@@ -9,17 +9,13 @@
  */
 
 import type p5 from 'p5';
-import { get } from 'svelte/store';
-import UserStore from '../../stores/userStore';
-import ConfigStore, { type ConfigStoreType } from '../../stores/configStore';
-import HoverStore, { type HoverState } from '../../stores/hoverStore';
-import TranscriptStore from '../../stores/transcriptStore';
 import { showTooltip } from '../../stores/tooltipStore';
 import type { DataPoint } from '../../models/dataPoint';
 import type { User } from '../../models/user';
 import type { Bounds } from './types/bounds';
 import { DEFAULT_SPEAKER_COLOR } from '../constants/ui';
-import { withDimming, createUserMap, getCrossHighlight } from './draw-utils';
+import { withDimming, getCrossHighlight, getDominantCodeColor } from './draw-utils';
+import { DrawContext } from './draw-context';
 
 const MIN_NODE_RADIUS_RATIO = 0.04;
 const MAX_NODE_RADIUS_RATIO = 0.12;
@@ -138,40 +134,33 @@ function getCurvedEdgeGeometry(fromNode: NodeLayout, toNode: NodeLayout) {
 // --- Main class ---
 
 export class TurnNetwork {
-	private sk: p5;
+	private ctx: DrawContext;
 	private bounds: Bounds;
-	private userMap: Map<string, User>;
 	private selfLoopRadius: number;
 	private minDim: number;
-	private config: ConfigStoreType;
-	private hover: HoverState;
 	private fullTranscriptMaxWordCount: number;
 
-	constructor(sk: p5, bounds: Bounds) {
-		this.sk = sk;
+	constructor(ctx: DrawContext, bounds: Bounds) {
+		this.ctx = ctx;
 		this.bounds = bounds;
-		this.userMap = createUserMap(get(UserStore));
-		this.config = get(ConfigStore);
-		this.hover = get(HoverStore);
 		this.minDim = Math.min(bounds.width, bounds.height);
 		this.selfLoopRadius = Math.max(15, this.minDim * SELF_LOOP_RADIUS_RATIO);
 		// For full transcript scaling, use the pre-computed largest word count by speaker
-		const transcript = get(TranscriptStore);
-		this.fullTranscriptMaxWordCount = transcript.largestNumOfWordsByASpeaker;
+		this.fullTranscriptMaxWordCount = this.ctx.transcript.largestNumOfWordsByASpeaker;
 	}
 
 	draw(data: NetworkData): { snippetPoints: DataPoint[]; hoveredSpeaker: string | null; edgeTurns: number[] | null } {
 		const layout = this.buildLayout(data);
 		const hovered = this.findHovered(layout);
 
-		const crossHighlight = getCrossHighlight(this.sk, this.bounds, this.config.dashboardToggle, this.hover);
+		const crossHighlight = getCrossHighlight(this.ctx.sk, this.bounds, this.ctx.config.dashboardToggle, this.ctx.hover);
 
 		for (const edge of layout.edges) {
 			const shouldDim =
 				crossHighlight.active &&
 				((crossHighlight.turns != null && !edge.turnStartPoints.some((p) => crossHighlight.turns!.includes(p.turnNumber))) ||
 					(crossHighlight.speaker != null && edge.from !== crossHighlight.speaker && edge.to !== crossHighlight.speaker));
-			withDimming(this.sk.drawingContext, shouldDim, () => {
+			withDimming(this.ctx.sk.drawingContext, shouldDim, () => {
 				this.drawEdge(edge, layout, false);
 			});
 		}
@@ -180,15 +169,15 @@ export class TurnNetwork {
 				crossHighlight.active &&
 				((crossHighlight.turns != null && !node.turnStartPoints.some((p) => crossHighlight.turns!.includes(p.turnNumber))) ||
 					(crossHighlight.speaker != null && node.speaker !== crossHighlight.speaker));
-			withDimming(this.sk.drawingContext, shouldDim, () => {
+			withDimming(this.ctx.sk.drawingContext, shouldDim, () => {
 				this.drawNode(node, false);
 			});
 		}
 
 		if (hovered) {
-			this.sk.noStroke();
-			this.sk.fill(255, OVERLAY_OPACITY);
-			this.sk.rect(this.bounds.x, this.bounds.y, this.bounds.width, this.bounds.height);
+			this.ctx.sk.noStroke();
+			this.ctx.sk.fill(255, OVERLAY_OPACITY);
+			this.ctx.sk.rect(this.bounds.x, this.bounds.y, this.bounds.width, this.bounds.height);
 			this.drawHighlighted(hovered, layout);
 			this.showTooltipFor(hovered, layout);
 		}
@@ -203,13 +192,13 @@ export class TurnNetwork {
 		const centerX = this.bounds.x + this.bounds.width / 2;
 		const centerY = this.bounds.y + this.bounds.height / 2 + this.selfLoopRadius;
 
-		const speakers = Array.from(data.speakerStats.keys()).filter((s) => this.userMap.get(s)?.enabled);
+		const speakers = Array.from(data.speakerStats.keys()).filter((s) => this.ctx.userMap.get(s)?.enabled);
 		if (speakers.length === 0) {
 			return { nodes: [], nodeMap: new Map(), edges: [], maxWeight: 0, centerX, centerY };
 		}
 
 		let maxWordCount = 0;
-		if (!this.config.scaleToVisibleData && this.fullTranscriptMaxWordCount > 0) {
+		if (!this.ctx.config.scaleToVisibleData && this.fullTranscriptMaxWordCount > 0) {
 			maxWordCount = this.fullTranscriptMaxWordCount;
 		} else {
 			for (const stats of data.speakerStats.values()) {
@@ -231,8 +220,8 @@ export class TurnNetwork {
 				speaker,
 				x: speakers.length === 1 ? centerX : centerX + Math.cos(angle) * layoutRadius,
 				y: speakers.length === 1 ? centerY : centerY + Math.sin(angle) * layoutRadius,
-				radius: this.sk.map(stats.wordCount, 0, maxWordCount, minNodeRadius, maxNodeRadius, true),
-				user: this.userMap.get(speaker),
+				radius: this.ctx.sk.map(stats.wordCount, 0, maxWordCount, minNodeRadius, maxNodeRadius, true),
+				user: this.ctx.userMap.get(speaker),
 				turnStartPoints: stats.turnStartPoints
 			};
 			nodes.push(node);
@@ -242,19 +231,19 @@ export class TurnNetwork {
 		let edges: EdgeLayout[] = [];
 		for (const [from, targets] of data.transitions) {
 			for (const [to, d] of targets) {
-				if (!this.userMap.get(from)?.enabled || !this.userMap.get(to)?.enabled) continue;
+				if (!this.ctx.userMap.get(from)?.enabled || !this.ctx.userMap.get(to)?.enabled) continue;
 				edges.push({ from, to, count: d.count, wordCount: d.wordCount, weight: 0, turnStartPoints: d.turnStartPoints, isSelfLoop: from === to });
 			}
 		}
 
-		if (this.config.turnNetworkHideSelfLoops) {
+		if (this.ctx.config.turnNetworkHideSelfLoops) {
 			edges = edges.filter((e) => !e.isSelfLoop);
 		}
-		if (this.config.turnNetworkMinTransitions > 1) {
-			edges = edges.filter((e) => e.count >= this.config.turnNetworkMinTransitions);
+		if (this.ctx.config.turnNetworkMinTransitions > 1) {
+			edges = edges.filter((e) => e.count >= this.ctx.config.turnNetworkMinTransitions);
 		}
 
-		const weightByWords = this.config.turnNetworkWeightByWords;
+		const weightByWords = this.ctx.config.turnNetworkWeightByWords;
 		let maxWeight = 0;
 		for (const edge of edges) {
 			edge.weight = weightByWords ? edge.wordCount : edge.count;
@@ -282,24 +271,25 @@ export class TurnNetwork {
 	// --- Drawing ---
 
 	private drawNode(node: NodeLayout, highlight: boolean): void {
-		const color = node.user?.color || DEFAULT_SPEAKER_COLOR;
-		const fillColor = this.sk.color(color);
+		const baseColor = node.user?.color || DEFAULT_SPEAKER_COLOR;
+		const color = getDominantCodeColor(node.turnStartPoints, baseColor, this.ctx.codeColorMap, this.ctx.config.codeColorMode);
+		const fillColor = this.ctx.sk.color(color);
 		fillColor.setAlpha(highlight ? 255 : 200);
 
-		this.sk.noStroke();
-		this.sk.fill(fillColor);
-		this.sk.ellipse(node.x, node.y, node.radius * 2);
+		this.ctx.sk.noStroke();
+		this.ctx.sk.fill(fillColor);
+		this.ctx.sk.ellipse(node.x, node.y, node.radius * 2);
 
-		this.sk.noFill();
-		this.sk.stroke(color);
-		this.sk.strokeWeight(highlight ? 3 : 2);
-		this.sk.ellipse(node.x, node.y, node.radius * 2);
+		this.ctx.sk.noFill();
+		this.ctx.sk.stroke(color);
+		this.ctx.sk.strokeWeight(highlight ? 3 : 2);
+		this.ctx.sk.ellipse(node.x, node.y, node.radius * 2);
 
-		this.sk.noStroke();
-		this.sk.fill(255);
-		this.sk.textSize(Math.max(8, this.minDim * NODE_LABEL_RATIO));
-		this.sk.textAlign(this.sk.CENTER, this.sk.CENTER);
-		this.sk.text(this.truncateLabel(node.speaker, node.radius * 1.6), node.x, node.y);
+		this.ctx.sk.noStroke();
+		this.ctx.sk.fill(255);
+		this.ctx.sk.textSize(Math.max(8, this.minDim * NODE_LABEL_RATIO));
+		this.ctx.sk.textAlign(this.ctx.sk.CENTER, this.ctx.sk.CENTER);
+		this.ctx.sk.text(this.truncateLabel(node.speaker, node.radius * 1.6), node.x, node.y);
 	}
 
 	private drawEdge(edge: EdgeLayout, layout: Layout, highlight: boolean): void {
@@ -307,17 +297,19 @@ export class TurnNetwork {
 		const toNode = layout.nodeMap.get(edge.to);
 		if (!fromNode || !toNode) return;
 
-		const edgeColor = this.sk.color(fromNode.user?.color || DEFAULT_SPEAKER_COLOR);
+		const baseEdgeColor = fromNode.user?.color || DEFAULT_SPEAKER_COLOR;
+		const resolvedEdgeColor = getDominantCodeColor(edge.turnStartPoints, baseEdgeColor, this.ctx.codeColorMap, this.ctx.config.codeColorMode);
+		const edgeColor = this.ctx.sk.color(resolvedEdgeColor);
 		edgeColor.setAlpha(highlight ? 255 : 150);
 		const weight = this.edgeWeight(edge.weight, layout.maxWeight) + (highlight ? 1 : 0);
 
-		this.sk.stroke(edgeColor);
-		this.sk.strokeWeight(weight);
-		this.sk.noFill();
+		this.ctx.sk.stroke(edgeColor);
+		this.ctx.sk.strokeWeight(weight);
+		this.ctx.sk.noFill();
 
 		if (edge.isSelfLoop) {
 			const loop = getSelfLoopGeometry(fromNode, layout.centerX, layout.centerY, this.selfLoopRadius);
-			this.sk.arc(loop.cx, loop.cy, loop.radius * 2, loop.radius * 2, loop.arcStart, loop.arcStop);
+			this.ctx.sk.arc(loop.cx, loop.cy, loop.radius * 2, loop.radius * 2, loop.arcStart, loop.arcStop);
 
 			const endX = loop.cx + loop.radius * Math.cos(loop.arcStop);
 			const endY = loop.cy + loop.radius * Math.sin(loop.arcStop);
@@ -328,36 +320,36 @@ export class TurnNetwork {
 			const geom = getCurvedEdgeGeometry(fromNode, toNode);
 			if (!geom) return;
 
-			this.sk.beginShape();
-			this.sk.vertex(geom.startX, geom.startY);
-			this.sk.quadraticVertex(geom.cpX, geom.cpY, geom.endX, geom.endY);
-			this.sk.endShape();
+			this.ctx.sk.beginShape();
+			this.ctx.sk.vertex(geom.startX, geom.startY);
+			this.ctx.sk.quadraticVertex(geom.cpX, geom.cpY, geom.endX, geom.endY);
+			this.ctx.sk.endShape();
 
 			this.drawArrowhead(geom.cpX, geom.cpY, geom.endX, geom.endY, edgeColor, weight);
 
 			// Edge count label at bezier midpoint
 			const lx = 0.25 * geom.startX + 0.5 * geom.cpX + 0.25 * geom.endX;
 			const ly = 0.25 * geom.startY + 0.5 * geom.cpY + 0.25 * geom.endY;
-			this.sk.noStroke();
-			this.sk.fill(255, 200);
-			this.sk.rect(lx - 10, ly - 7, 20, 14, 3);
-			this.sk.fill(80);
-			this.sk.textSize(Math.max(7, this.minDim * EDGE_LABEL_RATIO));
-			this.sk.textAlign(this.sk.CENTER, this.sk.CENTER);
-			this.sk.text(String(edge.weight), lx, ly);
+			this.ctx.sk.noStroke();
+			this.ctx.sk.fill(255, 200);
+			this.ctx.sk.rect(lx - 10, ly - 7, 20, 14, 3);
+			this.ctx.sk.fill(80);
+			this.ctx.sk.textSize(Math.max(7, this.minDim * EDGE_LABEL_RATIO));
+			this.ctx.sk.textAlign(this.ctx.sk.CENTER, this.ctx.sk.CENTER);
+			this.ctx.sk.text(String(edge.weight), lx, ly);
 		}
 	}
 
 	private drawArrowhead(fromX: number, fromY: number, toX: number, toY: number, color: p5.Color, weight: number): void {
 		const angle = Math.atan2(toY - fromY, toX - fromX);
 		const size = ARROW_SIZE + weight * 0.5;
-		this.sk.fill(color);
-		this.sk.noStroke();
-		this.sk.beginShape();
-		this.sk.vertex(toX, toY);
-		this.sk.vertex(toX - size * Math.cos(angle - Math.PI / 6), toY - size * Math.sin(angle - Math.PI / 6));
-		this.sk.vertex(toX - size * Math.cos(angle + Math.PI / 6), toY - size * Math.sin(angle + Math.PI / 6));
-		this.sk.endShape(this.sk.CLOSE);
+		this.ctx.sk.fill(color);
+		this.ctx.sk.noStroke();
+		this.ctx.sk.beginShape();
+		this.ctx.sk.vertex(toX, toY);
+		this.ctx.sk.vertex(toX - size * Math.cos(angle - Math.PI / 6), toY - size * Math.sin(angle - Math.PI / 6));
+		this.ctx.sk.vertex(toX - size * Math.cos(angle + Math.PI / 6), toY - size * Math.sin(angle + Math.PI / 6));
+		this.ctx.sk.endShape(this.ctx.sk.CLOSE);
 	}
 
 	private drawHighlighted(hovered: HoveredElement, layout: Layout): void {
@@ -378,24 +370,24 @@ export class TurnNetwork {
 	}
 
 	private edgeWeight(weight: number, maxWeight: number): number {
-		return this.sk.map(weight, 1, Math.max(maxWeight, 1), MIN_EDGE_WIDTH, MAX_EDGE_WIDTH, true);
+		return this.ctx.sk.map(weight, 1, Math.max(maxWeight, 1), MIN_EDGE_WIDTH, MAX_EDGE_WIDTH, true);
 	}
 
 	private truncateLabel(text: string, maxWidth: number): string {
-		if (this.sk.textWidth(text) <= maxWidth) return text;
+		if (this.ctx.sk.textWidth(text) <= maxWidth) return text;
 		let t = text;
-		while (t.length > 0 && this.sk.textWidth(t + '..') > maxWidth) t = t.slice(0, -1);
+		while (t.length > 0 && this.ctx.sk.textWidth(t + '..') > maxWidth) t = t.slice(0, -1);
 		return t.length > 0 ? t + '..' : '';
 	}
 
 	// --- Hover detection ---
 
 	private findHovered(layout: Layout): HoveredElement | null {
-		if (!this.sk.overRect(this.bounds.x, this.bounds.y, this.bounds.width, this.bounds.height)) {
+		if (!this.ctx.sk.overRect(this.bounds.x, this.bounds.y, this.bounds.width, this.bounds.height)) {
 			return null;
 		}
-		const mx = this.sk.mouseX;
-		const my = this.sk.mouseY;
+		const mx = this.ctx.sk.mouseX;
+		const my = this.ctx.sk.mouseY;
 
 		for (const node of layout.nodes) {
 			const dx = mx - node.x;
@@ -441,10 +433,11 @@ export class TurnNetwork {
 	// --- Tooltips ---
 
 	private showTooltipFor(hovered: HoveredElement, layout: Layout): void {
-		const color = this.userMap.get(hovered.speaker)?.color || DEFAULT_SPEAKER_COLOR;
+		const baseTooltipColor = this.ctx.userMap.get(hovered.speaker)?.color || DEFAULT_SPEAKER_COLOR;
+		const color = getDominantCodeColor(hovered.snippetPoints, baseTooltipColor, this.ctx.codeColorMap, this.ctx.config.codeColorMode);
 		let content: string;
 
-		const unit = this.config.turnNetworkWeightByWords ? 'word' : 'transition';
+		const unit = this.ctx.config.turnNetworkWeightByWords ? 'word' : 'transition';
 		const plural = (n: number) => `${n} ${unit}${n !== 1 ? 's' : ''}`;
 
 		if (hovered.type === 'node') {
@@ -463,6 +456,6 @@ export class TurnNetwork {
 				`<b>${hovered.edge.from} → ${hovered.edge.to}</b>\n` + `<span style="font-size: 0.85em; opacity: 0.7">${plural(hovered.edge.weight)}</span>`;
 		}
 
-		showTooltip(this.sk.mouseX, this.sk.mouseY, content, color, this.bounds.y + this.bounds.height);
+		showTooltip(this.ctx.sk.mouseX, this.ctx.sk.mouseY, content, color, this.bounds.y + this.bounds.height);
 	}
 }

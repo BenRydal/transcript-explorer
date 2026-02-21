@@ -1,0 +1,7 @@
+start,end,code
+0,15.5,greeting
+15.5,45,topic_introduction
+45,120,main_discussion
+120,180.75,debate
+180.75,240,resolution
+240,300,closing

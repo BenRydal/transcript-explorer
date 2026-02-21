@@ -6,6 +6,9 @@
 	import TranscriptStore from '../../stores/transcriptStore';
 	import P5Store from '../../stores/p5Store';
 	import UserButtonGroup from './UserButtonGroup.svelte';
+	import CodesButton from './CodesButton.svelte';
+
+	let { showCodes = false }: { showCodes?: boolean } = $props();
 
 	function closeAllDropdowns() {
 		$UserStore.forEach((_, index) => {
@@ -117,6 +120,11 @@
 </script>
 
 <div class="flex flex-1 flex-row justify-start items-center bg-[#f6f5f3] px-8 overflow-x-auto" data-tour="speakers" onwheel={handleWheelScroll}>
+	{#if showCodes}
+		<div class="mr-2 flex-shrink-0">
+			<CodesButton />
+		</div>
+	{/if}
 	<UserButtonGroup
 		users={$UserStore}
 		ontoggleVisibility={(index) => toggleUserVisibility(index)}

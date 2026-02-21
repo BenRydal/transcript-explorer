@@ -10,19 +10,14 @@
  */
 
 import type p5 from 'p5';
-import { get } from 'svelte/store';
-import TranscriptStore from '../../stores/transcriptStore';
-import UserStore from '../../stores/userStore';
-import ConfigStore, { type ConfigStoreType } from '../../stores/configStore';
-import HoverStore, { type HoverState } from '../../stores/hoverStore';
 import { showTooltip } from '../../stores/tooltipStore';
 import type { DataPoint } from '../../models/dataPoint';
-import type { User } from '../../models/user';
 import type { Bounds } from './types/bounds';
 import { normalizeWord } from '../core/string-utils';
-import { withDimming, createUserMap, getCrossHighlight } from './draw-utils';
+import { withDimming, getCrossHighlight, getDominantCodeColor } from './draw-utils';
 import { CANVAS_SPACING } from '../constants/ui';
 import { drawFlower } from './flower-drawing';
+import { DrawContext } from './draw-context';
 
 const MIN_FLOWER_SIZE = 25; // Minimum flower radius so small speakers are still visible
 
@@ -33,11 +28,7 @@ interface SpeakerMetrics {
 }
 
 export class SpeakerGarden {
-	sk: p5;
-	users: User[];
-	userMap: Map<string, User>;
-	config: ConfigStoreType;
-	hover: HoverState;
+	ctx: DrawContext;
 	largestNumOfWordsByASpeaker: number;
 	largestNumOfTurnsByASpeaker: number;
 	localArrayOfFirstWords: DataPoint[];
@@ -50,20 +41,15 @@ export class SpeakerGarden {
 	maxFlowerRadius: number;
 	hoveredSpeaker: string | null;
 
-	constructor(sk: p5, pos: Bounds) {
-		this.sk = sk;
-		this.users = get(UserStore);
-		this.userMap = createUserMap(this.users);
-		this.config = get(ConfigStore);
-		this.hover = get(HoverStore);
-		const transcript = get(TranscriptStore);
+	constructor(ctx: DrawContext, pos: Bounds) {
+		this.ctx = ctx;
 		// When scaleToVisibleData is enabled, we'll compute these in draw() from visible data
-		if (this.config.scaleToVisibleData) {
+		if (this.ctx.config.scaleToVisibleData) {
 			this.largestNumOfWordsByASpeaker = 0;
 			this.largestNumOfTurnsByASpeaker = 0;
 		} else {
-			this.largestNumOfWordsByASpeaker = transcript.largestNumOfWordsByASpeaker;
-			this.largestNumOfTurnsByASpeaker = transcript.largestNumOfTurnsByASpeaker;
+			this.largestNumOfWordsByASpeaker = this.ctx.transcript.largestNumOfWordsByASpeaker;
+			this.largestNumOfTurnsByASpeaker = this.ctx.transcript.largestNumOfTurnsByASpeaker;
 		}
 		this.localArrayOfFirstWords = [];
 		this.bounds = pos;
@@ -77,21 +63,21 @@ export class SpeakerGarden {
 	}
 
 	draw(sortedAnimationWordArray: Record<string, DataPoint[]>): { hoveredSpeaker: string | null } {
-		const searchTerm = this.config.wordToSearch ? normalizeWord(this.config.wordToSearch) : undefined;
+		const searchTerm = this.ctx.config.wordToSearch ? normalizeWord(this.ctx.config.wordToSearch) : undefined;
 		this.hoveredSpeaker = null;
 
 		// Compute max values from visible data when scaleToVisibleData is enabled
-		if (this.config.scaleToVisibleData) {
+		if (this.ctx.config.scaleToVisibleData) {
 			this.computeMaxFromVisibleData(sortedAnimationWordArray);
 		}
 
-		const crossHighlight = getCrossHighlight(this.sk, this.bounds, this.config.dashboardToggle, this.hover);
+		const crossHighlight = getCrossHighlight(this.ctx.sk, this.bounds, this.ctx.config.dashboardToggle, this.ctx.hover);
 
 		this.drawFlowerGuideLines();
 
 		for (const key in sortedAnimationWordArray) {
 			if (sortedAnimationWordArray[key].length) {
-				const user = this.userMap.get(sortedAnimationWordArray[key][0].speaker);
+				const user = this.ctx.userMap.get(sortedAnimationWordArray[key][0].speaker);
 				if (user?.enabled) {
 					let wordsToVisualize = sortedAnimationWordArray[key];
 					if (searchTerm) {
@@ -103,7 +89,7 @@ export class SpeakerGarden {
 							crossHighlight.active &&
 							((crossHighlight.speaker != null && wordsToVisualize[0].speaker !== crossHighlight.speaker) ||
 								(crossHighlight.turns != null && !wordsToVisualize.some((w) => crossHighlight.turns!.includes(w.turnNumber))));
-						withDimming(this.sk.drawingContext, shouldDim, () => {
+						withDimming(this.ctx.sk.drawingContext, shouldDim, () => {
 							this.drawViz(wordsToVisualize);
 						});
 					}
@@ -117,9 +103,10 @@ export class SpeakerGarden {
 
 	drawViz(tempTurnArray: DataPoint[]): void {
 		const metrics = this.calculateMetrics(tempTurnArray);
-		const user = this.userMap.get(tempTurnArray[0].speaker);
+		const user = this.ctx.userMap.get(tempTurnArray[0].speaker);
 		if (!user) return;
-		const color = this.sk.color(user.color);
+		const resolvedColor = getDominantCodeColor(tempTurnArray, user.color, this.ctx.codeColorMap, this.ctx.config.codeColorMode);
+		const color = this.ctx.sk.color(resolvedColor);
 		this.drawFlowerVisualization(color, metrics, tempTurnArray);
 	}
 
@@ -137,9 +124,9 @@ export class SpeakerGarden {
 		const { scaledWordArea, numOfTurns, numOfWords } = metrics;
 		const speaker = tempTurnArray[0]?.speaker || '';
 		const top = this.yPosTop + this.maxFlowerRadius;
-		const yPos = this.sk.map(numOfTurns, 0, this.largestNumOfTurnsByASpeaker, this.yPosBottom, top);
+		const yPos = this.ctx.sk.map(numOfTurns, 0, this.largestNumOfTurnsByASpeaker, this.yPosBottom, top);
 
-		drawFlower(this.sk, {
+		drawFlower(this.ctx.sk, {
 			xPos: this.xPosCurCircle,
 			yPos,
 			bottomY: this.yPosBottom,
@@ -147,7 +134,7 @@ export class SpeakerGarden {
 			color
 		});
 
-		if (this.sk.overCircle(this.xPosCurCircle, yPos, scaledWordArea)) {
+		if (this.ctx.sk.overCircle(this.xPosCurCircle, yPos, scaledWordArea)) {
 			this.hoveredSpeaker = speaker;
 			this.drawSpeakerTooltip(speaker, numOfTurns, numOfWords, tempTurnArray, color);
 		}
@@ -157,16 +144,16 @@ export class SpeakerGarden {
 		const top = this.yPosTop + this.maxFlowerRadius;
 		const halfSpacing = CANVAS_SPACING / 2;
 
-		this.sk.stroke(0);
-		this.sk.strokeWeight(2);
-		this.sk.line(this.bounds.x, top, this.bounds.x, this.yPosBottom);
-		this.sk.line(this.bounds.x - halfSpacing, top, this.bounds.x + halfSpacing, top);
+		this.ctx.sk.stroke(0);
+		this.ctx.sk.strokeWeight(2);
+		this.ctx.sk.line(this.bounds.x, top, this.bounds.x, this.yPosBottom);
+		this.ctx.sk.line(this.bounds.x - halfSpacing, top, this.bounds.x + halfSpacing, top);
 
-		this.sk.fill(0);
-		this.sk.noStroke();
-		this.sk.textAlign(this.sk.LEFT, this.sk.BASELINE);
-		this.sk.textSize(Math.max(10, Math.min(16, this.bounds.height * 0.04)));
-		this.sk.text(`${this.largestNumOfTurnsByASpeaker} Turns`, this.bounds.x - halfSpacing, top - halfSpacing);
+		this.ctx.sk.fill(0);
+		this.ctx.sk.noStroke();
+		this.ctx.sk.textAlign(this.ctx.sk.LEFT, this.ctx.sk.BASELINE);
+		this.ctx.sk.textSize(Math.max(10, Math.min(16, this.bounds.height * 0.04)));
+		this.ctx.sk.text(`${this.largestNumOfTurnsByASpeaker} Turns`, this.bounds.x - halfSpacing, top - halfSpacing);
 	}
 
 	calculateNumOfTurns(objects: DataPoint[]): number {
@@ -187,9 +174,8 @@ export class SpeakerGarden {
 			}
 		});
 
-		const transcript = get(TranscriptStore);
-		const totalWords = transcript.totalNumOfWords;
-		const totalTurns = transcript.totalConversationTurns;
+		const totalWords = this.ctx.transcript.totalNumOfWords;
+		const totalTurns = this.ctx.transcript.totalConversationTurns;
 		const wordPercent = totalWords > 0 ? Math.round((numOfWords / totalWords) * 100) : 0;
 		const turnPercent = totalTurns > 0 ? Math.round((numOfTurns / totalTurns) * 100) : 0;
 
@@ -204,11 +190,11 @@ export class SpeakerGarden {
 		const statsLine = `${numOfWords} total words (${wordPercent}%)\n${numOfTurns} turns (${turnPercent}%)`;
 		const tooltipContent = `<b>First word of each turn:</b>\n${firstWordsLine}\n\n${statsLine}`;
 
-		showTooltip(this.sk.mouseX, this.sk.mouseY, tooltipContent, speakerColor, this.bounds.y + this.bounds.height);
+		showTooltip(this.ctx.sk.mouseX, this.ctx.sk.mouseY, tooltipContent, speakerColor, this.bounds.y + this.bounds.height);
 	}
 
 	getMaxCircleRadius(pixelWidth: number): number {
-		return pixelWidth / (this.users.length + 1);
+		return pixelWidth / (this.ctx.users.length + 1);
 	}
 
 	getScaledArea(value: number): number {
@@ -233,7 +219,7 @@ export class SpeakerGarden {
 		for (const key in data) {
 			const words = data[key];
 			if (words.length === 0) continue;
-			const user = this.userMap.get(words[0].speaker);
+			const user = this.ctx.userMap.get(words[0].speaker);
 			if (!user?.enabled) continue;
 			maxWords = Math.max(maxWords, words.length);
 			maxTurns = Math.max(maxTurns, this.calculateNumOfTurns(words));

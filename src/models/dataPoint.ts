@@ -5,6 +5,7 @@ export class DataPoint {
 	endTime: number;
 	word: string;
 	count: number;
+	codes: string[];
 
 	constructor(speaker: string, turnNumber: number, word: string, startTime: number, endTime: number) {
 		this.speaker = speaker;
@@ -13,11 +14,12 @@ export class DataPoint {
 		this.endTime = endTime;
 		this.word = word;
 		this.count = 1;
+		this.codes = [];
 	}
 
 	/**
 	 * Creates a copy of this DataPoint with optional field overrides.
-	 * Preserves count automatically.
+	 * Preserves count and codes automatically.
 	 */
 	copyWith(overrides?: Partial<Pick<DataPoint, 'speaker' | 'turnNumber' | 'word' | 'startTime' | 'endTime'>>): DataPoint {
 		const dp = new DataPoint(
@@ -28,6 +30,7 @@ export class DataPoint {
 			overrides?.endTime ?? this.endTime
 		);
 		dp.count = this.count;
+		dp.codes = [...this.codes];
 		return dp;
 	}
 }
