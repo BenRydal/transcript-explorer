@@ -1,0 +1,31 @@
+cff-version: 1.2.0
+message: "If you use this software, please cite it using the metadata from 'preferred-citation'."
+title: Transcript Explorer
+type: software
+authors:
+  - family-names: Shapiro
+    given-names: Ben Rydal
+  - family-names: Zhao
+    given-names: Edwin
+repository-code: https://github.com/BenRydal/transcript-explorer
+url: https://www.transcriptexplorer.org
+license: GPL-3.0
+preferred-citation:
+  type: conference-paper
+  authors:
+    - family-names: Shapiro
+      given-names: Ben Rydal
+    - family-names: Hall
+      given-names: Rogers
+    - family-names: Mathur
+      given-names: Arpit
+    - family-names: Zhao
+      given-names: Edwin
+  title: "Exploratory Visual Analysis of Transcripts for Interaction Analysis in Human-Computer Interaction"
+  collection-title: "Proceedings of the 2025 CHI Conference on Human Factors in Computing Systems"
+  collection-type: proceedings
+  year: 2025
+  publisher:
+    name: Association for Computing Machinery
+  doi: 10.1145/3706598.3713490
+  isbn: "9798400713941"

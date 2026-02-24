@@ -461,52 +461,49 @@
 			</div>
 
 			<!-- Footer -->
-			<div class="bg-gray-50 px-8 py-4 flex flex-wrap items-center justify-between gap-4 border-t border-gray-200">
-				<div class="flex flex-wrap gap-3">
-					<a
-						href="https://forms.gle/3i1F74V6cy5Q8RHv5"
-						target="_blank"
-						rel="noopener noreferrer"
-						class="text-sm text-gray-600 hover:text-gray-900 inline-flex items-center gap-1"
-					>
-						<MessageSquare size={16} />
-						Feedback
-					</a>
-					<a
-						href="https://github.com/BenRydal/transcript-explorer"
-						target="_blank"
-						rel="noopener noreferrer"
-						class="text-sm text-gray-600 hover:text-gray-900 inline-flex items-center gap-1"
-					>
-						<Github size={16} />
-						Open Source
-					</a>
-				</div>
-
-				<details class="relative">
-					<summary class="cursor-pointer text-sm text-gray-600 hover:text-gray-400">Citation and Credits</summary>
-					<div
-						class="absolute right-0 bottom-full mb-2 text-sm text-gray-500 text-left w-[90vw] max-w-[450px] bg-white border border-gray-200 rounded-lg p-3 shadow-lg space-y-1"
-					>
-						<p>
-							<strong>Citation:</strong> Shapiro, B. R., Silvis, D., & Hall, R. (2025).
-							<a href="https://doi.org/10.1080/10508406.2025.2537945" class="text-blue-600 hover:underline" target="_blank" rel="noopener noreferrer"
-								>Visualization as theory and experience: interactive qualitative data visualization for the learning sciences</a
-							>. <em>Journal of the Learning Sciences, 34</em>(5), 840–871.
-						</p>
-						<p>
-							<strong>Credits:</strong> Example data from Mathematics Teaching and Learning to Teach (MTLT), University of Michigan (2010) and The
-							Third International Mathematics and Science Study (TIMSS) 1999 Video Study. Speaker Garden inspired by
-							<a href="https://doi.org/10.1145/320719.322581" class="text-blue-600 hover:underline" target="_blank" rel="noopener noreferrer"
-								>PeopleGarden</a
+			<div class="bg-gray-50 px-8 py-4 border-t border-gray-200">
+				<div class="flex flex-wrap items-center justify-between gap-3">
+					<div class="flex flex-wrap items-center gap-3">
+						<a
+							href="https://forms.gle/3i1F74V6cy5Q8RHv5"
+							target="_blank"
+							rel="noopener noreferrer"
+							class="text-sm text-gray-500 hover:text-gray-900 inline-flex items-center gap-1"
+						>
+							<MessageSquare size={16} />
+							Feedback
+						</a>
+						<a
+							href="https://github.com/BenRydal/transcript-explorer"
+							target="_blank"
+							rel="noopener noreferrer"
+							class="text-sm text-gray-500 hover:text-gray-900 inline-flex items-center gap-1"
+						>
+							<Github size={16} />
+							Open Source
+						</a>
+						<details class="relative">
+							<summary class="cursor-pointer text-sm text-gray-500 hover:text-gray-400">Credits</summary>
+							<div
+								class="absolute left-0 bottom-full mb-2 text-sm text-gray-500 text-left w-[90vw] max-w-[450px] bg-white border border-gray-200 rounded-lg p-3 shadow-lg"
 							>
-							by Xiong &amp; Donath. Word Rain inspired by work by
-							<a href="https://doi.org/10.1177/14738716241236188" class="text-blue-600 hover:underline" target="_blank" rel="noopener noreferrer"
-								>Skeppstedt, Ahltorp &amp; Lindström</a
-							>.
-						</p>
+								Example data from Mathematics Teaching and Learning to Teach (MTLT), University of Michigan (2010) and The
+								Third International Mathematics and Science Study (TIMSS) 1999 Video Study. Speaker Garden inspired by
+								<a href="https://doi.org/10.1145/320719.322581" class="text-blue-600 hover:underline" target="_blank" rel="noopener noreferrer"
+									>PeopleGarden</a
+								>
+								by Xiong &amp; Donath. Word Rain inspired by work by
+								<a href="https://doi.org/10.1177/14738716241236188" class="text-blue-600 hover:underline" target="_blank" rel="noopener noreferrer"
+									>Skeppstedt, Ahltorp &amp; Lindström</a
+								>.
+							</div>
+						</details>
 					</div>
-				</details>
+
+					<a href="https://doi.org/10.1145/3706598.3713490" class="text-sm text-blue-700 hover:underline" target="_blank" rel="noopener noreferrer"
+						>Shapiro, Hall, Mathur, & Zhao (2025). <em>Exploratory Visual Analysis of Transcripts</em></a
+					>
+				</div>
 			</div>
 		</div>
 	</div>
