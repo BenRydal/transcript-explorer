@@ -45,7 +45,7 @@
 	// Components
 	import AppNavbar from '$lib/components/AppNavbar.svelte';
 	import InfoModal from '$lib/components/InfoModal.svelte';
-	import TimelinePanel from '$lib/components/TimelinePanel.svelte';
+	import { TranscriptTimeline } from '$lib/timeline-migration';
 	import SplitPane from '$lib/components/SplitPane.svelte';
 	import TranscriptEditor from '$lib/components/TranscriptEditor.svelte';
 	import CanvasTooltip from '$lib/components/CanvasTooltip.svelte';
@@ -815,7 +815,7 @@
 		<div class="btm-nav flex justify-between min-h-20" style="position: relative;">
 			<SpeakerControls showCodes={$CodeStore.length > 0} />
 			<div class="flex-1 bg-[#f6f5f3]" data-tour="timeline">
-				<TimelinePanel />
+				<TranscriptTimeline />
 			</div>
 		</div>
 	</div>
