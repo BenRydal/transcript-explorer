@@ -170,7 +170,7 @@
 						<div class="flex items-center gap-2">
 							<span class="text-sm font-medium w-20">{expectedLabels[match.expected] ?? match.expected}</span>
 							<select
-								class="select select-bordered select-xs flex-1 max-w-48"
+								class="select select-xs flex-1 max-w-48"
 								value={effective ?? ''}
 								aria-label="Map CSV column to {expectedLabels[match.expected] ?? match.expected}"
 								onchange={(e) => {
@@ -368,7 +368,7 @@
 					<div class="flex gap-2">
 						<input
 							type="text"
-							class="input input-bordered input-sm flex-1"
+							class="input input-sm flex-1"
 							placeholder="Paste YouTube URL"
 							bind:value={youtubeUrl}
 							oninput={() => (youtubeError = '')}

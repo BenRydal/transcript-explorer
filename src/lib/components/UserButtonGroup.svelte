@@ -51,18 +51,18 @@
 		min-width: 2.5rem;
 		padding: 0.375rem 0.625rem;
 		border-radius: 9999px;
-		background-color: #e5e5e5;
+		background-color: var(--viz-gray-200);
 		border: none;
 		cursor: pointer;
 		font-size: 0.875rem;
 		font-weight: 600;
-		color: #6b7280;
+		color: var(--viz-gray-500);
 		transition: background-color 0.15s;
 		user-select: none;
 	}
 
 	.expand-button:hover {
-		background-color: #d4d4d4;
+		background-color: var(--viz-gray-300);
 	}
 
 	.expand-button:active {

@@ -7,6 +7,7 @@
 	import P5Store from '../../stores/p5Store';
 	import UserButtonGroup from './UserButtonGroup.svelte';
 	import CodesButton from './CodesButton.svelte';
+	import { Z_INDEX } from '$lib/styles/z-index';
 
 	let { showCodes = false }: { showCodes?: boolean } = $props();
 
@@ -86,7 +87,7 @@
 						left: `${x}px`,
 						top: `${y}px`,
 						position: 'absolute',
-						zIndex: '9999'
+						zIndex: String(Z_INDEX.TOAST)
 					});
 				});
 			}
@@ -119,7 +120,7 @@
 	}
 </script>
 
-<div class="flex flex-1 flex-row justify-start items-center bg-[#f6f5f3] px-8 overflow-x-auto" data-tour="speakers" onwheel={handleWheelScroll}>
+<div class="flex flex-1 flex-row justify-start items-center bg-base-200 px-8 overflow-x-auto" data-tour="speakers" onwheel={handleWheelScroll}>
 	{#if showCodes}
 		<div class="mr-2 flex-shrink-0">
 			<CodesButton />
@@ -132,13 +133,13 @@
 	/>
 
 	{#each $UserStore as user, index}
-		<div id={`dropdown-${index}`} class="hidden bg-base-100 rounded-box p-2 shadow absolute" style="z-index: 9999;">
+		<div id={`dropdown-${index}`} class="hidden bg-base-100 rounded-box p-2 shadow absolute" style="z-index: {Z_INDEX.TOAST};">
 			<ul class="w-52">
 				<li class="py-2">
 					<div class="flex items-center">
 						<input
 							type="text"
-							class="input input-bordered input-sm w-full"
+							class="input input-sm w-full"
 							value={user.name}
 							onchange={(e) => handleNameChange(e, user, index)}
 							placeholder="Speaker name"

@@ -143,8 +143,8 @@
 		align-items: center;
 		justify-content: space-between;
 		padding: 0.5rem 0.75rem;
-		background-color: #f9fafb;
-		border-bottom: 1px solid #e5e7eb;
+		background-color: var(--viz-gray-50);
+		border-bottom: 1px solid var(--viz-gray-200);
 		flex-shrink: 0;
 	}
 
@@ -157,7 +157,7 @@
 	.toolbar-title {
 		font-weight: 600;
 		font-size: 0.875rem;
-		color: #374151;
+		color: var(--viz-gray-800);
 	}
 
 	.dirty-indicator {
@@ -182,7 +182,7 @@
 		border: none;
 		border-radius: 0.25rem;
 		background-color: transparent;
-		color: #6b7280;
+		color: var(--viz-gray-500);
 		cursor: pointer;
 		transition:
 			background-color 0.15s,
@@ -190,12 +190,12 @@
 	}
 
 	.toolbar-btn:hover {
-		background-color: #e5e7eb;
-		color: #374151;
+		background-color: var(--viz-gray-200);
+		color: var(--viz-gray-800);
 	}
 
 	.toolbar-btn:active {
-		background-color: #d1d5db;
+		background-color: var(--viz-gray-300);
 	}
 
 	.toolbar-btn:disabled {
@@ -205,12 +205,12 @@
 
 	.toolbar-btn:disabled:hover {
 		background-color: transparent;
-		color: #6b7280;
+		color: var(--viz-gray-500);
 	}
 
 	.toolbar-btn.active {
 		background-color: #dbeafe;
-		color: #2563eb;
+		color: var(--color-info, #9ad4e4);
 	}
 
 	.toolbar-btn.active:hover {
@@ -219,7 +219,7 @@
 
 	.timing-mode-group {
 		display: flex;
-		border: 1px solid #d1d5db;
+		border: 1px solid var(--viz-gray-300);
 		border-radius: 0.25rem;
 		overflow: hidden;
 		margin-right: 0.25rem;
@@ -228,9 +228,9 @@
 	.timing-mode-btn {
 		padding: 0.25rem 0.5rem;
 		border: none;
-		border-right: 1px solid #d1d5db;
+		border-right: 1px solid var(--viz-gray-300);
 		background-color: transparent;
-		color: #6b7280;
+		color: var(--viz-gray-500);
 		font-size: 0.7rem;
 		font-weight: 500;
 		cursor: pointer;
@@ -245,13 +245,13 @@
 	}
 
 	.timing-mode-btn:hover {
-		background-color: #e5e7eb;
-		color: #374151;
+		background-color: var(--viz-gray-200);
+		color: var(--viz-gray-800);
 	}
 
 	.timing-mode-btn.active {
 		background-color: #dbeafe;
-		color: #2563eb;
+		color: var(--color-info, #9ad4e4);
 	}
 
 	.timing-mode-btn.active:hover {

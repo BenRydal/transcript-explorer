@@ -1,12 +1,7 @@
 import { sveltekit } from '@sveltejs/kit/vite';
 import { defineConfig } from 'vite';
-import replace from '@rollup/plugin-replace';
+import tailwindcss from '@tailwindcss/vite';
 
 export default defineConfig({
-	plugins: [
-		sveltekit(),
-		replace({
-			'process.env.NODE_ENV': JSON.stringify(process.env.NODE_ENV || 'development')
-		})
-	]
+	plugins: [tailwindcss(), sveltekit()]
 });

@@ -339,7 +339,7 @@
 <style>
 	.video-container {
 		position: absolute;
-		z-index: 100;
+		z-index: var(--z-modal-backdrop, 100);
 		border: 2px solid rgba(0, 0, 0, 0.5);
 		border-radius: 6px;
 		overflow: hidden;
@@ -375,7 +375,7 @@
 
 	.video-area {
 		position: relative;
-		background: #000;
+		background: var(--viz-gray-900, #000);
 	}
 
 	.click-shield {
@@ -394,7 +394,7 @@
 		left: 8px;
 		padding: 4px 8px;
 		background: rgba(0, 0, 0, 0.7);
-		color: white;
+		color: var(--color-base-100, #fbfcfd);
 		font-size: 12px;
 		font-weight: 500;
 		border-radius: 4px;

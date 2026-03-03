@@ -178,7 +178,7 @@
 		display: flex;
 		flex-direction: column;
 		height: 100vh;
-		background: #1f2937;
+		background: var(--viz-gray-800);
 	}
 
 	.transcribe-content {
@@ -191,7 +191,7 @@
 		display: flex;
 		flex-direction: column;
 		height: 100%;
-		background: #000;
+		background: var(--viz-gray-900, #000);
 	}
 
 	.video-panel.dragging {

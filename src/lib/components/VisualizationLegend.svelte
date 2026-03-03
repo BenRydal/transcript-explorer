@@ -216,7 +216,7 @@
 		position: absolute;
 		bottom: 12px;
 		left: 12px;
-		z-index: 40;
+		z-index: var(--z-legend, 40);
 		pointer-events: none;
 	}
 
@@ -224,7 +224,7 @@
 	.legend-toggle {
 		pointer-events: auto;
 		background: rgba(255, 255, 255, 0.92);
-		border: 1px solid #e5e7eb;
+		border: 1px solid var(--viz-gray-200);
 		border-radius: 8px;
 		box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
 	}
@@ -244,7 +244,7 @@
 	.legend-title {
 		font-size: 0.9rem;
 		font-weight: 600;
-		color: #374151;
+		color: var(--viz-gray-800);
 	}
 
 	.legend-close {
@@ -253,7 +253,7 @@
 		cursor: pointer;
 		padding: 2px;
 		border-radius: 4px;
-		color: #6b7280;
+		color: var(--viz-gray-500);
 		display: flex;
 		align-items: center;
 		justify-content: center;
@@ -261,7 +261,7 @@
 
 	.legend-close:hover {
 		background: rgba(0, 0, 0, 0.08);
-		color: #374151;
+		color: var(--viz-gray-800);
 	}
 
 	.legend-items {
@@ -275,7 +275,7 @@
 		align-items: center;
 		gap: 7px;
 		font-size: 0.8rem;
-		color: #4b5563;
+		color: var(--viz-gray-600, #4b5563);
 		line-height: 1.3;
 	}
 
@@ -285,7 +285,7 @@
 		align-items: center;
 		justify-content: center;
 		flex-shrink: 0;
-		color: #6b7280;
+		color: var(--viz-gray-500);
 	}
 
 	.legend-gradient {
@@ -302,7 +302,7 @@
 	.legend-toggle {
 		padding: 6px;
 		cursor: pointer;
-		color: #6b7280;
+		color: var(--viz-gray-500);
 		display: flex;
 		align-items: center;
 		justify-content: center;
@@ -310,6 +310,6 @@
 
 	.legend-toggle:hover {
 		background: rgba(255, 255, 255, 1);
-		color: #374151;
+		color: var(--viz-gray-800);
 	}
 </style>

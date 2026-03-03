@@ -189,18 +189,18 @@
 		gap: 0.25rem;
 		padding: 0.375rem 0.625rem;
 		border-radius: 9999px;
-		background-color: #e5e5e5;
+		background-color: var(--viz-gray-200);
 		border: none;
 		cursor: pointer;
 		font-size: 0.875rem;
 		font-weight: 500;
-		color: #1f2937;
+		color: var(--viz-gray-800);
 		transition: background-color 0.15s;
 		flex-shrink: 0;
 	}
 
 	.codes-button:hover {
-		background-color: #d4d4d4;
+		background-color: var(--viz-gray-300);
 	}
 
 	.codes-button:active {
@@ -215,14 +215,14 @@
 
 	.codes-dropdown {
 		position: fixed;
-		background: white;
+		background: var(--color-base-100, #fbfcfd);
 		border-radius: 0.5rem;
 		box-shadow:
 			0 4px 6px -1px rgb(0 0 0 / 0.1),
 			0 2px 4px -2px rgb(0 0 0 / 0.1);
 		padding: 0.5rem;
 		min-width: 200px;
-		z-index: 9999;
+		z-index: var(--z-toast, 300);
 	}
 
 	.codes-list {
@@ -254,7 +254,7 @@
 		padding: 0.5rem;
 		font-weight: 600;
 		font-size: 0.75rem;
-		color: #6b7280;
+		color: var(--viz-gray-500);
 		letter-spacing: 0.025em;
 	}
 
@@ -292,7 +292,7 @@
 
 	.divider {
 		height: 1px;
-		background: #e5e7eb;
+		background: var(--viz-gray-200);
 		margin: 0.25rem 0;
 	}
 </style>

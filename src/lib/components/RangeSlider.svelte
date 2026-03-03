@@ -1,25 +1,34 @@
 <script lang="ts">
-	import { createEventDispatcher } from 'svelte';
+	interface Props {
+		min?: number;
+		max?: number;
+		leftValue?: number;
+		rightValue?: number;
+		progressValue?: number | null;
+		onchange?: (data: { left: number; right: number }) => void;
+	}
 
-	export let min = 0;
-	export let max = 100;
-	export let leftValue = 0;
-	export let rightValue = 100;
-	export let progressValue: number | null = null;
-
-	const dispatch = createEventDispatcher<{ change: { left: number; right: number } }>();
+	let {
+		min = 0,
+		max = 100,
+		leftValue = $bindable(0),
+		rightValue = $bindable(100),
+		progressValue = null,
+		onchange
+	}: Props = $props();
 
 	let track: HTMLDivElement;
-	let dragging: 'left' | 'right' | 'range' | null = null;
+	let dragging: 'left' | 'right' | 'range' | null = $state(null);
 	let dragStartX = 0;
 	let dragStartLeft = 0;
 	let dragStartRight = 0;
 
-	$: range = max - min;
-	$: leftPercent = range > 0 ? ((leftValue - min) / range) * 100 : 0;
-	$: rightPercent = range > 0 ? ((rightValue - min) / range) * 100 : 0;
-	$: progressPercent =
-		progressValue !== null && range > 0 ? Math.min(Math.max(((progressValue - min) / range) * 100, leftPercent), rightPercent) : leftPercent;
+	let range = $derived(max - min);
+	let leftPercent = $derived(range > 0 ? ((leftValue - min) / range) * 100 : 0);
+	let rightPercent = $derived(range > 0 ? ((rightValue - min) / range) * 100 : 0);
+	let progressPercent = $derived(
+		progressValue !== null && range > 0 ? Math.min(Math.max(((progressValue - min) / range) * 100, leftPercent), rightPercent) : leftPercent
+	);
 
 	function clamp(value: number, lo: number, hi: number): number {
 		return Math.min(Math.max(value, lo), hi);
@@ -39,7 +48,7 @@
 		} else {
 			rightValue = clamp(value, leftValue, max);
 		}
-		dispatch('change', { left: leftValue, right: rightValue });
+		onchange?.({ left: leftValue, right: rightValue });
 	}
 
 	function startDrag(clientX: number, target: 'left' | 'right' | 'range') {
@@ -77,7 +86,7 @@
 			rightValue = newRight;
 		}
 
-		dispatch('change', { left: leftValue, right: rightValue });
+		onchange?.({ left: leftValue, right: rightValue });
 	}
 
 	function endDrag() {
@@ -139,17 +148,17 @@
 
 		if (handled) {
 			e.preventDefault();
-			dispatch('change', { left: leftValue, right: rightValue });
+			onchange?.({ left: leftValue, right: rightValue });
 		}
 	}
 </script>
 
-<div class="slider-track" bind:this={track} on:click={handleTrackClick} role="presentation">
+<div class="slider-track" bind:this={track} onclick={handleTrackClick} role="presentation">
 	<div
 		class="range-fill"
 		style="left: {leftPercent}%; width: {rightPercent - leftPercent}%;"
-		on:mousedown={(e) => handleMouseDown(e, 'range')}
-		on:touchstart={(e) => handleTouchStart(e, 'range')}
+		onmousedown={(e) => handleMouseDown(e, 'range')}
+		ontouchstart={(e) => handleTouchStart(e, 'range')}
 		role="presentation"
 	></div>
 
@@ -160,9 +169,9 @@
 	<div
 		class="handle"
 		style="left: {leftPercent}%;"
-		on:mousedown={(e) => handleMouseDown(e, 'left')}
-		on:touchstart={(e) => handleTouchStart(e, 'left')}
-		on:keydown={(e) => handleKeyDown(e, 'left')}
+		onmousedown={(e) => handleMouseDown(e, 'left')}
+		ontouchstart={(e) => handleTouchStart(e, 'left')}
+		onkeydown={(e) => handleKeyDown(e, 'left')}
 		role="slider"
 		tabindex="0"
 		aria-valuemin={min}
@@ -174,9 +183,9 @@
 	<div
 		class="handle"
 		style="left: {rightPercent}%;"
-		on:mousedown={(e) => handleMouseDown(e, 'right')}
-		on:touchstart={(e) => handleTouchStart(e, 'right')}
-		on:keydown={(e) => handleKeyDown(e, 'right')}
+		onmousedown={(e) => handleMouseDown(e, 'right')}
+		ontouchstart={(e) => handleTouchStart(e, 'right')}
+		onkeydown={(e) => handleKeyDown(e, 'right')}
 		role="slider"
 		tabindex="0"
 		aria-valuemin={leftValue}
@@ -191,7 +200,7 @@
 		position: relative;
 		width: 100%;
 		height: 6px;
-		background: #e5e7eb;
+		background: var(--viz-gray-200);
 		border-radius: 3px;
 		cursor: pointer;
 	}
@@ -200,7 +209,7 @@
 		position: absolute;
 		top: 0;
 		height: 100%;
-		background: #cbd5e1;
+		background: var(--viz-gray-300);
 		border-radius: 3px;
 		cursor: grab;
 	}
@@ -213,7 +222,7 @@
 		position: absolute;
 		top: 0;
 		height: 100%;
-		background: #3b82f6;
+		background: var(--color-info, #9ad4e4);
 		border-radius: 3px;
 		pointer-events: none;
 	}
@@ -223,8 +232,8 @@
 		top: 50%;
 		width: 6px;
 		height: 30px;
-		background: #ffffff;
-		border: 1px solid #d1d5db;
+		background: var(--color-base-100, #fbfcfd);
+		border: 1px solid var(--viz-gray-300);
 		border-radius: 2px;
 		transform: translate(-50%, -50%);
 		cursor: ew-resize;
@@ -236,12 +245,12 @@
 
 	.handle:hover,
 	.handle:focus {
-		border-color: #9ca3af;
+		border-color: var(--viz-gray-500);
 		box-shadow: 0 1px 4px rgba(0, 0, 0, 0.15);
 		outline: none;
 	}
 
 	.handle:active {
-		border-color: #3b82f6;
+		border-color: var(--color-info, #9ad4e4);
 	}
 </style>

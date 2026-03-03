@@ -82,7 +82,7 @@
 								if (!isNaN(val) && val > 0) setTimelineDuration(val);
 								input.value = String(Math.round($TimelineStore.endTime));
 							}}
-							class="input input-bordered"
+							class="input"
 						/>
 					{:else}
 						<label for="inputDuration" class="font-medium">Timeline Duration</label>
@@ -98,7 +98,7 @@
 								if (seconds !== null && seconds > 0) setTimelineDuration(seconds);
 								input.value = formatTimeAuto($TimelineStore.endTime);
 							}}
-							class="input input-bordered"
+							class="input"
 						/>
 					{/if}
 				</div>

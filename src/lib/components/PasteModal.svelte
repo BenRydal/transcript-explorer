@@ -146,7 +146,7 @@ With timestamps:
 			<div class="mt-3 flex items-center gap-4 flex-shrink-0 flex-wrap">
 				<div class="flex items-center gap-2">
 					<label class="text-sm font-medium" for="format-select">Format:</label>
-					<select id="format-select" class="select select-bordered select-sm max-w-xs" bind:value={selectedFormat}>
+					<select id="format-select" class="select select-sm max-w-xs" bind:value={selectedFormat}>
 						{#each SELECTABLE_FORMATS as format}
 							<option value={format.value}>{format.label}</option>
 						{/each}

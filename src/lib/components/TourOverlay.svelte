@@ -1,4 +1,6 @@
 <script lang="ts">
+	import { Z_INDEX } from '$lib/styles/z-index';
+
 	interface Props {
 		isOpen: boolean;
 	}
@@ -96,7 +98,7 @@
 		: window.innerHeight / 2 - 80}
 	{@const tooltipLeft = rect ? Math.max(16, Math.min(rect.left + rect.width / 2 - 160, window.innerWidth - 336)) : window.innerWidth / 2 - 160}
 
-	<div class="fixed inset-0 z-[9999] pointer-events-none">
+	<div class="fixed inset-0 pointer-events-none" style="z-index: {Z_INDEX.DEBUG_OVERLAY};">
 		<button class="absolute inset-0 bg-black/50 pointer-events-auto cursor-default" onclick={end} aria-label="Close tour"></button>
 
 		{#if rect}

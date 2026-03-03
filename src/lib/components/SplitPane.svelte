@@ -193,7 +193,7 @@
 
 	.split-pane-divider {
 		flex-shrink: 0;
-		background-color: #e5e7eb;
+		background-color: var(--viz-gray-200);
 		display: flex;
 		align-items: center;
 		justify-content: center;
@@ -202,11 +202,11 @@
 
 	.split-pane-divider:hover,
 	.split-pane-divider.dragging {
-		background-color: #d1d5db;
+		background-color: var(--viz-gray-300);
 	}
 
 	.split-pane-divider:focus {
-		outline: 2px solid #3b82f6;
+		outline: 2px solid var(--color-info, #9ad4e4);
 		outline-offset: -2px;
 	}
 
@@ -223,7 +223,7 @@
 	}
 
 	.divider-handle {
-		background-color: #9ca3af;
+		background-color: var(--viz-gray-500);
 		border-radius: 2px;
 	}
 
@@ -239,6 +239,6 @@
 
 	.split-pane-divider:hover .divider-handle,
 	.split-pane-divider.dragging .divider-handle {
-		background-color: #6b7280;
+		background-color: var(--viz-gray-600, #6b7280);
 	}
 </style>

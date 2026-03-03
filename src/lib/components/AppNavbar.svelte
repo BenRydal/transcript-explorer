@@ -31,6 +31,7 @@
 	import type { Component } from 'svelte';
 	import IconButton from './IconButton.svelte';
 	import ConfigStore, { type ConfigStoreType, type SpeakerSortOrder } from '../../stores/configStore';
+	import { Z_INDEX } from '$lib/styles/z-index';
 
 	interface Props {
 		selectedExample?: string;
@@ -268,7 +269,7 @@
 	}
 </script>
 
-<div class="navbar min-h-16 bg-white">
+<div class="navbar min-h-16 bg-base-100">
 	<div class="flex-1 px-2 xl:flex-none">
 		<span class="text-2xl text-black italic">TRANSCRIPT EXPLORER</span>
 	</div>
@@ -287,13 +288,13 @@
 		<!-- Example Data Dropdown -->
 		<details class="dropdown" use:clickOutside data-tour="examples">
 			<summary
-				class="flex justify-between items-center rounded border border-gray-300 px-3 py-1.5 bg-white text-sm font-medium text-gray-700 hover:bg-gray-50 cursor-pointer max-w-[10rem]"
+				class="flex justify-between items-center rounded border border-gray-300 px-3 py-1.5 bg-base-100 text-sm font-medium text-gray-700 hover:bg-gray-50 cursor-pointer max-w-[10rem]"
 				title={selectedExample || 'Examples'}
 			>
 				<span class="truncate">{selectedExample || 'Examples'}</span>
 				<ChevronDown size={12} class="ml-2 flex-shrink-0" />
 			</summary>
-			<ul class="menu dropdown-content rounded-box z-[60] w-56 p-2 shadow bg-base-100 max-h-[60vh] overflow-y-auto overflow-x-hidden">
+			<ul class="menu dropdown-content rounded-box w-56 p-2 shadow bg-base-100 max-h-[60vh] overflow-y-auto overflow-x-hidden" style="z-index: {Z_INDEX.TOOLTIP};">
 				{#each exampleOptions as item}
 					{@const Icon = item.icon}
 					<li class="w-full">
@@ -366,7 +367,7 @@
 					{/each}
 				{/snippet}
 
-				<div class="absolute top-full left-0 mt-1 z-[60] flex items-start gap-1">
+				<div class="absolute top-full left-0 mt-1 flex items-start gap-1" style="z-index: {Z_INDEX.TOOLTIP};">
 					<!-- Grid panel -->
 					<div class="rounded-lg w-80 py-3 px-3 shadow-lg bg-base-100 border border-gray-200">
 						{#if hasActiveSettings}
@@ -442,7 +443,7 @@
 				placeholder="Filter words..."
 				value={$ConfigStore.wordToSearch}
 				oninput={handleWordSearch}
-				class="input input-sm input-bordered pl-7 w-36 focus:w-48 transition-all duration-200"
+				class="input input-sm pl-7 w-36 focus:w-48 transition-all duration-200"
 			/>
 		</div>
 
@@ -501,13 +502,13 @@
 
 <!-- Mobile menu dropdown -->
 {#if mobileMenuOpen}
-	<div class="xl:hidden bg-white border-b border-gray-200 shadow-lg">
+	<div class="xl:hidden bg-base-100 border-b border-gray-200 shadow-lg">
 		<div class="p-4 space-y-4">
 			<!-- Example Data -->
 			<div>
 				<p class="text-xs uppercase tracking-wider text-gray-500 mb-2">Example Data</p>
 				<select
-					class="select select-bordered w-full"
+					class="select w-full"
 					onchange={(e) => {
 						onloadExample?.(e.currentTarget.value);
 						mobileMenuOpen = false;
@@ -559,7 +560,7 @@
 					placeholder="Filter words..."
 					value={$ConfigStore.wordToSearch}
 					oninput={handleWordSearch}
-					class="input input-bordered input-sm w-full"
+					class="input input-sm w-full"
 				/>
 			</div>
 

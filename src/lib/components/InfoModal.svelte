@@ -107,12 +107,13 @@
 			</div>
 
 			<!-- Tabs -->
-			<div class="border-b border-gray-200 bg-white">
+			<div class="border-b border-gray-200 bg-base-100">
 				<div class="flex px-8" role="tablist">
 					{#each tabs as tab}
 						<button
 							role="tab"
 							aria-selected={activeTab === tab.id}
+							aria-controls="tabpanel-{tab.id}"
 							class="px-4 py-3 text-sm font-medium border-b-2 transition-colors {activeTab === tab.id
 								? 'border-gray-800 text-gray-800'
 								: 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'}"
@@ -128,6 +129,7 @@
 			<div class="px-8 py-6">
 				{#if activeTab === 'start'}
 					<!-- Get Started Tab -->
+					<div id="tabpanel-start" role="tabpanel">
 					<div class="flex gap-4 mb-6">
 						<button
 							onclick={() => closeAndRun(onStartTour)}
@@ -184,12 +186,14 @@
 							</button>
 						{/each}
 					</div>
+					</div>
 				{:else if activeTab === 'import'}
 					<!-- Import Transcript Tab -->
+					<div id="tabpanel-import" role="tabpanel">
 					<div class="grid grid-cols-2 gap-4 mb-5">
 						<div class="bg-gray-50 rounded-lg p-4">
 							<h4 class="font-medium text-gray-700 mb-2">CSV format</h4>
-							<div class="bg-white border border-gray-200 rounded overflow-hidden">
+							<div class="bg-base-100 border border-gray-200 rounded overflow-hidden">
 								<table class="w-full text-xs">
 									<thead class="bg-gray-100">
 										<tr>
@@ -219,7 +223,7 @@
 						</div>
 						<div class="bg-gray-50 rounded-lg p-4">
 							<h4 class="font-medium text-gray-700 mb-2">TXT format</h4>
-							<div class="bg-white border border-gray-200 rounded p-2 font-mono text-xs">
+							<div class="bg-base-100 border border-gray-200 rounded p-2 font-mono text-xs">
 								<div>Teacher: Good morning</div>
 								<div>Student 1: Hi!</div>
 								<div>Teacher: Let's begin</div>
@@ -228,7 +232,7 @@
 						</div>
 						<div class="bg-gray-50 rounded-lg p-4">
 							<h4 class="font-medium text-gray-700 mb-2">SRT / VTT subtitles</h4>
-							<div class="bg-white border border-gray-200 rounded p-2 font-mono text-xs">
+							<div class="bg-base-100 border border-gray-200 rounded p-2 font-mono text-xs">
 								<div class="text-gray-400">1</div>
 								<div class="text-gray-400">00:00:01,000 --> 00:00:03,500</div>
 								<div>Good morning class</div>
@@ -239,7 +243,7 @@
 						</div>
 						<div class="bg-gray-50 rounded-lg p-4">
 							<h4 class="font-medium text-gray-700 mb-2">Paste text</h4>
-							<div class="bg-white border border-gray-200 rounded p-2 font-mono text-xs">
+							<div class="bg-base-100 border border-gray-200 rounded p-2 font-mono text-xs">
 								<div>Alice: Hello there</div>
 								<div>Bob: Hi Alice!</div>
 								<div class="text-gray-400 mt-1">— or with timestamps —</div>
@@ -272,8 +276,10 @@
 							Paste Text
 						</button>
 					</div>
+					</div>
 				{:else if activeTab === 'create'}
 					<!-- Create Transcript Tab -->
+					<div id="tabpanel-create" role="tabpanel">
 					<p class="text-gray-600 mb-5">Have a video but no transcript? Generate one automatically or transcribe it yourself.</p>
 
 					<div class="space-y-4">
@@ -323,8 +329,10 @@
 							</div>
 						</div>
 					</div>
+					</div>
 				{:else if activeTab === 'codes'}
 					<!-- Import Codes Tab -->
+					<div id="tabpanel-codes" role="tabpanel">
 					<p class="text-gray-600 mb-5">
 						Add and interact with qualitative codes to your transcript by uploading a CSV formatted as follows:
 					</p>
@@ -332,7 +340,7 @@
 					<div class="grid grid-cols-2 gap-4 mb-5">
 						<div class="bg-gray-50 rounded-lg p-4">
 							<h4 class="font-medium text-gray-700 mb-2">Turn + Code</h4>
-							<div class="bg-white border border-gray-200 rounded overflow-hidden">
+							<div class="bg-base-100 border border-gray-200 rounded overflow-hidden">
 								<table class="w-full text-xs">
 									<thead class="bg-gray-100">
 										<tr>
@@ -361,7 +369,7 @@
 
 						<div class="bg-gray-50 rounded-lg p-4">
 							<h4 class="font-medium text-gray-700 mb-2">Turn Range + Code</h4>
-							<div class="bg-white border border-gray-200 rounded overflow-hidden">
+							<div class="bg-base-100 border border-gray-200 rounded overflow-hidden">
 								<table class="w-full text-xs">
 									<thead class="bg-gray-100">
 										<tr>
@@ -389,7 +397,7 @@
 
 						<div class="bg-gray-50 rounded-lg p-4">
 							<h4 class="font-medium text-gray-700 mb-2">Time Range + Code</h4>
-							<div class="bg-white border border-gray-200 rounded overflow-hidden">
+							<div class="bg-base-100 border border-gray-200 rounded overflow-hidden">
 								<table class="w-full text-xs">
 									<thead class="bg-gray-100">
 										<tr>
@@ -417,7 +425,7 @@
 
 						<div class="bg-gray-50 rounded-lg p-4">
 							<h4 class="font-medium text-gray-700 mb-2">Time Range Only</h4>
-							<div class="bg-white border border-gray-200 rounded overflow-hidden">
+							<div class="bg-base-100 border border-gray-200 rounded overflow-hidden">
 								<table class="w-full text-xs">
 									<thead class="bg-gray-100">
 										<tr>
@@ -457,6 +465,7 @@
 						<CloudUpload size={20} class="mr-2" />
 						Upload Files
 					</button>
+					</div>
 				{/if}
 			</div>
 
@@ -485,7 +494,7 @@
 						<details class="relative">
 							<summary class="cursor-pointer text-sm text-gray-500 hover:text-gray-400">Credits</summary>
 							<div
-								class="absolute left-0 bottom-full mb-2 text-sm text-gray-500 text-left w-[90vw] max-w-[450px] bg-white border border-gray-200 rounded-lg p-3 shadow-lg"
+								class="absolute left-0 bottom-full mb-2 text-sm text-gray-500 text-left w-[90vw] max-w-[450px] bg-base-100 border border-gray-200 rounded-lg p-3 shadow-lg"
 							>
 								Example data from Mathematics Teaching and Learning to Teach (MTLT), University of Michigan (2010) and The
 								Third International Mathematics and Science Study (TIMSS) 1999 Video Study. Speaker Garden inspired by

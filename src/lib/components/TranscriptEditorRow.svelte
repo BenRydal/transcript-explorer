@@ -396,12 +396,12 @@
 	}
 
 	.turn-row:hover {
-		background-color: #f3f4f6;
+		background-color: var(--viz-gray-50);
 	}
 
 	.turn-row.selected {
 		background-color: #dbeafe;
-		border-left-color: #3b82f6;
+		border-left-color: var(--color-info, #9ad4e4);
 	}
 
 	.turn-row.speaker-highlighted {
@@ -411,13 +411,13 @@
 
 	.turn-row.selected.speaker-highlighted {
 		background-color: #dbeafe;
-		border-left-color: #3b82f6;
+		border-left-color: var(--color-info, #9ad4e4);
 	}
 
 	.turn-timecode {
 		font-family: monospace;
 		font-size: 0.75rem;
-		color: #6b7280;
+		color: var(--viz-gray-500);
 		flex-shrink: 0;
 		background: none;
 		border: none;
@@ -427,7 +427,7 @@
 	}
 
 	.turn-timecode:hover {
-		background-color: #e5e7eb;
+		background-color: var(--viz-gray-200);
 		padding: 0.125rem 0.25rem;
 		margin: -0.125rem -0.25rem;
 	}
@@ -443,13 +443,13 @@
 	}
 
 	.turn-speaker:hover {
-		background-color: #e5e7eb;
+		background-color: var(--viz-gray-200);
 		padding: 0.125rem 0.25rem;
 		margin: -0.125rem -0.25rem;
 	}
 
 	.turn-content {
-		color: #374151;
+		color: var(--viz-gray-800);
 		word-break: break-word;
 		text-align: left;
 		background: none;
@@ -462,7 +462,7 @@
 	}
 
 	.turn-content:hover {
-		background-color: #e5e7eb;
+		background-color: var(--viz-gray-200);
 		padding: 0.125rem 0.25rem;
 		margin: -0.125rem -0.25rem;
 	}
@@ -479,12 +479,12 @@
 		font-family: monospace;
 		font-size: 0.75rem;
 		padding: 0.25rem;
-		border: 1px solid #d1d5db;
+		border: 1px solid var(--viz-gray-300);
 		border-radius: 0.25rem;
 	}
 
 	.time-separator {
-		color: #9ca3af;
+		color: var(--viz-gray-500);
 		font-size: 0.75rem;
 		user-select: none;
 	}
@@ -501,13 +501,13 @@
 		transition:
 			background-color 0.15s,
 			color 0.15s;
-		background-color: #e5e7eb;
-		color: #6b7280;
+		background-color: var(--viz-gray-200);
+		color: var(--viz-gray-500);
 		flex-shrink: 0;
 	}
 
 	.time-capture-btn.capture-start-btn:hover {
-		color: #2563eb;
+		color: var(--color-info, #9ad4e4);
 		background-color: #dbeafe;
 	}
 
@@ -526,7 +526,7 @@
 		width: 100px;
 		font-weight: 600;
 		padding: 0.25rem;
-		border: 1px solid #d1d5db;
+		border: 1px solid var(--viz-gray-300);
 		border-radius: 0.25rem;
 		text-transform: uppercase;
 		flex-shrink: 0;
@@ -540,7 +540,7 @@
 	.content-textarea {
 		width: 100%;
 		padding: 0.25rem;
-		border: 1px solid #d1d5db;
+		border: 1px solid var(--viz-gray-300);
 		border-radius: 0.25rem;
 		font-family: inherit;
 		font-size: inherit;
@@ -551,7 +551,7 @@
 
 	.edit-hint {
 		font-size: 0.625rem;
-		color: #9ca3af;
+		color: var(--viz-gray-500);
 		margin-top: 0.125rem;
 	}
 
@@ -577,11 +577,11 @@
 			background-color 0.15s,
 			color 0.15s;
 		background-color: transparent;
-		color: #9ca3af;
+		color: var(--viz-gray-500);
 	}
 
 	.action-btn:hover {
-		background-color: #e5e7eb;
+		background-color: var(--viz-gray-200);
 	}
 
 	.add-btn:hover {

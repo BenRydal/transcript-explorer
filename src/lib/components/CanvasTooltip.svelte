@@ -131,7 +131,7 @@
 <style>
 	.canvas-tooltip {
 		position: absolute;
-		z-index: 1000;
+		z-index: var(--z-tooltip, 60);
 		pointer-events: none;
 		width: max-content;
 		max-width: 500px;

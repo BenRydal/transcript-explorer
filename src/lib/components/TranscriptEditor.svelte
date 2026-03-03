@@ -537,7 +537,7 @@
 		display: flex;
 		flex-direction: column;
 		height: 100%;
-		background-color: #ffffff;
+		background-color: var(--color-base-100, #fbfcfd);
 		overflow: hidden;
 	}
 
@@ -569,8 +569,8 @@
 	}
 
 	.create-transcript-btn {
-		background-color: #3b82f6;
-		color: white;
+		background-color: var(--color-info, #9ad4e4);
+		color: var(--color-base-100, #fbfcfd);
 		font-weight: 500;
 		padding: 0.75rem 1.5rem;
 		border-radius: 8px;
@@ -581,7 +581,7 @@
 	}
 
 	.create-transcript-btn:hover {
-		background-color: #2563eb;
+		background-color: var(--color-info, #9ad4e4);
 	}
 
 	.filter-banner {

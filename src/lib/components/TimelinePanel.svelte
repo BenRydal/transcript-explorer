@@ -8,25 +8,25 @@
 	import RangeSlider from './RangeSlider.svelte';
 	import type { TimingMode } from '../../models/transcript';
 
-	$: timelineLeft = $TimelineStore.leftMarker;
-	$: timelineRight = $TimelineStore.rightMarker;
-	$: timelineCurr = $TimelineStore.currTime;
-	$: startTime = $TimelineStore.startTime;
-	$: endTime = $TimelineStore.endTime;
-	$: isAnimating = $TimelineStore.isAnimating;
-
-	// Formatted time displays
-	$: formattedCurr = formatTimeDisplay(timelineCurr, currentTimeFormat);
-	$: formattedStart = formatTimeDisplay(startTime, currentTimeFormat);
-	$: formattedEnd = formatTimeDisplay(endTime, currentTimeFormat);
+	let timelineLeft = $derived($TimelineStore.leftMarker);
+	let timelineRight = $derived($TimelineStore.rightMarker);
+	let timelineCurr = $derived($TimelineStore.currTime);
+	let startTime = $derived($TimelineStore.startTime);
+	let endTime = $derived($TimelineStore.endTime);
+	let isAnimating = $derived($TimelineStore.isAnimating);
 
 	type TimeFormat = 'HHMMSS' | 'MMSS' | 'SECONDS' | 'DECIMAL' | 'WORDS';
 
-	let currentTimeFormat: TimeFormat = 'HHMMSS';
-	let previousTimingMode: TimingMode = 'untimed';
+	let currentTimeFormat: TimeFormat = $state('HHMMSS');
+	let previousTimingMode: TimingMode = $state('untimed');
+
+	// Formatted time displays
+	let formattedCurr = $derived(formatTimeDisplay(timelineCurr, currentTimeFormat));
+	let formattedStart = $derived(formatTimeDisplay(startTime, currentTimeFormat));
+	let formattedEnd = $derived(formatTimeDisplay(endTime, currentTimeFormat));
 
 	// Update time format when timing mode changes
-	$: {
+	$effect(() => {
 		const timingMode = $TranscriptStore.timingMode;
 		if ($TranscriptStore.wordArray.length > 0) {
 			if (timingMode === 'untimed') {
@@ -36,7 +36,7 @@
 			}
 		}
 		previousTimingMode = timingMode;
-	}
+	});
 
 	function cycleTimeFormat() {
 		let formats: TimeFormat[];
@@ -85,8 +85,8 @@
 		}
 	};
 
-	const handleSliderChange = (event: CustomEvent<{ left: number; right: number }>) => {
-		const { left, right } = event.detail;
+	const handleSliderChange = (data: { left: number; right: number }) => {
+		const { left, right } = data;
 		if (left === timelineLeft && right === timelineRight) return;
 
 		if (!$TimelineStore.isAnimating) {
@@ -116,7 +116,7 @@
 		{ value: 30, label: '30x' }
 	];
 
-	$: speedLabel = SPEED_PRESETS.find((p) => p.value === $ConfigStore.animationRate)?.label ?? '3x';
+	let speedLabel = $derived(SPEED_PRESETS.find((p) => p.value === $ConfigStore.animationRate)?.label ?? '3x');
 
 	const cycleSpeed = () => {
 		ConfigStore.update((currentConfig) => {
@@ -148,7 +148,7 @@
 				leftValue={timelineLeft}
 				rightValue={timelineRight}
 				progressValue={timelineCurr}
-				on:change={handleSliderChange}
+				onchange={handleSliderChange}
 			/>
 		</div>
 		<span class="edge-time">{formattedEnd}</span>
@@ -158,7 +158,7 @@
 		<span class="control-label">Animation</span>
 
 		<div class="control-group">
-			<button on:click={toggleAnimation} class="control-btn play-btn" aria-label={isAnimating ? 'Pause' : 'Play'}>
+			<button onclick={toggleAnimation} class="control-btn play-btn" aria-label={isAnimating ? 'Pause' : 'Play'}>
 				{#if isAnimating}
 					<Pause size={16} />
 				{:else}
@@ -168,19 +168,19 @@
 
 			<div class="control-divider"></div>
 
-			<button class="control-btn" on:click={resetToStart} title="Skip to start" aria-label="Skip to start">
+			<button class="control-btn" onclick={resetToStart} title="Skip to start" aria-label="Skip to start">
 				<SkipBack size={16} />
 			</button>
 
 			<div class="control-divider"></div>
 
-			<button class="control-btn speed-btn" on:click={cycleSpeed} title="Click to change speed" aria-label="Animation speed: {speedLabel}">
+			<button class="control-btn speed-btn" onclick={cycleSpeed} title="Click to change speed" aria-label="Animation speed: {speedLabel}">
 				{speedLabel}
 			</button>
 		</div>
 
-		<button class="current-time" on:click={cycleTimeFormat} title="Click to change time format">
-			{formattedCurr} <span class="format-indicator">▾</span>
+		<button class="current-time" onclick={cycleTimeFormat} title="Click to change time format">
+			{formattedCurr} <span class="format-indicator">&#x25BE;</span>
 		</button>
 	</div>
 </div>
@@ -196,7 +196,7 @@
 	.edge-time {
 		font-family: monospace;
 		font-size: 0.75rem;
-		color: #6b7280;
+		color: var(--viz-gray-500);
 		white-space: nowrap;
 		min-width: 3.5rem;
 	}
@@ -221,7 +221,7 @@
 	.control-label {
 		font-size: 0.65rem;
 		font-weight: 500;
-		color: #9ca3af;
+		color: var(--viz-gray-500);
 		text-transform: uppercase;
 		letter-spacing: 0.05em;
 	}
@@ -229,8 +229,8 @@
 	.control-group {
 		display: flex;
 		align-items: center;
-		background: #ffffff;
-		border: 1px solid #e5e7eb;
+		background: var(--color-base-100, #fbfcfd);
+		border: 1px solid var(--viz-gray-200);
 		border-radius: 6px;
 		overflow: hidden;
 	}
@@ -243,7 +243,7 @@
 		height: 32px;
 		border: none;
 		background: transparent;
-		color: #6b7280;
+		color: var(--viz-gray-500);
 		cursor: pointer;
 		transition:
 			background-color 0.15s,
@@ -251,18 +251,18 @@
 	}
 
 	.control-btn:hover {
-		background: #f3f4f6;
-		color: #374151;
+		background: var(--viz-gray-50);
+		color: var(--viz-gray-800);
 	}
 
 	.control-btn.play-btn {
-		background: #3b82f6;
-		color: #ffffff;
+		background: var(--color-info, #9ad4e4);
+		color: var(--color-base-100, #fbfcfd);
 	}
 
 	.control-btn.play-btn:hover {
-		background: #2563eb;
-		color: #ffffff;
+		background: var(--color-info, #9ad4e4);
+		color: var(--color-base-100, #fbfcfd);
 	}
 
 	.control-btn.speed-btn {
@@ -277,7 +277,7 @@
 	.control-divider {
 		width: 1px;
 		height: 20px;
-		background: #e5e7eb;
+		background: var(--viz-gray-200);
 	}
 
 	.current-time {
@@ -287,8 +287,8 @@
 		font-family: monospace;
 		font-size: 1.1rem;
 		font-weight: 600;
-		color: #1f2937;
-		background: #f3f4f6;
+		color: var(--viz-gray-800);
+		background: var(--viz-gray-50);
 		padding: 0.25rem 0.75rem;
 		border-radius: 6px;
 		border: none;
@@ -297,12 +297,12 @@
 	}
 
 	.current-time:hover {
-		background: #e5e7eb;
+		background: var(--viz-gray-200);
 	}
 
 	.format-indicator {
 		font-size: 0.7rem;
-		color: #9ca3af;
+		color: var(--viz-gray-500);
 		margin-left: 0.125rem;
 	}
 </style>

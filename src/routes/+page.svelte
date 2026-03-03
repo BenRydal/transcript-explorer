@@ -814,7 +814,7 @@
 
 		<div class="btm-nav flex justify-between min-h-20" style="position: relative;">
 			<SpeakerControls showCodes={$CodeStore.length > 0} />
-			<div class="flex-1 bg-[#f6f5f3]" data-tour="timeline">
+			<div class="flex-1 bg-base-200" data-tour="timeline">
 				<TimelinePanel />
 			</div>
 		</div>

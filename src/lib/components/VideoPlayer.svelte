@@ -149,7 +149,7 @@
 	.video-player {
 		width: 100%;
 		height: 100%;
-		background: #000;
+		background: var(--viz-gray-900, #000);
 	}
 
 	.youtube-container {

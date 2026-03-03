@@ -255,7 +255,7 @@
 		background: rgba(255, 255, 255, 0.1);
 		border: none;
 		border-radius: 4px;
-		color: white;
+		color: var(--color-base-100, #fbfcfd);
 		cursor: pointer;
 		transition: background 0.15s;
 		flex-shrink: 0;
@@ -288,7 +288,7 @@
 		gap: 4px;
 		font-family: monospace;
 		font-size: 11px;
-		color: white;
+		color: var(--color-base-100, #fbfcfd);
 		flex-shrink: 0;
 	}
 
@@ -323,7 +323,7 @@
 		left: 0;
 		top: 0;
 		height: 100%;
-		background: #3b82f6;
+		background: var(--color-info, #9ad4e4);
 		border-radius: 2px;
 		transition: width 0.1s ease-out;
 	}
@@ -333,7 +333,7 @@
 		top: 50%;
 		width: 12px;
 		height: 12px;
-		background: white;
+		background: var(--color-base-100, #fbfcfd);
 		border-radius: 50%;
 		transform: translate(-50%, -50%);
 		box-shadow: 0 1px 3px rgba(0, 0, 0, 0.3);

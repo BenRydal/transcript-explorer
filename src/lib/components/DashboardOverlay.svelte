@@ -1,6 +1,7 @@
 <script lang="ts">
 	import ConfigStore, { DASHBOARD_PANEL_OPTIONS } from '../../stores/configStore';
 	import type { Component } from 'svelte';
+	import { Z_INDEX } from '$lib/styles/z-index';
 	import {
 		Minus,
 		Plus,
@@ -80,7 +81,7 @@
 	style:padding="{CANVAS_SPACING / 2}px"
 	style:gap="{CANVAS_SPACING}px"
 >
-	<div class="absolute top-2 left-2 pointer-events-auto flex gap-0.5 z-[51]">
+	<div class="absolute top-2 left-2 pointer-events-auto flex gap-0.5" style="z-index: {Z_INDEX.DROPDOWN + 1};">
 		<button
 			class="btn btn-xs btn-ghost bg-white/70 hover:bg-white/90 border border-gray-300 shadow-sm"
 			onclick={removePanel}
@@ -115,7 +116,8 @@
 				<!-- Icon grid popover -->
 				{#if openPopoverIndex === i}
 					<div
-						class="absolute top-full right-0 mt-1 z-[52] rounded-lg py-2 px-2 shadow-lg bg-base-100 border border-gray-200 w-44 pointer-events-auto"
+						class="absolute top-full right-0 mt-1 rounded-lg py-2 px-2 shadow-lg bg-base-100 border border-gray-200 w-44 pointer-events-auto"
+						style="z-index: {Z_INDEX.DROPDOWN + 2};"
 					>
 						<div class="grid grid-cols-3 gap-1">
 							{#each DASHBOARD_PANEL_OPTIONS as option}
@@ -151,7 +153,7 @@
 		inset: 0;
 		display: grid;
 		pointer-events: none;
-		z-index: 50;
+		z-index: var(--z-dropdown, 50);
 	}
 
 	.dashboard-overlay.two {

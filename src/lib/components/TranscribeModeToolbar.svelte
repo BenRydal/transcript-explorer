@@ -65,8 +65,8 @@
 		justify-content: space-between;
 		height: 40px;
 		padding: 0 12px;
-		background: #1f2937;
-		color: white;
+		background: var(--viz-gray-800);
+		color: var(--color-base-100, #fbfcfd);
 		flex-shrink: 0;
 	}
 
@@ -138,9 +138,9 @@
 	}
 
 	.shortcuts-panel {
-		background: #374151;
+		background: var(--viz-gray-800);
 		padding: 12px 16px;
-		border-top: 1px solid #4b5563;
+		border-top: 1px solid var(--viz-gray-600, #4b5563);
 	}
 
 	.shortcuts-grid {
@@ -161,12 +161,12 @@
 	kbd {
 		display: inline-block;
 		padding: 2px 6px;
-		background: #1f2937;
-		border: 1px solid #4b5563;
+		background: var(--viz-gray-800);
+		border: 1px solid var(--viz-gray-600, #4b5563);
 		border-radius: 4px;
 		font-family: monospace;
 		font-size: 11px;
-		color: white;
+		color: var(--color-base-100, #fbfcfd);
 		min-width: 24px;
 		text-align: center;
 	}

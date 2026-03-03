@@ -21,7 +21,7 @@
 
 <div
 	data-tip={tooltip}
-	class="tooltip tooltip-bottom btn capitalize icon max-h-8 bg-[#ffffff] border-[#ffffff] max-w-16 flex items-center justify-center"
+	class="tooltip tooltip-bottom btn capitalize icon max-h-8 bg-base-100 border-base-100 max-w-16 flex items-center justify-center"
 	class:btn-disabled={disabled}
 	class:opacity-50={disabled}
 	role="button"
