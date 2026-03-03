@@ -21,7 +21,7 @@
 		height?: number;
 	}
 
-	let { height = 40 }: Props = $props();
+	let { height = 24 }: Props = $props();
 
 	// Create shared timeline store
 	const store = createTimelineStore();
@@ -176,9 +176,9 @@
 	});
 </script>
 
-<div class="flex flex-col w-11/12 h-full py-3">
+<div class="flex flex-col w-11/12 py-1 gap-0.5">
 	<!-- Canvas timeline (replaces RangeSlider) -->
-	<div class="w-full" style="height: {height}px;">
+	<div class="w-full flex-shrink-0" style="height: {height}px;">
 		<TimelineCanvas
 			{store}
 			{layers}
@@ -241,7 +241,6 @@
 	.controls-row {
 		display: flex;
 		width: 100%;
-		margin-top: 0.5rem;
 		align-items: center;
 		justify-content: center;
 		gap: 0.75rem;
@@ -265,8 +264,8 @@
 		display: flex;
 		align-items: center;
 		justify-content: center;
-		width: 32px;
-		height: 32px;
+		width: 28px;
+		height: 28px;
 		border: none;
 		background: transparent;
 		color: #6b7280;
@@ -297,7 +296,7 @@
 	}
 	.control-divider {
 		width: 1px;
-		height: 20px;
+		height: 16px;
 		background: #e5e7eb;
 	}
 	.current-time {
@@ -305,11 +304,11 @@
 		align-items: center;
 		gap: 0.25rem;
 		font-family: monospace;
-		font-size: 1.1rem;
+		font-size: 0.95rem;
 		font-weight: 600;
 		color: #1f2937;
 		background: #f3f4f6;
-		padding: 0.25rem 0.75rem;
+		padding: 0.125rem 0.5rem;
 		border-radius: 6px;
 		border: none;
 		cursor: pointer;
