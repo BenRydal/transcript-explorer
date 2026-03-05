@@ -417,7 +417,6 @@ export class DynamicData {
 		if (visibleWords.length === 0) return [];
 
 		const enabledSpeakers = this.getEnabledSpeakers();
-		if (enabledSpeakers.size === 0) return [];
 
 		const hasTiming = get(TranscriptStore).timingMode !== 'untimed';
 
@@ -474,8 +473,7 @@ export class DynamicData {
 		} else {
 			let maxAvg = 0,
 				maxPart = 0;
-			for (const [speaker, data] of speakerTurns) {
-				if (!enabledSpeakers.has(speaker)) continue;
+			for (const [, data] of speakerTurns) {
 				const turnCount = data.turnNumbers.size;
 				maxAvg = Math.max(maxAvg, ratio(data.wordCount, turnCount));
 				maxPart = Math.max(maxPart, ratio(turnCount, totalTurns));
@@ -544,21 +542,18 @@ export class DynamicData {
 
 	/**
 	 * Computes max values from the full transcript for consistent normalization.
-	 * Respects stop words and enabled speakers filters for consistency with visible path.
-	 * Does NOT filter by time range (that's the point - it's the full transcript).
+	 * Includes ALL speakers so values remain stable when toggling speaker visibility.
+	 * Respects stop words filter. Does NOT filter by time range or enabled speakers.
 	 */
 	private computeFullTranscriptMaxValues(): { avgTurnLength: number; participation: number } {
 		const wordArray = get(TranscriptStore).wordArray || [];
 		if (wordArray.length === 0) return { avgTurnLength: 0, participation: 0 };
 
-		const enabledSpeakers = this.getEnabledSpeakers();
 		const filterStopWords = config.stopWordsToggle;
 
-		// Aggregate from full wordArray, respecting filters
+		// Aggregate from full wordArray across all speakers for stable normalization
 		const speakerData = new Map<string, { wordCount: number; turns: Set<number> }>();
 		for (const word of wordArray) {
-			// Skip disabled speakers
-			if (!enabledSpeakers.has(word.speaker)) continue;
 			// Skip stop words if filter is on
 			if (filterStopWords && this.isStopWord(word.word)) continue;
 
