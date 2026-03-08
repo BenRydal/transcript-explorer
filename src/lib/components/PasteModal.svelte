@@ -22,13 +22,14 @@
 	let selectedFormat: DetectedFormat | 'auto' = $state('auto');
 	let mergeSameSpeaker = $state(false);
 	let parseResult: ParseResult | null = $state(null);
-	let debounceTimer: ReturnType<typeof setTimeout> | null = $state(null);
+	let debounceTimer: ReturnType<typeof setTimeout> | null = null;
 	let textareaRef: HTMLTextAreaElement;
 
-	// Track last parsed state for debounce optimization
-	let lastParsedInput = $state('');
-	let lastParsedFormat: DetectedFormat | 'auto' = $state('auto');
-	let lastParsedMerge = $state(false);
+	// Track last parsed state for debounce optimization (plain variables, not $state,
+	// to avoid re-triggering the $effect that reads them)
+	let lastParsedInput = '';
+	let lastParsedFormat: DetectedFormat | 'auto' = 'auto';
+	let lastParsedMerge = false;
 
 	function clearDebounce() {
 		if (debounceTimer) {
@@ -109,6 +110,7 @@
 		}}
 		onkeydown={handleKeydown}
 		role="dialog"
+		tabindex="-1"
 		aria-modal="true"
 		aria-labelledby="paste-modal-title"
 	>
