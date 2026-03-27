@@ -11,7 +11,10 @@
 		"check": "svelte-kit sync && svelte-check --tsconfig ./tsconfig.json",
 		"check:watch": "svelte-kit sync && svelte-check --tsconfig ./tsconfig.json --watch",
 		"lint": "prettier --plugin-search-dir . --check . && eslint .",
-		"format": "prettier --plugin-search-dir . --write ."
+		"format": "prettier --plugin-search-dir . --write .",
+		"convert:list": "python3 tools/claude-code-converter/convert.py --list-sessions",
+		"convert:session": "python3 tools/claude-code-converter/convert.py -o tools/claude-code-converter/output",
+		"convert:latest": "python3 tools/claude-code-converter/convert-latest.py -o tools/claude-code-converter/output"
 	},
 	"devDependencies": {
 		"@rollup/plugin-replace": "^6.0.2",

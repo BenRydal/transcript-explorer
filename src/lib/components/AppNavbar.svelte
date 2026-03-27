@@ -26,7 +26,8 @@
 		CloudRain,
 		Route,
 		LayoutDashboard,
-		ChevronDown
+		ChevronDown,
+		Bot
 	} from '@lucide/svelte';
 	import type { Component } from 'svelte';
 	import IconButton from './IconButton.svelte';
@@ -86,12 +87,16 @@
 		'dashboardToggle'
 	] as const;
 
-	const exampleOptions = [
+	const exampleOptions: { value: string; label: string; icon: Component | null }[] = [
 		{ value: 'example-1', label: 'Kindergarten Activity', icon: GraduationCap },
 		{ value: 'example-3', label: '3rd Grade Discussion Odd/Even Numbers', icon: GraduationCap },
 		{ value: 'example-4', label: '8th Grade Science Lesson', icon: GraduationCap },
 		{ value: 'example-2', label: 'Family Gallery Visit', icon: Landmark },
-		{ value: 'example-5', label: 'Biden-Trump 2020 Debate', icon: Mic }
+		{ value: 'example-5', label: 'Biden-Trump 2020 Debate', icon: Mic },
+		{ value: '', label: 'divider', icon: null },
+		{ value: 'claude-code-1', label: 'Claude Code: Building TE Converter', icon: Bot },
+		{ value: 'claude-code-2', label: 'Claude Code: Framework Research', icon: Bot },
+		{ value: 'claude-code-3', label: 'Claude Code: API Design (Agents)', icon: Bot }
 	];
 
 	const PANEL_LABELS: Record<string, string> = {
@@ -295,17 +300,21 @@
 			</summary>
 			<ul class="menu dropdown-content rounded-box z-[60] w-56 p-2 shadow bg-base-100 max-h-[60vh] overflow-y-auto overflow-x-hidden">
 				{#each exampleOptions as item}
-					{@const Icon = item.icon}
-					<li class="w-full">
-						<button
-							onclick={() => onloadExample?.(item.value)}
-							class="text-sm w-full flex items-center gap-2 {selectedExample === item.label ? 'active' : ''}"
-							title={item.label}
-						>
-							<Icon size={16} class="flex-shrink-0" />
-							<span class="block truncate">{item.label}</span>
-						</button>
-					</li>
+					{#if item.label === 'divider'}
+						<li class="w-full"><div class="divider my-1 px-2 text-xs opacity-50">Human-AI Sessions</div></li>
+					{:else}
+						{@const Icon = item.icon}
+						<li class="w-full">
+							<button
+								onclick={() => onloadExample?.(item.value)}
+								class="text-sm w-full flex items-center gap-2 {selectedExample === item.label ? 'active' : ''}"
+								title={item.label}
+							>
+								{#if Icon}<Icon size={16} class="flex-shrink-0" />{/if}
+								<span class="block truncate">{item.label}</span>
+							</button>
+						</li>
+					{/if}
 				{/each}
 			</ul>
 		</details>
@@ -515,7 +524,11 @@
 				>
 					<option value="" disabled selected={!selectedExample}>Examples</option>
 					{#each exampleOptions as item}
-						<option value={item.value} selected={selectedExample === item.label}>{item.label}</option>
+						{#if item.label === 'divider'}
+							<option disabled>--- Human-AI Sessions ---</option>
+						{:else}
+							<option value={item.value} selected={selectedExample === item.label}>{item.label}</option>
+						{/if}
 					{/each}
 				</select>
 			</div>

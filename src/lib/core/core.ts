@@ -33,6 +33,21 @@ const examples: Record<string, { files: string[]; videoId: string }> = {
 		// Biden/Trump Debate 2020
 		files: ['conversation.csv'],
 		videoId: 'yW8nIA33-zY'
+	},
+	'claude-code-1': {
+		// Claude Code: Building TE Converter (this tool)
+		files: ['conversation.csv', 'codes.csv'],
+		videoId: ''
+	},
+	'claude-code-2': {
+		// Claude Code: Backend Framework Research
+		files: ['conversation.csv', 'codes.csv'],
+		videoId: ''
+	},
+	'claude-code-3': {
+		// Claude Code: Enagon API Design (heavy agent orchestration)
+		files: ['conversation.csv', 'codes.csv'],
+		videoId: ''
 	}
 };
 

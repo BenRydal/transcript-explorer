@@ -179,7 +179,10 @@
 		'example-3': '3rd Grade Discussion Odd/Even Numbers',
 		'example-4': '8th Grade Science Lesson',
 		'example-2': 'Family Gallery Visit',
-		'example-5': 'Biden-Trump 2020 Debate'
+		'example-5': 'Biden-Trump 2020 Debate',
+		'claude-code-1': 'Claude Code: Building TE Converter',
+		'claude-code-2': 'Claude Code: Framework Research',
+		'claude-code-3': 'Claude Code: API Design (Agents)'
 	};
 
 	// Reactive bindings to stores
