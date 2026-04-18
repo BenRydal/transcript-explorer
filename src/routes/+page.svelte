@@ -1,6 +1,7 @@
 <script lang="ts">
-	import P5, { type Sketch } from 'p5-svelte';
 	import type p5 from 'p5';
+	import type { SketchFn } from 'svelte-p5';
+	import { CanvasFrame, Sketch, SplitPane } from 'svelte-p5-components';
 	import { browser } from '$app/environment';
 	import { onMount } from 'svelte';
 	import { writable, get } from 'svelte/store';
@@ -46,7 +47,6 @@
 	import AppNavbar from '$lib/components/AppNavbar.svelte';
 	import InfoModal from '$lib/components/InfoModal.svelte';
 	import TimelinePanel from '$lib/components/TimelinePanel.svelte';
-	import SplitPane from '$lib/components/SplitPane.svelte';
 	import TranscriptEditor from '$lib/components/TranscriptEditor.svelte';
 	import CanvasTooltip from '$lib/components/CanvasTooltip.svelte';
 	import VideoContainer from '$lib/components/VideoContainer.svelte';
@@ -264,7 +264,7 @@
 		clearState();
 	}
 
-	const sketch: Sketch = (p5: p5) => {
+	const sketch: SketchFn = (p5: p5) => {
 		igsSketch(p5);
 	};
 
@@ -718,60 +718,73 @@
 {#if isTranscribeModeActive}
 	<TranscribeModeLayout onexit={exitTranscribeMode} oncreateTranscript={createTranscript} />
 {:else}
-	<div class="page-container">
-		<AppNavbar
-			selectedExample={selectedDropDownOption}
-			{isEditorVisible}
-			{isVideoVisible}
-			{isVideoLoaded}
-			onloadExample={handleLoadExample}
-			ontoggleEditor={handleToggleEditor}
-			ontoggleVideo={toggleVideoVisibility}
-			onopenUpload={() => (showUploadModal = true)}
-			onopenHelp={() => ($isModalOpen = !$isModalOpen)}
-			onopenSettings={() => (showSettings = true)}
-			oncreateNewTranscript={() => (showNewTranscriptConfirm = true)}
-			ontoggleTranscribeMode={toggleTranscribeMode}
-			onwordSearch={handleWordSearch}
-			onconfigChange={handleConfigChange}
-		/>
+	<div class="page-frame">
+		<CanvasFrame>
+			{#snippet top()}
+				<AppNavbar
+					selectedExample={selectedDropDownOption}
+					{isEditorVisible}
+					{isVideoVisible}
+					{isVideoLoaded}
+					onloadExample={handleLoadExample}
+					ontoggleEditor={handleToggleEditor}
+					ontoggleVideo={toggleVideoVisibility}
+					onopenUpload={() => (showUploadModal = true)}
+					onopenHelp={() => ($isModalOpen = !$isModalOpen)}
+					onopenSettings={() => (showSettings = true)}
+					oncreateNewTranscript={() => (showNewTranscriptConfirm = true)}
+					ontoggleTranscribeMode={toggleTranscribeMode}
+					onwordSearch={handleWordSearch}
+					onconfigChange={handleConfigChange}
+				/>
+			{/snippet}
 
-		<div class="main-content">
-			<SplitPane
-				orientation={$EditorStore.config.orientation}
-				sizes={$EditorStore.config.panelSizes}
-				collapsed={!$EditorStore.config.isVisible}
-				collapsedPanel="second"
-				onresize={handlePanelResize}
-			>
-				{#snippet first()}
-					<div class="h-full relative" id="p5-container" data-tour="visualization">
-						<P5 {sketch} />
-						<CanvasTooltip />
-						<VisualizationLegend />
-						{#if $ConfigStore.dashboardToggle}
-							<DashboardOverlay />
-						{/if}
-						{#each $HoverStore.overflowBounds as b}
-							<div
-								class="badge badge-neutral absolute"
-								style="left: {b.x + b.width - 12}px; top: {b.y + b.height - 12}px; transform: translate(-100%, -100%);"
-							>
-								Some content not shown
-							</div>
-						{/each}
-						{#if hasVideoSource}
-							<VideoContainer />
-						{/if}
+			{#snippet canvas()}
+				<SplitPane
+					orientation={$EditorStore.config.orientation}
+					sizes={$EditorStore.config.panelSizes}
+					collapsed={!$EditorStore.config.isVisible}
+					collapsedPanel="second"
+					onresize={handlePanelResize}
+				>
+					{#snippet first()}
+						<div class="h-full relative" id="p5-container" data-tour="visualization">
+							<Sketch {sketch} bind:instance={p5Instance} />
+							<CanvasTooltip />
+							<VisualizationLegend />
+							{#if $ConfigStore.dashboardToggle}
+								<DashboardOverlay />
+							{/if}
+							{#each $HoverStore.overflowBounds as b}
+								<div
+									class="badge badge-neutral absolute"
+									style="left: {b.x + b.width - 12}px; top: {b.y + b.height - 12}px; transform: translate(-100%, -100%);"
+								>
+									Some content not shown
+								</div>
+							{/each}
+							{#if hasVideoSource}
+								<VideoContainer />
+							{/if}
+						</div>
+					{/snippet}
+					{#snippet second()}
+						<div class="h-full">
+							<TranscriptEditor oncreateTranscript={createTranscript} />
+						</div>
+					{/snippet}
+				</SplitPane>
+			{/snippet}
+
+			{#snippet bottom()}
+				<div class="btm-nav flex justify-between min-h-20" style="position: relative;">
+					<SpeakerControls showCodes={$CodeStore.length > 0} />
+					<div class="flex-1 bg-[#f6f5f3]" data-tour="timeline">
+						<TimelinePanel />
 					</div>
-				{/snippet}
-				{#snippet second()}
-					<div class="h-full">
-						<TranscriptEditor oncreateTranscript={createTranscript} />
-					</div>
-				{/snippet}
-			</SplitPane>
-		</div>
+				</div>
+			{/snippet}
+		</CanvasFrame>
 
 		<SettingsModal bind:isOpen={showSettings} onopenDataExplorer={() => (showDataPopup = true)} />
 
@@ -811,13 +824,6 @@
 			confirmText="Erase and Create New"
 			onconfirm={createTranscript}
 		/>
-
-		<div class="btm-nav flex justify-between min-h-20" style="position: relative;">
-			<SpeakerControls showCodes={$CodeStore.length > 0} />
-			<div class="flex-1 bg-[#f6f5f3]" data-tour="timeline">
-				<TimelinePanel />
-			</div>
-		</div>
 	</div>
 {/if}
 
@@ -844,16 +850,9 @@
 <RecoveryModal bind:isOpen={showRecoveryModal} savedAt={recoveryTimestamp} onrestore={handleRestore} ondiscard={handleDiscard} />
 
 <style>
-	.page-container {
-		display: flex;
-		flex-direction: column;
+	.page-frame {
 		height: 100vh;
-		overflow: hidden;
-	}
-
-	.main-content {
-		flex: 1;
-		min-height: 0;
+		width: 100%;
 		overflow: hidden;
 	}
 </style>

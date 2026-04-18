@@ -488,6 +488,13 @@ __metadata:
   languageName: node
   linkType: hard
 
+"@neodrag/core@npm:3.0.0-next.8":
+  version: 3.0.0-next.8
+  resolution: "@neodrag/core@npm:3.0.0-next.8"
+  checksum: 10c0/edf3ba77c7757a3b041b4f421b9c84cd844e0465cdad2cbe09572102845069596004dfb419dbeeca43b199157278f7322159dc1795fff60da4583b4068d31e57
+  languageName: node
+  linkType: hard
+
 "@neodrag/svelte@npm:3.0.0-next.8":
   version: 3.0.0-next.8
   resolution: "@neodrag/svelte@npm:3.0.0-next.8"
@@ -2711,6 +2718,7 @@ __metadata:
   dependencies:
     "@floating-ui/dom": "npm:^1.6.13"
     "@lucide/svelte": "npm:^0.563.1"
+    "@neodrag/core": "npm:3.0.0-next.8"
     "@rollup/plugin-replace": "npm:^6.0.2"
     "@rollup/plugin-typescript": "npm:^11.1.6"
     "@sveltejs/adapter-auto": "npm:^7.0.0"
@@ -2732,7 +2740,6 @@ __metadata:
     luxon: "npm:^3.5.0"
     moment: "npm:^2.30.1"
     p5: "npm:^1.9.0"
-    p5-svelte: "npm:^3.1.2"
     papaparse: "npm:^5.4.1"
     postcss: "npm:^8.4.23"
     prettier: "npm:^3.2.0"
@@ -3600,25 +3607,6 @@ __metadata:
   dependencies:
     aggregate-error: "npm:^3.0.0"
   checksum: 10c0/592c05bd6262c466ce269ff172bb8de7c6975afca9b50c975135b974e9bdaafbfe80e61aaaf5be6d1200ba08b30ead04b88cfa7e25ff1e3b93ab28c9f62a2c75
-  languageName: node
-  linkType: hard
-
-"p5-svelte@npm:^3.1.2":
-  version: 3.1.2
-  resolution: "p5-svelte@npm:3.1.2"
-  dependencies:
-    p5: "npm:^1.4.1"
-  peerDependencies:
-    "@types/p5": ^1.4.2
-    p5: ^1.4.0
-  checksum: 10c0/86e96281f0dfd8adaa8e6627ce77d7cc3086a792177819c2176f8ce5eca9c161948a6771e11c7ec1c15c3ccbb4354e16c00237f8e99eb7c7ee775f49f60cc53b
-  languageName: node
-  linkType: hard
-
-"p5@npm:^1.4.1":
-  version: 1.9.0
-  resolution: "p5@npm:1.9.0"
-  checksum: 10c0/e2bed00c38aa2719c639ef4491c53800fea77024db7d3764f0db67d16d8236becfa59840f806bd0a9944a256e28c9a5f9ac790f15659461c9d3650446fbee9c7
   languageName: node
   linkType: hard
 
