@@ -1,7 +1,15 @@
 <script lang="ts">
 	import type p5 from 'p5';
 	import type { SketchFn } from 'svelte-p5';
-	import { CanvasFrame, EntityToggleList, Sketch, SplitPane, type Entity } from 'svelte-p5-components';
+	import {
+		CanvasFrame,
+		EntityToggleList,
+		Sketch,
+		SplitPane,
+		TimelineScrubber,
+		type Entity
+	} from 'svelte-p5-components';
+	import { formatTimeAuto } from '$lib/core/time-utils';
 	import { browser } from '$app/environment';
 	import { onMount } from 'svelte';
 	import { writable, get } from 'svelte/store';
@@ -46,7 +54,6 @@
 	// Components
 	import AppNavbar from '$lib/components/AppNavbar.svelte';
 	import InfoModal from '$lib/components/InfoModal.svelte';
-	import TimelinePanel from '$lib/components/TimelinePanel.svelte';
 	import TranscriptEditor from '$lib/components/TranscriptEditor.svelte';
 	import CanvasTooltip from '$lib/components/CanvasTooltip.svelte';
 	import VideoContainer from '$lib/components/VideoContainer.svelte';
@@ -197,6 +204,24 @@
 			visible: u.enabled
 		}))
 	);
+
+	let timelineDuration = $derived(
+		Math.max(0, $TimelineStore.endTime - $TimelineStore.startTime)
+	);
+
+	// speedLocked surfaces to the user that the speed multiplier is a no-op
+	// while video is driving the timeline. Matches igsSketch's
+	// continueTimelineAnimation branch, which prefers videoState.currentTime
+	// over the animationRate-driven advance when video is playing on a
+	// timed transcript.
+	let scrubberSpeedLocked = $derived(
+		$VideoStore.isPlaying && $TranscriptStore.timingMode !== 'untimed'
+	);
+
+	let scrubberFormatTime = $derived.by(() => {
+		const isUntimed = $TranscriptStore.timingMode === 'untimed';
+		return (s: number) => (isUntimed ? `${Math.round(s)} words` : formatTimeAuto(s));
+	});
 
 	// When video loads, expand timeline to accommodate video duration (only for timed transcripts)
 	let prevVideoLoaded = $state(false);
@@ -414,6 +439,30 @@
 	function handleSpeakerColorChange(id: string, color: string) {
 		UserStore.update((users) => users.map((u) => (u.name === id ? { ...u, color } : u)));
 		p5Instance?.fillAllData?.();
+	}
+
+	function handleScrubberSeek(time: number) {
+		TimelineStore.update((t) => ({ ...t, currTime: time }));
+		if (!get(TimelineStore).isAnimating) p5Instance?.fillSelectedData?.();
+	}
+
+	function handleScrubberPlayToggle(nowPlaying: boolean) {
+		const wasPlaying = get(TimelineStore).isAnimating;
+		TimelineStore.update((t) => ({ ...t, isAnimating: nowPlaying }));
+		if (p5Instance) {
+			if (nowPlaying && !wasPlaying) {
+				const targetIndex = (p5Instance as unknown as { getAnimationTargetIndex?: () => number }).getAnimationTargetIndex?.();
+				if (typeof targetIndex === 'number') {
+					(p5Instance as unknown as { setAnimationCounter?: (i: number) => void }).setAnimationCounter?.(targetIndex);
+				}
+			} else if (!nowPlaying && wasPlaying) {
+				p5Instance.fillAllData?.();
+			}
+		}
+	}
+
+	function handleScrubberSpeedChange(speed: number) {
+		ConfigStore.update((c) => ({ ...c, animationRate: speed }));
 	}
 
 	function handlePanelResize(data: { sizes: [number, number] }) {
@@ -806,8 +855,20 @@
 							onColorChange={handleSpeakerColorChange}
 						/>
 					</div>
-					<div class="flex-1 bg-[#f6f5f3]" data-tour="timeline">
-						<TimelinePanel />
+					<div class="flex-1 bg-[#f6f5f3] px-4 flex items-center" data-tour="timeline">
+						<TimelineScrubber
+							duration={timelineDuration}
+							currentTime={$TimelineStore.currTime}
+							isPlaying={$TimelineStore.isAnimating}
+							speed={$ConfigStore.animationRate}
+							speedOptions={[1, 3, 6, 15, 30]}
+							speedLocked={scrubberSpeedLocked}
+							speedLockedReason="Video is playing; the timeline follows media playback and the speed multiplier is temporarily inactive."
+							formatTime={scrubberFormatTime}
+							onSeek={handleScrubberSeek}
+							onPlayToggle={handleScrubberPlayToggle}
+							onSpeedChange={handleScrubberSpeedChange}
+						/>
 					</div>
 				</div>
 			{/snippet}
