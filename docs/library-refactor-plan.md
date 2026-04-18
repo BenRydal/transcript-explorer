@@ -20,35 +20,26 @@ Expected outcome: TE's `+page.svelte` drops from ~870 LOC to ~300; `Draw` shrink
 
 ### Phase 1 — wire the library into TE's dependencies
 
-Today TE consumes `svelte-p5@^0.2.2` from npm. The new components and the viz package haven't been published yet — the release-please PR for them is still a commit bump away. Two options:
-
-**Option A (preferred once released):** bump versions in `package.json`:
+All three packages are now live on npm. TE pins to the latest stable lines:
 
 ```jsonc
 {
 	"dependencies": {
-		"svelte-p5": "^0.2.3",
-		"svelte-p5-components": "^0.3.0",
-		"svelte-p5-viz": "^0.1.0"
+		"svelte-p5": "^0.3.0",
+		"svelte-p5-components": "^0.4.1",
+		"svelte-p5-viz": "^0.2.0"
 	}
 }
 ```
 
-**Option B (development, unreleased library):** yarn berry `portal:` protocol:
+Yarn berry needs to be at 4.5+ for the post-resolution validation step to pass cleanly on the current peer-dep graph (yarn 4.0.1 crashes with a null-set TypeError on `@neodrag/svelte@3.0.0-next.8`). Run `corepack use yarn@4.5.3` if you're on an older yarn.
 
-```jsonc
-{
-	"dependencies": {
-		"svelte-p5": "portal:../../../svelte-p5/packages/core",
-		"svelte-p5-components": "portal:../../../svelte-p5/packages/components",
-		"svelte-p5-viz": "portal:../../../svelte-p5/packages/viz"
-	}
-}
-```
+Alternate tracking strategies — not used today, documented so we know the options exist:
 
-Requires running `pnpm build` in each library package first so `dist/` is present. Portal handles transitive peer deps cleanly.
+- **Bleeding-edge main via `pkg.pr.new`.** The library's CI publishes preview tarballs keyed by commit SHA (`https://pkg.pr.new/edw1nzhao/svelte-p5/svelte-p5@<sha>`). Yarn berry 4.x doesn't treat those URLs as a native resolver — works with `pnpm add` but needs a resolver shim in yarn. Skip until needed.
+- **Local `portal:` protocol.** Useful if you're actively co-developing library + consumer. Point at `../../../svelte-p5/packages/{core,components,viz}` and run `pnpm build` in each library package first so `dist/` is present.
 
-Verify with `yarn install && yarn build`. If Option B's peer-dep resolution complains, fall back to `link:` targeting the same paths — it has fewer validation checks.
+Verify with `yarn install && yarn build`.
 
 ### Phase 2 — replace page layout with `<CanvasFrame>` + `<SplitPane>`
 
