@@ -1,7 +1,7 @@
 <script lang="ts">
 	import type p5 from 'p5';
 	import type { SketchFn } from 'svelte-p5';
-	import { CanvasFrame, Sketch, SplitPane } from 'svelte-p5-components';
+	import { CanvasFrame, EntityToggleList, Sketch, SplitPane, type Entity } from 'svelte-p5-components';
 	import { browser } from '$app/environment';
 	import { onMount } from 'svelte';
 	import { writable, get } from 'svelte/store';
@@ -57,7 +57,7 @@
 	import DataExplorerModal from '$lib/components/DataExplorerModal.svelte';
 	import ConfirmModal from '$lib/components/ConfirmModal.svelte';
 	import TourOverlay from '$lib/components/TourOverlay.svelte';
-	import SpeakerControls from '$lib/components/SpeakerControls.svelte';
+	import CodesButton from '$lib/components/CodesButton.svelte';
 	import TranscribeModeLayout from '$lib/components/TranscribeModeLayout.svelte';
 	import RecoveryModal from '$lib/components/RecoveryModal.svelte';
 	import DashboardOverlay from '$lib/components/DashboardOverlay.svelte';
@@ -188,6 +188,15 @@
 	let hasVideoSource = $derived($VideoStore.source.type !== null);
 	let isEditorVisible = $derived($EditorStore.config.isVisible);
 	let isTranscribeModeActive = $derived($TranscribeModeStore.isActive);
+
+	let speakerEntities: Entity[] = $derived(
+		$UserStore.map((u) => ({
+			id: u.name,
+			label: u.name,
+			color: u.color,
+			visible: u.enabled
+		}))
+	);
 
 	// When video loads, expand timeline to accommodate video duration (only for timed transcripts)
 	let prevVideoLoaded = $state(false);
@@ -396,6 +405,15 @@
 			...config,
 			[data.key]: data.value
 		}));
+	}
+
+	function handleSpeakerToggle(id: string, visible: boolean) {
+		UserStore.update((users) => users.map((u) => (u.name === id ? { ...u, enabled: visible } : u)));
+	}
+
+	function handleSpeakerColorChange(id: string, color: string) {
+		UserStore.update((users) => users.map((u) => (u.name === id ? { ...u, color } : u)));
+		p5Instance?.fillAllData?.();
 	}
 
 	function handlePanelResize(data: { sizes: [number, number] }) {
@@ -778,7 +796,16 @@
 
 			{#snippet bottom()}
 				<div class="btm-nav flex justify-between min-h-20" style="position: relative;">
-					<SpeakerControls showCodes={$CodeStore.length > 0} />
+					<div class="speaker-controls-wrap flex flex-row items-center bg-[#f6f5f3] px-8 overflow-x-auto gap-3" data-tour="speakers">
+						{#if $CodeStore.length > 0}
+							<div class="flex-shrink-0"><CodesButton /></div>
+						{/if}
+						<EntityToggleList
+							entities={speakerEntities}
+							onToggle={handleSpeakerToggle}
+							onColorChange={handleSpeakerColorChange}
+						/>
+					</div>
 					<div class="flex-1 bg-[#f6f5f3]" data-tour="timeline">
 						<TimelinePanel />
 					</div>
