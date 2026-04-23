@@ -5,6 +5,7 @@ import type { ConfigStoreType } from '../../stores/configStore';
 import type { DataPoint } from '../../models/dataPoint';
 import type { Bounds } from './types/bounds';
 import { stripPunctuation } from '../core/string-utils';
+import { registerVizCacheReset } from './viz-cache-registry';
 
 export interface Scaling {
 	minTextSize: number;
@@ -35,6 +36,15 @@ const REFERENCE_TEXT_SIZE = 50;
 // Module-level caches
 let scalingCache: ScalingCache = { key: null, scaling: null };
 const wordWidthCache = new Map<string, number>();
+
+// Reset on transcript change so the map doesn't accumulate entries from
+// every transcript the user has ever loaded. Entries are small but the
+// map grows unbounded across sessions otherwise.
+registerVizCacheReset(() => {
+	scalingCache.key = null;
+	scalingCache.scaling = null;
+	wordWidthCache.clear();
+});
 
 function getCacheKey(bounds: Bounds, wordCount: number, maxCount: number, config: ConfigStoreType): string {
 	const timeline = get(TimelineStore);

@@ -2,15 +2,18 @@ import P5Store from '../../stores/p5Store';
 import TranscriptStore from '../../stores/transcriptStore.js';
 import UserStore from '../../stores/userStore';
 import TimelineStore from '../../stores/timelineStore';
-import ConfigStore from '../../stores/configStore';
+import VizStore from '../../stores/vizStore';
+import AppSettingsStore from '../../stores/appSettingsStore';
 import HoverStore, { type HoverState } from '../../stores/hoverStore';
 import EditorStore from '../../stores/editorStore';
 import VideoStore from '../../stores/videoStore';
 import type { VideoState } from '../../stores/videoStore';
+import UIStateStore, { type ContextMenuPayload } from '../../stores/uiStateStore';
 import { handleVisualizationClick } from '../video/video-interaction';
 import { Draw } from '../draw/draw';
 import { DynamicData } from '../core/dynamic-data';
 import { getP5ContainerRect } from '../core/layout-utils';
+import { getDrawTheme, refreshDrawTheme } from '../draw/draw-theme';
 
 let users: any[] = [];
 let timeline, transcript, currConfig, editorState;
@@ -18,6 +21,7 @@ let hoverState: HoverState;
 let videoState: VideoState;
 let canHover = true;
 let mouseEventLocked = false;
+let themeObserver: MutationObserver | null = null;
 
 TimelineStore.subscribe((data) => {
 	timeline = data;
@@ -27,8 +31,14 @@ UserStore.subscribe((data) => {
 	users = data;
 });
 
-ConfigStore.subscribe((data) => {
-	currConfig = data;
+// Merged snapshot of the viz + app-settings fields this module reads (viz
+// toggles + animationRate). Kept as a merged object so existing `currConfig.X`
+// reads resolve regardless of which underlying store owns the field.
+VizStore.subscribe((data) => {
+	currConfig = { ...currConfig, ...data };
+});
+AppSettingsStore.subscribe((data) => {
+	currConfig = { ...currConfig, ...data };
 });
 
 HoverStore.subscribe((data) => {
@@ -69,6 +79,23 @@ export const igsSketch = (p5: any) => {
 			canHover = e.target === canvas;
 		});
 
+		// Theme refresh: when the user flips <html data-theme>, snapshot
+		// the new --te-* tokens so the next frame draws with them. The
+		// MutationObserver only fires on attribute changes, so cost is
+		// trivial. Disconnect any prior observer first — hot-reload or
+		// mode switching re-runs setup and we don't want to stack them.
+		if (themeObserver) themeObserver.disconnect();
+		themeObserver = new MutationObserver(() => {
+			refreshDrawTheme();
+			// p5 is in its default looping mode, so refreshing the cache
+			// is enough — the next p5.draw() tick will build a DrawContext
+			// with the new theme snapshot.
+		});
+		themeObserver.observe(document.documentElement, {
+			attributes: true,
+			attributeFilter: ['data-theme']
+		});
+
 		// If transcript data already exists (e.g., after mode switch), populate it
 		if (transcript.wordArray?.length > 0) {
 			p5.fillAllData();
@@ -86,8 +113,12 @@ export const igsSketch = (p5: any) => {
 	};
 
 	p5.draw = () => {
+		// Paint the canvas background even before data loads so the empty
+		// canvas matches the active theme (otherwise dark mode shows a
+		// white default until the first viz appears).
+		const theme = getDrawTheme();
+		p5.background(theme.bg);
 		if (p5.arrayIsLoaded(transcript.wordArray) && p5.arrayIsLoaded(users)) {
-			p5.background(255);
 			p5.renderer.drawViz();
 		}
 		if (timeline.isAnimating) p5.updateAnimation();
@@ -184,8 +215,83 @@ export const igsSketch = (p5: any) => {
 			mouseEventLocked = false;
 		});
 
+		// Speaker filter lock is a cheap editor-side selection update; it
+		// should still run on a single click so the editor stays in sync
+		// with visualization hover intent even when the user is just
+		// opening the context menu.
 		p5.handleSpeakerFilterClick();
+
+		// Single-click on the canvas → open the floating action menu near
+		// the cursor. Double-click preserves the fast-path seek below.
+		if (!p5.overRect(0, 0, p5.width, p5.height)) return;
+		p5.openCanvasContextMenu();
+	};
+
+	p5.doubleClicked = () => {
+		// Fast path: preserve the previous single-click-to-seek behavior
+		// as a double-click shortcut. Also dismiss any open context menu
+		// so the menu doesn't linger over the seeked video frame.
+		UIStateStore.update((s) => ({
+			...s,
+			contextMenu: { ...s.contextMenu, open: false, payload: null }
+		}));
+		if (!p5.overRect(0, 0, p5.width, p5.height)) return;
 		p5.handleVideoClick();
+	};
+
+	p5.openCanvasContextMenu = () => {
+		const canvasEl = document.querySelector('#p5-container canvas') as HTMLCanvasElement | null;
+		if (!canvasEl) return;
+		const rect = canvasEl.getBoundingClientRect();
+		// p5's mouseX/mouseY are canvas-relative; the ContextMenu is
+		// position: fixed and wants viewport coordinates.
+		const clientX = rect.left + p5.mouseX;
+		const clientY = rect.top + p5.mouseY;
+
+		const payload = p5.buildContextMenuPayload();
+		if (!payload) return;
+
+		UIStateStore.update((s) => ({
+			...s,
+			contextMenu: { open: true, x: clientX, y: clientY, payload }
+		}));
+	};
+
+	p5.buildContextMenuPayload = (): ContextMenuPayload | null => {
+		// The hover state already tracks what's under the cursor each
+		// frame. Prefer the richest thing available: a specific word, then
+		// a speaker (via firstWords — a hovered distribution panel), then
+		// a plain time click.
+		const hovered = hoverState.hoveredDataPoint;
+		if (hovered) {
+			return {
+				kind: 'word',
+				time: hovered.startTime,
+				word: hovered.word,
+				speakerId: hovered.speaker
+			};
+		}
+
+		const firstWords = hoverState.arrayOfFirstWords;
+		if (firstWords && firstWords.length > 0) {
+			const first = firstWords[0];
+			return {
+				kind: 'turn',
+				time: first.startTime,
+				turnId: String(first.turnNumber),
+				speakerId: first.speaker
+			};
+		}
+
+		const hoveredSpeaker = hoverState.hoveredSpeaker;
+		// Generic glyph click at the current playhead — no specific data
+		// under the cursor but the user targeted the canvas. The speaker,
+		// if we can infer one from the hover state, still rides along.
+		return {
+			kind: 'glyph',
+			time: timeline.currTime,
+			speakerId: hoveredSpeaker ?? undefined
+		};
 	};
 
 	// Lock speaker filter in editor when clicking on a speaker-centric visualization

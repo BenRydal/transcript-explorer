@@ -21,7 +21,7 @@ const VERTICAL_PADDING = 12;
 const STRIP_HEIGHT_RATIO = 0.1;
 const MIN_STRIP_HEIGHT = 20;
 const MAX_STRIP_HEIGHT = 32;
-const OVERLAP_COLOR = '#ef4444';
+// Silence (gap) bars — muted cool grey that reads on both themes.
 const GAP_COLOR = '#94a3b8';
 const MARKER_HEIGHT = 8;
 const ROW_GAP = 2;
@@ -173,9 +173,10 @@ export class TurnChart {
 		const end = this.bounds.x + this.bounds.width;
 		const y = this.yPosHalfHeight;
 		const tickLength = CANVAS_SPACING / 2;
-		this.ctx.sk.stroke(0);
+		const theme = this.ctx.theme;
+		this.ctx.sk.stroke(theme.fg);
 		this.ctx.sk.strokeWeight(2);
-		this.ctx.sk.fill(0);
+		this.ctx.sk.fill(theme.fg);
 		// Draw timeline and ticks
 		this.ctx.sk.line(start, y - tickLength, start, y + tickLength);
 		this.ctx.sk.line(end, y - tickLength, end, y + tickLength);
@@ -186,7 +187,7 @@ export class TurnChart {
 		if (isUntimed) return;
 		const numTicks = Math.min(8, Math.floor(this.bounds.width / 60));
 		this.ctx.sk.textSize(Math.max(10, Math.min(13, this.bounds.height * 0.035)));
-		this.ctx.sk.fill(0);
+		this.ctx.sk.fill(theme.fg);
 		this.ctx.sk.noStroke();
 		this.ctx.sk.textAlign(this.ctx.sk.CENTER, this.ctx.sk.TOP);
 		const duration = this.ctx.timeline.rightMarker - this.ctx.timeline.leftMarker;
@@ -195,7 +196,7 @@ export class TurnChart {
 			const time = this.ctx.timeline.leftMarker + frac * duration;
 			const x = start + frac * this.bounds.width;
 			// Tick mark
-			this.ctx.sk.stroke(0);
+			this.ctx.sk.stroke(theme.fg);
 			this.ctx.sk.strokeWeight(1);
 			this.ctx.sk.line(x, y, x, y + tickLength);
 			// Label
@@ -263,7 +264,7 @@ export class TurnChart {
 		const bottomRowY = topRowY + MARKER_HEIGHT + ROW_GAP;
 
 		// Separator line
-		this.ctx.sk.stroke(200);
+		this.ctx.sk.stroke(this.ctx.theme.border);
 		this.ctx.sk.strokeWeight(1);
 		this.ctx.sk.line(strip.x, strip.y, strip.x + strip.width, strip.y);
 
@@ -272,9 +273,10 @@ export class TurnChart {
 		const markers = [...this.buildOverlapMarkers(turns, topRowY), ...this.buildGapMarkers(turns, bottomRowY)];
 
 		// Legend dots
+		const overlapColor = this.ctx.theme.danger;
 		const dotX = strip.x + LEGEND_DOT_LEFT_OFFSET;
 		this.ctx.sk.noStroke();
-		this.ctx.sk.fill(OVERLAP_COLOR);
+		this.ctx.sk.fill(overlapColor);
 		this.ctx.sk.ellipse(dotX, topRowY + MARKER_HEIGHT / 2, LEGEND_DOT_RADIUS, LEGEND_DOT_RADIUS);
 		this.ctx.sk.fill(GAP_COLOR);
 		this.ctx.sk.ellipse(dotX, bottomRowY + MARKER_HEIGHT / 2, LEGEND_DOT_RADIUS, LEGEND_DOT_RADIUS);
@@ -338,7 +340,7 @@ export class TurnChart {
 					w: Math.max(MIN_MARKER_WIDTH, xEnd - x),
 					y: rowY,
 					h: MARKER_HEIGHT,
-					color: OVERLAP_COLOR,
+					color: this.ctx.theme.danger,
 					firstDataPoint: turns[j].firstDataPoint,
 					tooltipContent: `<b>Overlap · ${formatDuration(duration)}</b>\n<span style="font-size: 0.85em; opacity: 0.7"><span style="color: ${this.userMap.get(turns[i].speaker)?.user.color ?? '#fff'}">${turns[i].speaker}</span> & <span style="color: ${this.userMap.get(turns[j].speaker)?.user.color ?? '#fff'}">${turns[j].speaker}</span>\n${formatTimeCompact(start)} - ${formatTimeCompact(end)}</span>`
 				});

@@ -1,6 +1,6 @@
 import { writable, get } from 'svelte/store';
 import type { DataPoint } from '../models/dataPoint';
-import ConfigStore from './configStore';
+import AppSettingsStore from './appSettingsStore';
 
 export interface VideoSource {
 	type: 'youtube' | 'file' | null;
@@ -181,7 +181,7 @@ export function playSnippets(turns: DataPoint[]): void {
 	lastAdvancedFromIndex = -1;
 
 	const firstTurn = turns[0];
-	const durationPerSnippet = get(ConfigStore).snippetDurationSeconds;
+	const durationPerSnippet = get(AppSettingsStore).snippetDurationSeconds;
 	seekRequestId++;
 
 	VideoStore.update((state) => ({

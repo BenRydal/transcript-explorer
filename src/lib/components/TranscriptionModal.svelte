@@ -1,6 +1,7 @@
 <script lang="ts">
 	import type { TranscriptionProgress, TranscriptionResult } from '$lib/core/transcription-service';
 	import { transcribeVideo } from '$lib/core/transcription-service';
+	import { trapFocus } from '$lib/a11y/focus-trap';
 
 	interface Props {
 		isOpen?: boolean;
@@ -11,6 +12,13 @@
 	}
 
 	let { isOpen = $bindable(false), videoFile = null, videoDuration = 0, onclose, oncomplete }: Props = $props();
+
+	let dialogEl: HTMLDivElement | null = $state(null);
+
+	$effect(() => {
+		if (!isOpen || !dialogEl) return;
+		return trapFocus(dialogEl);
+	});
 
 	let progress: TranscriptionProgress = $state({
 		status: 'loading-model',
@@ -49,6 +57,8 @@
 </script>
 
 {#if isOpen}
+	<!-- svelte-ignore a11y_no_static_element_interactions -->
+	<!-- svelte-ignore a11y_click_events_have_key_events -->
 	<div
 		class="modal modal-open"
 		onclick={(e) => {
@@ -58,12 +68,18 @@
 			if (e.key === 'Escape' && !isTranscribing) handleClose();
 		}}
 	>
-		<div class="modal-box max-w-lg">
+		<div
+			bind:this={dialogEl}
+			class="modal-box max-w-lg"
+			role="dialog"
+			aria-modal="true"
+			aria-labelledby="transcription-modal-title"
+		>
 			<div class="flex justify-between items-center mb-6">
-				<h3 class="font-bold text-xl">🎙️ Auto-Transcribe Video</h3>
+				<h3 id="transcription-modal-title" class="font-bold text-xl">Auto-Transcribe Video</h3>
 				{#if !isTranscribing}
-					<button class="btn btn-circle btn-sm" onclick={handleClose}>
-						<svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+					<button class="btn btn-circle btn-sm" onclick={handleClose} aria-label="Close">
+						<svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" aria-hidden="true">
 							<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
 						</svg>
 					</button>

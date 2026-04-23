@@ -16,6 +16,7 @@ import type { Bounds } from './types/bounds';
 import { DEFAULT_SPEAKER_COLOR } from '../constants/ui';
 import { withDimming, getCrossHighlight, getDominantCodeColor } from './draw-utils';
 import { DrawContext } from './draw-context';
+import { pickTextColor } from './draw-theme';
 
 const MIN_NODE_RADIUS_RATIO = 0.04;
 const MAX_NODE_RADIUS_RATIO = 0.12;
@@ -41,6 +42,13 @@ export interface NetworkData {
 	searchMatchingTurns: Set<number> | null;
 	/** Word count per turn number, used to recompute edge wordCount after search filtering */
 	turnWordCounts: Map<number, number>;
+	/**
+	 * Adjusted residual (z-score) for each transition cell, precomputed from
+	 * the full transition matrix prior to any filtering. `|z| >= 1.96` is the
+	 * two-tailed p<0.05 threshold. Bakeman & Gottman 1997, Observing
+	 * Interaction; Furtak et al. EMIP 2017. Keyed "from→to".
+	 */
+	adjustedResiduals: Map<string, number>;
 }
 
 interface NodeLayout {
@@ -60,7 +68,15 @@ interface EdgeLayout {
 	weight: number;
 	turnStartPoints: DataPoint[];
 	isSelfLoop: boolean;
+	/** Adjusted residual (z-score) from the lag-sequential analysis. */
+	adjRes: number;
 }
+
+// Two-tailed p<0.05 threshold for the standard-normal distribution. Cells
+// with |z| >= 1.96 deviate from chance under the independence null.
+const Z_SIGNIFICANT = 1.96;
+// Upper end of the |z| color/width mapping. Beyond this, tokens saturate.
+const Z_MAX_VIS = 5;
 
 interface Layout {
 	nodes: NodeLayout[];
@@ -176,7 +192,11 @@ export class TurnNetwork {
 
 		if (hovered) {
 			this.ctx.sk.noStroke();
-			this.ctx.sk.fill(255, OVERLAY_OPACITY);
+			// Dim-to-canvas overlay — uses theme.overlay so dark mode doesn't
+			// flash a white sheet over the graph on hover.
+			const overlayColor = this.ctx.sk.color(this.ctx.theme.overlay);
+			overlayColor.setAlpha(OVERLAY_OPACITY);
+			this.ctx.sk.fill(overlayColor);
 			this.ctx.sk.rect(this.bounds.x, this.bounds.y, this.bounds.width, this.bounds.height);
 			this.drawHighlighted(hovered, layout);
 			this.showTooltipFor(hovered, layout);
@@ -232,7 +252,17 @@ export class TurnNetwork {
 		for (const [from, targets] of data.transitions) {
 			for (const [to, d] of targets) {
 				if (!this.ctx.userMap.get(from)?.enabled || !this.ctx.userMap.get(to)?.enabled) continue;
-				edges.push({ from, to, count: d.count, wordCount: d.wordCount, weight: 0, turnStartPoints: d.turnStartPoints, isSelfLoop: from === to });
+				const adjRes = data.adjustedResiduals.get(`${from}→${to}`) ?? 0;
+				edges.push({
+					from,
+					to,
+					count: d.count,
+					wordCount: d.wordCount,
+					weight: 0,
+					turnStartPoints: d.turnStartPoints,
+					isSelfLoop: from === to,
+					adjRes
+				});
 			}
 		}
 
@@ -243,10 +273,27 @@ export class TurnNetwork {
 			edges = edges.filter((e) => e.count >= this.ctx.config.turnNetworkMinTransitions);
 		}
 
+		// In statistical mode, only render edges whose lag-sequential z-score
+		// is significant at the p<0.05 two-tailed threshold. Both above-chance
+		// (positive) and below-chance (negative) residuals are kept — the
+		// below-chance ones are worth seeing as "unexpectedly rare" patterns.
+		if (this.ctx.config.turnNetworkStatisticalMode) {
+			edges = edges.filter((e) => Math.abs(e.adjRes) >= Z_SIGNIFICANT);
+		}
+
 		const weightByWords = this.ctx.config.turnNetworkWeightByWords;
+		const statsMode = this.ctx.config.turnNetworkStatisticalMode;
 		let maxWeight = 0;
 		for (const edge of edges) {
-			edge.weight = weightByWords ? edge.wordCount : edge.count;
+			// In statistical mode, edge weight is driven by |z| (clamped to
+			// the visual range) so stronger above-chance effects render
+			// thicker regardless of raw count. In raw mode, preserve the
+			// existing count-vs-wordCount semantics.
+			if (statsMode) {
+				edge.weight = Math.min(Z_MAX_VIS, Math.max(Z_SIGNIFICANT, Math.abs(edge.adjRes)));
+			} else {
+				edge.weight = weightByWords ? edge.wordCount : edge.count;
+			}
 			if (edge.weight > maxWeight) maxWeight = edge.weight;
 		}
 
@@ -259,7 +306,11 @@ export class TurnNetwork {
 				if (edge.turnStartPoints.length === 0) continue;
 				edge.count = edge.turnStartPoints.length;
 				edge.wordCount = edge.turnStartPoints.reduce((sum, p) => sum + (data.turnWordCounts.get(p.turnNumber) ?? 0), 0);
-				edge.weight = weightByWords ? edge.wordCount : edge.count;
+				// Preserve statistical-mode weighting; only recompute raw
+				// weight for count/word modes when the search narrows.
+				if (!statsMode) {
+					edge.weight = weightByWords ? edge.wordCount : edge.count;
+				}
 				filteredEdges.push(edge);
 			}
 			edges = filteredEdges;
@@ -286,7 +337,12 @@ export class TurnNetwork {
 		this.ctx.sk.ellipse(node.x, node.y, node.radius * 2);
 
 		this.ctx.sk.noStroke();
-		this.ctx.sk.fill(255);
+		// The label sits on top of a speaker-colored circle (alpha 200 when
+		// not highlighted, 255 when hovered). Pick a text color that has
+		// contrast against the node color so the speaker name is readable
+		// on both light and dark canvases. Using the base `color` (alpha-
+		// agnostic) is fine here — the underlying hue controls luminance.
+		this.ctx.sk.fill(pickTextColor(color, this.ctx.theme));
 		this.ctx.sk.textSize(Math.max(8, this.minDim * NODE_LABEL_RATIO));
 		this.ctx.sk.textAlign(this.ctx.sk.CENTER, this.ctx.sk.CENTER);
 		this.ctx.sk.text(this.truncateLabel(node.speaker, node.radius * 1.6), node.x, node.y);
@@ -297,11 +353,34 @@ export class TurnNetwork {
 		const toNode = layout.nodeMap.get(edge.to);
 		if (!fromNode || !toNode) return;
 
-		const baseEdgeColor = fromNode.user?.color || DEFAULT_SPEAKER_COLOR;
-		const resolvedEdgeColor = getDominantCodeColor(edge.turnStartPoints, baseEdgeColor, this.ctx.codeColorMap, this.ctx.config.codeColorMode);
-		const edgeColor = this.ctx.sk.color(resolvedEdgeColor);
-		edgeColor.setAlpha(highlight ? 255 : 150);
+		const statsMode = this.ctx.config.turnNetworkStatisticalMode;
+
+		let edgeColor: p5.Color;
+		if (statsMode) {
+			// Positive residuals (above-chance transitions) in the accent
+			// token; negative residuals (unexpectedly rare transitions) in
+			// the danger token. Alpha scales with |z| clamped to [1.96, 5].
+			const baseHex = edge.adjRes >= 0 ? this.ctx.theme.accent : this.ctx.theme.danger;
+			const magnitude = Math.min(Z_MAX_VIS, Math.max(Z_SIGNIFICANT, Math.abs(edge.adjRes)));
+			const alphaT = (magnitude - Z_SIGNIFICANT) / (Z_MAX_VIS - Z_SIGNIFICANT);
+			const alpha = highlight ? 255 : Math.round(120 + alphaT * 120);
+			edgeColor = this.ctx.sk.color(baseHex);
+			edgeColor.setAlpha(alpha);
+		} else {
+			const baseEdgeColor = fromNode.user?.color || DEFAULT_SPEAKER_COLOR;
+			const resolvedEdgeColor = getDominantCodeColor(edge.turnStartPoints, baseEdgeColor, this.ctx.codeColorMap, this.ctx.config.codeColorMode);
+			edgeColor = this.ctx.sk.color(resolvedEdgeColor);
+			edgeColor.setAlpha(highlight ? 255 : 150);
+		}
 		const weight = this.edgeWeight(edge.weight, layout.maxWeight) + (highlight ? 1 : 0);
+
+		// Negative residuals: dash the edge to signal "unexpectedly rare"
+		// visually (in addition to color). Canvas 2D supports setLineDash.
+		const sk2d = this.ctx.sk.drawingContext as CanvasRenderingContext2D;
+		const prevDash = sk2d.getLineDash();
+		if (statsMode && edge.adjRes < 0) {
+			sk2d.setLineDash([6, 4]);
+		}
 
 		this.ctx.sk.stroke(edgeColor);
 		this.ctx.sk.strokeWeight(weight);
@@ -315,29 +394,46 @@ export class TurnNetwork {
 			const endY = loop.cy + loop.radius * Math.sin(loop.arcStop);
 			const tanX = -Math.sin(loop.arcStop);
 			const tanY = Math.cos(loop.arcStop);
+			// Arrowhead fills use the same color sans alpha-dash so self-loop
+			// arrows stay solid even when the loop stroke is dashed.
+			sk2d.setLineDash(prevDash);
 			this.drawArrowhead(endX - tanX * ARROW_SIZE, endY - tanY * ARROW_SIZE, endX, endY, edgeColor, weight);
 		} else {
 			const geom = getCurvedEdgeGeometry(fromNode, toNode);
-			if (!geom) return;
+			if (!geom) {
+				sk2d.setLineDash(prevDash);
+				return;
+			}
 
 			this.ctx.sk.beginShape();
 			this.ctx.sk.vertex(geom.startX, geom.startY);
 			this.ctx.sk.quadraticVertex(geom.cpX, geom.cpY, geom.endX, geom.endY);
 			this.ctx.sk.endShape();
 
+			// Restore dash before filled arrowhead so it renders solid.
+			sk2d.setLineDash(prevDash);
 			this.drawArrowhead(geom.cpX, geom.cpY, geom.endX, geom.endY, edgeColor, weight);
 
-			// Edge count label at bezier midpoint
+			// Edge label at bezier midpoint. In statistical mode show the
+			// z-score (e.g. z=2.8); otherwise the raw weight.
 			const lx = 0.25 * geom.startX + 0.5 * geom.cpX + 0.25 * geom.endX;
 			const ly = 0.25 * geom.startY + 0.5 * geom.cpY + 0.25 * geom.endY;
+			const labelText = statsMode ? `z=${edge.adjRes.toFixed(1)}` : String(edge.weight);
+			const pillWidth = statsMode ? 34 : 20;
 			this.ctx.sk.noStroke();
-			this.ctx.sk.fill(255, 200);
-			this.ctx.sk.rect(lx - 10, ly - 7, 20, 14, 3);
-			this.ctx.sk.fill(80);
+			const pillBg = this.ctx.sk.color(this.ctx.theme.bg);
+			pillBg.setAlpha(200);
+			this.ctx.sk.fill(pillBg);
+			this.ctx.sk.rect(lx - pillWidth / 2, ly - 7, pillWidth, 14, 3);
+			this.ctx.sk.fill(this.ctx.theme.fg);
 			this.ctx.sk.textSize(Math.max(7, this.minDim * EDGE_LABEL_RATIO));
 			this.ctx.sk.textAlign(this.ctx.sk.CENTER, this.ctx.sk.CENTER);
-			this.ctx.sk.text(String(edge.weight), lx, ly);
+			this.ctx.sk.text(labelText, lx, ly);
 		}
+
+		// Belt-and-suspenders restore in case we returned through the self
+		// loop branch without hitting the else branch.
+		sk2d.setLineDash(prevDash);
 	}
 
 	private drawArrowhead(fromX: number, fromY: number, toX: number, toY: number, color: p5.Color, weight: number): void {
@@ -437,23 +533,40 @@ export class TurnNetwork {
 		const color = getDominantCodeColor(hovered.snippetPoints, baseTooltipColor, this.ctx.codeColorMap, this.ctx.config.codeColorMode);
 		let content: string;
 
+		const statsMode = this.ctx.config.turnNetworkStatisticalMode;
 		const unit = this.ctx.config.turnNetworkWeightByWords ? 'word' : 'transition';
 		const plural = (n: number) => `${n} ${unit}${n !== 1 ? 's' : ''}`;
 
 		if (hovered.type === 'node') {
+			// Sum the underlying count (or wordCount) — edge.weight changes
+			// meaning in statistical mode and would give nonsense totals.
+			const weightByWords = this.ctx.config.turnNetworkWeightByWords;
 			let initiated = 0;
 			let received = 0;
 			for (const edge of layout.edges) {
-				if (edge.from === hovered.speaker) initiated += edge.weight;
-				if (edge.to === hovered.speaker) received += edge.weight;
+				const w = weightByWords ? edge.wordCount : edge.count;
+				if (edge.from === hovered.speaker) initiated += w;
+				if (edge.to === hovered.speaker) received += w;
 			}
 			content =
 				`<b>${hovered.speaker}</b>\n` +
 				`<span style="font-size: 0.85em; opacity: 0.7">` +
 				`Initiated ${plural(initiated)}  ·  Received ${plural(received)}</span>`;
 		} else {
-			content =
-				`<b>${hovered.edge.from} → ${hovered.edge.to}</b>\n` + `<span style="font-size: 0.85em; opacity: 0.7">${plural(hovered.edge.weight)}</span>`;
+			// Edge tooltip. In statistical mode, lead with the z-score and a
+			// plain-language label of what "significant" means here.
+			const edge = hovered.edge;
+			if (statsMode) {
+				const dir = edge.adjRes >= 0 ? 'above chance' : 'below chance';
+				content =
+					`<b>${edge.from} → ${edge.to}</b>\n` +
+					`<span style="font-size: 0.85em; opacity: 0.7">` +
+					`z = ${edge.adjRes.toFixed(2)} (${dir})  ·  ${plural(edge.count)}</span>`;
+			} else {
+				content =
+					`<b>${edge.from} → ${edge.to}</b>\n` +
+					`<span style="font-size: 0.85em; opacity: 0.7">${plural(edge.count)}</span>`;
+			}
 		}
 
 		showTooltip(this.ctx.sk.mouseX, this.ctx.sk.mouseY, content, color, this.bounds.y + this.bounds.height);

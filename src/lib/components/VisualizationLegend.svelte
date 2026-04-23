@@ -22,7 +22,8 @@
 		MessageCircle
 	} from '@lucide/svelte';
 	import type { Component } from 'svelte';
-	import ConfigStore from '../../stores/configStore';
+	import VizStore from '../../stores/vizStore';
+	import UIStateStore from '../../stores/uiStateStore';
 	import TranscriptStore from '../../stores/transcriptStore';
 	import UserStore from '../../stores/userStore';
 
@@ -156,15 +157,15 @@
 	] as const;
 
 	let legend = $derived.by(() => {
-		const config = $ConfigStore;
-		if (config.dashboardToggle) return null;
+		const viz = $VizStore;
+		if (viz.dashboardToggle) return null;
 		for (const [toggle, key] of VIZ_TOGGLES) {
-			if (config[toggle]) return legendData[key];
+			if (viz[toggle]) return legendData[key];
 		}
 		return null;
 	});
 
-	let isVisible = $derived($ConfigStore.legendVisible);
+	let isVisible = $derived($UIStateStore.legendVisible);
 
 	let speakerGradient = $derived.by(() => {
 		const colors = $UserStore.filter((u) => u.enabled).map((u) => u.color);
@@ -173,7 +174,7 @@
 	});
 
 	function setLegendVisible(visible: boolean) {
-		ConfigStore.update((c) => ({ ...c, legendVisible: visible }));
+		UIStateStore.update((u) => ({ ...u, legendVisible: visible }));
 	}
 </script>
 

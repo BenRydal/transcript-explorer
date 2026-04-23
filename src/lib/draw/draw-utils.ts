@@ -5,6 +5,7 @@ import type { CodeEntry } from '../../stores/codeStore';
 import type { HoverState } from '../../stores/hoverStore';
 import type { Bounds } from './types/bounds';
 import { formatTimeCompact } from '../core/time-utils';
+import type { DrawTheme } from './draw-theme';
 
 const DIM_ALPHA = 0.2;
 
@@ -75,11 +76,12 @@ export function drawTimeAxis(
 	sk: p5,
 	bounds: Bounds,
 	grid: { gx: number; gy: number; gw: number; gh: number },
-	timeline: { leftMarker: number; rightMarker: number }
+	timeline: { leftMarker: number; rightMarker: number },
+	theme: DrawTheme
 ): void {
 	const fontSize = Math.max(8, Math.min(10, bounds.height * 0.025));
 	sk.textSize(fontSize);
-	sk.fill(120);
+	sk.fill(theme.fgMuted);
 	sk.noStroke();
 	sk.textAlign(sk.CENTER, sk.TOP);
 
@@ -92,13 +94,13 @@ export function drawTimeAxis(
 		const x = grid.gx + frac * grid.gw;
 
 		// Tick mark
-		sk.stroke(200);
+		sk.stroke(theme.border);
 		sk.strokeWeight(1);
 		sk.line(x, grid.gy + grid.gh, x, grid.gy + grid.gh + 5);
 
 		// Time label
 		sk.noStroke();
-		sk.fill(120);
+		sk.fill(theme.fgMuted);
 		sk.text(formatTimeCompact(time), x, grid.gy + grid.gh + 8);
 	}
 }

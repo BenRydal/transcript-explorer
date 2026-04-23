@@ -22,6 +22,7 @@ import { calculateScaling, getWordWidth, type Scaling } from './contribution-clo
 import { DEFAULT_SPEAKER_COLOR } from '../constants/ui';
 import { getWordColor } from './draw-utils';
 import { DrawContext } from './draw-context';
+import { registerVizCacheReset } from './viz-cache-registry';
 
 export { clearScalingCache } from './contribution-cloud-scaling';
 
@@ -55,10 +56,17 @@ let bufferCache: {
 
 export function clearCloudBuffer(): void {
 	if (bufferCache.buffer) {
+		// p5.Graphics buffers are GPU-backed — .remove() frees the WebGL
+		// context / 2D canvas backing. Skipping this leaks VRAM across
+		// transcript reloads.
 		bufferCache.buffer.remove();
 	}
 	bufferCache = { buffer: null, positions: [], cacheKey: null, hasOverflow: false };
 }
+
+// Register the buffer clear so the central transcript-load hook can free
+// the GPU resource before a new transcript builds a fresh one.
+registerVizCacheReset(clearCloudBuffer);
 
 export class ContributionCloud {
 	ctx: DrawContext;
@@ -138,7 +146,10 @@ export class ContributionCloud {
 				const color = getWordColor(pos.word.codes, pos.user.color, this.ctx.codeColorMap, this.ctx.config.codeColorMode);
 				buffer.fill(color);
 			} else {
-				buffer.fill(255);
+				// Disabled-speaker words are drawn in the canvas bg color
+				// so they effectively disappear while still participating
+				// in layout (same behavior as before; just theme-aware).
+				buffer.fill(this.ctx.theme.bg);
 			}
 			buffer.text(stripPunctuation(pos.word.word), pos.x, pos.y);
 		}
@@ -216,7 +227,9 @@ export class ContributionCloud {
 		const hoveredWordText = hoveredPos.word.word;
 
 		this.ctx.sk.noStroke();
-		this.ctx.sk.fill(255, OVERLAY_OPACITY);
+		const overlayColor = this.ctx.sk.color(this.ctx.theme.overlay);
+		overlayColor.setAlpha(OVERLAY_OPACITY);
+		this.ctx.sk.fill(overlayColor);
 		this.ctx.sk.rect(this.bounds.x, this.bounds.y, this.bounds.width, this.bounds.height);
 
 		this.ctx.sk.textAlign(this.ctx.sk.LEFT, this.ctx.sk.BASELINE);

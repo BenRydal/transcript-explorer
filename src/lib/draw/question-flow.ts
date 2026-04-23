@@ -5,6 +5,7 @@ import type { QuestionAnswerPair } from '../core/dynamic-data';
 import { withDimming, getCrossHighlight, drawTimeAxis, getWordColor } from './draw-utils';
 import { normalizeWord } from '../core/string-utils';
 import { DrawContext } from './draw-context';
+import { pickTextColor } from './draw-theme';
 
 const LEFT_MARGIN = 80;
 const RIGHT_MARGIN = 20;
@@ -85,7 +86,7 @@ export class QuestionFlow {
 		this.drawSpeakerLabels();
 
 		// Draw timeline axis
-		drawTimeAxis(this.ctx.sk, this.bounds, this, this.timeline);
+		drawTimeAxis(this.ctx.sk, this.bounds, this, this.timeline, this.ctx.theme);
 
 		// Render all pairs
 		const rendered = this.renderPairs(pairs, wordCounts, maxWords);
@@ -109,7 +110,7 @@ export class QuestionFlow {
 	}
 
 	private drawEmptyState(): void {
-		this.ctx.sk.fill(150);
+		this.ctx.sk.fill(this.ctx.theme.fgMuted);
 		this.ctx.sk.noStroke();
 		this.ctx.sk.textAlign(this.ctx.sk.CENTER, this.ctx.sk.CENTER);
 		this.ctx.sk.textSize(14);
@@ -125,14 +126,17 @@ export class QuestionFlow {
 
 		for (let i = 0; i < this.speakers.length; i++) {
 			const speaker = this.speakers[i];
-			const user = this.ctx.userMap.get(speaker);
 			const y = this.gy + laneHeight * i + laneHeight / 2;
 
-			this.ctx.sk.fill(user?.color || '#666666');
+			// Speaker label sits in the left margin over the canvas
+			// background. Use theme.fg so pale speaker colors stay
+			// readable on a dark canvas; the question/answer nodes below
+			// still carry speaker identity via their colored fills.
+			this.ctx.sk.fill(this.ctx.theme.fg);
 			this.ctx.sk.text(speaker, this.gx - 10, y);
 
 			// Draw lane line
-			this.ctx.sk.stroke(230);
+			this.ctx.sk.stroke(this.ctx.theme.borderMuted);
 			this.ctx.sk.strokeWeight(1);
 			this.ctx.sk.line(this.gx, y, this.gx + this.gw, y);
 		}
@@ -235,7 +239,11 @@ export class QuestionFlow {
 			// Question node
 			withDimming(this.ctx.sk.drawingContext, shouldDim, () => {
 				const qUser = this.ctx.userMap.get(rp.pair.questionSpeaker);
-				const qColor = this.ctx.sk.color(getWordColor(rp.pair.questionFirstWord.codes, qUser?.color || '#999999', this.ctx.codeColorMap, this.ctx.config.codeColorMode));
+				// Keep the base speaker color as a parseable string for
+				// pickTextColor; `this.ctx.sk.color(...)` only consumes it
+				// for the alpha'd fill below.
+				const qBaseColor = getWordColor(rp.pair.questionFirstWord.codes, qUser?.color || '#999999', this.ctx.codeColorMap, this.ctx.config.codeColorMode);
+				const qColor = this.ctx.sk.color(qBaseColor);
 
 				if (isHovered) {
 					this.ctx.sk.stroke(qColor);
@@ -248,8 +256,10 @@ export class QuestionFlow {
 				this.ctx.sk.fill(qColor);
 				this.ctx.sk.ellipse(rp.qx, rp.qy, rp.qRadius * 2, rp.qRadius * 2);
 
-				// Question mark indicator
-				this.ctx.sk.fill(255);
+				// Question mark indicator — pick a contrasting text color
+				// against the speaker-colored circle (was hardcoded white,
+				// which vanished on pale speaker colors in both themes).
+				this.ctx.sk.fill(pickTextColor(qBaseColor, this.ctx.theme));
 				this.ctx.sk.noStroke();
 				this.ctx.sk.textAlign(this.ctx.sk.CENTER, this.ctx.sk.CENTER);
 				const fontSize = Math.max(8, rp.qRadius);

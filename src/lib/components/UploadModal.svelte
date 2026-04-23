@@ -4,6 +4,7 @@
 	import { isRequired, allRequiredMapped, type ColumnMatch } from '$lib/core/column-mapper';
 	import type { CSVPreview, CodePreview } from '../../models/csv-preview';
 	import type { TimingMode } from '../../models/transcript';
+	import { trapFocus } from '$lib/a11y/focus-trap';
 
 	interface Props {
 		isOpen?: boolean;
@@ -100,9 +101,18 @@
 		if (value == null || value === '') return '\u2014';
 		return String(value);
 	}
+
+	let dialogEl: HTMLDivElement | null = $state(null);
+
+	$effect(() => {
+		if (!isOpen || !dialogEl) return;
+		return trapFocus(dialogEl);
+	});
 </script>
 
 {#if isOpen}
+	<!-- svelte-ignore a11y_no_static_element_interactions -->
+	<!-- svelte-ignore a11y_click_events_have_key_events -->
 	<div
 		class="modal modal-open"
 		onclick={(e) => {
@@ -113,11 +123,15 @@
 			}
 		}}
 		onkeydown={handleKeydown}
-		role="dialog"
-		aria-modal="true"
-		tabindex="-1"
 	>
-		<div class="modal-box w-11/12 max-w-lg">
+		<div
+			bind:this={dialogEl}
+			class="modal-box w-11/12 max-w-lg"
+			role="dialog"
+			aria-modal="true"
+			aria-labelledby="upload-modal-title"
+			tabindex="-1"
+		>
 			{#if csvPreview}
 				<!-- CSV Preview -->
 				<div class="flex justify-between items-center mb-4">
@@ -125,7 +139,7 @@
 						<button class="btn btn-ghost btn-sm btn-square" onclick={() => oncancelPreview?.()} aria-label="Back">
 							<ArrowLeft size={18} />
 						</button>
-						<h3 class="font-bold text-lg truncate max-w-[300px]" title={csvPreview.fileName}>Preview: {csvPreview.fileName}</h3>
+						<h3 id="upload-modal-title" class="font-bold text-lg truncate max-w-[300px]" title={csvPreview.fileName}>Preview: {csvPreview.fileName}</h3>
 					</div>
 					<button
 						class="btn btn-circle btn-sm"
@@ -135,7 +149,7 @@
 						}}
 						aria-label="Close"
 					>
-						<X size={20} />
+						<X size={20} aria-hidden="true" />
 					</button>
 				</div>
 
@@ -232,7 +246,7 @@
 						<button class="btn btn-ghost btn-sm btn-square" onclick={() => oncancelCodePreview?.()} aria-label="Back">
 							<ArrowLeft size={18} />
 						</button>
-						<h3 class="font-bold text-lg truncate max-w-[300px]" title={codePreview.fileName}>Preview: {codePreview.fileName}</h3>
+						<h3 id="upload-modal-title" class="font-bold text-lg truncate max-w-[300px]" title={codePreview.fileName}>Preview: {codePreview.fileName}</h3>
 					</div>
 					<button
 						class="btn btn-circle btn-sm"
@@ -307,9 +321,9 @@
 			{:else}
 				<!-- Normal upload UI -->
 				<div class="flex justify-between mb-4">
-					<h3 class="font-bold text-lg">Upload Files</h3>
+					<h3 id="upload-modal-title" class="font-bold text-lg">Upload Files</h3>
 					<button class="btn btn-circle btn-sm" onclick={() => (isOpen = false)} aria-label="Close">
-						<X size={20} />
+						<X size={20} aria-hidden="true" />
 					</button>
 				</div>
 

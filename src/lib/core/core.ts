@@ -6,7 +6,7 @@ import { loadVideo, reset as resetVideo } from '../../stores/videoStore';
 import { Transcript } from '../../models/transcript';
 import HistoryStore from '../../stores/historyStore.js';
 import CodeStore from '../../stores/codeStore';
-import ConfigStore from '../../stores/configStore';
+import FiltersStore from '../../stores/filtersStore';
 
 const examples: Record<string, { files: string[]; videoId: string }> = {
 	'example-1': {
@@ -93,6 +93,6 @@ export class Core {
 		TranscriptStore.set(new Transcript());
 		HistoryStore.clear();
 		CodeStore.set([]);
-		ConfigStore.update((c) => ({ ...c, codeColorMode: false, showUncoded: true }));
+		FiltersStore.update((c) => ({ ...c, codeColorMode: false, showUncoded: true }));
 	}
 }

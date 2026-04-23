@@ -1,20 +1,22 @@
+import { WONG_PALETTE_NO_BLACK } from '../ui/palette';
+
 export const DEFAULT_SPEAKER_COLOR = '#cccccc';
 
 /** Canvas spacing used for dashboard panel padding/gap. Shared between p5 and DOM overlay. */
 export const CANVAS_SPACING = 25;
 
-export const USER_COLORS = [
-	'#6a3d9a', // Dark Purple
-	'#ff7f00', // Dark Orange
-	'#33a02c', // Dark Green
-	'#1f78b4', // Dark Blue
-	'#e31a1c', // Dark Red
-	'#b15928', // Dark Brown
-	'#cab2d6', // Light Purple
-	'#fdbf6f', // Light Orange
-	'#b2df8a', //Light Green
-	'#a6cee3', //Light Blue
-	'#fb9a99', //Light Red
-	'#ffed6f' //Yellow
-	// Add more colors as needed
-];
+/**
+ * Default speaker palette used when a new transcript is parsed. Each speaker
+ * is assigned `USER_COLORS[index % USER_COLORS.length]`.
+ *
+ * Switched to the Wong (Nature Methods 2011) CVD-safe palette minus black:
+ * the previous palette was an ad-hoc mix of light and dark hues that did
+ * not guarantee separation under deuteranopia, protanopia, or tritanopia.
+ *
+ * Users can still pick any color via the speaker swatch; this constant
+ * only governs the default assignment for newly-parsed transcripts.
+ * Existing colors saved to storage/state are preserved by `transcript-lifecycle`.
+ *
+ * See `src/lib/ui/palette.ts` for palette definitions.
+ */
+export const USER_COLORS: readonly string[] = WONG_PALETTE_NO_BLACK;

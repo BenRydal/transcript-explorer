@@ -4,7 +4,7 @@
 	import TranscriptStore from '../../stores/transcriptStore';
 	import UserStore from '../../stores/userStore';
 	import EditorStore from '../../stores/editorStore';
-	import ConfigStore from '../../stores/configStore';
+	import FiltersStore from '../../stores/filtersStore';
 	import HoverStore, { initialHoverState } from '../../stores/hoverStore';
 	import P5Store from '../../stores/p5Store';
 	import HistoryStore from '../../stores/historyStore';
@@ -48,7 +48,7 @@
 		turns.filter((turn) => {
 			if (!enabledSpeakers.has(turn.speaker)) return false;
 			if ($EditorStore.selection.filteredSpeaker && turn.speaker !== $EditorStore.selection.filteredSpeaker) return false;
-			if ($ConfigStore.wordToSearch && !normalizeWord(getTurnContent(turn)).includes(normalizeWord($ConfigStore.wordToSearch))) return false;
+			if ($FiltersStore.wordToSearch && !normalizeWord(getTurnContent(turn)).includes(normalizeWord($FiltersStore.wordToSearch))) return false;
 			return true;
 		})
 	);
@@ -96,7 +96,7 @@
 			}
 		}));
 
-		// Update ConfigStore to sync with visualizations
+		// Sync selection with visualizations (HoverStore)
 		const transcript = get(TranscriptStore);
 		const turnWords = transcript.wordArray.filter((dp) => dp.turnNumber === turn.turnNumber);
 

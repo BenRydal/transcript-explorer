@@ -6,7 +6,8 @@ import type { User } from '../../models/user';
 import TranscriptStore from '../../stores/transcriptStore';
 import UserStore from '../../stores/userStore';
 import CodeStore, { type CodeEntry } from '../../stores/codeStore';
-import ConfigStore from '../../stores/configStore';
+import FiltersStore from '../../stores/filtersStore';
+import { autosaveStatus } from '../../stores/autosaveStore';
 
 const STORAGE_KEY = 'transcript-explorer-autosave';
 
@@ -56,11 +57,16 @@ export function saveState(): void {
 	const transcript = get(TranscriptStore);
 	const users = get(UserStore);
 	const codes = get(CodeStore);
-	const config = get(ConfigStore);
+	const config = get(FiltersStore);
 
 	if (transcript.wordArray.length === 0) {
 		return;
 	}
+
+	// Mark the autosave indicator as in-flight. JSON stringify + a
+	// localStorage write are synchronous, but we still flip through
+	// 'saving' so users see the state transition even on fast writes.
+	autosaveStatus.saving();
 
 	const state: PersistedState = {
 		transcript: {
@@ -96,8 +102,10 @@ export function saveState(): void {
 
 	try {
 		localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
+		autosaveStatus.saved();
 	} catch (e) {
 		console.error('Failed to save state to localStorage:', e);
+		autosaveStatus.error();
 	}
 }
 
@@ -160,7 +168,7 @@ export function restoreState(): boolean {
 
 	if (state.codes && state.codes.length > 0) {
 		CodeStore.set(state.codes);
-		ConfigStore.update((c) => ({ ...c, codeColorMode: state.codeColorMode ?? false, showUncoded: state.showUncoded ?? true }));
+		FiltersStore.update((c) => ({ ...c, codeColorMode: state.codeColorMode ?? false, showUncoded: state.showUncoded ?? true }));
 	}
 
 	return true;

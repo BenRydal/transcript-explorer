@@ -1,5 +1,5 @@
 <script lang="ts">
-	import ConfigStore, { DASHBOARD_PANEL_OPTIONS } from '../../stores/configStore';
+	import UIStateStore, { DASHBOARD_PANEL_OPTIONS } from '../../stores/uiStateStore';
 	import type { Component } from 'svelte';
 	import {
 		Minus,
@@ -31,7 +31,7 @@
 	};
 
 	function addPanel() {
-		ConfigStore.update((store) => {
+		UIStateStore.update((store) => {
 			if (store.dashboardPanels.length >= 4) return store;
 			const used = new Set(store.dashboardPanels);
 			const next = DASHBOARD_PANEL_OPTIONS.find((o) => !used.has(o.key))?.key ?? DASHBOARD_PANEL_OPTIONS[0].key;
@@ -40,13 +40,13 @@
 	}
 
 	function removePanel() {
-		ConfigStore.update((store) => {
+		UIStateStore.update((store) => {
 			if (store.dashboardPanels.length <= 2) return store;
 			return { ...store, dashboardPanels: store.dashboardPanels.slice(0, -1) };
 		});
 	}
 
-	let count = $derived($ConfigStore.dashboardPanels.length);
+	let count = $derived($UIStateStore.dashboardPanels.length);
 	let openPopoverIndex = $state<number | null>(null);
 	let panelRefs: (HTMLElement | null)[] = $state([]);
 
@@ -63,7 +63,7 @@
 	});
 
 	function selectViz(index: number, key: string) {
-		ConfigStore.update((store) => {
+		UIStateStore.update((store) => {
 			const panels = [...store.dashboardPanels];
 			panels[index] = key;
 			return { ...store, dashboardPanels: panels };
@@ -82,7 +82,7 @@
 >
 	<div class="absolute top-2 left-2 pointer-events-auto flex gap-0.5 z-[51]">
 		<button
-			class="btn btn-xs btn-ghost bg-white/70 hover:bg-white/90 border border-gray-300 shadow-sm"
+			class="dash-overlay__btn"
 			onclick={removePanel}
 			disabled={count <= 2}
 			title="Remove panel"
@@ -90,7 +90,7 @@
 			<Minus size={12} />
 		</button>
 		<button
-			class="btn btn-xs btn-ghost bg-white/70 hover:bg-white/90 border border-gray-300 shadow-sm"
+			class="dash-overlay__btn"
 			onclick={addPanel}
 			disabled={count >= 4}
 			title="Add panel"
@@ -99,36 +99,31 @@
 		</button>
 	</div>
 
-	{#each $ConfigStore.dashboardPanels as panelKey, i}
+	{#each $UIStateStore.dashboardPanels as panelKey, i}
 		{@const info = PANEL_ICONS[panelKey]}
 		<div class="panel-cell" class:span-two={count === 3 && i === 0}>
 			<div class="relative flex justify-end" bind:this={panelRefs[i]}>
 				<!-- Icon trigger -->
 				<button
-					class="p-1.5 rounded-md bg-white/70 hover:bg-white/90 border border-gray-300 shadow-sm transition-colors pointer-events-auto"
+					class="dash-overlay__btn"
 					onclick={() => (openPopoverIndex = openPopoverIndex === i ? null : i)}
 					title={info.label}
 				>
-					<info.icon size={14} strokeWidth={1.5} class="text-gray-600" />
+					<info.icon size={14} strokeWidth={1.5} />
 				</button>
 
 				<!-- Icon grid popover -->
 				{#if openPopoverIndex === i}
-					<div
-						class="absolute top-full right-0 mt-1 z-[52] rounded-lg py-2 px-2 shadow-lg bg-base-100 border border-gray-200 w-44 pointer-events-auto"
-					>
+					<div class="dash-overlay__popover">
 						<div class="grid grid-cols-3 gap-1">
 							{#each DASHBOARD_PANEL_OPTIONS as option}
 								{@const tile = PANEL_ICONS[option.key]}
 								{@const isActive = panelKey === option.key}
-								{@const isUsed = $ConfigStore.dashboardPanels.some((k, j) => j !== i && k === option.key)}
+								{@const isUsed = $UIStateStore.dashboardPanels.some((k, j) => j !== i && k === option.key)}
 								<button
-									class="flex flex-col items-center gap-0.5 rounded-md px-1 py-1.5 text-[10px] cursor-pointer transition-colors
-										{isActive
-										? 'bg-primary/10 text-primary ring-1 ring-primary/30 font-medium'
-										: isUsed
-											? 'text-gray-300 cursor-not-allowed'
-											: 'text-gray-600 hover:bg-gray-100'}"
+									class="dash-overlay__tile"
+									class:is-active={isActive}
+									class:is-used={isUsed}
 									onclick={() => selectViz(i, option.key)}
 									disabled={isUsed}
 									title={option.label}
@@ -171,5 +166,83 @@
 
 	.panel-cell {
 		pointer-events: none;
+	}
+
+	.dash-overlay__btn {
+		display: inline-flex;
+		align-items: center;
+		justify-content: center;
+		padding: 6px;
+		border: 1px solid var(--te-border);
+		border-radius: var(--te-radius);
+		background: color-mix(in srgb, var(--te-bg) 70%, transparent);
+		color: var(--te-fg-muted);
+		cursor: pointer;
+		pointer-events: auto;
+		transition: background 120ms ease, color 120ms ease;
+		box-shadow: 0 1px 2px rgba(0, 0, 0, 0.04);
+	}
+
+	.dash-overlay__btn:hover:not(:disabled) {
+		background: var(--te-bg);
+		color: var(--te-fg);
+	}
+
+	.dash-overlay__btn:focus-visible {
+		outline: 2px solid var(--te-focus-ring);
+		outline-offset: 1px;
+	}
+
+	.dash-overlay__btn:disabled {
+		opacity: 0.5;
+		cursor: not-allowed;
+	}
+
+	.dash-overlay__popover {
+		position: absolute;
+		top: 100%;
+		right: 0;
+		margin-top: 4px;
+		z-index: 52;
+		padding: var(--te-sp-2);
+		background: var(--te-bg);
+		border: 1px solid var(--te-border-muted);
+		border-radius: var(--te-radius-lg);
+		box-shadow: 0 8px 16px rgba(0, 0, 0, 0.12);
+		width: 11rem;
+		pointer-events: auto;
+	}
+
+	.dash-overlay__tile {
+		display: flex;
+		flex-direction: column;
+		align-items: center;
+		gap: 2px;
+		padding: 4px;
+		border: 1px solid transparent;
+		border-radius: var(--te-radius-sm);
+		background: transparent;
+		color: var(--te-fg-muted);
+		font-size: 10px;
+		cursor: pointer;
+		transition: background 120ms ease, color 120ms ease;
+	}
+
+	.dash-overlay__tile:hover:not(:disabled) {
+		background: var(--te-bg-muted);
+		color: var(--te-fg);
+	}
+
+	.dash-overlay__tile.is-active {
+		background: var(--te-accent-tint);
+		color: var(--te-accent);
+		font-weight: 500;
+		border-color: color-mix(in srgb, var(--te-accent) 30%, transparent);
+	}
+
+	.dash-overlay__tile.is-used {
+		color: var(--te-fg-subtle);
+		opacity: 0.5;
+		cursor: not-allowed;
 	}
 </style>
