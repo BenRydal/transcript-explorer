@@ -2746,9 +2746,9 @@ __metadata:
     prettier-plugin-svelte: "npm:^3.2.0"
     svelte: "npm:^5.0.0"
     svelte-check: "npm:^4.0.0"
-    svelte-p5: "portal:../../../svelte-p5/packages/core"
-    svelte-p5-components: "portal:../../../svelte-p5/packages/components"
-    svelte-p5-viz: "portal:../../../svelte-p5/packages/viz"
+    svelte-p5: "https://pkg.pr.new/svelte-p5@52"
+    svelte-p5-components: "https://pkg.pr.new/svelte-p5-components@52"
+    svelte-p5-viz: "https://pkg.pr.new/svelte-p5-viz@52"
     tailwindcss: "npm:^3.3.2"
     tslib: "npm:^2.6.2"
     typescript: "npm:^5.3.0"
@@ -4566,36 +4566,39 @@ __metadata:
   languageName: node
   linkType: hard
 
-"svelte-p5-components@portal:../../../svelte-p5/packages/components::locator=igs%40workspace%3A.":
-  version: 0.0.0-use.local
-  resolution: "svelte-p5-components@portal:../../../svelte-p5/packages/components::locator=igs%40workspace%3A."
+"svelte-p5-components@https://pkg.pr.new/svelte-p5-components@52":
+  version: 0.4.1
+  resolution: "svelte-p5-components@https://pkg.pr.new/svelte-p5-components@52"
   dependencies:
     "@neodrag/svelte": "npm:3.0.0-next.8"
   peerDependencies:
     p5: ">=1.11.0 <3"
     svelte: ^5.0.0
     svelte-p5: "workspace:^"
+  checksum: 10c0/37d2a1f94cb18bfe0a7b8ca092c4fe85142d866151ed9448ffcbcb759596a0f72289333a3f1e778dfc7e8c7a1a1a8cb7f6267776e934207185d663fce1a0bfee
   languageName: node
-  linkType: soft
+  linkType: hard
 
-"svelte-p5-viz@portal:../../../svelte-p5/packages/viz::locator=igs%40workspace%3A.":
-  version: 0.0.0-use.local
-  resolution: "svelte-p5-viz@portal:../../../svelte-p5/packages/viz::locator=igs%40workspace%3A."
+"svelte-p5-viz@https://pkg.pr.new/svelte-p5-viz@52":
+  version: 0.2.0
+  resolution: "svelte-p5-viz@https://pkg.pr.new/svelte-p5-viz@52"
   peerDependencies:
     p5: ">=1.11.0 <3"
     svelte: ^5.0.0
     svelte-p5: "workspace:^"
+  checksum: 10c0/85a506c055e602025ef0f3d4fbc587025d82928904f37eabfbeb4b1981a9834096bc4f908712f03465f61b3c8d24866c8186d5beabe8d763a384b107dabddf64
   languageName: node
-  linkType: soft
+  linkType: hard
 
-"svelte-p5@portal:../../../svelte-p5/packages/core::locator=igs%40workspace%3A.":
-  version: 0.0.0-use.local
-  resolution: "svelte-p5@portal:../../../svelte-p5/packages/core::locator=igs%40workspace%3A."
+"svelte-p5@https://pkg.pr.new/svelte-p5@52":
+  version: 0.3.0
+  resolution: "svelte-p5@https://pkg.pr.new/svelte-p5@52"
   peerDependencies:
     p5: ">=1.11.0 <3"
     svelte: ^5.0.0
+  checksum: 10c0/7b9b1c48aa13887a8c452c0784b3e953381378650c53fa93637ad7fdbe8a8765b56f35773600d63bdcab74c847f7721d6d13d7e42ad53ced4b37b4593bf87367
   languageName: node
-  linkType: soft
+  linkType: hard
 
 "svelte@npm:^5.0.0":
   version: 5.49.0

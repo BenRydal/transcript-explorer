@@ -97,8 +97,8 @@ You can also load:
 
 ### Prerequisites
 
-- Node.js 18+
-- Yarn
+- Node.js 20+ (a `.nvmrc` pins the version; run `nvm use` if you use nvm)
+- [Corepack](https://nodejs.org/api/corepack.html) (ships with Node) — activates the pinned Yarn version automatically
 
 ### Installation
 
@@ -106,6 +106,9 @@ You can also load:
 # Clone the repository
 git clone https://github.com/BenRydal/transcript-explorer.git
 cd transcript-explorer
+
+# Activate the pinned Yarn (4.5.3) via Corepack
+corepack enable
 
 # Install dependencies
 yarn install
@@ -115,6 +118,28 @@ yarn dev
 ```
 
 Visit `http://localhost:5173` in your browser.
+
+### Running the `refactor/svelte-p5-library-adoption` branch
+
+This branch consumes the in-progress [`svelte-p5`](https://github.com/edw1nzhao/svelte-p5)
+canvas-UI component library directly from preview builds (via
+[pkg.pr.new](https://pkg.pr.new/)), so you do **not** need a local checkout of the
+library to run it:
+
+```bash
+git clone https://github.com/BenRydal/transcript-explorer.git
+cd transcript-explorer
+git checkout refactor/svelte-p5-library-adoption
+corepack enable
+yarn install   # pulls svelte-p5* from pkg.pr.new (PR #52 of the library repo)
+yarn dev
+```
+
+The three `svelte-p5*` dependencies in `package.json` point at
+`https://pkg.pr.new/svelte-p5*@52` — the preview tarballs published by CI for the
+library's open PR. When the library work is released to npm, these will switch to
+normal version ranges. A peer-dependency warning about `svelte-p5` during install is
+expected (a `workspace:` protocol artifact in the preview tarballs) and is harmless.
 
 ### Available Scripts
 
