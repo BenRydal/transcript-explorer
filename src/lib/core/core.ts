@@ -33,6 +33,16 @@ const examples: Record<string, { files: string[]; videoId: string }> = {
 		// Biden/Trump Debate 2020
 		files: ['conversation.csv'],
 		videoId: 'yW8nIA33-zY'
+	},
+	'claude-code-sample': {
+		// Claude Code agentic session (JSONL → interaction schema). No video.
+		files: ['session.jsonl'],
+		videoId: ''
+	},
+	'claude-code-2': {
+		// Real Claude Code session (converted CSV from feature/claude). No video.
+		files: ['conversation.csv'],
+		videoId: ''
 	}
 };
 
@@ -51,8 +61,10 @@ export class Core {
 	}
 
 	/**
-	 * Fetch an example CSV file and return it as a File object.
-	 * Throws if fetch fails.
+	 * Fetch an example file and return it as a File object. The MIME type is
+	 * derived from the extension so downstream dispatch (which can branch on
+	 * file.type) routes .jsonl/.json sessions to the interaction parser rather
+	 * than the CSV path. Throws if fetch fails.
 	 */
 	async fetchExampleFile(exampleId: string, fileName: string): Promise<File> {
 		const response = await fetch(`/data/${exampleId}/${fileName}`);
@@ -60,7 +72,14 @@ export class Core {
 			throw new Error(`Failed to fetch example file: ${response.statusText}`);
 		}
 		const buffer = await response.arrayBuffer();
-		return new File([buffer], fileName, { type: 'text/csv' });
+		const lower = fileName.toLowerCase();
+		const type =
+			lower.endsWith('.jsonl') || lower.endsWith('.json')
+				? 'application/json'
+				: lower.endsWith('.txt')
+					? 'text/plain'
+					: 'text/csv';
+		return new File([buffer], fileName, { type });
 	}
 
 	/**
