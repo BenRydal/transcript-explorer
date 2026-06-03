@@ -74,7 +74,7 @@
 			</h2>
 			<p id={descId} class="welcome-dialog__pitch">
 				Transcript Explorer turns conversation transcripts into interactive
-				visualizations — across speakers, time, and qualitative codes — all
+				visualizations (across speakers, time, and qualitative codes), all
 				in your browser, no upload required.
 			</p>
 
@@ -98,7 +98,7 @@
 					class="te-btn te-btn--ghost"
 					onclick={dismiss}
 				>
-					Skip &mdash; I&rsquo;ll explore on my own
+					Skip, I&rsquo;ll explore on my own
 				</button>
 			</div>
 
