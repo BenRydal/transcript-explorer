@@ -2,7 +2,7 @@ import type { DataPoint } from '../../models/dataPoint';
 import type { CodeEntry } from '../../stores/codeStore';
 import CodeStore from '../../stores/codeStore';
 import { get } from 'svelte/store';
-import { USER_COLORS } from '../constants/ui';
+import { getUserColors } from '../constants/ui';
 import { toSeconds } from './time-utils';
 
 interface PapaParseResults {
@@ -258,14 +258,15 @@ export function updateCodeStoreWithNewCodes(parsedCodes: ParsedCodes): void {
 	if (newCodeNames.length === 0) return;
 
 	const usedColors = new Set(currentCodes.map((c) => c.color));
+	const userColors = getUserColors();
 	let colorIndex = 0;
 
 	const newEntries: CodeEntry[] = newCodeNames.map((code) => {
 		// Find next unused color
-		while (colorIndex < USER_COLORS.length && usedColors.has(USER_COLORS[colorIndex])) {
+		while (colorIndex < userColors.length && usedColors.has(userColors[colorIndex])) {
 			colorIndex++;
 		}
-		const color = USER_COLORS[colorIndex % USER_COLORS.length];
+		const color = userColors[colorIndex % userColors.length];
 		usedColors.add(color);
 		colorIndex++;
 		return { code, color, enabled: true };

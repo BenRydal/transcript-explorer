@@ -8,7 +8,7 @@ import { Transcript, type TimingMode } from '../../models/transcript';
 import type { User } from '../../models/user';
 import type { TranscriptionSegment } from './transcription-service';
 import type { ParseResult } from './text-parser';
-import { USER_COLORS } from '../constants/ui';
+import { getUserColors } from '../constants/ui';
 import { calculateTranscriptStats } from './transcript-stats';
 import { splitIntoWordTokens } from './string-utils';
 
@@ -143,9 +143,10 @@ export function createTranscriptFromParsedText(parseResult: ParseResult, timingM
 	transcript.totalTimeInSeconds = maxTime;
 	Object.assign(transcript, stats);
 
+	const userColors = getUserColors();
 	const users: User[] = parseResult.speakers.map((speaker, index) => ({
 		name: speaker,
-		color: USER_COLORS[index % USER_COLORS.length],
+		color: userColors[index % userColors.length],
 		enabled: true
 	}));
 

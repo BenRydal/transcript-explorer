@@ -14,7 +14,7 @@
 	import type { Turn } from '$lib/core/turn-utils';
 	import { DataPoint } from '../../models/dataPoint';
 	import { normalizeWord, splitIntoWordTokens } from '$lib/core/string-utils';
-	import { USER_COLORS, DEFAULT_SPEAKER_COLOR } from '$lib/constants/ui';
+	import { getUserColors, DEFAULT_SPEAKER_COLOR } from '$lib/constants/ui';
 	import EditorToolbar from './EditorToolbar.svelte';
 	import TranscriptEditorRow from './TranscriptEditorRow.svelte';
 	import ConfirmModal from './ConfirmModal.svelte';
@@ -203,7 +203,8 @@
 					let updatedUsers = [...users];
 					if (!updatedUsers.some((u) => u.name === newSpeakerName)) {
 						const usedColors = updatedUsers.map((u) => u.color);
-						const availableColor = USER_COLORS.find((c) => !usedColors.includes(c)) || USER_COLORS[updatedUsers.length % USER_COLORS.length];
+						const userColors = getUserColors();
+						const availableColor = userColors.find((c) => !usedColors.includes(c)) || userColors[updatedUsers.length % userColors.length];
 						updatedUsers.push({ name: newSpeakerName!, color: availableColor, enabled: true });
 					}
 

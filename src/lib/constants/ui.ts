@@ -1,4 +1,5 @@
 import { WONG_PALETTE_NO_BLACK } from '../ui/palette';
+import { activePaletteColors } from '../ui/speaker-palette';
 
 export const DEFAULT_SPEAKER_COLOR = '#cccccc';
 
@@ -20,3 +21,13 @@ export const CANVAS_SPACING = 25;
  * See `src/lib/ui/palette.ts` for palette definitions.
  */
 export const USER_COLORS: readonly string[] = WONG_PALETTE_NO_BLACK;
+
+/**
+ * The colors for the *currently selected* speaker palette. Call sites that
+ * assign colors to new speakers/codes should use this at assignment time so
+ * the user's palette choice takes effect. `USER_COLORS` is retained as a
+ * static fallback (e.g. for the SSR/static export in `+page.svelte`).
+ */
+export function getUserColors(): readonly string[] {
+	return activePaletteColors();
+}
