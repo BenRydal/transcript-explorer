@@ -21,7 +21,10 @@
 		selectedExample = ''
 	}: Props = $props();
 
-	let showExamples = $state(false);
+	// Default-open so the sample datasets are visible at a glance  -  they're
+	// a primary onboarding affordance, not a buried option.
+	let showExamples = $state(true);
+	let showStats = $state(false);
 	let hasTranscript = $derived($TranscriptStore.wordArray.length > 0);
 	// Resolve the active example's label for the disclosure summary.
 	// `selectedExample` is an id (e.g. 'example-1') shared with the
@@ -32,7 +35,7 @@
 </script>
 
 <div class="data-panel">
-	<!-- Load transcript section — promoted from top nav. Upload / Paste /
+	<!-- Load transcript section  -  promoted from top nav. Upload / Paste /
 	     New are the primary actions; examples live in a collapsible list
 	     below so they don't dominate the panel. -->
 	<section class="data-panel__section">
@@ -71,7 +74,12 @@
 			aria-expanded={showExamples}
 			onclick={() => (showExamples = !showExamples)}
 		>
-			<span>Load example{selectedExampleLabel ? ` — currently: ${selectedExampleLabel}` : '…'}</span>
+			<span class="data-panel__disclosure-label">
+				<span>Example</span>
+				{#if selectedExampleLabel}
+					<span class="data-panel__disclosure-sublabel">{selectedExampleLabel}</span>
+				{/if}
+			</span>
 			<span aria-hidden="true">{showExamples ? '–' : '+'}</span>
 		</button>
 
@@ -98,36 +106,47 @@
 
 	{#if hasTranscript}
 		<section class="data-panel__section">
-			<p class="data-panel__section-label">Transcript Statistics</p>
-			<div class="data-panel__stats">
-				<div>
-					<span class="data-panel__stat-label">Total Words:</span>
-					<span>{$TranscriptStore.totalNumOfWords}</span>
-				</div>
-				<div>
-					<span class="data-panel__stat-label">Total Turns:</span>
-					<span>{$TranscriptStore.totalConversationTurns}</span>
-				</div>
-				{#if $TranscriptStore.timingMode === 'untimed'}
+			<button
+				type="button"
+				class="data-panel__disclosure"
+				aria-expanded={showStats}
+				onclick={() => (showStats = !showStats)}
+			>
+				<span>{showStats ? 'Hide transcript statistics' : 'Show transcript statistics'}</span>
+				<span aria-hidden="true">{showStats ? '–' : '+'}</span>
+			</button>
+
+			{#if showStats}
+				<div class="data-panel__stats">
 					<div>
-						<span class="data-panel__stat-label">Total Word Count:</span>
-						<span>{Math.round($TranscriptStore.totalTimeInSeconds)}</span>
+						<span class="data-panel__stat-label">Total Words:</span>
+						<span>{$TranscriptStore.totalNumOfWords}</span>
 					</div>
-				{:else}
 					<div>
-						<span class="data-panel__stat-label">Total Time:</span>
-						<span>{$TranscriptStore.totalTimeInSeconds.toFixed(2)}s</span>
+						<span class="data-panel__stat-label">Total Turns:</span>
+						<span>{$TranscriptStore.totalConversationTurns}</span>
 					</div>
-				{/if}
-				<div>
-					<span class="data-panel__stat-label">Largest Turn:</span>
-					<span>{$TranscriptStore.largestTurnLength} words</span>
+					{#if $TranscriptStore.timingMode === 'untimed'}
+						<div>
+							<span class="data-panel__stat-label">Total Word Count:</span>
+							<span>{Math.round($TranscriptStore.totalTimeInSeconds)}</span>
+						</div>
+					{:else}
+						<div>
+							<span class="data-panel__stat-label">Total Time:</span>
+							<span>{$TranscriptStore.totalTimeInSeconds.toFixed(2)}s</span>
+						</div>
+					{/if}
+					<div>
+						<span class="data-panel__stat-label">Largest Turn:</span>
+						<span>{$TranscriptStore.largestTurnLength} words</span>
+					</div>
+					<div>
+						<span class="data-panel__stat-label">Most Frequent Word:</span>
+						<span>"{$TranscriptStore.mostFrequentWord}" ({$TranscriptStore.maxCountOfMostRepeatedWord})</span>
+					</div>
 				</div>
-				<div>
-					<span class="data-panel__stat-label">Most Frequent Word:</span>
-					<span>"{$TranscriptStore.mostFrequentWord}" ({$TranscriptStore.maxCountOfMostRepeatedWord})</span>
-				</div>
-			</div>
+			{/if}
 		</section>
 
 		<section class="data-panel__section">
@@ -244,6 +263,19 @@
 		font: inherit;
 		font-size: var(--te-font-small);
 		cursor: pointer;
+	}
+
+	.data-panel__disclosure-label {
+		display: flex;
+		flex-direction: column;
+		align-items: flex-start;
+		gap: 1px;
+		text-align: left;
+	}
+
+	.data-panel__disclosure-sublabel {
+		color: var(--te-fg-muted);
+		font-size: 11px;
 	}
 
 	.data-panel__disclosure:hover {
