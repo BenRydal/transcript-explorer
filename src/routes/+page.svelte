@@ -54,6 +54,11 @@
 	import type { ParseResult } from '$lib/core/text-parser';
 	import { parseSubtitleText } from '$lib/core/subtitle-parser';
 	import { parseCSVRows, parseTXTLines } from '$lib/core/csv-txt-parser';
+	import { parseClaudeJsonl } from '$lib/core/claude-jsonl-parser';
+	import { interactionToTranscript } from '$lib/core/interaction/interaction-to-transcript';
+	import { setInteractionSession } from '../stores/interactionStore';
+	import { setDelegationFromSession } from '../stores/delegationStore';
+	import { INTERACTION_SCHEMA_VERSION } from '../models/interaction/schema';
 	import { testTranscript } from '$lib/core/core-utils';
 	import { testCodeFile, parseCodeFile, applyCodesByTurn, applyCodesByTime, updateCodeStoreWithNewCodes, getCodeFormatLabel, extractCodeNames } from '$lib/core/code-utils';
 	import CodeStore from '../stores/codeStore';
@@ -1008,6 +1013,18 @@
 			core.clearTranscriptData();
 			applyTranscriptResult(createTranscriptFromSubtitle(parseResult, USER_COLORS[0]));
 			recordCustomLoad(file.name);
+		} else if (fileName.endsWith('.jsonl') || fileName.endsWith('.json')) {
+			const text = await readFileAsText(file);
+			const session = parseClaudeJsonl(text, { sourceUri: file.name });
+			if (session.schemaVersion !== INTERACTION_SCHEMA_VERSION || session.events.length === 0) {
+				throw new Error('No valid Claude Code session events found in file. Expected a Claude Code .jsonl session log.');
+			}
+			clearState();
+			core.clearTranscriptData();
+			setInteractionSession(session);
+			setDelegationFromSession(session);
+			applyTranscriptResult(interactionToTranscript(session));
+			recordCustomLoad(file.name);
 		} else {
 			throw new Error('Unsupported file format');
 		}
@@ -1487,7 +1504,7 @@
 	</div>
 {/if}
 
-<input class="hidden" id="file-input" multiple accept=".csv, .txt, .mp4, .srt, .vtt" type="file" onchange={updateUserLoadedFiles} />
+<input class="hidden" id="file-input" multiple accept=".csv, .txt, .mp4, .srt, .vtt, .jsonl, .json" type="file" onchange={updateUserLoadedFiles} />
 
 <TranscriptionModal
 	bind:isOpen={showTranscriptionModal}

@@ -16,7 +16,9 @@ const FILE_TYPE_LABELS: Record<string, string> = {
 	txt: 'Transcript (TXT)',
 	mp4: 'Video (MP4)',
 	srt: 'Subtitle (SRT)',
-	vtt: 'Subtitle (VTT)'
+	vtt: 'Subtitle (VTT)',
+	jsonl: 'Claude Code Session (JSONL)',
+	json: 'Claude Code Session (JSON)'
 };
 
 function getExtension(fileName: string): string {
