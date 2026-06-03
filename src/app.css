@@ -3,6 +3,28 @@
 @tailwind utilities;
 
 /* ============================================================
+ * Space Grotesk  -  self-hosted display font for the navbar
+ * wordmark ONLY (see .te-wordmark in AppNavbar.svelte). Kept
+ * local under /static/fonts to honor the "runs entirely in your
+ * browser / no upload" stance  -  no runtime Google Fonts request.
+ * Latin subset; weights 500 + 700 cover the wordmark.
+ * ============================================================ */
+@font-face {
+	font-family: 'Space Grotesk';
+	font-style: normal;
+	font-weight: 500;
+	font-display: swap;
+	src: url('/fonts/space-grotesk-500.woff2') format('woff2');
+}
+@font-face {
+	font-family: 'Space Grotesk';
+	font-style: normal;
+	font-weight: 700;
+	font-display: swap;
+	src: url('/fonts/space-grotesk-700.woff2') format('woff2');
+}
+
+/* ============================================================
  * Transcript Explorer design tokens
  * - Neutrals / accent / danger / typography / spacing / radii
  * - Dark variant under [data-theme="dark"]
@@ -13,7 +35,7 @@
 :root {
 	/* Neutrals (light default) */
 	--te-fg: #111827;
-	--te-fg-muted: #6b7280; /* 4.83:1 on white — AA body */
+	--te-fg-muted: #6b7280; /* 4.83:1 on white  -  AA body */
 	--te-fg-subtle: #6b7280; /* use this, NEVER #9ca3af on light bg */
 	--te-bg: #ffffff;
 	--te-bg-muted: #f6f5f3; /* bottom bar, rails, side panel */
@@ -111,7 +133,7 @@
 }
 
 /* ============================================================
- * Dark theme overrides — swap neutrals + tune accent/focus so
+ * Dark theme overrides  -  swap neutrals + tune accent/focus so
  * they keep enough contrast on a dark ground.
  * The bridged library vars above automatically pick these up
  * because they resolve through --te-*.
@@ -139,7 +161,7 @@
 }
 
 /* ============================================================
- * Unified button system (.te-btn) — replaces the three
+ * Unified button system (.te-btn)  -  replaces the three
  * competing button systems (daisyUI .btn, hand-rolled Tailwind,
  * BEM panel buttons) in chrome regions that this session
  * touches. Panel-internal BEM buttons are left in place but
@@ -199,7 +221,7 @@
 	border-color: color-mix(in srgb, var(--te-accent) 88%, black);
 }
 
-/* Ghost — no border, hover fill */
+/* Ghost  -  no border, hover fill */
 .te-btn--ghost {
 	border-color: transparent;
 }
@@ -208,7 +230,7 @@
 	background: var(--te-bg-muted);
 }
 
-/* Subtle — lighter divider-weight border */
+/* Subtle  -  lighter divider-weight border */
 .te-btn--subtle {
 	border-color: var(--te-border-muted);
 }
@@ -220,7 +242,7 @@
 	font-size: var(--te-font-small);
 }
 
-/* Icon-only variants — square, tight */
+/* Icon-only variants  -  square, tight */
 .te-btn--icon {
 	width: 32px;
 	min-width: 32px;
@@ -237,7 +259,7 @@
 	min-height: 28px;
 }
 
-/* Join / segmented group — flatten borders between siblings */
+/* Join / segmented group  -  flatten borders between siblings */
 .te-btn-group {
 	display: inline-flex;
 	align-items: stretch;
@@ -268,7 +290,7 @@
 }
 
 /* ============================================================
- * Skip-to-main-content link — WCAG 2.4.1 Bypass Blocks.
+ * Skip-to-main-content link  -  WCAG 2.4.1 Bypass Blocks.
  * Visually hidden until focused via keyboard; then pops to the
  * top-left corner so screen-reader + keyboard users can skip the
  * navbar and left-rail chrome.
@@ -311,7 +333,7 @@
 
 /* ============================================================
  * Theme-swap color transitions (B5). Target the chrome that
- * actually changes color/bg on theme toggle — going broader than
+ * actually changes color/bg on theme toggle  -  going broader than
  * this creates transition noise on every hover/focus.
  * The reduced-motion media query below overrides transition-
  * duration globally so motion-sensitive users get instant swaps.

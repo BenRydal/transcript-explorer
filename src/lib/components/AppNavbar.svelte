@@ -1,16 +1,11 @@
 <script lang="ts">
 	import {
-		Keyboard,
 		Menu,
 		X,
-		Database,
 		Video,
 		VideoOff,
-		FileText,
 		Upload,
-		ClipboardPaste,
-		FilePlus,
-		Clock,
+		FileText,
 		CircleCheck,
 		Loader2,
 		TriangleAlert
@@ -31,41 +26,27 @@
 		activeWorkspace?: Workspace;
 		selectedExampleId?: string;
 		transcriptLabel?: string;
-		ontoggleTranscribeMode?: () => void;
 		onselectWorkspace?: (id: Workspace) => void;
 		onopenDataPanel?: () => void;
-		onopenUpload?: () => void;
-		onopenPaste?: () => void;
-		oncreateNew?: () => void;
 		onloadExample?: (exampleId: string) => void;
 		onloadRecent?: (entryId: string, kind: 'example' | 'upload') => void;
 	}
 
 	let {
 		isVideoLoaded = false,
-		activeWorkspace = 'analyze',
+		activeWorkspace = 'edit',
 		selectedExampleId = '',
 		transcriptLabel = '',
-		ontoggleTranscribeMode,
 		onselectWorkspace,
 		onopenDataPanel,
-		onopenUpload,
-		onopenPaste,
-		oncreateNew,
 		onloadExample,
 		onloadRecent
 	}: Props = $props();
 
 	let mobileMenuOpen = $state(false);
-	// Transcript menu (formerly Examples). Consolidates loading actions +
-	// recents + example catalog. A native <details> element gives us
-	// click-outside dismiss + keyboard support for free, but we still need
-	// a local `$state` so we can imperatively close it after a selection.
-	let transcriptOpen = $state(false);
-	let transcriptDetailsEl = $state<HTMLDetailsElement | null>(null);
 
 	/**
-	 * Video visibility helpers — read the video store to drive the
+	 * Video visibility helpers  -  read the video store to drive the
 	 * toggle's pressed state, and call the dedicated show/hide helpers
 	 * so side-effects (stopPlayback on hide, etc.) stay consistent with
 	 * workspaces.ts and elsewhere.
@@ -77,63 +58,20 @@
 		else showVideo();
 	}
 
-	function closeTranscriptMenu() {
-		transcriptOpen = false;
-		if (transcriptDetailsEl) transcriptDetailsEl.open = false;
-	}
-
-	function handleExampleSelect(id: string) {
-		onloadExample?.(id);
-		closeTranscriptMenu();
-	}
-
 	function handleRecentSelect(id: string, kind: 'example' | 'upload') {
 		if (kind === 'example') {
 			onloadExample?.(id);
 		} else {
 			onloadRecent?.(id, kind);
 		}
-		closeTranscriptMenu();
-	}
-
-	function handleUpload() {
-		onopenUpload?.();
-		closeTranscriptMenu();
-	}
-
-	function handlePaste() {
-		onopenPaste?.();
-		closeTranscriptMenu();
-	}
-
-	function handleCreateNew() {
-		oncreateNew?.();
-		closeTranscriptMenu();
 	}
 
 	// Label of the currently active example (if any), surfaced in the
-	// summary button so the user can see at a glance which example is
-	// loaded without opening the menu.
+	// center transcript-name region so the user can see at a glance which
+	// example is loaded.
 	let selectedExampleLabel = $derived(
 		selectedExampleId ? (EXAMPLE_LABELS[selectedExampleId] ?? '') : ''
 	);
-
-	// Click-outside dismiss for the transcript <details>. The element has
-	// native toggle-on-click behavior for the summary, but no outside-
-	// click close, so we wire a document-level pointerdown handler that
-	// only runs while the menu is open.
-	$effect(() => {
-		if (!transcriptOpen) return;
-		const onDocDown = (e: PointerEvent) => {
-			if (!transcriptDetailsEl) return;
-			if (!transcriptDetailsEl.contains(e.target as Node)) {
-				closeTranscriptMenu();
-			}
-		};
-		// Listen in the capture phase so we run before inner handlers.
-		document.addEventListener('pointerdown', onDocDown, true);
-		return () => document.removeEventListener('pointerdown', onDocDown, true);
-	});
 
 	/**
 	 * Radiogroup keyboard navigation for the workspace segmented control.
@@ -227,10 +165,7 @@
 
 <header class="navbar min-h-14 bg-base-100" aria-label="Primary">
 	<div class="flex-none px-2">
-		<span
-			class="text-lg font-semibold tracking-wide"
-			style="color: var(--te-fg); letter-spacing: 0.04em;"
-		>
+		<span class="te-wordmark text-lg" style="color: var(--te-fg);">
 			Transcript Explorer
 		</span>
 	</div>
@@ -264,7 +199,7 @@
 
 			<!-- Autosave indicator. aria-live=polite so SR users hear
 			     transitions; the visual presence flips based on status.
-			     idle state renders nothing (presence is load-bearing —
+			     idle state renders nothing (presence is load-bearing  - 
 			     a visible "idle" indicator would be noise). -->
 			{#if autosave !== 'idle'}
 				{#if autosave === 'error'}
@@ -316,106 +251,7 @@
 
 	<!-- Desktop navigation -->
 	<div class="hidden xl:flex flex-none px-2 items-center gap-2">
-		<!-- Transcript menu. Consolidates Load actions + Recents +
-		     Examples into one dropdown so the nav has a single surface
-		     for transcript-level actions. <details> is used so click-
-		     outside and Escape dismiss come for free. -->
-		<details
-			class="te-transcript-menu"
-			bind:this={transcriptDetailsEl}
-			bind:open={transcriptOpen}
-		>
-			<summary
-				class="te-btn te-btn--sm"
-				title={selectedExampleLabel
-					? `Active example: ${selectedExampleLabel}`
-					: 'Load, paste, or pick an example transcript'}
-			>
-				<FileText size={16} aria-hidden="true" />
-				Transcript
-				{#if selectedExampleLabel}
-					<span class="te-transcript-menu__active-dot" aria-hidden="true"></span>
-				{/if}
-			</summary>
-			<div
-				class="te-transcript-menu__panel"
-				role="menu"
-				aria-label="Transcript actions"
-			>
-				<div class="te-menu__heading">Load</div>
-				<button
-					type="button"
-					role="menuitem"
-					class="te-transcript-menu__item"
-					onclick={handleUpload}
-				>
-					<Upload size={14} aria-hidden="true" />
-					<span>Upload file…</span>
-				</button>
-				<button
-					type="button"
-					role="menuitem"
-					class="te-transcript-menu__item"
-					onclick={handlePaste}
-				>
-					<ClipboardPaste size={14} aria-hidden="true" />
-					<span>Paste text…</span>
-				</button>
-				<button
-					type="button"
-					role="menuitem"
-					class="te-transcript-menu__item"
-					onclick={handleCreateNew}
-				>
-					<FilePlus size={14} aria-hidden="true" />
-					<span>New transcript</span>
-				</button>
-
-				{#if $recents.length > 0}
-					<div class="te-menu__divider" aria-hidden="true"></div>
-					<div class="te-menu__heading">
-						<Clock size={11} aria-hidden="true" />
-						<span>Recents</span>
-					</div>
-					{#each $recents as r}
-						<button
-							type="button"
-							role="menuitem"
-							class="te-transcript-menu__item"
-							onclick={() => handleRecentSelect(r.id, r.kind)}
-							title={r.label}
-						>
-							{#if r.kind === 'example'}
-								<FileText size={14} aria-hidden="true" />
-							{:else}
-								<Upload size={14} aria-hidden="true" />
-							{/if}
-							<span class="te-truncate">{r.label}</span>
-						</button>
-					{/each}
-				{/if}
-
-				<div class="te-menu__divider" aria-hidden="true"></div>
-				<div class="te-menu__heading">Examples</div>
-				{#each EXAMPLES as item}
-					{@const Icon = item.icon}
-					{@const isActive = selectedExampleId === item.value}
-					<button
-						type="button"
-						role="menuitem"
-						class="te-transcript-menu__item"
-						class:te-transcript-menu__item--active={isActive}
-						aria-current={isActive ? 'true' : undefined}
-						onclick={() => handleExampleSelect(item.value)}
-					>
-						<Icon size={14} aria-hidden="true" />
-						<span>{item.label}</span>
-					</button>
-				{/each}
-			</div>
-		</details>
-
-		<!-- Workspace Switcher (Analyze / Code / Present) — APG
+		<!-- Workspace Switcher (Edit / Present / Transcribe)  -  APG
 		     radiogroup pattern: mutually exclusive choices with arrow-
 		     key navigation. Each option is a role="radio" button and
 		     aria-checked reflects selection. Only the checked option
@@ -437,7 +273,7 @@
 					role="radio"
 					aria-checked={checked}
 					tabindex={checked ? 0 : -1}
-					title={`${WORKSPACE_LABELS[id]} workspace — press ${digit}`}
+					title={`${WORKSPACE_LABELS[id]} workspace (press ${digit})`}
 					onclick={() => onselectWorkspace?.(id)}
 				>
 					<span>{WORKSPACE_LABELS[id]}</span>
@@ -468,19 +304,6 @@
 			{:else}
 				<VideoOff size={16} aria-hidden="true" />
 			{/if}
-		</button>
-
-		<!-- Transcribe Mode -->
-		<button
-			class="te-btn te-btn--sm"
-			onclick={() => ontoggleTranscribeMode?.()}
-			title={isVideoLoaded
-				? 'Enter Transcribe Mode - focused video transcription workflow'
-				: 'Load a video to enable Transcribe Mode'}
-			disabled={!isVideoLoaded}
-		>
-			<Keyboard size={16} aria-hidden="true" />
-			Transcribe
 		</button>
 
 		<!-- Theme toggle (cycles Light → Dark → System) -->
@@ -554,17 +377,6 @@
 				<p class="mobile-menu__label">Actions</p>
 				<div class="flex flex-wrap gap-2 items-center">
 					<button
-						class="te-btn te-btn--sm"
-						onclick={() => {
-							ontoggleTranscribeMode?.();
-							mobileMenuOpen = false;
-						}}
-						disabled={!isVideoLoaded}
-					>
-						<Keyboard size={16} aria-hidden="true" />
-						Transcribe
-					</button>
-					<button
 						type="button"
 						class="te-btn te-btn--sm"
 						onclick={() => {
@@ -589,7 +401,7 @@
 							mobileMenuOpen = false;
 						}}
 					>
-						<Database size={16} aria-hidden="true" />
+						<Upload size={16} aria-hidden="true" />
 						Load transcript
 					</button>
 					<ThemeToggle variant="compact" />
@@ -625,7 +437,7 @@
 				</div>
 			{/if}
 
-			<!-- Examples (mobile) — mirrors the desktop dropdown so the
+			<!-- Examples (mobile)  -  mirrors the desktop dropdown so the
 			     quick-access list is reachable from both chrome forms. -->
 			<div>
 				<p class="mobile-menu__label" id="mobile-examples-label">Examples</p>
@@ -656,6 +468,16 @@
 {/if}
 
 <style>
+	/* Logo wordmark only  -  Space Grotesk (self-hosted display font)
+	   gives the brand some personality while body/UI text stays on the
+	   system stack. Slightly tighter tracking than the old 0.04em since
+	   Space Grotesk reads better a touch tighter at this size. */
+	.te-wordmark {
+		font-family: 'Space Grotesk', var(--te-font-stack);
+		font-weight: 700;
+		letter-spacing: 0.01em;
+	}
+
 	.mobile-menu {
 		background: var(--te-bg);
 		border-bottom: 1px solid var(--te-border-muted);
@@ -780,99 +602,6 @@
 		border-color: color-mix(in srgb, var(--te-accent-fg) 30%, transparent);
 	}
 
-	/* ============================================================
-	 * Transcript menu (renamed from Examples). Same native <details>
-	 * pattern as before, but the panel now organizes actions into
-	 * Load / Recents / Examples sections via .te-menu__heading +
-	 * .te-menu__divider.
-	 * ============================================================ */
-	.te-transcript-menu {
-		position: relative;
-	}
-
-	.te-transcript-menu > summary {
-		list-style: none;
-		cursor: pointer;
-	}
-
-	.te-transcript-menu > summary::-webkit-details-marker {
-		display: none;
-	}
-
-	.te-transcript-menu__active-dot {
-		width: 6px;
-		height: 6px;
-		border-radius: 50%;
-		background: var(--te-accent);
-		margin-left: 2px;
-	}
-
-	.te-transcript-menu__panel {
-		position: absolute;
-		top: calc(100% + 4px);
-		right: 0;
-		z-index: 50;
-		min-width: 260px;
-		padding: var(--te-sp-1);
-		background: var(--te-bg);
-		border: 1px solid var(--te-border-muted);
-		border-radius: var(--te-radius);
-		box-shadow: 0 8px 16px rgba(0, 0, 0, 0.08);
-		display: flex;
-		flex-direction: column;
-		gap: 2px;
-	}
-
-	.te-transcript-menu__item {
-		display: inline-flex;
-		align-items: center;
-		gap: var(--te-sp-2);
-		width: 100%;
-		padding: 6px 10px;
-		background: transparent;
-		border: 1px solid transparent;
-		border-radius: var(--te-radius-sm);
-		color: var(--te-fg);
-		font: inherit;
-		font-size: var(--te-font-small);
-		text-align: left;
-		cursor: pointer;
-	}
-
-	.te-transcript-menu__item:hover {
-		background: var(--te-bg-muted);
-	}
-
-	.te-transcript-menu__item:focus-visible {
-		outline: 2px solid var(--te-focus-ring);
-		outline-offset: 1px;
-	}
-
-	.te-transcript-menu__item--active {
-		background: var(--te-accent-tint);
-		color: var(--te-fg);
-	}
-
-	/* Section heading inside the transcript menu. Small uppercase
-	   label that separates Load / Recents / Examples. */
-	:global(.te-menu__heading) {
-		display: inline-flex;
-		align-items: center;
-		gap: 4px;
-		padding: 8px 10px 4px;
-		font-size: var(--te-font-label);
-		font-weight: 600;
-		letter-spacing: 0.08em;
-		text-transform: uppercase;
-		color: var(--te-fg-muted);
-	}
-
-	:global(.te-menu__divider) {
-		height: 1px;
-		background: var(--te-border-muted);
-		margin: 4px 2px;
-	}
-
 	/* Mobile transcript stats block (top of the mobile sheet). */
 	.mobile-menu__transcript {
 		padding: var(--te-sp-2) 0;
@@ -905,7 +634,7 @@
 		color: var(--te-danger);
 	}
 
-	/* Mobile examples list — mirrors the desktop popover styling but
+	/* Mobile examples list  -  mirrors the desktop popover styling but
 	   docked inside the mobile menu sheet. */
 	.mobile-menu__examples {
 		list-style: none;
