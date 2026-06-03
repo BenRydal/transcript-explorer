@@ -7,7 +7,14 @@
 	import { applyTimingModeToWordArray, updateTimelineFromData } from '$lib/core/timing-utils';
 	import { toSeconds, formatTimeAuto } from '$lib/core/time-utils';
 	import P5Store from '../../stores/p5Store';
-	import ThemeToggle from '$lib/components/ThemeToggle.svelte';
+	import { themeChoice, selectTheme, type ThemeChoice } from '$lib/ui/theme';
+	import { SPEAKER_PALETTES, type SpeakerPaletteChoice } from '$lib/ui/palette';
+	import { speakerPalette, selectSpeakerPalette } from '$lib/ui/speaker-palette';
+
+	const SPEAKER_PALETTE_ENTRIES = Object.entries(SPEAKER_PALETTES) as [
+		SpeakerPaletteChoice,
+		(typeof SPEAKER_PALETTES)[SpeakerPaletteChoice]
+	][];
 
 	function setVizField<K extends keyof VizStoreType>(key: K, value: VizStoreType[K]) {
 		VizStore.update((store) => ({ ...store, [key]: value }));
@@ -164,9 +171,38 @@
 	<!-- Appearance -->
 	<section class="settings-panel__section">
 		<p class="settings-panel__section-label">Appearance</p>
-		<ThemeToggle variant="group" />
+		<select
+			class="settings-panel__input"
+			aria-label="Theme"
+			value={$themeChoice}
+			onchange={(e) => selectTheme(e.currentTarget.value as ThemeChoice)}
+		>
+			<option value="light">Light</option>
+			<option value="dark">Dark</option>
+			<option value="system">System</option>
+		</select>
 		<p class="settings-panel__hint">
 			System follows your OS preference; Light and Dark persist across reloads.
+		</p>
+
+		<p class="settings-panel__sub-label">Speaker colors</p>
+		<select
+			class="settings-panel__input"
+			aria-label="Speaker color palette"
+			value={$speakerPalette}
+			onchange={(e) => selectSpeakerPalette(e.currentTarget.value as SpeakerPaletteChoice)}
+		>
+			{#each SPEAKER_PALETTE_ENTRIES as [key, palette] (key)}
+				<option value={key}>{palette.label}</option>
+			{/each}
+		</select>
+		<div class="settings-panel__swatch-preview" aria-hidden="true">
+			{#each SPEAKER_PALETTES[$speakerPalette].colors as color (color)}
+				<span class="settings-panel__preview-swatch" style:background={color}></span>
+			{/each}
+		</div>
+		<p class="settings-panel__hint">
+			Sets default colors for new speakers and re-colors existing ones.
 		</p>
 	</section>
 </div>
@@ -205,6 +241,28 @@
 	.settings-panel__sub {
 		color: var(--te-fg-muted);
 		font-size: var(--te-font-small);
+	}
+
+	.settings-panel__sub-label {
+		margin: 4px 0 0;
+		font-size: var(--te-font-small);
+		font-weight: 600;
+		color: var(--te-fg);
+	}
+
+	.settings-panel__swatch-preview {
+		display: flex;
+		flex-wrap: wrap;
+		gap: 4px;
+		width: 100%;
+		margin-top: 2px;
+	}
+
+	.settings-panel__preview-swatch {
+		width: 16px;
+		height: 16px;
+		border-radius: var(--te-radius);
+		border: 1px solid var(--te-border);
 	}
 
 	.settings-panel__input {
