@@ -23,18 +23,18 @@
 	const tourSteps = [
 		{
 			target: '[data-tour="examples"]',
-			title: 'Example Datasets',
-			content: 'Load example transcripts to explore the tool. Choose from classroom discussions, museum visits, or debates.'
+			title: 'Load a Transcript',
+			content: 'Start here to load your own transcript or one of the sample datasets. Reopen the welcome screen anytime from the ? button in the left rail.'
 		},
 		{
 			target: '[data-tour="viz-modes"]',
-			title: 'Visualizations & Options',
-			content: 'Switch between visualizations and configure their options. Options appear below the active visualization.'
+			title: 'Sidebar & Workspaces',
+			content: 'Use this rail to switch visualizations, filters, upload data, and settings. Switch workspaces with Edit / Present / Transcribe (keys 1 / 2 / 3) in the top bar.'
 		},
 		{
 			target: '[data-tour="visualization"]',
 			title: 'Visualization Canvas',
-			content: 'Your transcript visualizations appear here. Click to play video — each visualization offers a unique playback style.'
+			content: 'Your transcript visualizations appear here. Each one has its own playback style. Left-click to play video, right-click for more actions.'
 		},
 		{
 			target: '[data-tour="speakers"]',
@@ -44,7 +44,7 @@
 		{
 			target: '[data-tour="timeline"]',
 			title: 'Timeline Controls',
-			content: 'Animate through the conversation. Drag markers to set the playback range.'
+			content: 'Animate through the conversation. Drag the handles to set the range. The left handle marks where Play starts, and the playhead follows it.'
 		}
 	];
 
