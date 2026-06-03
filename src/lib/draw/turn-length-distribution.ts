@@ -18,7 +18,7 @@ const Y_TICKS = 5;
 // turnLengthBinCount) so a transcript change (which swaps the wordArray
 // reference) or a bin-count control change invalidates. Without this
 // memo, a new TurnLengthDistribution is built every frame and each
-// constructor scans the entire wordArray — hundreds of thousands of
+// constructor scans the entire wordArray  -  hundreds of thousands of
 // iterations/sec on large transcripts.
 let fullTranscriptBinCountCache: { wordArray: unknown; binCount: number; result: number } | null = null;
 registerVizCacheReset(() => {

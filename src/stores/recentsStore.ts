@@ -58,7 +58,7 @@ if (typeof window !== 'undefined') {
 export const recents = {
 	subscribe,
 	/**
-	 * Record a transcript load. Dedupes by (kind, id) — a repeat load
+	 * Record a transcript load. Dedupes by (kind, id)  -  a repeat load
 	 * moves the entry to the top and refreshes its loadedAt timestamp.
 	 */
 	push(entry: Omit<RecentEntry, 'loadedAt'>): void {

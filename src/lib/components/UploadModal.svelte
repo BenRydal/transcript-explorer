@@ -168,7 +168,7 @@
 						{csvPreview.turnCount} turn{csvPreview.turnCount !== 1 ? 's' : ''},
 						{csvPreview.wordCount} word{csvPreview.wordCount !== 1 ? 's' : ''}
 						{#if csvPreview.timingMode}
-							&mdash; Timing: {timingModeLabels[csvPreview.timingMode]}
+							&middot; Timing: {timingModeLabels[csvPreview.timingMode]}
 						{/if}
 					</div>
 				{:else if !canImport()}
@@ -192,7 +192,7 @@
 									oncolumnMappingChange?.(match.expected, val || null);
 								}}
 							>
-								<option value="">{required ? '— Select column —' : '— Skip —'}</option>
+								<option value="">{required ? 'Select column…' : 'Skip'}</option>
 								{#each csvPreview.allColumns as col}
 									<option value={col}>{col}</option>
 								{/each}
@@ -270,7 +270,7 @@
 
 				<!-- Summary -->
 				<div class="text-sm text-gray-600 mb-3">
-					{codePreview.formatLabel} codes &mdash;
+					{codePreview.formatLabel} codes:
 					{codePreview.codeNames.length} code{codePreview.codeNames.length !== 1 ? 's' : ''} found,
 					{codePreview.rowCount} row{codePreview.rowCount !== 1 ? 's' : ''}
 				</div>

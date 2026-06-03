@@ -3,7 +3,7 @@ import { writable } from 'svelte/store';
 /**
  * Lightweight non-blocking toast layer. Separate from the existing
  * `notificationStore` (which is alert-style and rendered via
- * ToastContainer.svelte) — this is the leaner API requested by the
+ * ToastContainer.svelte)  -  this is the leaner API requested by the
  * nav-polish pass: call `pushToast("message", kind)` from any site and
  * the root-level Toast.svelte portal renders it with the shared
  * motion + semantic left-border styling.

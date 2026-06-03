@@ -1,7 +1,7 @@
 import { writable } from 'svelte/store';
 
 /**
- * Autosave indicator status — surfaced in the top nav next to the
+ * Autosave indicator status  -  surfaced in the top nav next to the
  * transcript stats so users can see when their work has been persisted.
  *
  * Lifecycle:

@@ -125,7 +125,7 @@ export function drawPlayhead(sk: p5, currTime: number, leftMarker: number, right
 
 const TOOLTIP_MAX_TURNS = 4;
 const TOOLTIP_PREVIEW_WORDS = 8;
-const TURN_SEPARATOR = '<span style="opacity: 0.2">———</span>';
+const TURN_SEPARATOR = '<span style="opacity: 0.2">---</span>';
 
 export interface TurnPreview {
 	wordCount: number;

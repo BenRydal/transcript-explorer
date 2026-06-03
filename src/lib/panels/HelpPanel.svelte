@@ -135,9 +135,9 @@
 
 			<p class="help-panel__section-label">Workspaces</p>
 			<ul class="help-panel__workspaces">
-				<li><kbd>1</kbd> <strong>Analyze</strong> — filters sidebar, editor + video on.</li>
-				<li><kbd>2</kbd> <strong>Code</strong> — data sidebar, editor on, video off.</li>
-				<li><kbd>3</kbd> <strong>Present</strong> — no sidebar, video only.</li>
+				<li><kbd>1</kbd> <strong>Analyze</strong>: filters sidebar, editor + video on.</li>
+				<li><kbd>2</kbd> <strong>Code</strong>: data sidebar, editor on, video off.</li>
+				<li><kbd>3</kbd> <strong>Present</strong>: no sidebar, video only.</li>
 			</ul>
 
 			<p class="help-panel__section-label">Examples</p>
@@ -163,7 +163,7 @@
 					speaker, content, start, end<br />
 					Teacher, "Good morning", 0, 3
 				</p>
-				<p class="help-panel__note">Times optional — seconds, MM:SS, or HH:MM:SS.</p>
+				<p class="help-panel__note">Times optional: seconds, MM:SS, or HH:MM:SS.</p>
 			</div>
 			<div class="help-panel__format">
 				<h4>TXT</h4>
@@ -216,7 +216,7 @@
 					<strong>Auto-Transcribe with AI</strong>
 				</div>
 				<p>Upload MP4 → AI generates a transcript. Runs locally in-browser.</p>
-				<p class="help-panel__note">English only. Assigns all speech to one speaker — reassign after.</p>
+				<p class="help-panel__note">English only. Assigns all speech to one speaker, reassign after.</p>
 				<button class="help-panel__btn help-panel__btn--primary" onclick={() => onOpenUpload?.()}>
 					<CloudUpload size={14} />
 					Upload Video
@@ -228,7 +228,7 @@
 					<Pencil size={18} />
 					<strong>Transcribe Manually</strong>
 				</div>
-				<p>Upload video, then use Transcribe Mode — a focused workspace.</p>
+				<p>Upload video, then use Transcribe Mode, a focused workspace.</p>
 				<p class="help-panel__note">Space to pause, arrows to skip, capture timestamps as you go.</p>
 				<button class="help-panel__btn help-panel__btn--primary" onclick={() => onOpenUpload?.()}>
 					<CloudUpload size={14} />

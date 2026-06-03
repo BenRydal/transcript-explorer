@@ -171,7 +171,7 @@ export const DEFAULT_STOPWORDS: readonly string[] = [
 
 const DEFAULT_STOPWORDS_SET = new Set(DEFAULT_STOPWORDS);
 
-// Snapshot of the active stopword set — always includes DEFAULT_STOPWORDS
+// Snapshot of the active stopword set  -  always includes DEFAULT_STOPWORDS
 // plus any user-supplied customStopWords. Whether filtering is APPLIED is
 // decided at call site (in getProcessedWords) by either the legacy
 // `stopWordsToggle` or the new `stopWordsEnabled` flag; this set is what
@@ -765,8 +765,8 @@ export class DynamicData {
 	 * Respects stop words filter. Does NOT filter by time range or enabled speakers.
 	 *
 	 * Memoized module-side keyed on (wordArray ref, filterStopWords). The
-	 * result is a function of the full wordArray only — speaker toggles and
-	 * timeline markers don't affect it — so without memoization this scan
+	 * result is a function of the full wordArray only  -  speaker toggles and
+	 * timeline markers don't affect it  -  so without memoization this scan
 	 * repeats every frame while the fingerprint viz is active.
 	 */
 	private computeFullTranscriptMaxValues(): { avgTurnLength: number; participation: number } {

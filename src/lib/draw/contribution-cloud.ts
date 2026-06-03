@@ -56,7 +56,7 @@ let bufferCache: {
 
 export function clearCloudBuffer(): void {
 	if (bufferCache.buffer) {
-		// p5.Graphics buffers are GPU-backed — .remove() frees the WebGL
+		// p5.Graphics buffers are GPU-backed  -  .remove() frees the WebGL
 		// context / 2D canvas backing. Skipping this leaks VRAM across
 		// transcript reloads.
 		bufferCache.buffer.remove();

@@ -76,7 +76,7 @@ export function openEditor() {
 export function handleDiscard() {
 	clearState();
 	// Discarding should also drop GPU buffers and memoized full-transcript
-	// stats — the active wordArray is about to become something else (or
+	// stats  -  the active wordArray is about to become something else (or
 	// empty).
 	resetVizCaches();
 }

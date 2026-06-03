@@ -8,7 +8,7 @@
  * snapshot them into a plain object on first read and on every
  * `data-theme` change (handled by a MutationObserver in `igsSketch.ts`).
  *
- * Draw classes receive the snapshot via `DrawContext.theme` — they pass
+ * Draw classes receive the snapshot via `DrawContext.theme`  -  they pass
  * its string values straight to `p5.fill/stroke/background/color` like
  * any other CSS color literal.
  */
@@ -113,7 +113,7 @@ export function refreshDrawTheme(): DrawTheme {
 /**
  * Parse a CSS color string (hex `#rrggbb`, shorthand `#rgb`, or any
  * `rgb(...)` form) into 0–255 channels. Returns `null` for unsupported
- * formats (e.g. `hsl(...)`, `currentColor`) — callers should treat that
+ * formats (e.g. `hsl(...)`, `currentColor`)  -  callers should treat that
  * as "use the theme default" rather than crash.
  */
 function parseColorChannels(color: string): { r: number; g: number; b: number } | null {
@@ -140,7 +140,7 @@ function parseColorChannels(color: string): { r: number; g: number; b: number } 
 		return null;
 	}
 
-	// rgb(r g b) or rgb(r, g, b) or rgba(...) — extract the first 3 numeric
+	// rgb(r g b) or rgb(r, g, b) or rgba(...)  -  extract the first 3 numeric
 	// channels. sRGB space is what we care about for luminance.
 	const rgbMatch = trimmed.match(/^rgba?\(([^)]+)\)$/i);
 	if (rgbMatch) {
@@ -178,19 +178,19 @@ function relativeLuminance(r: number, g: number, b: number): number {
  * Use this when rendering a label on top of a speaker-colored shape
  * (turn-network node, word-rain band, etc.) so labels stay readable in
  * both light and dark mode. For labels drawn over the canvas
- * background, use `theme.fg` directly — the canvas bg is already
+ * background, use `theme.fg` directly  -  the canvas bg is already
  * theme-aware.
  *
  * Strategy: compute WCAG relative luminance of the background; if it's
  * bright (> 0.5), return `theme.fg` (dark ink); otherwise return a
- * light ink (`#ffffff` in light mode — where `theme.bg` is white —
+ * light ink (`#ffffff` in light mode  -  where `theme.bg` is white  - 
  * stays white; in dark mode we still want white over a dim speaker
  * color rather than the canvas bg which is near-black).
  */
 export function pickTextColor(bg: string, theme: DrawTheme): string {
 	const channels = parseColorChannels(bg);
 	if (!channels) {
-		// Couldn't parse — fall back to the theme's primary ink so we at
+		// Couldn't parse  -  fall back to the theme's primary ink so we at
 		// least stay theme-consistent.
 		return theme.fg;
 	}

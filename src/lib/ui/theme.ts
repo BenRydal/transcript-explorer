@@ -1,7 +1,7 @@
 import { writable, get } from 'svelte/store';
 
 /**
- * Theme preference — three-state control shared by SettingsPanel (full
+ * Theme preference  -  three-state control shared by SettingsPanel (full
  * toggle group) and AppNavbar (compact cycle icon). 'system' follows the
  * OS preference via matchMedia and does not persist; 'light' and 'dark'
  * persist to localStorage.
@@ -13,7 +13,7 @@ export const THEME_STORAGE_KEY = 'te:ui:theme';
 export const THEME_ORDER: readonly ThemeChoice[] = ['light', 'dark', 'system'] as const;
 
 /**
- * Resolve what 'system' currently means. Safe to call on the server —
+ * Resolve what 'system' currently means. Safe to call on the server  - 
  * returns 'light' outside a browser.
  */
 export function resolveSystemTheme(): 'light' | 'dark' {
@@ -48,7 +48,7 @@ let mediaQuery: MediaQueryList | null = null;
 let initialized = false;
 
 /**
- * Initialize theme plumbing — applies the current choice, wires a system
+ * Initialize theme plumbing  -  applies the current choice, wires a system
  * preference listener that only re-applies if the user has 'system'
  * selected, and returns a cleanup function. Safe to call repeatedly but
  * only the first call does anything.

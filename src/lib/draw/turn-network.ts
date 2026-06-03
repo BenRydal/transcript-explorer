@@ -2,9 +2,9 @@
  * Turn-Taking Network Visualization
  *
  * A directed graph where nodes are speakers and weighted edges show
- * transition frequency — how often speaker A is followed by speaker B.
+ * transition frequency  -  how often speaker A is followed by speaker B.
  *
- * With only 2-5 speakers, layout and rendering are trivially cheap —
+ * With only 2-5 speakers, layout and rendering are trivially cheap  - 
  * no offscreen buffer or caching needed. Everything redraws each frame.
  */
 
@@ -192,7 +192,7 @@ export class TurnNetwork {
 
 		if (hovered) {
 			this.ctx.sk.noStroke();
-			// Dim-to-canvas overlay — uses theme.overlay so dark mode doesn't
+			// Dim-to-canvas overlay  -  uses theme.overlay so dark mode doesn't
 			// flash a white sheet over the graph on hover.
 			const overlayColor = this.ctx.sk.color(this.ctx.theme.overlay);
 			overlayColor.setAlpha(OVERLAY_OPACITY);
@@ -275,7 +275,7 @@ export class TurnNetwork {
 
 		// In statistical mode, only render edges whose lag-sequential z-score
 		// is significant at the p<0.05 two-tailed threshold. Both above-chance
-		// (positive) and below-chance (negative) residuals are kept — the
+		// (positive) and below-chance (negative) residuals are kept  -  the
 		// below-chance ones are worth seeing as "unexpectedly rare" patterns.
 		if (this.ctx.config.turnNetworkStatisticalMode) {
 			edges = edges.filter((e) => Math.abs(e.adjRes) >= Z_SIGNIFICANT);
@@ -341,7 +341,7 @@ export class TurnNetwork {
 		// not highlighted, 255 when hovered). Pick a text color that has
 		// contrast against the node color so the speaker name is readable
 		// on both light and dark canvases. Using the base `color` (alpha-
-		// agnostic) is fine here — the underlying hue controls luminance.
+		// agnostic) is fine here  -  the underlying hue controls luminance.
 		this.ctx.sk.fill(pickTextColor(color, this.ctx.theme));
 		this.ctx.sk.textSize(Math.max(8, this.minDim * NODE_LABEL_RATIO));
 		this.ctx.sk.textAlign(this.ctx.sk.CENTER, this.ctx.sk.CENTER);
@@ -538,7 +538,7 @@ export class TurnNetwork {
 		const plural = (n: number) => `${n} ${unit}${n !== 1 ? 's' : ''}`;
 
 		if (hovered.type === 'node') {
-			// Sum the underlying count (or wordCount) — edge.weight changes
+			// Sum the underlying count (or wordCount)  -  edge.weight changes
 			// meaning in statistical mode and would give nonsense totals.
 			const weightByWords = this.ctx.config.turnNetworkWeightByWords;
 			let initiated = 0;

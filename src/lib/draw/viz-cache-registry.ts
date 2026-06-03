@@ -10,7 +10,7 @@
  * p5.Graphics contribution-cloud buffer, and per-class "full transcript
  * max" memos) retain pointers to the previous transcript's data after a
  * new example loads. The scaling cache's key does include the new
- * wordArray length, so it invalidates naturally — but the wordWidth map
+ * wordArray length, so it invalidates naturally  -  but the wordWidth map
  * and the `p5.Graphics` buffer do NOT, and the buffer sits on the GPU.
  *
  * Keep this module dependency-free (no svelte stores, no p5 types) so

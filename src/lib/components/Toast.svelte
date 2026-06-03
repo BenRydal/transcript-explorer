@@ -7,7 +7,7 @@
 
 	/**
 	 * Bottom-right toast stack. Non-blocking chrome for one-line
-	 * feedback — separate from the existing NotificationStore /
+	 * feedback  -  separate from the existing NotificationStore /
 	 * ToastContainer (which is top-center, heavier, daisyUI-styled).
 	 *
 	 * Motion: items fly in from below; the CSS-level reduced-motion

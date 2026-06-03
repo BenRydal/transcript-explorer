@@ -109,7 +109,7 @@ export class WordJourney {
 			const user = this.ctx.userMap.get(speaker);
 			const y = this.gy + laneHeight * i + laneHeight / 2;
 
-			// Speaker label — drawn in the left margin over the canvas
+			// Speaker label  -  drawn in the left margin over the canvas
 			// background. Use theme.fg so pale speaker colors don't vanish
 			// on dark mode; the lane line below still carries speaker
 			// identity via the tinted stroke.

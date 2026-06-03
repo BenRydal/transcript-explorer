@@ -21,7 +21,7 @@ const TARGET_CELL_WIDTH = 15;
 // Memoized full-transcript max cell count. Keyed on (wordArray ref,
 // binCount, speakerSet). The class field is useless as a cache because a
 // fresh SpeakerHeatmap is built every frame by Draw.updateSpeakerHeatmap
-// — this module-level memo is what actually persists. Invalidated by
+//  -  this module-level memo is what actually persists. Invalidated by
 // the transcript-lifecycle cache reset.
 let fullTranscriptCellCountCache: { wordArray: unknown; binCount: number; speakerKey: string; result: number } | null = null;
 registerVizCacheReset(() => {
@@ -66,7 +66,7 @@ export class SpeakerHeatmap {
 		const binnedData = this.binWords(words, numBins, speakers);
 
 		// When scaling to full transcript, use the module-memoized global
-		// max cell count. Previously held on the instance (useless — the
+		// max cell count. Previously held on the instance (useless  -  the
 		// class is instantiated per-frame) and then null-checked; that
 		// meant the full-transcript scan happened every frame.
 		if (!this.ctx.config.scaleToVisibleData) {
@@ -146,7 +146,7 @@ export class SpeakerHeatmap {
 						c.setAlpha(alpha);
 						this.ctx.sk.fill(c);
 					} else {
-						// Empty-cell "no data" tile — muted canvas tone, not
+						// Empty-cell "no data" tile  -  muted canvas tone, not
 						// white (white blows out on dark theme).
 						this.ctx.sk.fill(this.ctx.theme.borderMuted);
 					}
@@ -304,7 +304,7 @@ export class SpeakerHeatmap {
 	 */
 	private getFullTranscriptMaxCellCount(numBins: number, speakers: string[]): number {
 		const wordArray = this.ctx.transcript.wordArray;
-		// Stable key for the speaker set — order doesn't matter for which
+		// Stable key for the speaker set  -  order doesn't matter for which
 		// cells exist, only which speakers participate. Sort once so toggle
 		// order doesn't defeat the cache.
 		const speakerKey = [...speakers].sort().join('\0');

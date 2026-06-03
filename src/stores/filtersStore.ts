@@ -21,7 +21,7 @@ export const initialFilters: FiltersStoreType = {
 	showUncoded: true,
 	scaleToVisibleData: false,
 	codeColorMode: false,
-	// Off by default — preserves pre-existing behavior where stopword
+	// Off by default  -  preserves pre-existing behavior where stopword
 	// filtering is opt-in. Users enable from the Filters panel.
 	stopWordsEnabled: false,
 	customStopWords: []

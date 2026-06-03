@@ -14,13 +14,13 @@ export function handleSpeakerColorChange(id: string, color: string) {
 }
 
 // Renames one speaker across UserStore AND the transcript's wordArray
-// (each word stores its speaker by name). Identity is by current name —
+// (each word stores its speaker by name). Identity is by current name  - 
 // the EntityToggleList adapter uses name as id.
 export function handleSpeakerRename(oldName: string, nextLabel: string) {
 	const newName = nextLabel.trim();
 	if (!newName || newName === oldName) return;
 
-	// Reject duplicates — two speakers can't share a name.
+	// Reject duplicates  -  two speakers can't share a name.
 	const users = get(UserStore);
 	if (users.some((u) => u.name === newName)) return;
 

@@ -256,7 +256,7 @@ export class QuestionFlow {
 				this.ctx.sk.fill(qColor);
 				this.ctx.sk.ellipse(rp.qx, rp.qy, rp.qRadius * 2, rp.qRadius * 2);
 
-				// Question mark indicator — pick a contrasting text color
+				// Question mark indicator  -  pick a contrasting text color
 				// against the speaker-colored circle (was hardcoded white,
 				// which vanished on pale speaker colors in both themes).
 				this.ctx.sk.fill(pickTextColor(qBaseColor, this.ctx.theme));

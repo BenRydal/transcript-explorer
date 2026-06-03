@@ -85,9 +85,9 @@ export class SpeakerFingerprint {
 		}
 
 		// Resolve the overlay mode:
-		//   'overlay'         — always a single shared radar
-		//   'small-multiples' — always one radar per speaker
-		//   'auto' (default)  — small-multiples once occlusion bites (>3 speakers)
+		//   'overlay'          -  always a single shared radar
+		//   'small-multiples'  -  always one radar per speaker
+		//   'auto' (default)   -  small-multiples once occlusion bites (>3 speakers)
 		const mode = this.ctx.config.fingerprintOverlayMode;
 		const useOverlay = mode === 'overlay' || (mode === 'auto' && fingerprints.length <= 3);
 		return useOverlay ? this.drawOverlay(fingerprints) : this.drawSmallMultiples(fingerprints);
@@ -155,7 +155,7 @@ export class SpeakerFingerprint {
 			this.drawSpeakerPolygon(fp, cellX, cellY, cellRadius, hoveredVertex?.speaker === fp.speaker);
 
 			// Draw speaker name below. Drawn over the canvas background (not
-			// a speaker-colored shape), so we use theme.fg — speaker identity
+			// a speaker-colored shape), so we use theme.fg  -  speaker identity
 			// is already carried by the radar polygon above, and pale
 			// speaker colors were unreadable on the dark canvas.
 			this.ctx.sk.fill(this.ctx.theme.fg);
@@ -206,7 +206,7 @@ export class SpeakerFingerprint {
 		const rawByAxis: number[][] = AXIS_KEYS.map((key, axisIndex) => {
 			return fingerprints.map((fp) => {
 				if (axisIndex === 0) {
-					// Turn Length — avg words per turn (speaker-level raw).
+					// Turn Length  -  avg words per turn (speaker-level raw).
 					return fp.totalTurns > 0 ? fp.totalWords / fp.totalTurns : 0;
 				}
 				if (axisIndex === 1) return fp.rawParticipationRate;
@@ -407,7 +407,7 @@ export class SpeakerFingerprint {
 		const rings = minimal ? 2 : GRID_RINGS;
 		const theme = this.ctx.theme;
 
-		// Concentric rings — grid tone with fixed alpha so opacity feels
+		// Concentric rings  -  grid tone with fixed alpha so opacity feels
 		// identical in light/dark (token handles hue inversion).
 		this.ctx.sk.noFill();
 		const gridStroke = this.ctx.sk.color(theme.border);
@@ -445,12 +445,12 @@ export class SpeakerFingerprint {
 	}
 
 	private drawAxisLabels(cx: number, cy: number, radius: number): void {
-		// Full mode labels read on both themes — use primary fg.
+		// Full mode labels read on both themes  -  use primary fg.
 		this.drawAxisLabelsImpl(cx, cy, radius + LABEL_OFFSET, 11, this.ctx.theme.fg, true);
 	}
 
 	private drawAxisLabelsShort(cx: number, cy: number, radius: number): void {
-		// Small-multiples labels are secondary — use muted fg.
+		// Small-multiples labels are secondary  -  use muted fg.
 		this.drawAxisLabelsImpl(cx, cy, radius + SMALL_MULTIPLE_LABEL_OFFSET, 10, this.ctx.theme.fgMuted, false);
 	}
 

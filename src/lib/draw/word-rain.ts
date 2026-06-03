@@ -181,7 +181,7 @@ export class WordRain {
 		}
 
 		this.ctx.sk.noStroke();
-		// Speaker label sits on the band background — an alpha-15 tint
+		// Speaker label sits on the band background  -  an alpha-15 tint
 		// where the canvas bg dominates, so treat this as "over canvas
 		// background" per the draw-theme rules. theme.fg stays legible in
 		// both themes; the band's speaker tint still carries identity.
@@ -569,7 +569,7 @@ export class WordRain {
 	private drawHoverEffect(hovered: PlacedWord): void {
 		const centerX = hovered.x + hovered.width / 2;
 
-		// Semi-transparent overlay — theme.overlay tracks bg, so the
+		// Semi-transparent overlay  -  theme.overlay tracks bg, so the
 		// dim-the-scene effect reads as "fade to canvas" in either theme.
 		this.ctx.sk.noStroke();
 		const overlayColor = this.ctx.sk.color(this.ctx.theme.overlay);
@@ -620,12 +620,12 @@ export class WordRain {
 		let content = `<b>${title}</b>`;
 
 		// Epistemic honesty: when binning is off, the x position is the mean of
-		// all occurrence times — which can sit in a gap where the word was
+		// all occurrence times  -  which can sit in a gap where the word was
 		// never actually said. Flag this in the hover so users don't mistake
 		// mean-time placement for a true temporal claim. Cite: Skeppstedt et
 		// al. 2024, "From word clouds to Word Rain", Information Visualization.
 		if (!this.ctx.config.wordRainTemporalBinning) {
-			content += `\n<span style="opacity: 0.6; font-size: 0.8em">(Showing mean time — may not reflect when word was actually said.)</span>`;
+			content += `\n<span style="opacity: 0.6; font-size: 0.8em">(Showing mean time, may not reflect when word was actually said.)</span>`;
 		}
 
 		// Per-speaker breakdown
@@ -657,7 +657,7 @@ export class WordRain {
 		const seenTurns = new Set<number>();
 		const samples: string[] = [];
 
-		// PERF: O(occurrences * totalWords) — runs only on hover (one word),
+		// PERF: O(occurrences * totalWords)  -  runs only on hover (one word),
 		// bounded by MAX_SAMPLE_TURNS so it short-circuits after 4. Fine for
 		// typical transcripts; if WordRain is ever hovered-over continuously
 		// on 50k+ word corpora, precompute a Map<turnNumber, DataPoint[]>
