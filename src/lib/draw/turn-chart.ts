@@ -21,7 +21,7 @@ const VERTICAL_PADDING = 12;
 const STRIP_HEIGHT_RATIO = 0.1;
 const MIN_STRIP_HEIGHT = 20;
 const MAX_STRIP_HEIGHT = 32;
-// Silence (gap) bars — muted cool grey that reads on both themes.
+// Silence (gap) bars  -  muted cool grey that reads on both themes.
 const GAP_COLOR = '#94a3b8';
 const MARKER_HEIGHT = 8;
 const ROW_GAP = 2;
@@ -64,6 +64,13 @@ export class TurnChart {
 	userSelectedTurn: SelectedTurn;
 	yPosSeparate: number;
 	annotationHover: DataPoint | null = null;
+	/**
+	 * Time (in transcript seconds) under the cursor when it's over the chart
+	 * but not over a specific turn bubble. Lets a click on empty timeline
+	 * space play from that point  -  the original "seek to time under cursor"
+	 * behavior. Null when the cursor isn't hovering a seekable spot.
+	 */
+	cursorPlayheadTime: number | null = null;
 	private stripBounds: Bounds | null;
 	private panelBottom: number;
 	private maxTurnLength: number;
@@ -149,6 +156,16 @@ export class TurnChart {
 		}
 		if (playheadTime !== null) {
 			drawPlayhead(this.ctx.sk, playheadTime, this.ctx.timeline.leftMarker, this.ctx.timeline.rightMarker, playheadRegion);
+		}
+
+		// Capture the time under the cursor so a click on empty timeline space
+		// (no bubble) still plays from there. Only meaningful when timed and the
+		// cursor is actually over the chart region.
+		if (isTimed && this.ctx.sk.overRect(this.bounds.x, this.bounds.y, this.bounds.width, this.panelBottom - this.bounds.y)) {
+			const frac = (this.ctx.sk.mouseX - this.bounds.x) / this.bounds.width;
+			this.cursorPlayheadTime = this.ctx.timeline.leftMarker + frac * (this.ctx.timeline.rightMarker - this.ctx.timeline.leftMarker);
+		} else {
+			this.cursorPlayheadTime = null;
 		}
 
 		const turn = this.userSelectedTurn.turn;

@@ -22,6 +22,8 @@ let videoState: VideoState;
 let canHover = true;
 let mouseEventLocked = false;
 let themeObserver: MutationObserver | null = null;
+let contextMenuHandler: ((e: MouseEvent) => void) | null = null;
+let contextMenuCanvasEl: HTMLCanvasElement | null = null;
 
 TimelineStore.subscribe((data) => {
 	timeline = data;
@@ -79,16 +81,33 @@ export const igsSketch = (p5: any) => {
 			canHover = e.target === canvas;
 		});
 
+		// RIGHT-click on the canvas → open the floating context menu near the
+		// cursor (and suppress the browser's native menu). p5 has no built-in
+		// right-click hook, so attach a native 'contextmenu' listener to the
+		// canvas element. Remove any prior listener first  -  setup re-runs on
+		// hot-reload / mode switch and we don't want to stack handlers.
+		if (contextMenuHandler && contextMenuCanvasEl) {
+			contextMenuCanvasEl.removeEventListener('contextmenu', contextMenuHandler);
+		}
+		contextMenuCanvasEl = canvas as HTMLCanvasElement | null;
+		if (contextMenuCanvasEl) {
+			contextMenuHandler = (e: MouseEvent) => {
+				e.preventDefault();
+				p5.openCanvasContextMenu(e.clientX, e.clientY);
+			};
+			contextMenuCanvasEl.addEventListener('contextmenu', contextMenuHandler);
+		}
+
 		// Theme refresh: when the user flips <html data-theme>, snapshot
 		// the new --te-* tokens so the next frame draws with them. The
 		// MutationObserver only fires on attribute changes, so cost is
-		// trivial. Disconnect any prior observer first — hot-reload or
+		// trivial. Disconnect any prior observer first  -  hot-reload or
 		// mode switching re-runs setup and we don't want to stack them.
 		if (themeObserver) themeObserver.disconnect();
 		themeObserver = new MutationObserver(() => {
 			refreshDrawTheme();
 			// p5 is in its default looping mode, so refreshing the cache
-			// is enough — the next p5.draw() tick will build a DrawContext
+			// is enough  -  the next p5.draw() tick will build a DrawContext
 			// with the new theme snapshot.
 		});
 		themeObserver.observe(document.documentElement, {
@@ -209,6 +228,10 @@ export const igsSketch = (p5: any) => {
 	};
 
 	p5.mousePressed = () => {
+		// Only LEFT-click drives play/seek. RIGHT-click is handled by the
+		// native 'contextmenu' listener (it opens the menu); ignore it here so
+		// a right-click doesn't also trigger playback.
+		if (p5.mouseButton === p5.RIGHT) return;
 		if (mouseEventLocked) return;
 		mouseEventLocked = true;
 		requestAnimationFrame(() => {
@@ -216,21 +239,14 @@ export const igsSketch = (p5: any) => {
 		});
 
 		// Speaker filter lock is a cheap editor-side selection update; it
-		// should still run on a single click so the editor stays in sync
-		// with visualization hover intent even when the user is just
-		// opening the context menu.
+		// keeps the editor in sync with visualization hover intent on any
+		// left-click in a speaker-centric viz.
 		p5.handleSpeakerFilterClick();
 
-		// Single-click on the canvas → open the floating action menu near
-		// the cursor. Double-click preserves the fast-path seek below.
-		if (!p5.overRect(0, 0, p5.width, p5.height)) return;
-		p5.openCanvasContextMenu();
-	};
-
-	p5.doubleClicked = () => {
-		// Fast path: preserve the previous single-click-to-seek behavior
-		// as a double-click shortcut. Also dismiss any open context menu
-		// so the menu doesn't linger over the seeked video frame.
+		// LEFT-click on the canvas → per-viz play / pause-toggle. Dismiss any
+		// open context menu so it doesn't linger over the seeked video frame.
+		// (The context menu now opens on RIGHT-click; see the 'contextmenu'
+		// listener wired in setup.)
 		UIStateStore.update((s) => ({
 			...s,
 			contextMenu: { ...s.contextMenu, open: false, payload: null }
@@ -239,31 +255,44 @@ export const igsSketch = (p5: any) => {
 		p5.handleVideoClick();
 	};
 
-	p5.openCanvasContextMenu = () => {
-		const canvasEl = document.querySelector('#p5-container canvas') as HTMLCanvasElement | null;
-		if (!canvasEl) return;
-		const rect = canvasEl.getBoundingClientRect();
-		// p5's mouseX/mouseY are canvas-relative; the ContextMenu is
-		// position: fixed and wants viewport coordinates.
-		const clientX = rect.left + p5.mouseX;
-		const clientY = rect.top + p5.mouseY;
-
+	p5.openCanvasContextMenu = (clientX?: number, clientY?: number) => {
 		const payload = p5.buildContextMenuPayload();
+		// No real data element under the cursor → don't open a menu over empty
+		// canvas space.
 		if (!payload) return;
+
+		// Prefer the viewport coordinates from the triggering 'contextmenu'
+		// event. Fall back to deriving them from p5's canvas-relative
+		// mouseX/mouseY (the ContextMenu is position: fixed).
+		let x: number;
+		let y: number;
+		if (clientX !== undefined && clientY !== undefined) {
+			x = clientX;
+			y = clientY;
+		} else {
+			const canvasEl = document.querySelector('#p5-container canvas') as HTMLCanvasElement | null;
+			if (!canvasEl) return;
+			const rect = canvasEl.getBoundingClientRect();
+			x = rect.left + p5.mouseX;
+			y = rect.top + p5.mouseY;
+		}
 
 		UIStateStore.update((s) => ({
 			...s,
-			contextMenu: { open: true, x: clientX, y: clientY, payload }
+			contextMenu: { open: true, x, y, payload }
 		}));
 	};
 
 	p5.buildContextMenuPayload = (): ContextMenuPayload | null => {
-		// The hover state already tracks what's under the cursor each
-		// frame. Prefer the richest thing available: a specific word, then
-		// a speaker (via firstWords — a hovered distribution panel), then
-		// a plain time click.
+		// The hover state already tracks what's under the cursor each frame.
+		// Prefer the richest real data element: a specific word, then a turn
+		// (via firstWords  -  a hovered distribution/snippet panel). Return null
+		// when the cursor is over empty canvas space so no menu opens.
 		const hovered = hoverState.hoveredDataPoint;
-		if (hovered) {
+		// turnNumber === -1 marks a synthetic turn-chart "seek to time under
+		// cursor" point  -  that's a left-click play target, not a real data
+		// element, so it doesn't earn a context menu.
+		if (hovered && hovered.turnNumber !== -1) {
 			return {
 				kind: 'word',
 				time: hovered.startTime,
@@ -283,15 +312,7 @@ export const igsSketch = (p5: any) => {
 			};
 		}
 
-		const hoveredSpeaker = hoverState.hoveredSpeaker;
-		// Generic glyph click at the current playhead — no specific data
-		// under the cursor but the user targeted the canvas. The speaker,
-		// if we can infer one from the hover state, still rides along.
-		return {
-			kind: 'glyph',
-			time: timeline.currTime,
-			speakerId: hoveredSpeaker ?? undefined
-		};
+		return null;
 	};
 
 	// Lock speaker filter in editor when clicking on a speaker-centric visualization

@@ -1,5 +1,5 @@
 import type p5 from 'p5';
-import type { DataPoint } from '../../models/dataPoint';
+import { DataPoint } from '../../models/dataPoint';
 import { TurnChart } from './turn-chart';
 import { ContributionCloud } from './contribution-cloud';
 import { SpeakerGarden } from './speaker-garden';
@@ -140,7 +140,17 @@ export class Draw {
 	updateTurnChart(pos: Bounds, ctx: DrawContext): DrawResult {
 		const turnChart = new TurnChart(ctx, pos);
 		const { hoveredSpeaker } = turnChart.draw(this.sk.dynamicData.getDynamicArrayForTurnChart());
-		return result({ hover: turnChart.userSelectedTurn.turn[0] ?? turnChart.annotationHover ?? null, hoveredSpeaker });
+		// Prefer a hovered bubble / annotation. Otherwise, if the cursor is over
+		// empty timeline space, synthesize a seek point at the time under the
+		// cursor so a click plays from there (original turn-chart behavior).
+		const selectedTurn = turnChart.userSelectedTurn.turn;
+		let hover: DataPoint | null = (selectedTurn ? selectedTurn[0] : null) ?? turnChart.annotationHover ?? null;
+		// Only the full-screen turn chart seeks on empty-timeline clicks; in a
+		// dashboard panel a synthetic time-seek would muddy cross-highlighting.
+		if (!hover && ctx.config.turnChartToggle && turnChart.cursorPlayheadTime !== null) {
+			hover = new DataPoint(hoveredSpeaker ?? '', -1, '', turnChart.cursorPlayheadTime, turnChart.cursorPlayheadTime);
+		}
+		return result({ hover, hoveredSpeaker });
 	}
 
 	updateSpeakerHeatmap(pos: Bounds, ctx: DrawContext): DrawResult {
