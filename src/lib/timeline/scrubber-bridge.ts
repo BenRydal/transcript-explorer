@@ -18,7 +18,14 @@ export function handleScrubberSeek(scrubTime: number) {
 
 export function handleScrubberPlayToggle(nowPlaying: boolean) {
 	const wasPlaying = get(TimelineStore).isAnimating;
-	TimelineStore.update((t) => ({ ...t, isAnimating: nowPlaying }));
+	// On play start, snap the playhead to the left selection handle so
+	// playback always animates from the start of the current selection
+	// (matches the scrubber's playheadFollowsSelectionStart behavior).
+	if (nowPlaying && !wasPlaying) {
+		TimelineStore.update((t) => ({ ...t, isAnimating: nowPlaying, currTime: t.leftMarker }));
+	} else {
+		TimelineStore.update((t) => ({ ...t, isAnimating: nowPlaying }));
+	}
 	const p5Instance = get(P5Store);
 	if (p5Instance) {
 		if (nowPlaying && !wasPlaying) {
