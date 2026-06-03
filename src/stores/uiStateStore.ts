@@ -2,7 +2,7 @@ import { writable } from 'svelte/store';
 
 export type SidebarTab = 'viz' | 'filters' | 'data' | 'settings' | 'help';
 
-export type Workspace = 'analyze' | 'code' | 'present';
+export type Workspace = 'edit' | 'present' | 'transcribe';
 
 /**
  * First-load onboarding lifecycle. `unseen` = show the welcome dialog on
@@ -42,7 +42,7 @@ export interface UIStateStoreType {
 	// Floating selection-contextual action menu (Phase E).
 	contextMenu: ContextMenuState;
 	// Task workspace preset (Phase F). Drives default chrome layout for
-	// Analyze / Code / Present modes.
+	// Edit / Present / Transcribe modes.
 	activeWorkspace: Workspace;
 	// First-load welcome-dialog lifecycle. Persisted across reloads.
 	onboardingState: OnboardingState;
@@ -71,7 +71,18 @@ export const initialContextMenu: ContextMenuState = {
 const ACTIVE_WORKSPACE_STORAGE_KEY = 'te:ui:activeWorkspace';
 const ONBOARDING_STATE_STORAGE_KEY = 'te:ui:onboardingState';
 
-const VALID_WORKSPACES: readonly Workspace[] = ['analyze', 'code', 'present'] as const;
+const VALID_WORKSPACES: readonly Workspace[] = ['edit', 'present', 'transcribe'] as const;
+
+/**
+ * Legacy workspace names (pre-rename: Analyze / Code / Present) map onto the
+ * current modes when hydrating a persisted value. Analyze and Code both
+ * collapse into Edit; Present is unchanged.
+ */
+const LEGACY_WORKSPACE_MIGRATIONS: Record<string, Workspace> = {
+	analyze: 'edit',
+	code: 'edit',
+	present: 'present'
+};
 const VALID_ONBOARDING_STATES: readonly OnboardingState[] = [
 	'unseen',
 	'dismissed',
@@ -94,7 +105,13 @@ function readPersistedWorkspace(): Workspace | null {
 	try {
 		const raw = window.localStorage.getItem(ACTIVE_WORKSPACE_STORAGE_KEY);
 		if (raw === null) return null;
-		return isValidWorkspace(raw) ? raw : null;
+		if (isValidWorkspace(raw)) return raw;
+		// Migrate legacy workspace names (analyze/code → edit, present → present).
+		// Anything unrecognized falls through to the caller's default ('edit').
+		if (typeof raw === 'string' && raw in LEGACY_WORKSPACE_MIGRATIONS) {
+			return LEGACY_WORKSPACE_MIGRATIONS[raw];
+		}
+		return null;
 	} catch {
 		return null;
 	}
@@ -117,14 +134,14 @@ export const initialUIState: UIStateStoreType = {
 	activeSidebarTab: null,
 	sidebarWidth: 280,
 	contextMenu: initialContextMenu,
-	activeWorkspace: readPersistedWorkspace() ?? 'analyze',
+	activeWorkspace: readPersistedWorkspace() ?? 'edit',
 	onboardingState: readPersistedOnboardingState() ?? 'unseen'
 };
 
 const UIStateStore = writable<UIStateStoreType>(initialUIState);
 
 // Persist activeWorkspace + onboardingState across reloads. Keep the
-// persisted surface tight — only fields that are genuinely preference-
+// persisted surface tight  -  only fields that are genuinely preference-
 // grade belong here.
 if (typeof window !== 'undefined') {
 	let lastWrittenWorkspace: Workspace = initialUIState.activeWorkspace;
@@ -135,7 +152,7 @@ if (typeof window !== 'undefined') {
 			try {
 				window.localStorage.setItem(ACTIVE_WORKSPACE_STORAGE_KEY, state.activeWorkspace);
 			} catch {
-				// localStorage can throw (quota, disabled) — persistence is best-effort.
+				// localStorage can throw (quota, disabled)  -  persistence is best-effort.
 			}
 		}
 		if (state.onboardingState !== lastWrittenOnboarding) {
@@ -143,7 +160,7 @@ if (typeof window !== 'undefined') {
 			try {
 				window.localStorage.setItem(ONBOARDING_STATE_STORAGE_KEY, state.onboardingState);
 			} catch {
-				// localStorage can throw (quota, disabled) — persistence is best-effort.
+				// localStorage can throw (quota, disabled)  -  persistence is best-effort.
 			}
 		}
 	});
