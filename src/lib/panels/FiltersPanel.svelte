@@ -5,7 +5,6 @@
 	import UserStore from '../../stores/userStore';
 	import FiltersStore from '../../stores/filtersStore';
 	import CodeStore from '../../stores/codeStore';
-	import TimelineStore from '../../stores/timelineStore';
 	import TranscriptStore from '../../stores/transcriptStore';
 	import P5Store from '../../stores/p5Store';
 	import { clearAllCodes } from '$lib/core/code-utils';
@@ -14,7 +13,6 @@
 		handleSpeakerColorChange,
 		handleSpeakerRename
 	} from '$lib/speakers/speaker-handlers';
-	import { formatTimeAuto } from '$lib/core/time-utils';
 
 	let speakerEntities: Entity[] = $derived(
 		$UserStore.map((u) => ({
@@ -95,19 +93,6 @@
 		customStopWordsDraft = '';
 		FiltersStore.update((filters) => ({ ...filters, customStopWords: [] }));
 	}
-
-	function handleResetTimeline() {
-		TimelineStore.update((t) => ({
-			...t,
-			leftMarker: t.startTime,
-			rightMarker: t.endTime
-		}));
-	}
-
-	let isUntimed = $derived($TranscriptStore.timingMode === 'untimed');
-	let formatRange = $derived((s: number) =>
-		isUntimed ? `${Math.round(s)} words` : formatTimeAuto(s)
-	);
 </script>
 
 <div class="filters-panel">
@@ -262,21 +247,6 @@
 			>Reset custom list</button>
 		{/if}
 	</section>
-
-	<!-- Timeline range -->
-	<section class="filters-panel__section">
-		<p class="filters-panel__section-label">Timeline Range</p>
-		{#if $TimelineStore.endTime - $TimelineStore.startTime > 0}
-			<p class="filters-panel__range">
-				<span>{formatRange($TimelineStore.leftMarker - $TimelineStore.startTime)}</span>
-				<span class="filters-panel__range-sep">→</span>
-				<span>{formatRange($TimelineStore.rightMarker - $TimelineStore.startTime)}</span>
-			</p>
-		{:else}
-			<p class="filters-panel__empty">No timeline data.</p>
-		{/if}
-		<button class="filters-panel__reset" onclick={handleResetTimeline}>Reset Range</button>
-	</section>
 </div>
 
 <style>
@@ -415,20 +385,6 @@
 
 	.filters-panel__clear-codes:hover {
 		background: color-mix(in srgb, var(--te-danger) 8%, transparent);
-	}
-
-	.filters-panel__range {
-		display: flex;
-		align-items: center;
-		gap: var(--te-sp-2);
-		font-variant-numeric: tabular-nums;
-		font-size: var(--te-font-body);
-		color: var(--te-fg);
-		margin: 0;
-	}
-
-	.filters-panel__range-sep {
-		color: var(--te-fg-muted);
 	}
 
 	.filters-panel__reset {
