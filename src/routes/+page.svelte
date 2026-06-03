@@ -12,7 +12,7 @@
 		type ActivityBarItem,
 		type ContextMenuItem
 	} from 'svelte-p5-components';
-	import { LayoutDashboard, Filter, Database, Settings as SettingsIcon, CircleHelp } from '@lucide/svelte';
+	import { LayoutDashboard, Filter, Upload, Settings as SettingsIcon, CircleHelp } from '@lucide/svelte';
 	import { formatTimeAuto } from '$lib/core/time-utils';
 	import { browser } from '$app/environment';
 	import { onMount } from 'svelte';
@@ -21,7 +21,7 @@
 	// Stores
 	import UserStore from '../stores/userStore';
 	import P5Store from '../stores/p5Store';
-	import VideoStore, { loadVideo, playFrom } from '../stores/videoStore';
+	import VideoStore, { loadVideo, playFrom, stopPlayback } from '../stores/videoStore';
 	import EditorStore, { editorLayoutKey } from '../stores/editorStore';
 	import TimelineStore from '../stores/timelineStore';
 	import VizStore, { filterToggleKey } from '../stores/vizStore';
@@ -34,7 +34,7 @@
 	import { DataPoint } from '../models/dataPoint';
 	import HoverStore from '../stores/hoverStore';
 	import TranscriptStore from '../stores/transcriptStore';
-	import TranscribeModeStore, { toggle as toggleTranscribeMode, exit as exitTranscribeMode } from '../stores/transcribeModeStore';
+	import TranscribeModeStore from '../stores/transcribeModeStore';
 	import { notifications } from '../stores/notificationStore';
 	import { recents } from '../stores/recentsStore';
 	import { pushToast } from '../stores/toastStore';
@@ -91,7 +91,7 @@
 	import RecoveryModal from '$lib/components/RecoveryModal.svelte';
 	import DashboardOverlay from '$lib/components/DashboardOverlay.svelte';
 	import VisualizationLegend from '$lib/components/VisualizationLegend.svelte';
-	import WelcomeDialog from '$lib/components/WelcomeDialog.svelte';
+	import WelcomeScreen from '$lib/components/WelcomeScreen.svelte';
 	import Toast from '$lib/components/Toast.svelte';
 
 	// Sidebar panels
@@ -99,7 +99,6 @@
 	import FiltersPanel from '$lib/panels/FiltersPanel.svelte';
 	import DataPanel from '$lib/panels/DataPanel.svelte';
 	import SettingsPanel from '$lib/panels/SettingsPanel.svelte';
-	import HelpPanel from '$lib/panels/HelpPanel.svelte';
 
 	import type { TranscriptionResult } from '$lib/core/transcription-service';
 	import type { TimingMode } from '../models/transcript';
@@ -208,11 +207,53 @@
 		{ id: 'help', label: 'Help' }
 	];
 
-	let activeSidebarLabel = $derived(
-		SIDEBAR_TABS.find((t) => t.id === $UIStateStore.activeSidebarTab)?.label ?? ''
+	// The SidePanel is now mounted persistently and driven by `open` so the
+	// library can play its symmetric in/out slide. `activeSidebarTab` becomes
+	// null on close, which would blank the panel body mid-exit  -  so we retain
+	// the last non-null tab and render the body/title off that during the
+	// closing transition. It updates only when a real tab is active.
+	let lastSidebarTab = $state($UIStateStore.activeSidebarTab);
+	$effect(() => {
+		if ($UIStateStore.activeSidebarTab !== null) {
+			lastSidebarTab = $UIStateStore.activeSidebarTab;
+		}
+	});
+	let lastSidebarLabel = $derived(
+		SIDEBAR_TABS.find((t) => t.id === lastSidebarTab)?.label ?? ''
 	);
 
-	// Stable id for the sidebar tabpanel shell — referenced by the focus-
+	// Whether the sidebar is logically open. The library SidePanel is now
+	// always mounted (open={true}); the `.te-sidepanel-shell` wrapper animates
+	// its OCCUPIED width 0 ↔ sidebarWidth based on this flag, which lets the
+	// p5 canvas reflow smoothly (it tracks its container via ResizeObserver)
+	// instead of snapping when the layout changes in one step.
+	const isSidebarOpen = $derived($UIStateStore.activeSidebarTab !== null);
+
+	// Keep the p5 canvas continuously tracking its container. The canvas only
+	// resizes on window resize or explicit triggerCanvasResize() calls, so when
+	// the sidebar shell animates its width (or the user drag-resizes the panel)
+	// the container reflows every frame but the canvas wouldn't follow  -  it
+	// would jump at the end. A ResizeObserver on #p5-container fixes both: each
+	// observed change schedules a rAF-coalesced triggerCanvasResize() (which
+	// resizes the canvas to the container + redraws). resizeCanvas changes the
+	// canvas, not the container, so there's no observer feedback loop.
+	$effect(() => {
+		if (!browser) return;
+		const container = document.getElementById('p5-container');
+		if (!container) return;
+		let raf = 0;
+		const observer = new ResizeObserver(() => {
+			cancelAnimationFrame(raf);
+			raf = requestAnimationFrame(() => triggerCanvasResize());
+		});
+		observer.observe(container);
+		return () => {
+			cancelAnimationFrame(raf);
+			observer.disconnect();
+		};
+	});
+
+	// Stable id for the sidebar tabpanel shell  -  referenced by the focus-
 	// restore and resize-handle-keyboard effects to locate the panel DOM.
 	// The library ActivityBar doesn't expose per-item ids, so panel
 	// labeling goes through aria-label rather than aria-labelledby.
@@ -223,6 +264,12 @@
 	}
 
 	function handleActivitySelect(id: string) {
+		// The help (?) item is not a sidebar panel  -  it opens the WelcomeScreen
+		// overlay instead. Leave the current sidebar tab untouched.
+		if (id === 'help') {
+			welcomeOpen = true;
+			return;
+		}
 		const current = $UIStateStore.activeSidebarTab;
 		const next = (current === id ? null : id) as SidebarTab | null;
 		setSidebarTab(next);
@@ -255,7 +302,7 @@
 		}
 	});
 
-	// Sidebar min/max — must match SidePanel's defaults for clamped
+	// Sidebar min/max  -  must match SidePanel's defaults for clamped
 	// keyboard resizes.
 	const SIDEBAR_MIN_WIDTH = 220;
 	const SIDEBAR_MAX_WIDTH = 480;
@@ -266,7 +313,7 @@
 	// keyboard users don't have to Tab past the navbar + activity bar.
 	// When it closes, restore focus to the activity-bar item with the
 	// matching aria-label (the library ActivityBar uses the item's
-	// `label` prop as aria-label — stable enough to target).
+	// `label` prop as aria-label  -  stable enough to target).
 	const SIDEBAR_LABEL_FOR_TAB: Record<SidebarTab, string> = {
 		viz: 'Visualizations',
 		filters: 'Filters',
@@ -278,7 +325,7 @@
 	$effect(() => {
 		const nextTab = $UIStateStore.activeSidebarTab;
 		if (nextTab && nextTab !== lastOpenedTab) {
-			// Opening or switching tabs — focus the panel body after the
+			// Opening or switching tabs  -  focus the panel body after the
 			// DOM has had a chance to paint.
 			requestAnimationFrame(() => {
 				const panelBody = document.querySelector<HTMLElement>(
@@ -291,7 +338,7 @@
 				(firstFocusable ?? panelBody).focus({ preventScroll: true });
 			});
 		} else if (!nextTab && lastOpenedTab) {
-			// Closing — restore focus to the activity-bar item that owned it.
+			// Closing  -  restore focus to the activity-bar item that owned it.
 			const label = SIDEBAR_LABEL_FOR_TAB[lastOpenedTab];
 			requestAnimationFrame(() => {
 				const activityBtn = document.querySelector<HTMLButtonElement>(
@@ -391,7 +438,25 @@
 	// Reactive bindings to stores
 	let isVideoLoaded = $derived($VideoStore.isLoaded);
 	let hasVideoSource = $derived($VideoStore.source.type !== null);
-	let isTranscribeModeActive = $derived($TranscribeModeStore.isActive);
+	// Transcribe is now a workspace (Edit / Present / Transcribe) rather than
+	// a separate toggle: the dedicated full-screen TranscribeModeLayout is
+	// shown whenever the active workspace is 'transcribe'.
+	let isTranscribeModeActive = $derived($UIStateStore.activeWorkspace === 'transcribe');
+
+	// Keep the legacy TranscribeModeStore in sync with the workspace so
+	// downstream consumers (e.g. TranscriptEditor's compact transcribe view)
+	// that read TranscribeModeStore.isActive keep working without each having
+	// to learn about workspaces. Stop video playback when entering, matching
+	// the old transcribeModeStore.enter() behavior.
+	let prevTranscribeWorkspace = $state(false);
+	$effect(() => {
+		const active = isTranscribeModeActive;
+		if (get(TranscribeModeStore).isActive !== active) {
+			TranscribeModeStore.set({ isActive: active });
+		}
+		if (active && !prevTranscribeWorkspace) stopPlayback();
+		prevTranscribeWorkspace = active;
+	});
 
 	/**
 	 * Workspace-switch wrapper (B3). Flips an opacity flag briefly
@@ -513,8 +578,9 @@
 
 		window.addEventListener('beforeunload', saveStateImmediate);
 
-		// Workspace keyboard shortcuts: 1 / 2 / 3 switch between Analyze /
-		// Code / Present. Skip while the user is editing text (inputs,
+		// Workspace keyboard shortcuts: 1 / 2 / 3 switch between Edit /
+		// Present / Transcribe (driven off WORKSPACE_ORDER). Skip while the
+		// user is editing text (inputs,
 		// textareas, contenteditable) so we don't yank focus mid-type. Skip
 		// when a modifier is held to avoid colliding with browser shortcuts
 		// like Cmd+1 (tab-switch) or Ctrl+Alt+1 (assistive tech).
@@ -658,7 +724,7 @@
 		if (!label) return;
 		customTranscriptLabel = label;
 		selectedExampleId = '';
-		// Use the label as the recent's stable id — uploads don't have
+		// Use the label as the recent's stable id  -  uploads don't have
 		// a catalog id, and dedupe by (kind, id) in the store keeps
 		// repeated loads of the same file from piling up.
 		recents.push({ id: label, label, kind });
@@ -887,7 +953,7 @@
 				applyTranscriptResult(createTranscriptFromParsedText(parseResult, parseResult.detectedTimingMode));
 				// Examples route through handleLoadExample, which records its
 				// own recent + toast; single-file uploads that skip preview
-				// (rare — mostly examples) are the other caller. Avoid
+				// (rare  -  mostly examples) are the other caller. Avoid
 				// double-toasting for examples by only recording when no
 				// example is actively loading. We detect by checking the
 				// current selectedExampleId before this call returns via
@@ -992,24 +1058,20 @@
 		const speakerSuffix = payload.speakerId ? ` (${payload.speakerId})` : '';
 		const speakerLabel = payload.speakerId ? `Filter to ${payload.speakerId}` : 'Filter to speaker';
 		const filterDisabled = !payload.speakerId;
+		// "Seek video here" only makes sense when a video is actually loaded.
+		const videoLoaded = get(VideoStore).isLoaded;
 
-		if (payload.kind === 'word') {
-			return [
-				{ id: 'seek', label: `Seek video here${speakerSuffix}` },
-				{ id: 'in-point', label: 'Set in-point here' },
-				{ id: 'out-point', label: 'Set out-point here' },
-				{ id: 'filter-speaker', label: speakerLabel, disabled: filterDisabled },
-				{ id: 'search-word', label: `Search "${payload.word}"` }
-			];
-		}
-		// glyph + turn share the same actions today
-		return [
-			{ id: 'seek', label: `Seek video here${speakerSuffix}` },
+		const items: ContextMenuItem[] = [];
+		if (videoLoaded) items.push({ id: 'seek', label: `Seek video here${speakerSuffix}` });
+		items.push(
 			{ id: 'in-point', label: 'Set in-point here' },
 			{ id: 'out-point', label: 'Set out-point here' },
-			{ id: 'filter-speaker', label: speakerLabel, disabled: filterDisabled },
-			{ id: 'apply-code', label: 'Apply code…' }
-		];
+			{ id: 'filter-speaker', label: speakerLabel, disabled: filterDisabled }
+		);
+		if (payload.kind === 'word') {
+			items.push({ id: 'search-word', label: `Search "${payload.word}"` });
+		}
+		return items;
 	}
 
 	let contextMenuItems = $derived(buildContextMenuItems(contextMenuPayload));
@@ -1021,39 +1083,49 @@
 		}));
 	}
 
-	// ============ First-load Welcome Dialog ============
+	// ============ Welcome Screen ============
 
-	// Gate the dialog on `browser` so it never renders during SSR. On the
-	// client, onboardingState is seeded from localStorage at module init,
-	// so by the time this hydrates it reflects the real persisted value.
-	let welcomeOpen = $derived(browser && $UIStateStore.onboardingState === 'unseen');
+	// Controllable open state for the WelcomeScreen overlay. Bound to the
+	// component (it sets `open = false` on its own dismiss/load actions),
+	// and opened either on first load (onboardingState === 'unseen') or
+	// from the ActivityBar's help (?) button.
+	let welcomeOpen = $state(false);
+
+	// First-load auto-open. Gate on `browser` so it never opens during SSR;
+	// onboardingState is seeded from localStorage at store-module init, so by
+	// the time this effect runs on the client it reflects the persisted value.
+	// One-shot per 'unseen' transition so dismissing it doesn't immediately
+	// re-open.
+	let onboardingPrompted = $state(false);
+	$effect(() => {
+		if (!browser) return;
+		if ($UIStateStore.onboardingState === 'unseen' && !onboardingPrompted) {
+			welcomeOpen = true;
+			onboardingPrompted = true;
+		}
+	});
 
 	function handleWelcomeStartTour() {
-		// User opted into the tour — mark onboarding as seen (not
-		// dismissed — they engaged) and then hand off to the shared tour
-		// entry point that HelpPanel also uses.
+		// User opted into the tour  -  mark onboarding as seen (not
+		// dismissed  -  they engaged) and then hand off to the shared tour
+		// entry point.
 		UIStateStore.update((s) => ({ ...s, onboardingState: 'seen' }));
 		setSidebarTab(null);
+		welcomeOpen = false;
 		tourOverlay.start();
 	}
 
 	function handleWelcomeDismiss(dontShowAgain: boolean) {
 		// If the user left the default-checked "don't show again" on, flip
-		// to 'dismissed' so the dialog stays gone. If they unchecked it,
-		// leave onboardingState at 'unseen' so the dialog returns next
-		// reload. We intentionally DON'T write 'unseen' back explicitly —
+		// to 'dismissed' so the screen stays gone on future loads. If they
+		// unchecked it, leave onboardingState at 'unseen' so it returns next
+		// reload. We intentionally DON'T write 'unseen' back explicitly  - 
 		// it's already the current value; a no-op write would churn the
 		// localStorage subscribe needlessly.
 		if (dontShowAgain) {
 			UIStateStore.update((s) => ({ ...s, onboardingState: 'dismissed' }));
 		}
-	}
-
-	function resetOnboarding() {
-		// HelpPanel's "Show welcome again" affordance. Flipping the state
-		// back to 'unseen' is enough — the $derived `welcomeOpen` will
-		// react and re-show the dialog immediately.
-		UIStateStore.update((s) => ({ ...s, onboardingState: 'unseen' }));
+		welcomeOpen = false;
 	}
 
 	function handleContextMenuSelect(id: string) {
@@ -1065,8 +1137,8 @@
 
 		switch (id) {
 			case 'seek': {
-				// Move the visualization playhead, and — if a video is
-				// loaded — fire a video seek via playFrom. playFrom only
+				// Move the visualization playhead, and  -  if a video is
+				// loaded  -  fire a video seek via playFrom. playFrom only
 				// reads .startTime off the DataPoint, so constructing a
 				// minimal DataPoint here is safe.
 				const startTime = get(TimelineStore).startTime;
@@ -1089,7 +1161,7 @@
 				// new in-point would cross the current out-point, push the
 				// out-point with it (same behavior the scrubber uses when a
 				// handle drag would invert the selection). Also realign
-				// currTime so the playhead stays inside the new range —
+				// currTime so the playhead stays inside the new range  - 
 				// matches handleSelectionChange in scrubber-bridge. Without
 				// this, setting an in-point ahead of the playhead would
 				// leave the viz animating past the right marker and the
@@ -1150,13 +1222,6 @@
 				}
 				break;
 			}
-			case 'apply-code': {
-				// TODO(Phase E.1): open a secondary code-picker. The codes
-				// system spans CodeStore + code-utils + multi-format parsing
-				// and is out of scope for the context-menu landing.
-				console.log('[ContextMenu] Apply code… not yet wired', payload);
-				break;
-			}
 		}
 
 		closeContextMenu();
@@ -1170,12 +1235,12 @@
 
 {#snippet vizIcon()}<LayoutDashboard size={20} />{/snippet}
 {#snippet filtersIcon()}<Filter size={20} />{/snippet}
-{#snippet dataIcon()}<Database size={20} />{/snippet}
+{#snippet dataIcon()}<Upload size={20} />{/snippet}
 {#snippet settingsIcon()}<SettingsIcon size={20} />{/snippet}
 {#snippet helpIcon()}<CircleHelp size={20} />{/snippet}
 
 {#if isTranscribeModeActive}
-	<TranscribeModeLayout onexit={exitTranscribeMode} oncreateTranscript={createTranscript} />
+	<TranscribeModeLayout onexit={() => switchWorkspace('edit')} oncreateTranscript={createTranscript} />
 {:else}
 	<!-- Skip link: visually hidden until keyboard-focused, jumps past
 	     the navbar + activity bar straight into the canvas region. -->
@@ -1188,12 +1253,8 @@
 					activeWorkspace={$UIStateStore.activeWorkspace}
 					selectedExampleId={selectedExampleId}
 					transcriptLabel={customTranscriptLabel ?? ''}
-					ontoggleTranscribeMode={toggleTranscribeMode}
 					onselectWorkspace={switchWorkspace}
 					onopenDataPanel={openDataPanelForLoading}
-					onopenUpload={() => (showUploadModal = true)}
-					onopenPaste={() => (showPasteModal = true)}
-					oncreateNew={() => (showNewTranscriptConfirm = true)}
 					onloadExample={handleLoadExample}
 				/>
 			{/snippet}
@@ -1211,41 +1272,51 @@
 							{ id: 'help', label: 'Help', icon: helpIcon }
 						]}
 					/>
-					{#if $UIStateStore.activeSidebarTab !== null}
-						<!-- The library SidePanel renders its own <aside>. We wrap
-						     it in a role="tabpanel" container so ActivityBar's
-						     role="tab" items conceptually complete the tablist →
-						     tabpanel relationship. The library ActivityBar does
-						     not expose per-item DOM ids, so we label this panel
-						     directly via aria-label rather than aria-labelledby. -->
-						<div
-							id={SIDE_PANEL_ID}
-							role="tabpanel"
-							aria-label={`${activeSidebarLabel} panel`}
-							class="te-sidepanel-shell"
-						>
+					<!-- The library SidePanel renders its own <aside> at a FIXED
+					     width (bind:width={sidebarWidth}). It stays always-open
+					     (open={true}); the `.te-sidepanel-shell` wrapper owns the
+					     visible open/close animation by transitioning its own width
+					     between 0 and sidebarWidth (overflow:hidden clips the fixed
+					     panel as it's revealed/collapsed, so its content never
+					     squishes). Animating the OCCUPIED width  -  rather than a
+					     transform  -  lets the canvas container reflow continuously,
+					     and the ResizeObserver keeps the p5 canvas tracking it so
+					     there's no jump. We wrap it in a role="tabpanel" container so
+					     ActivityBar's role="tab" items conceptually complete the
+					     tablist → tabpanel relationship. The library ActivityBar
+					     does not expose per-item DOM ids, so we label this panel
+					     directly via aria-label rather than aria-labelledby. -->
+					<div
+						id={SIDE_PANEL_ID}
+						role="tabpanel"
+						aria-label={`${lastSidebarLabel} panel`}
+						class="te-sidepanel-shell"
+						style:width={`${isSidebarOpen ? sidebarWidth : 0}px`}
+					>
 						<SidePanel
 							open={true}
-							title={activeSidebarLabel}
+							title={lastSidebarLabel}
 							bind:width={sidebarWidth}
 							onClose={() => setSidebarTab(null)}
 						>
-							<!-- Motion polish (B1 + B2): the library SidePanel
-							     slides in on open; this #key block re-runs the
-							     inner fade on each tab switch so content
-							     crossfades rather than snapping. The delay on
-							     fade-in stages the content arrival after the
-							     slide completes. -->
-							{#key $UIStateStore.activeSidebarTab}
+							<!-- Body/title render off `lastSidebarTab` (the last
+							     non-null tab) so the panel keeps showing its prior
+							     content while it slides out on close, instead of
+							     blanking the moment `activeSidebarTab` goes null.
+							     This #key block re-runs the inner fade on each tab
+							     switch so content crossfades rather than snapping;
+							     the delay on fade-in stages the content arrival
+							     after the slide completes. -->
+							{#key lastSidebarTab}
 								<div
 									in:fade={{ duration: 140, delay: 60 }}
 									out:fade={{ duration: 80 }}
 								>
-									{#if $UIStateStore.activeSidebarTab === 'viz'}
+									{#if lastSidebarTab === 'viz'}
 										<VizPanel />
-									{:else if $UIStateStore.activeSidebarTab === 'filters'}
+									{:else if lastSidebarTab === 'filters'}
 										<FiltersPanel />
-									{:else if $UIStateStore.activeSidebarTab === 'data'}
+									{:else if lastSidebarTab === 'data'}
 										<DataPanel
 											selectedExample={selectedExampleId}
 											onOpenUpload={() => (showUploadModal = true)}
@@ -1253,37 +1324,13 @@
 											onCreateNew={() => (showNewTranscriptConfirm = true)}
 											onLoadExample={handleLoadExample}
 										/>
-									{:else if $UIStateStore.activeSidebarTab === 'settings'}
+									{:else if lastSidebarTab === 'settings'}
 										<SettingsPanel />
-									{:else if $UIStateStore.activeSidebarTab === 'help'}
-										<HelpPanel
-											onLoadExample={(id) => {
-												handleLoadExample(id);
-												setSidebarTab(null);
-											}}
-											onOpenUpload={() => {
-												showUploadModal = true;
-												setSidebarTab(null);
-											}}
-											onOpenPaste={() => {
-												showPasteModal = true;
-												setSidebarTab(null);
-											}}
-											onStartTour={() => {
-												setSidebarTab(null);
-												tourOverlay.start();
-											}}
-											onShowWelcome={() => {
-												setSidebarTab(null);
-												resetOnboarding();
-											}}
-										/>
 									{/if}
 								</div>
 							{/key}
-							</SidePanel>
-						</div>
-					{/if}
+						</SidePanel>
+					</div>
 				</nav>
 			{/snippet}
 
@@ -1390,6 +1437,7 @@
 							speedLockedReason="Video is playing; the timeline follows media playback and the speed multiplier is temporarily inactive."
 							selectionStart={$TimelineStore.leftMarker - $TimelineStore.startTime}
 							selectionEnd={$TimelineStore.rightMarker - $TimelineStore.startTime}
+							playheadFollowsSelectionStart={true}
 							formatTime={scrubberFormatTime}
 							onSeek={handleScrubberSeek}
 							onPlayToggle={handleScrubberPlayToggle}
@@ -1452,13 +1500,19 @@
 <TourOverlay bind:this={tourOverlay} />
 
 <!--
-	First-load welcome dialog. Shown when onboardingState === 'unseen'.
-	Gated on `browser` to avoid SSR rendering; onboardingState is
-	hydrated from localStorage at store-module init, so by the time we
-	hydrate on the client this reflects the real persisted value.
+	Welcome screen. Opens on first load (onboardingState === 'unseen') and
+	from the ActivityBar's help (?) button. Spacious onboarding surface with
+	sample datasets, start-your-own actions, and the workspace legend.
 -->
-<WelcomeDialog
-	open={welcomeOpen}
+<WelcomeScreen
+	bind:open={welcomeOpen}
+	onLoadExample={(id) => {
+		handleLoadExample(id);
+		welcomeOpen = false;
+	}}
+	onOpenUpload={() => (showUploadModal = true)}
+	onOpenPaste={() => (showPasteModal = true)}
+	onStartTranscribe={() => switchWorkspace('transcribe')}
 	onStartTour={handleWelcomeStartTour}
 	onDismiss={handleWelcomeDismiss}
 />
@@ -1505,6 +1559,18 @@
 		display: flex;
 		height: 100%;
 		min-height: 0;
+		/* The shell clips the fixed-width SidePanel as its own width animates
+		   0 ↔ sidebarWidth, revealing/collapsing the panel without squishing
+		   its content. Animating width (not transform) reflows the layout so
+		   the p5 canvas container resizes continuously rather than snapping. */
+		overflow: hidden;
+		transition: width 180ms cubic-bezier(0.22, 1, 0.36, 1);
+	}
+
+	@media (prefers-reduced-motion: reduce) {
+		.te-sidepanel-shell {
+			transition: none;
+		}
 	}
 
 	/* Timeline region (bottom bar): inset the TimelineScrubber from the
