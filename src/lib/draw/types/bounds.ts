@@ -1,10 +1,5 @@
 /**
- * Represents a rectangular area with position and dimensions.
- * Used for visualization layout and positioning.
+ * A rectangular area in canvas coordinates. Re-exported from svelte-p5-viz so
+ * the draw layer and the library's panel/scene types share one definition.
  */
-export interface Bounds {
-	x: number;
-	y: number;
-	width: number;
-	height: number;
-}
+export type { Bounds } from 'svelte-p5-viz';

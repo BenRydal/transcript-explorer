@@ -14,6 +14,7 @@ import { Draw } from '../draw/draw';
 import { DynamicData } from '../core/dynamic-data';
 import { getP5ContainerRect } from '../core/layout-utils';
 import { getDrawTheme, refreshDrawTheme } from '../draw/draw-theme';
+import { hitTest } from 'svelte-p5';
 
 let users: any[] = [];
 let timeline, transcript, currConfig, editorState;
@@ -366,8 +367,7 @@ export const igsSketch = (p5: any) => {
 	};
 
 	p5.overRect = (x: number, y: number, boxWidth: number, boxHeight: number) => {
-		if (!canHover) return false;
-		return p5.mouseX >= x && p5.mouseX <= x + boxWidth && p5.mouseY >= y && p5.mouseY <= y + boxHeight;
+		return canHover && hitTest.rect(p5.mouseX, p5.mouseY, x, y, boxWidth, boxHeight);
 	};
 
 	p5.windowResized = () => {
@@ -378,8 +378,7 @@ export const igsSketch = (p5: any) => {
 	};
 
 	p5.overCircle = (x: number, y: number, diameter: number) => {
-		if (!canHover) return false;
-		return p5.sqrt(p5.sq(x - p5.mouseX) + p5.sq(y - p5.mouseY)) < diameter / 2;
+		return canHover && hitTest.circle(p5.mouseX, p5.mouseY, x, y, diameter);
 	};
 
 	p5.arrayIsLoaded = (data: any) => {
