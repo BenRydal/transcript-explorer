@@ -14,12 +14,9 @@ const HOVER_OUTLINE_WEIGHT = 2;
 const TARGET_BIN_COUNT = 15;
 const Y_TICKS = 5;
 
-// Memoized full-transcript max bin count. Keyed on (wordArray ref,
-// turnLengthBinCount) so a transcript change (which swaps the wordArray
-// reference) or a bin-count control change invalidates. Without this
-// memo, a new TurnLengthDistribution is built every frame and each
-// constructor scans the entire wordArray  -  hundreds of thousands of
-// iterations/sec on large transcripts.
+// Module-level memo (a fresh TurnLengthDistribution is built every frame and
+// each scans the full wordArray). Keyed on (wordArray ref, binCount); reset on
+// transcript change.
 let fullTranscriptBinCountCache: { wordArray: unknown; binCount: number; result: number } | null = null;
 registerVizCacheReset(() => {
 	fullTranscriptBinCountCache = null;
@@ -178,7 +175,12 @@ export class TurnLengthDistribution {
 						(crossHighlight.speaker != null && speaker !== crossHighlight.speaker));
 				withDimming(this.ctx.sk.drawingContext, shouldDim, () => {
 					const user = this.ctx.userMap.get(speaker);
-					const barColor = getDominantCodeColor(turns.map((t) => t.dataPoint), user!.color, this.ctx.codeColorMap, this.ctx.config.codeColorMode);
+					const barColor = getDominantCodeColor(
+						turns.map((t) => t.dataPoint),
+						user!.color,
+						this.ctx.codeColorMap,
+						this.ctx.config.codeColorMode
+					);
 					const c = this.ctx.sk.color(barColor);
 					c.setAlpha(200);
 					this.ctx.sk.fill(c);
@@ -221,7 +223,15 @@ export class TurnLengthDistribution {
 	private drawHoverEffect(hovered: HoveredSegment, barWidth: number, bins: Bin[]): void {
 		const user = this.ctx.userMap.get(hovered.speaker);
 		const hoverTurns = bins[hovered.binIndex].speakers.get(hovered.speaker);
-		const hoverColor = hoverTurns && hoverTurns.length > 0 ? getDominantCodeColor(hoverTurns.map((t) => t.dataPoint), user?.color || '#cccccc', this.ctx.codeColorMap, this.ctx.config.codeColorMode) : user?.color || '#cccccc';
+		const hoverColor =
+			hoverTurns && hoverTurns.length > 0
+				? getDominantCodeColor(
+						hoverTurns.map((t) => t.dataPoint),
+						user?.color || '#cccccc',
+						this.ctx.codeColorMap,
+						this.ctx.config.codeColorMode
+					)
+				: user?.color || '#cccccc';
 		this.ctx.sk.noFill();
 		this.ctx.sk.stroke(hoverColor);
 		this.ctx.sk.strokeWeight(HOVER_OUTLINE_WEIGHT);
@@ -234,7 +244,15 @@ export class TurnLengthDistribution {
 		const user = this.ctx.userMap.get(hovered.speaker);
 		const multiTurn = turns.length > 1;
 		const content = `<b>${hovered.speaker}</b> · ${turns.length} turn${multiTurn ? 's' : ''}\n${formatTurnPreviewLines(turns)}`;
-		const tooltipColor = turns.length > 0 ? getDominantCodeColor(turns.map((t) => t.dataPoint), user?.color || '#cccccc', this.ctx.codeColorMap, this.ctx.config.codeColorMode) : user?.color || '#cccccc';
+		const tooltipColor =
+			turns.length > 0
+				? getDominantCodeColor(
+						turns.map((t) => t.dataPoint),
+						user?.color || '#cccccc',
+						this.ctx.codeColorMap,
+						this.ctx.config.codeColorMode
+					)
+				: user?.color || '#cccccc';
 		showTooltip(this.ctx.sk.mouseX, this.ctx.sk.mouseY, content, tooltipColor, this.bounds.y + this.bounds.height);
 	}
 
@@ -292,11 +310,7 @@ export class TurnLengthDistribution {
 		if (wordArray.length === 0) return 0;
 		const targetBins = this.ctx.config.turnLengthBinCount > 0 ? this.ctx.config.turnLengthBinCount : TARGET_BIN_COUNT;
 
-		if (
-			fullTranscriptBinCountCache &&
-			fullTranscriptBinCountCache.wordArray === wordArray &&
-			fullTranscriptBinCountCache.binCount === targetBins
-		) {
+		if (fullTranscriptBinCountCache && fullTranscriptBinCountCache.wordArray === wordArray && fullTranscriptBinCountCache.binCount === targetBins) {
 			return fullTranscriptBinCountCache.result;
 		}
 

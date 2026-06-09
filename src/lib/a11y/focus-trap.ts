@@ -1,22 +1,8 @@
 /**
- * Modal focus-trap + focus-restore helper.
- *
- * Call {@link trapFocus} with the container element when a modal opens. It:
- * - captures whatever element had focus
- * - focuses the first focusable descendant (or the container itself)
- * - intercepts Tab/Shift+Tab to cycle focus within the container
- *
- * The returned disposer removes listeners and restores focus to the
- * element that was focused when the trap began. Typical usage with
- * Svelte 5 runes:
- *
- * ```svelte
- * let dialogEl: HTMLElement;
- * $effect(() => {
- *   if (!isOpen || !dialogEl) return;
- *   return trapFocus(dialogEl);
- * });
- * ```
+ * Modal focus-trap + focus-restore helper. {@link trapFocus} focuses the first
+ * focusable descendant, cycles Tab/Shift+Tab within the container, and returns a
+ * disposer that removes listeners and restores prior focus.
+ * Usage: `$effect(() => isOpen && dialogEl ? trapFocus(dialogEl) : undefined)`
  */
 
 const FOCUSABLE = [

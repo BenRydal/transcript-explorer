@@ -74,7 +74,7 @@ const ratio = (num: number, denom: number): number => (denom > 0 ? num / denom :
 /**
  * Computes adjusted residuals (z-scores) for every (from, to) cell of a
  * transition matrix built as a nested Map<from, Map<to, {count}>>. Keys are
- * "from→to". See `getDynamicArrayForTurnNetwork` for the formula citation.
+ * "from→to". See `getDynamicArrayForTurnNetwork` for the formula.
  *
  * Observed counts come from `count` on each inner map entry. Row sums, column
  * sums, and grand total are computed across the union of all speakers that
@@ -215,11 +215,7 @@ FiltersStore.subscribe((value) => {
 	const prev = config;
 	config = { ...config, ...value };
 	// Stopword set only needs rebuilding when the toggles or custom list change.
-	if (
-		!prev ||
-		prev.stopWordsEnabled !== value.stopWordsEnabled ||
-		prev.customStopWords !== value.customStopWords
-	) {
+	if (!prev || prev.stopWordsEnabled !== value.stopWordsEnabled || prev.customStopWords !== value.customStopWords) {
 		rebuildActiveStopWords(value);
 		clearScalingCache();
 		clearCloudBuffer();
@@ -426,18 +422,8 @@ export class DynamicData {
 	getDynamicArraySortedForContributionCloud(): DataPoint[] {
 		const words = this.getProcessedWords(true);
 
-		// TF-IDF weighting overwrites `count` on each word so the existing
-		// size-scaling path (contribution-cloud-scaling.ts) Just Works with
-		// its log(count) / log(maxCount) model. We translate a continuous
-		// TF-IDF score into the same integer-count scale by multiplying by
-		// a fixed factor and flooring; the max factor is chosen so the
-		// highest-weighted word lands near the existing maxCount range.
-		//
-		// "Document" = speaker's concatenated wordstream. TF = term freq in
-		// that speaker's stream; IDF = log(N / df) where df is the number of
-		// speaker-docs containing the term. This is the standard TF-IDF; the
-		// research memo cites Monroe/Colaresi/Quinn 2008 for the framing of
-		// lexical-distinctiveness weighting in discourse research.
+		// tfidf overwrites `count` so the log(count)/log(maxCount) scaling path
+		// is unchanged. doc = speaker's wordstream; idf = log(N/df).
 		if (config.contributionCloudWeighting === 'tfidf') {
 			this.applyTfidfWeighting(words);
 		}
@@ -462,11 +448,9 @@ export class DynamicData {
 	}
 
 	/**
-	 * Mutates the passed words array so each DataPoint's `count` field reads
-	 * as the TF-IDF weight of its (speaker, word) pair, expressed on the
-	 * same integer scale that frequency mode produces (so the existing
-	 * scaling pipeline remains unchanged). Words uniform across all
-	 * speakers collapse to count=1 (effectively tiny).
+	 * Overwrites each DataPoint's `count` with the TF-IDF weight of its
+	 * (speaker, word) pair on the same integer scale frequency mode produces.
+	 * Words uniform across all speakers collapse to count=1.
 	 */
 	private applyTfidfWeighting(words: DataPoint[]): void {
 		if (words.length === 0) return;
@@ -599,21 +583,11 @@ export class DynamicData {
 		this.sortSpeakerEntries(statsEntries, (s) => s);
 		const sortedStats = new Map(statsEntries);
 
-		// Lag-sequential adjusted residuals (z-scores) for each transition
-		// cell. We compute over the full (pre-filter) transition matrix so
-		// the statistics reflect the observed behavior, not what the user
-		// has temporarily hidden.
-		//
-		// Standard two-dimensional contingency table formula (Bakeman &
-		// Gottman 1997, ch. 7; Furtak et al. EMIP 2017):
-		//
+		// Lag-sequential adjusted residuals (z-scores) per transition cell, over
+		// the full pre-filter matrix. Contingency-table formula; |z|>=1.96 ~ p<0.05:
 		//   expected[i][j] = rowSum[i] * colSum[j] / grandTotal
-		//   residual[i][j] = observed[i][j] - expected[i][j]
-		//   adjRes[i][j]   = residual / sqrt(
-		//                      expected * (1 - rowSum/grandTotal)
-		//                               * (1 - colSum/grandTotal))
-		//
-		// |adjRes| >= 1.96 is the p<0.05 two-tailed significance threshold.
+		//   adjRes[i][j]   = (observed - expected) /
+		//                    sqrt(expected * (1 - rowSum/grandTotal) * (1 - colSum/grandTotal))
 		const adjustedResiduals = computeAdjustedResiduals(transitions);
 
 		return { transitions, speakerStats: sortedStats, searchMatchingTurns, turnWordCounts, adjustedResiduals };

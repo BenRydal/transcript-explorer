@@ -77,9 +77,8 @@ export class SpeakerFingerprint {
 			return { snippetPoints: [], hoveredSpeaker: null };
 		}
 
-		// Parallel coordinates sidesteps radar's quadratic-area artifact entirely
-		// (Few 2005, "Keep Radar Graphs Below the Radar"; Munzner 2014 ch. 12).
-		// It renders all speakers in a single shared frame without occlusion.
+		// parallel coords avoid radar's area distortion and render all speakers
+		// in one frame without occlusion
 		if (this.ctx.config.fingerprintChartMode === 'parallel') {
 			return this.drawParallelCoords(fingerprints);
 		}
@@ -171,18 +170,8 @@ export class SpeakerFingerprint {
 		return { snippetPoints, hoveredSpeaker };
 	}
 
-	// --- Parallel coordinates mode ---
-	//
-	// 5 vertical axes (one per dimension). Each speaker = one polyline across
-	// all 5 axes. No shape/area involved, so the radar's quadratic-area and
-	// "closing the loop across unrelated axes" artifacts don't apply.
-	//
-	// Normalization: max-normalized per axis across the visible speakers. The
-	// radar's mixed normalization (max-norm on two axes, raw-rate on three)
-	// was one of the issues the viz memo flagged; here we do the right thing
-	// in the new mode. For axes that are already rates (consecutive, question,
-	// interruption), we max-normalize among visible speakers so the displayed
-	// lines use the full chart height.
+	// Parallel coordinates: 5 vertical axes, each speaker a polyline. Every axis
+	// is max-normalized among visible speakers so lines use the full chart height.
 	private drawParallelCoords(fingerprints: SpeakerFingerprintData[]): { snippetPoints: DataPoint[]; hoveredSpeaker: string | null } {
 		const padLeft = 60;
 		const padRight = 40;
@@ -249,9 +238,7 @@ export class SpeakerFingerprint {
 
 		// Snippet points: whole-speaker turns when hovered (parallel-coords
 		// doesn't expose per-axis drill-down the way radar vertex-hover does).
-		const snippetPoints = hoveredSpeaker
-			? fingerprints.find((f) => f.speaker === hoveredSpeaker)?.allTurnFirstWords ?? []
-			: [];
+		const snippetPoints = hoveredSpeaker ? (fingerprints.find((f) => f.speaker === hoveredSpeaker)?.allTurnFirstWords ?? []) : [];
 
 		return { snippetPoints, hoveredSpeaker };
 	}

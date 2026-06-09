@@ -30,19 +30,13 @@ export function triggerCanvasResize() {
  * Handles timing mode application, timeline reset, and canvas refresh.
  * @param timelineEndOverride - Use when timeline should extend beyond transcript data (e.g., video duration)
  */
-export function applyTranscriptResult(
-	{ transcript, users }: TranscriptCreationResult,
-	timelineEndOverride?: number
-) {
+export function applyTranscriptResult({ transcript, users }: TranscriptCreationResult, timelineEndOverride?: number) {
 	transcript.wordArray = applyTimingModeToWordArray(transcript.wordArray, transcript.timingMode);
 	const maxTime = getMaxTime(transcript.wordArray);
 	transcript.totalTimeInSeconds = maxTime;
 
-	// Zero every draw-layer cache before the new data lands. In particular
-	// this frees the contribution-cloud's p5.Graphics buffer (GPU-resident)
-	// and clears the word-width / full-transcript-stat memos keyed on the
-	// old wordArray reference. Must happen before the store writes so the
-	// next draw frame sees a clean slate.
+	// Free draw-layer caches (GPU buffer + memos keyed on the old wordArray)
+	// before the store writes so the next frame starts clean.
 	resetVizCaches();
 
 	UserStore.set(users);
@@ -75,8 +69,5 @@ export function openEditor() {
 
 export function handleDiscard() {
 	clearState();
-	// Discarding should also drop GPU buffers and memoized full-transcript
-	// stats  -  the active wordArray is about to become something else (or
-	// empty).
 	resetVizCaches();
 }

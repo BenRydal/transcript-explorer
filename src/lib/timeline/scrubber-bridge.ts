@@ -3,10 +3,8 @@ import TimelineStore from '../../stores/timelineStore';
 import AppSettingsStore from '../../stores/appSettingsStore';
 import P5Store from '../../stores/p5Store';
 
-// TimelineStore uses [startTime, endTime] absolute coordinates; the
-// scrubber exposes selectionStart/End in 0-relative [0, duration] space.
-// In practice TE always has startTime = 0 so the shift is a no-op, but
-// we keep it explicit to stay correct if that changes.
+// TimelineStore is absolute [startTime, endTime]; the scrubber is 0-relative.
+// The +/- startTime shift is a no-op while startTime is always 0, kept for safety.
 let selectionFillDebounce: ReturnType<typeof setTimeout> | null = null;
 
 export function handleScrubberSeek(scrubTime: number) {

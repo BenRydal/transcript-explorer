@@ -134,7 +134,7 @@
 				type: 'toggle',
 				key: 'turnNetworkStatisticalMode',
 				label: 'Statistical (z-score)',
-				hint: 'Show only transitions that deviate from chance (|z|≥1.96, p<0.05). Lag-sequential adjusted residuals; see Bakeman & Gottman 1997.'
+				hint: 'Show only transitions that deviate from chance (|z|≥1.96, p<0.05).'
 			},
 			{ type: 'slider', key: 'turnNetworkMinTransitions', label: 'Min Transitions', min: 1, max: 20 }
 		],
@@ -164,9 +164,7 @@
 	};
 
 	let activePanelKey = $derived(techniqueToggleOptions.find((t) => $VizStore[t])?.replace('Toggle', '') ?? '');
-	let activeVisualizationName = $derived(
-		activePanelKey ? (PANEL_LABELS[activePanelKey] ?? 'Dashboard') : 'None'
-	);
+	let activeVisualizationName = $derived(activePanelKey ? (PANEL_LABELS[activePanelKey] ?? 'Dashboard') : 'None');
 
 	let hiddenSliderKeys = $derived.by(() => {
 		const hidden = new Set<keyof VizStoreType>();
@@ -386,7 +384,10 @@
 		color: var(--te-fg-muted);
 		font-size: var(--te-font-small);
 		cursor: pointer;
-		transition: background 120ms ease, color 120ms ease, border-color 120ms ease;
+		transition:
+			background 120ms ease,
+			color 120ms ease,
+			border-color 120ms ease;
 	}
 
 	.viz-panel__tile > .te-truncate {

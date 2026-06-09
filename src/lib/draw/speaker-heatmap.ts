@@ -18,11 +18,9 @@ const HOVER_OUTLINE_WEIGHT = 2;
 const TIME_LABEL_COUNT = 6;
 const TARGET_CELL_WIDTH = 15;
 
-// Memoized full-transcript max cell count. Keyed on (wordArray ref,
-// binCount, speakerSet). The class field is useless as a cache because a
-// fresh SpeakerHeatmap is built every frame by Draw.updateSpeakerHeatmap
-//  -  this module-level memo is what actually persists. Invalidated by
-// the transcript-lifecycle cache reset.
+// Module-level memo (a fresh SpeakerHeatmap is built every frame, so a class
+// field can't cache). Keyed on (wordArray ref, binCount, speakerSet); reset on
+// transcript change.
 let fullTranscriptCellCountCache: { wordArray: unknown; binCount: number; speakerKey: string; result: number } | null = null;
 registerVizCacheReset(() => {
 	fullTranscriptCellCountCache = null;
@@ -65,10 +63,7 @@ export class SpeakerHeatmap {
 		const searchTerm = this.ctx.config.wordToSearch ? normalizeWord(this.ctx.config.wordToSearch) : '';
 		const binnedData = this.binWords(words, numBins, speakers);
 
-		// When scaling to full transcript, use the module-memoized global
-		// max cell count. Previously held on the instance (useless  -  the
-		// class is instantiated per-frame) and then null-checked; that
-		// meant the full-transcript scan happened every frame.
+		// scaling to full transcript uses the module-memoized global max
 		if (!this.ctx.config.scaleToVisibleData) {
 			const globalMax = this.getFullTranscriptMaxCellCount(numBins, speakers);
 			binnedData.maxCellCount = Math.max(binnedData.maxCellCount, globalMax);
@@ -137,7 +132,12 @@ export class SpeakerHeatmap {
 				withDimming(this.ctx.sk.drawingContext, shouldDim, () => {
 					if (cellWords.length > 0) {
 						const user = this.ctx.userMap.get(speakers[row]);
-						const cellColor = getDominantCodeColor(cellWords, user?.color || DEFAULT_SPEAKER_COLOR, this.ctx.codeColorMap, this.ctx.config.codeColorMode);
+						const cellColor = getDominantCodeColor(
+							cellWords,
+							user?.color || DEFAULT_SPEAKER_COLOR,
+							this.ctx.codeColorMap,
+							this.ctx.config.codeColorMode
+						);
 						let alpha = this.ctx.sk.map(cellWords.length, 0, binnedData.maxCellCount, MIN_OPACITY, MAX_OPACITY);
 						if (searchTerm && !this.cellMatchesSearch(cellWords, searchTerm)) {
 							alpha *= 0.2;
@@ -241,7 +241,12 @@ export class SpeakerHeatmap {
 		const multiTurn = turns.length > 1;
 
 		const content = `<b>${hovered.speaker}</b> · ${turns.length} turn${multiTurn ? 's' : ''} · ${timeRange}\n${formatTurnPreviewLines(turns)}`;
-		const tooltipColor = getDominantCodeColor(hovered.words, user?.color || DEFAULT_SPEAKER_COLOR, this.ctx.codeColorMap, this.ctx.config.codeColorMode);
+		const tooltipColor = getDominantCodeColor(
+			hovered.words,
+			user?.color || DEFAULT_SPEAKER_COLOR,
+			this.ctx.codeColorMap,
+			this.ctx.config.codeColorMode
+		);
 		showTooltip(this.ctx.sk.mouseX, this.ctx.sk.mouseY, content, tooltipColor, this.bounds.y + this.bounds.height);
 	}
 

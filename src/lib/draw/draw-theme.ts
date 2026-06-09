@@ -173,31 +173,14 @@ function relativeLuminance(r: number, g: number, b: number): number {
 }
 
 /**
- * Pick a text color that contrasts with `bg` against the current theme.
- *
- * Use this when rendering a label on top of a speaker-colored shape
- * (turn-network node, word-rain band, etc.) so labels stay readable in
- * both light and dark mode. For labels drawn over the canvas
- * background, use `theme.fg` directly  -  the canvas bg is already
- * theme-aware.
- *
- * Strategy: compute WCAG relative luminance of the background; if it's
- * bright (> 0.5), return `theme.fg` (dark ink); otherwise return a
- * light ink (`#ffffff` in light mode  -  where `theme.bg` is white  - 
- * stays white; in dark mode we still want white over a dim speaker
- * color rather than the canvas bg which is near-black).
+ * Pick a readable text color for a label drawn over a speaker-colored shape.
+ * (For labels over the canvas background, use `theme.fg` directly.)
+ * Bright bg (WCAG luminance > 0.5) → theme.fg; dim bg → white.
  */
 export function pickTextColor(bg: string, theme: DrawTheme): string {
 	const channels = parseColorChannels(bg);
-	if (!channels) {
-		// Couldn't parse  -  fall back to the theme's primary ink so we at
-		// least stay theme-consistent.
-		return theme.fg;
-	}
+	if (!channels) return theme.fg;
 	const lum = relativeLuminance(channels.r, channels.g, channels.b);
-	// Bright background → dark text (theme.fg). Dim background → white
-	// text. We deliberately don't reuse `theme.bg` for the light case
-	// because in dark mode `theme.bg` is near-black, which would vanish
-	// on a mid-tone speaker color.
+	// white (not theme.bg) for the dim case: theme.bg is near-black in dark mode
 	return lum > 0.5 ? theme.fg : '#ffffff';
 }

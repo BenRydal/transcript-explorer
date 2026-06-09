@@ -4,7 +4,7 @@
  * A directed graph where nodes are speakers and weighted edges show
  * transition frequency  -  how often speaker A is followed by speaker B.
  *
- * With only 2-5 speakers, layout and rendering are trivially cheap  - 
+ * With only 2-5 speakers, layout and rendering are trivially cheap  -
  * no offscreen buffer or caching needed. Everything redraws each frame.
  */
 
@@ -43,10 +43,8 @@ export interface NetworkData {
 	/** Word count per turn number, used to recompute edge wordCount after search filtering */
 	turnWordCounts: Map<number, number>;
 	/**
-	 * Adjusted residual (z-score) for each transition cell, precomputed from
-	 * the full transition matrix prior to any filtering. `|z| >= 1.96` is the
-	 * two-tailed p<0.05 threshold. Bakeman & Gottman 1997, Observing
-	 * Interaction; Furtak et al. EMIP 2017. Keyed "from→to".
+	 * Adjusted residual (z-score) per transition cell, precomputed from the full
+	 * pre-filter matrix; `|z| >= 1.96` ~ p<0.05 two-tailed. Keyed "from→to".
 	 */
 	adjustedResiduals: Map<string, number>;
 }
@@ -563,9 +561,7 @@ export class TurnNetwork {
 					`<span style="font-size: 0.85em; opacity: 0.7">` +
 					`z = ${edge.adjRes.toFixed(2)} (${dir})  ·  ${plural(edge.count)}</span>`;
 			} else {
-				content =
-					`<b>${edge.from} → ${edge.to}</b>\n` +
-					`<span style="font-size: 0.85em; opacity: 0.7">${plural(edge.count)}</span>`;
+				content = `<b>${edge.from} → ${edge.to}</b>\n` + `<span style="font-size: 0.85em; opacity: 0.7">${plural(edge.count)}</span>`;
 			}
 		}
 

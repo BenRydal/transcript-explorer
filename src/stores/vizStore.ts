@@ -35,22 +35,18 @@ export interface VizStoreType {
 	turnNetworkWeightByWords: boolean;
 	turnNetworkHideSelfLoops: boolean;
 	turnNetworkMinTransitions: number;
-	// Turn Network: when true, render edges using adjusted residuals (z-scores)
-	// from a lag-sequential analysis instead of raw transition counts.
-	// Bakeman & Gottman 1997; Furtak et al. EMIP 2017.
+	// when true, edges use lag-sequential adjusted residuals (z-scores) instead of raw counts
 	turnNetworkStatisticalMode: boolean;
 	// Speaker Heatmap settings
 	heatmapBinCount: number;
 	// Turn Length settings
 	turnLengthBinCount: number;
 	// Speaker Fingerprint settings
-	// 'auto' picks small-multiples when >3 speakers (avoids the radar-overlay
-	// occlusion trap Few 2005 flagged).
+	// 'auto' picks small-multiples when >3 speakers (avoids radar-overlay occlusion)
 	fingerprintOverlayMode: FingerprintOverlayMode;
 	fingerprintChartMode: FingerprintChartMode;
 	// Contribution Cloud settings
-	// TF-IDF weighting surfaces speaker-distinctive words; principled
-	// alternative to raw frequency. Monroe, Colaresi & Quinn 2008.
+	// tfidf surfaces speaker-distinctive words instead of raw frequency
 	contributionCloudWeighting: ContributionCloudWeighting;
 }
 
@@ -76,10 +72,8 @@ export const initialViz: VizStoreType = {
 	repeatWordSliderValue: 5,
 	speakerSortOrder: 'default',
 	wordRainMinFrequency: 1,
-	// Default on: mean-time placement without binning is actively misleading
-	// (a word said at minute 2 and 30 would appear at minute 16 where it was
-	// never said). Skeppstedt et al. 2024, "From word clouds to Word Rain",
-	// Information Visualization, https://journals.sagepub.com/doi/10.1177/14738716241236188
+	// on by default: without binning a word's x is its mean time, which can land
+	// in a gap where it was never actually said
 	wordRainTemporalBinning: true,
 	wordRainBinCount: 8,
 	turnNetworkWeightByWords: false,
@@ -100,9 +94,6 @@ const VizStore = writable<VizStoreType>(initialViz);
  * Using a string key ensures Svelte's reactivity properly detects changes
  * even when boolean values switch from true to false.
  */
-export const filterToggleKey = derived(
-	VizStore,
-	($viz) => `${$viz.echoWordsToggle}-${$viz.lastWordToggle}-${$viz.stopWordsToggle}`
-);
+export const filterToggleKey = derived(VizStore, ($viz) => `${$viz.echoWordsToggle}-${$viz.lastWordToggle}-${$viz.stopWordsToggle}`);
 
 export default VizStore;
