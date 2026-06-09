@@ -1,19 +1,6 @@
 <script lang="ts">
-	import {
-		Check,
-		Flower2,
-		Grid3x3,
-		Fingerprint,
-		ChartNoAxesGantt,
-		ChartBarStacked,
-		ChartNetwork,
-		MessageCircleQuestionMark,
-		Cloud,
-		CloudRain,
-		Route,
-		LayoutDashboard
-	} from '@lucide/svelte';
-	import type { Component } from 'svelte';
+	import { Check, LayoutDashboard } from '@lucide/svelte';
+	import { PANEL_TILES } from '../ui/panel-icons';
 	import VizStore, {
 		type VizStoreType,
 		type SpeakerSortOrder,
@@ -54,19 +41,6 @@
 		{ label: 'Turn', items: ['turnChartToggle', 'turnNetworkToggle', 'turnLengthToggle', 'questionFlowToggle'] },
 		{ label: 'Word', items: ['contributionCloudToggle', 'wordRainToggle', 'wordJourneyToggle'] }
 	];
-
-	const TILE_INFO: Record<string, { label: string; icon: Component }> = {
-		speakerGarden: { label: 'Garden', icon: Flower2 },
-		speakerHeatmap: { label: 'Heatmap', icon: Grid3x3 },
-		speakerFingerprint: { label: 'Fingerprint', icon: Fingerprint },
-		turnChart: { label: 'Chart', icon: ChartNoAxesGantt },
-		turnLength: { label: 'Length', icon: ChartBarStacked },
-		turnNetwork: { label: 'Network', icon: ChartNetwork },
-		questionFlow: { label: 'Question', icon: MessageCircleQuestionMark },
-		contributionCloud: { label: 'Cloud', icon: Cloud },
-		wordRain: { label: 'Rain', icon: CloudRain },
-		wordJourney: { label: 'Journey', icon: Route }
-	};
 
 	const SPEAKER_SORT_OPTIONS: { order: SpeakerSortOrder; label: string }[] = [
 		{ order: 'default', label: 'Appearance' },
@@ -223,7 +197,7 @@
 				{#each category.items as toggle}
 					{@const panelKey = toggle.replace('Toggle', '')}
 					{@const isActive = $VizStore[toggle] === true}
-					{@const tile = TILE_INFO[panelKey]}
+					{@const tile = PANEL_TILES[panelKey]}
 					<button
 						type="button"
 						class="viz-panel__tile {isActive ? 'viz-panel__tile--active' : ''}"

@@ -1,34 +1,8 @@
 <script lang="ts">
 	import UIStateStore, { DASHBOARD_PANEL_OPTIONS } from '../../stores/uiStateStore';
-	import type { Component } from 'svelte';
-	import {
-		Minus,
-		Plus,
-		Flower2,
-		Grid3x3,
-		Fingerprint,
-		ChartNoAxesGantt,
-		ChartBarStacked,
-		ChartNetwork,
-		MessageCircleQuestionMark,
-		Cloud,
-		CloudRain,
-		Route
-	} from '@lucide/svelte';
+	import { Minus, Plus } from '@lucide/svelte';
 	import { CANVAS_SPACING } from '../constants/ui';
-
-	const PANEL_ICONS: Record<string, { label: string; icon: Component }> = {
-		speakerGarden: { label: 'Garden', icon: Flower2 },
-		speakerHeatmap: { label: 'Heatmap', icon: Grid3x3 },
-		speakerFingerprint: { label: 'Fingerprint', icon: Fingerprint },
-		turnChart: { label: 'Chart', icon: ChartNoAxesGantt },
-		turnLength: { label: 'Length', icon: ChartBarStacked },
-		turnNetwork: { label: 'Network', icon: ChartNetwork },
-		questionFlow: { label: 'Question', icon: MessageCircleQuestionMark },
-		contributionCloud: { label: 'Cloud', icon: Cloud },
-		wordRain: { label: 'Rain', icon: CloudRain },
-		wordJourney: { label: 'Journey', icon: Route }
-	};
+	import { PANEL_TILES } from '../ui/panel-icons';
 
 	function addPanel() {
 		UIStateStore.update((store) => {
@@ -81,34 +55,20 @@
 	style:gap="{CANVAS_SPACING}px"
 >
 	<div class="absolute top-2 left-2 pointer-events-auto flex gap-0.5 z-[51]">
-		<button
-			class="dash-overlay__btn"
-			onclick={removePanel}
-			disabled={count <= 2}
-			title="Remove panel"
-		>
+		<button class="dash-overlay__btn" onclick={removePanel} disabled={count <= 2} title="Remove panel">
 			<Minus size={12} />
 		</button>
-		<button
-			class="dash-overlay__btn"
-			onclick={addPanel}
-			disabled={count >= 4}
-			title="Add panel"
-		>
+		<button class="dash-overlay__btn" onclick={addPanel} disabled={count >= 4} title="Add panel">
 			<Plus size={12} />
 		</button>
 	</div>
 
 	{#each $UIStateStore.dashboardPanels as panelKey, i}
-		{@const info = PANEL_ICONS[panelKey]}
+		{@const info = PANEL_TILES[panelKey]}
 		<div class="panel-cell" class:span-two={count === 3 && i === 0}>
 			<div class="relative flex justify-end" bind:this={panelRefs[i]}>
 				<!-- Icon trigger -->
-				<button
-					class="dash-overlay__btn"
-					onclick={() => (openPopoverIndex = openPopoverIndex === i ? null : i)}
-					title={info.label}
-				>
+				<button class="dash-overlay__btn" onclick={() => (openPopoverIndex = openPopoverIndex === i ? null : i)} title={info.label}>
 					<info.icon size={14} strokeWidth={1.5} />
 				</button>
 
@@ -117,7 +77,7 @@
 					<div class="dash-overlay__popover">
 						<div class="grid grid-cols-3 gap-1">
 							{#each DASHBOARD_PANEL_OPTIONS as option}
-								{@const tile = PANEL_ICONS[option.key]}
+								{@const tile = PANEL_TILES[option.key]}
 								{@const isActive = panelKey === option.key}
 								{@const isUsed = $UIStateStore.dashboardPanels.some((k, j) => j !== i && k === option.key)}
 								<button
@@ -179,7 +139,9 @@
 		color: var(--te-fg-muted);
 		cursor: pointer;
 		pointer-events: auto;
-		transition: background 120ms ease, color 120ms ease;
+		transition:
+			background 120ms ease,
+			color 120ms ease;
 		box-shadow: 0 1px 2px rgba(0, 0, 0, 0.04);
 	}
 
@@ -225,7 +187,9 @@
 		color: var(--te-fg-muted);
 		font-size: 10px;
 		cursor: pointer;
-		transition: background 120ms ease, color 120ms ease;
+		transition:
+			background 120ms ease,
+			color 120ms ease;
 	}
 
 	.dash-overlay__tile:hover:not(:disabled) {
