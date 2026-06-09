@@ -25,6 +25,21 @@ export interface TranscriptionProgress {
 
 type ProgressCallback = (progress: TranscriptionProgress) => void;
 
+/** Minimal shapes of the transformers.js pipeline events we read. */
+interface PipelineProgress {
+	status: string;
+	loaded?: number;
+	total?: number;
+}
+interface WhisperChunk {
+	text?: string;
+	timestamp?: [number, number | null];
+}
+interface WhisperResult {
+	text?: string;
+	chunks?: WhisperChunk[];
+}
+
 // Cache the pipeline so we don't reload the model each time
 let cachedPipeline: AutomaticSpeechRecognitionPipeline | null = null;
 let isLoadingPipeline = false;
@@ -46,9 +61,9 @@ async function getWhisperPipeline(onProgress?: ProgressCallback): Promise<Automa
 	isLoadingPipeline = true;
 
 	pipelineLoadPromise = pipeline('automatic-speech-recognition', 'Xenova/whisper-tiny.en', {
-		progress_callback: (progress: any) => {
-			if (onProgress && progress.status === 'progress') {
-				const percent = Math.round((progress.loaded / progress.total) * 100);
+		progress_callback: (progress: PipelineProgress) => {
+			if (onProgress && progress.status === 'progress' && progress.total) {
+				const percent = Math.round(((progress.loaded ?? 0) / progress.total) * 100);
 				onProgress({
 					status: 'loading-model',
 					progress: percent,
@@ -162,7 +177,8 @@ export async function transcribeVideo(videoFile: File | Blob, onProgress?: Progr
 		});
 
 		// Step 4: Process results into segments (group words into sentences/turns)
-		const segments = processTranscriptionResult(result);
+		const output = Array.isArray(result) ? result[0] : result;
+		const segments = processTranscriptionResult(output);
 
 		onProgress?.({
 			status: 'complete',
@@ -185,7 +201,7 @@ export async function transcribeVideo(videoFile: File | Blob, onProgress?: Progr
  * Process raw Whisper output into transcript segments
  * Groups words into sentence-like chunks based on pauses and punctuation
  */
-function processTranscriptionResult(result: any): TranscriptionSegment[] {
+function processTranscriptionResult(result: WhisperResult): TranscriptionSegment[] {
 	const segments: TranscriptionSegment[] = [];
 
 	// Handle different output formats from Whisper
