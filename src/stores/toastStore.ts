@@ -1,14 +1,11 @@
 import { writable } from 'svelte/store';
 
 /**
- * Lightweight non-blocking toast layer. Separate from the existing
- * `notificationStore` (which is alert-style and rendered via
- * ToastContainer.svelte)  -  this is the leaner API requested by the
- * nav-polish pass: call `pushToast("message", kind)` from any site and
- * the root-level Toast.svelte portal renders it with the shared
- * motion + semantic left-border styling.
+ * Single non-blocking toast layer, rendered by the root-level Toast.svelte
+ * portal with shared motion + semantic left-border styling. Use the `toast.*`
+ * helpers (success/error/warning/info) or the lower-level `pushToast`.
  */
-export type ToastKind = 'info' | 'success' | 'error';
+export type ToastKind = 'info' | 'success' | 'warning' | 'error';
 
 export interface Toast {
 	id: string;
@@ -31,14 +28,10 @@ function dismiss(id: string): void {
 }
 
 /**
- * Push a toast. Default duration is 2500ms; pass 0 to require manual
- * dismissal. Returns the toast id so callers can dismiss programmatically.
+ * Push a toast. Default duration 2500ms; pass 0 to require manual dismissal.
+ * Returns the toast id so callers can dismiss programmatically.
  */
-export function pushToast(
-	message: string,
-	kind: ToastKind = 'info',
-	durationMs = 2500
-): string {
+export function pushToast(message: string, kind: ToastKind = 'info', durationMs = 2500): string {
 	const id = newId();
 	const expiresAt = Date.now() + durationMs;
 	update((list) => [...list, { id, message, kind, expiresAt }]);
@@ -47,5 +40,13 @@ export function pushToast(
 	}
 	return id;
 }
+
+/** Convenience helpers; errors linger longer. */
+export const toast = {
+	success: (msg: string) => pushToast(msg, 'success'),
+	error: (msg: string) => pushToast(msg, 'error', 6000),
+	warning: (msg: string) => pushToast(msg, 'warning', 4000),
+	info: (msg: string) => pushToast(msg, 'info', 4000)
+};
 
 export const toasts = { subscribe, dismiss };

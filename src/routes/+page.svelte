@@ -35,9 +35,8 @@
 	import HoverStore from '../stores/hoverStore';
 	import TranscriptStore from '../stores/transcriptStore';
 	import TranscribeModeStore from '../stores/transcribeModeStore';
-	import { notifications } from '../stores/notificationStore';
 	import { recents } from '../stores/recentsStore';
-	import { pushToast } from '../stores/toastStore';
+	import { toast } from '../stores/toastStore';
 	import { EXAMPLE_LABELS } from '$lib/ui/examples';
 	import { fade } from 'svelte/transition';
 
@@ -55,19 +54,22 @@
 	import { parseSubtitleText } from '$lib/core/subtitle-parser';
 	import { parseCSVRows, parseTXTLines } from '$lib/core/csv-txt-parser';
 	import { testTranscript } from '$lib/core/core-utils';
-	import { testCodeFile, parseCodeFile, applyCodesByTurn, applyCodesByTime, updateCodeStoreWithNewCodes, getCodeFormatLabel, extractCodeNames } from '$lib/core/code-utils';
+	import {
+		testCodeFile,
+		parseCodeFile,
+		applyCodesByTurn,
+		applyCodesByTime,
+		updateCodeStoreWithNewCodes,
+		getCodeFormatLabel,
+		extractCodeNames
+	} from '$lib/core/code-utils';
 	import CodeStore from '../stores/codeStore';
 	import { mapColumns, allRequiredMapped, buildFinalMapping, remapData } from '$lib/core/column-mapper';
 	import type { CSVPreview, CodePreview } from '../models/csv-preview';
 	import { filterValidFiles, createUploadEntries, type UploadedFile } from '$lib/core/file-upload';
 	import { getPersistedTimestamp, restoreState, clearState, saveStateDebounced, saveStateImmediate } from '$lib/core/persistence';
 	import { getMaxTime } from '$lib/core/timing-utils';
-	import {
-		applyTranscriptResult,
-		triggerCanvasResize,
-		openEditor,
-		handleDiscard
-	} from '$lib/core/transcript-lifecycle';
+	import { applyTranscriptResult, triggerCanvasResize, openEditor, handleDiscard } from '$lib/core/transcript-lifecycle';
 	import {
 		handleScrubberSeek,
 		handleScrubberPlayToggle,
@@ -171,7 +173,7 @@
 		updateCodeStoreWithNewCodes(parsedCodes);
 		TranscriptStore.update((t) => t);
 		p5Instance?.fillAllData?.();
-		notifications.success(`Loaded ${parsedCodes.type === 'turn' ? 'turn' : 'time'}-based codes from ${fileName}`);
+		toast.success(`Loaded ${parsedCodes.type === 'turn' ? 'turn' : 'time'}-based codes from ${fileName}`);
 	}
 
 	function confirmCodeImport() {
@@ -182,7 +184,7 @@
 			uploadedFiles = [];
 			showUploadModal = false;
 		} catch (err) {
-			notifications.error(err instanceof Error ? err.message : 'Failed to apply codes');
+			toast.error(err instanceof Error ? err.message : 'Failed to apply codes');
 		}
 	}
 
@@ -218,9 +220,7 @@
 			lastSidebarTab = $UIStateStore.activeSidebarTab;
 		}
 	});
-	let lastSidebarLabel = $derived(
-		SIDEBAR_TABS.find((t) => t.id === lastSidebarTab)?.label ?? ''
-	);
+	let lastSidebarLabel = $derived(SIDEBAR_TABS.find((t) => t.id === lastSidebarTab)?.label ?? '');
 
 	// Whether the sidebar is logically open. The library SidePanel is now
 	// always mounted (open={true}); the `.te-sidepanel-shell` wrapper animates
@@ -284,9 +284,7 @@
 	function openDataPanelForLoading() {
 		setSidebarTab('data');
 		requestAnimationFrame(() => {
-			const uploadBtn = document.querySelector<HTMLButtonElement>(
-				'[data-data-panel-upload]'
-			);
+			const uploadBtn = document.querySelector<HTMLButtonElement>('[data-data-panel-upload]');
 			uploadBtn?.focus();
 		});
 	}
@@ -328,22 +326,16 @@
 			// Opening or switching tabs  -  focus the panel body after the
 			// DOM has had a chance to paint.
 			requestAnimationFrame(() => {
-				const panelBody = document.querySelector<HTMLElement>(
-					`#${SIDE_PANEL_ID} .side-panel__body`
-				);
+				const panelBody = document.querySelector<HTMLElement>(`#${SIDE_PANEL_ID} .side-panel__body`);
 				if (!panelBody) return;
-				const firstFocusable = panelBody.querySelector<HTMLElement>(
-					'button, [href], input, select, textarea, [tabindex]:not([tabindex="-1"])'
-				);
+				const firstFocusable = panelBody.querySelector<HTMLElement>('button, [href], input, select, textarea, [tabindex]:not([tabindex="-1"])');
 				(firstFocusable ?? panelBody).focus({ preventScroll: true });
 			});
 		} else if (!nextTab && lastOpenedTab) {
 			// Closing  -  restore focus to the activity-bar item that owned it.
 			const label = SIDEBAR_LABEL_FOR_TAB[lastOpenedTab];
 			requestAnimationFrame(() => {
-				const activityBtn = document.querySelector<HTMLButtonElement>(
-					`.activity-bar__item[aria-label="${label}"]`
-				);
+				const activityBtn = document.querySelector<HTMLButtonElement>(`.activity-bar__item[aria-label="${label}"]`);
 				activityBtn?.focus({ preventScroll: true });
 			});
 		}
@@ -358,9 +350,7 @@
 		if (!browser || $UIStateStore.activeSidebarTab === null) return;
 		let raf = 0;
 		raf = requestAnimationFrame(() => {
-			const handle = document.querySelector<HTMLElement>(
-				`#${SIDE_PANEL_ID} .side-panel__resize-handle`
-			);
+			const handle = document.querySelector<HTMLElement>(`#${SIDE_PANEL_ID} .side-panel__resize-handle`);
 			if (!handle) return;
 			handle.setAttribute('tabindex', '0');
 			handle.setAttribute('aria-valuemin', String(SIDEBAR_MIN_WIDTH));
@@ -385,10 +375,7 @@
 					return;
 				}
 				e.preventDefault();
-				sidebarWidth = Math.min(
-					SIDEBAR_MAX_WIDTH,
-					Math.max(SIDEBAR_MIN_WIDTH, sidebarWidth + delta)
-				);
+				sidebarWidth = Math.min(SIDEBAR_MAX_WIDTH, Math.max(SIDEBAR_MIN_WIDTH, sidebarWidth + delta));
 				handle.setAttribute('aria-valuenow', String(sidebarWidth));
 			};
 			handle.addEventListener('keydown', onKey);
@@ -399,9 +386,7 @@
 		});
 		return () => {
 			cancelAnimationFrame(raf);
-			const handle = document.querySelector<HTMLElement>(
-				`#${SIDE_PANEL_ID} .side-panel__resize-handle`
-			);
+			const handle = document.querySelector<HTMLElement>(`#${SIDE_PANEL_ID} .side-panel__resize-handle`);
 			const maybe = handle as unknown as { _teRemove?: () => void };
 			maybe?._teRemove?.();
 		};
@@ -504,22 +489,16 @@
 	 * (0.5 during switch, 0 at load) so the motion reads as a polish beat,
 	 * not a page transition.
 	 */
-	let canvasOpacity = $derived(
-		transcriptJustLoaded ? 0 : isWorkspaceSwitching ? 0.5 : 1
-	);
+	let canvasOpacity = $derived(transcriptJustLoaded ? 0 : isWorkspaceSwitching ? 0.5 : 1);
 
-	let timelineDuration = $derived(
-		Math.max(0, $TimelineStore.endTime - $TimelineStore.startTime)
-	);
+	let timelineDuration = $derived(Math.max(0, $TimelineStore.endTime - $TimelineStore.startTime));
 
 	// speedLocked surfaces to the user that the speed multiplier is a no-op
 	// while video is driving the timeline. Matches igsSketch's
 	// continueTimelineAnimation branch, which prefers videoState.currentTime
 	// over the animationRate-driven advance when video is playing on a
 	// timed transcript.
-	let scrubberSpeedLocked = $derived(
-		$VideoStore.isPlaying && $TranscriptStore.timingMode !== 'untimed'
-	);
+	let scrubberSpeedLocked = $derived($VideoStore.isPlaying && $TranscriptStore.timingMode !== 'untimed');
 
 	let scrubberFormatTime = $derived.by(() => {
 		const isUntimed = $TranscriptStore.timingMode === 'untimed';
@@ -544,23 +523,19 @@
 		prevVideoLoaded = isVideoLoaded;
 	});
 
-	// Store subscriptions
-	P5Store.subscribe((value) => {
-		p5Instance = value;
-		if (p5Instance) {
-			core = new Core(p5Instance);
-		}
+	// Bind the p5 instance + core to the store (auto-tracked, auto-disposed)
+	$effect(() => {
+		p5Instance = $P5Store;
+		if (p5Instance) core = new Core(p5Instance);
 	});
 
-	// Auto-save subscriptions - save when transcript or users change
+	// Auto-save when transcript / users / codes change
 	let isRestoringState = $state(false);
-	TranscriptStore.subscribe(() => {
-		if (!isRestoringState) saveStateDebounced();
-	});
-	UserStore.subscribe(() => {
-		if (!isRestoringState) saveStateDebounced();
-	});
-	CodeStore.subscribe(() => {
+	$effect(() => {
+		// track all three stores
+		$TranscriptStore;
+		$UserStore;
+		$CodeStore;
 		if (!isRestoringState) saveStateDebounced();
 	});
 
@@ -705,10 +680,10 @@
 			// (the canvas itself fades in via B4 but that's ambient).
 			const label = EXAMPLE_LABELS[exampleId] ?? exampleId;
 			recents.push({ id: exampleId, label, kind: 'example' });
-			pushToast(`Loaded ${label}`, 'success');
+			toast.success(`Loaded ${label}`);
 		} catch (error) {
-			notifications.error('Error loading example. Please check your internet connection.');
-			pushToast('Failed to load example', 'error');
+			toast.error('Error loading example. Please check your internet connection.');
+			toast.error('Failed to load example');
 			console.error('Example load error:', error);
 		}
 	}
@@ -728,7 +703,7 @@
 		// a catalog id, and dedupe by (kind, id) in the store keeps
 		// repeated loads of the same file from piling up.
 		recents.push({ id: label, label, kind });
-		pushToast(`Loaded ${label}`, 'success');
+		toast.success(`Loaded ${label}`);
 	}
 
 	function handlePanelResize(data: { sizes: [number, number] }) {
@@ -785,7 +760,7 @@
 	function handleTranscriptionComplete(result: TranscriptionResult) {
 		try {
 			if (!result.segments || result.segments.length === 0) {
-				notifications.error('Transcription produced no results. The audio may be too short or unclear.');
+				toast.error('Transcription produced no results. The audio may be too short or unclear.');
 				return;
 			}
 
@@ -797,7 +772,7 @@
 			recordCustomLoad(transcriptionLabel);
 			openEditor();
 		} catch (error) {
-			notifications.error('Failed to process transcription results.');
+			toast.error('Failed to process transcription results.');
 			console.error('Transcription processing error:', error);
 		} finally {
 			pendingVideoFile = null;
@@ -808,7 +783,7 @@
 	function handlePasteImport(parseResult: ParseResult) {
 		try {
 			if (!parseResult.turns || parseResult.turns.length === 0) {
-				notifications.error('No valid turns found in pasted text.');
+				toast.error('No valid turns found in pasted text.');
 				return;
 			}
 
@@ -819,7 +794,7 @@
 			recordCustomLoad('Pasted transcript');
 			openEditor();
 		} catch (error) {
-			notifications.error('Failed to import pasted transcript.');
+			toast.error('Failed to import pasted transcript.');
 			console.error('Paste import error:', error);
 		}
 	}
@@ -855,7 +830,7 @@
 				uploadedFiles[fileIndex].status = 'error';
 				const errorMessage = err instanceof Error ? err.message : 'Unknown error';
 				uploadedFiles[fileIndex].error = errorMessage;
-				notifications.error(errorMessage);
+				toast.error(errorMessage);
 			}
 			uploadedFiles = uploadedFiles;
 		}
@@ -899,7 +874,9 @@
 					const fields = results.meta.fields || [];
 					const formatLabel = getCodeFormatLabel(fields);
 					if (formatLabel === 'Unknown') {
-						throw new Error('Unrecognized code file format. Expected columns: "turn" + "code", "turn_start" + "turn_end" + "code", or "start" + "end".');
+						throw new Error(
+							'Unrecognized code file format. Expected columns: "turn" + "code", "turn_start" + "turn_end" + "code", or "start" + "end".'
+						);
 					}
 					applyCodeFileResults(results, file.name);
 					return;
@@ -1049,9 +1026,7 @@
 	// the menu rendering a single source of truth.
 	let contextMenuState = $derived($UIStateStore.contextMenu);
 	let contextMenuPayload = $derived(contextMenuState.payload);
-	let contextMenuAnchor = $derived(
-		contextMenuState.open ? { x: contextMenuState.x, y: contextMenuState.y } : null
-	);
+	let contextMenuAnchor = $derived(contextMenuState.open ? { x: contextMenuState.x, y: contextMenuState.y } : null);
 
 	function buildContextMenuItems(payload: ContextMenuPayload | null): ContextMenuItem[] {
 		if (!payload) return [];
@@ -1119,7 +1094,7 @@
 		// If the user left the default-checked "don't show again" on, flip
 		// to 'dismissed' so the screen stays gone on future loads. If they
 		// unchecked it, leave onboardingState at 'unseen' so it returns next
-		// reload. We intentionally DON'T write 'unseen' back explicitly  - 
+		// reload. We intentionally DON'T write 'unseen' back explicitly  -
 		// it's already the current value; a no-op write would churn the
 		// localStorage subscribe needlessly.
 		if (dontShowAgain) {
@@ -1161,7 +1136,7 @@
 				// new in-point would cross the current out-point, push the
 				// out-point with it (same behavior the scrubber uses when a
 				// handle drag would invert the selection). Also realign
-				// currTime so the playhead stays inside the new range  - 
+				// currTime so the playhead stays inside the new range  -
 				// matches handleSelectionChange in scrubber-bridge. Without
 				// this, setting an in-point ahead of the playhead would
 				// leave the viz animating past the right marker and the
@@ -1173,12 +1148,7 @@
 						...t,
 						leftMarker: nextLeft,
 						rightMarker: nextRight,
-						currTime:
-							t.currTime < nextLeft
-								? nextLeft
-								: t.currTime > nextRight
-									? nextRight
-									: t.currTime
+						currTime: t.currTime < nextLeft ? nextLeft : t.currTime > nextRight ? nextRight : t.currTime
 					};
 				});
 				// Force a viz refilter on the new range. The draw loop re-
@@ -1201,12 +1171,7 @@
 						...t,
 						leftMarker: nextLeft,
 						rightMarker: nextRight,
-						currTime:
-							t.currTime < nextLeft
-								? nextLeft
-								: t.currTime > nextRight
-									? nextRight
-									: t.currTime
+						currTime: t.currTime < nextLeft ? nextLeft : t.currTime > nextRight ? nextRight : t.currTime
 					};
 				});
 				p5Instance?.fillSelectedData?.();
@@ -1226,7 +1191,6 @@
 
 		closeContextMenu();
 	}
-
 </script>
 
 <svelte:head>
@@ -1251,7 +1215,7 @@
 				<AppNavbar
 					{isVideoLoaded}
 					activeWorkspace={$UIStateStore.activeWorkspace}
-					selectedExampleId={selectedExampleId}
+					{selectedExampleId}
 					transcriptLabel={customTranscriptLabel ?? ''}
 					onselectWorkspace={switchWorkspace}
 					onopenDataPanel={openDataPanelForLoading}
@@ -1293,12 +1257,7 @@
 						class="te-sidepanel-shell"
 						style:width={`${isSidebarOpen ? sidebarWidth : 0}px`}
 					>
-						<SidePanel
-							open={true}
-							title={lastSidebarLabel}
-							bind:width={sidebarWidth}
-							onClose={() => setSidebarTab(null)}
-						>
+						<SidePanel open={true} title={lastSidebarLabel} bind:width={sidebarWidth} onClose={() => setSidebarTab(null)}>
 							<!-- Body/title render off `lastSidebarTab` (the last
 							     non-null tab) so the panel keeps showing its prior
 							     content while it slides out on close, instead of
@@ -1308,10 +1267,7 @@
 							     the delay on fade-in stages the content arrival
 							     after the slide completes. -->
 							{#key lastSidebarTab}
-								<div
-									in:fade={{ duration: 140, delay: 60 }}
-									out:fade={{ duration: 80 }}
-								>
+								<div in:fade={{ duration: 140, delay: 60 }} out:fade={{ duration: 80 }}>
 									{#if lastSidebarTab === 'viz'}
 										<VizPanel />
 									{:else if lastSidebarTab === 'filters'}
@@ -1341,91 +1297,68 @@
 				     is 160ms / ease-out; app.css's reduced-motion guard
 				     clamps the duration for motion-sensitive users. -->
 				<div class="canvas-fade-wrapper" style="opacity: {canvasOpacity};">
-				<SplitPane
-					orientation={$EditorStore.config.orientation}
-					sizes={$EditorStore.config.panelSizes}
-					collapsed={!$EditorStore.config.isVisible}
-					collapsedPanel="second"
-					onresize={handlePanelResize}
-				>
-					{#snippet first()}
-						<main
-							class="h-full relative"
-							id="main-content"
-							tabindex="-1"
-							aria-label="Transcript visualization workspace"
-						>
-						<div
-							class="h-full relative"
-							id="p5-container"
-							data-tour="visualization"
-						>
-							<!-- SR-only description so a screen-reader user knows
+					<SplitPane
+						orientation={$EditorStore.config.orientation}
+						sizes={$EditorStore.config.panelSizes}
+						collapsed={!$EditorStore.config.isVisible}
+						collapsedPanel="second"
+						onresize={handlePanelResize}
+					>
+						{#snippet first()}
+							<main class="h-full relative" id="main-content" tabindex="-1" aria-label="Transcript visualization workspace">
+								<div class="h-full relative" id="p5-container" data-tour="visualization">
+									<!-- SR-only description so a screen-reader user knows
 							     a canvas-rendered visualization lives here. Using
 							     a hidden caption avoids role="img" on the outer
 							     container, which would suppress the legend and
 							     tooltip from the accessibility tree. -->
-							<p class="sr-only">Transcript visualization canvas. Interactive p5 visualization of transcript turns; use the Filters panel to refine and the Timeline controls to navigate.</p>
-							<Sketch {sketch} bind:instance={p5Instance} />
-							<CanvasTooltip />
-							<VisualizationLegend />
-							{#if $VizStore.dashboardToggle}
-								<DashboardOverlay />
-							{/if}
-							{#each $HoverStore.overflowBounds as b}
-								<div
-									class="badge badge-neutral absolute"
-									style="left: {b.x + b.width - 12}px; top: {b.y + b.height - 12}px; transform: translate(-100%, -100%);"
-								>
-									Some content not shown
-								</div>
-							{/each}
-							{#if hasVideoSource}
-								<VideoContainer />
-							{/if}
-							<!--
+									<p class="sr-only">
+										Transcript visualization canvas. Interactive p5 visualization of transcript turns; use the Filters panel to refine and the
+										Timeline controls to navigate.
+									</p>
+									<Sketch {sketch} bind:instance={p5Instance} />
+									<CanvasTooltip />
+									<VisualizationLegend />
+									{#if $VizStore.dashboardToggle}
+										<DashboardOverlay />
+									{/if}
+									{#each $HoverStore.overflowBounds as b}
+										<div
+											class="badge badge-neutral absolute"
+											style="left: {b.x + b.width - 12}px; top: {b.y + b.height - 12}px; transform: translate(-100%, -100%);"
+										>
+											Some content not shown
+										</div>
+									{/each}
+									{#if hasVideoSource}
+										<VideoContainer />
+									{/if}
+									<!--
 								Empty-canvas CTA: since Upload/New moved off the top nav
 								into DataPanel, surface a prominent action here so first-
 								time users have a clear next step on a blank canvas.
 								Opens the Data sidebar and hands focus to Upload.
 							-->
-							{#if $TranscriptStore.wordArray.length === 0}
-								<div
-									class="empty-canvas-cta"
-									role="status"
-									aria-live="polite"
-									data-tour="examples"
-								>
-									<p class="empty-canvas-cta__msg">No transcript loaded</p>
-									<button
-										type="button"
-										class="te-btn te-btn--primary"
-										onclick={openDataPanelForLoading}
-									>
-										Load transcript
-									</button>
+									{#if $TranscriptStore.wordArray.length === 0}
+										<div class="empty-canvas-cta" role="status" aria-live="polite" data-tour="examples">
+											<p class="empty-canvas-cta__msg">No transcript loaded</p>
+											<button type="button" class="te-btn te-btn--primary" onclick={openDataPanelForLoading}> Load transcript </button>
+										</div>
+									{/if}
 								</div>
-							{/if}
-						</div>
-						</main>
-					{/snippet}
-					{#snippet second()}
-						<div class="h-full">
-							<TranscriptEditor oncreateTranscript={createTranscript} />
-						</div>
-					{/snippet}
-				</SplitPane>
+							</main>
+						{/snippet}
+						{#snippet second()}
+							<div class="h-full">
+								<TranscriptEditor oncreateTranscript={createTranscript} />
+							</div>
+						{/snippet}
+					</SplitPane>
 				</div>
 			{/snippet}
 
 			{#snippet bottom()}
-				<div
-					class="te-bottom-bar min-h-20"
-					style="background: var(--te-bg-muted);"
-					data-tour="timeline"
-					role="region"
-					aria-label="Timeline controls"
-				>
+				<div class="te-bottom-bar min-h-20" style="background: var(--te-bg-muted);" data-tour="timeline" role="region" aria-label="Timeline controls">
 					<div class="te-timeline-side min-w-0 w-full flex items-center">
 						<TimelineScrubber
 							duration={timelineDuration}
@@ -1519,13 +1452,7 @@
 
 <RecoveryModal bind:isOpen={showRecoveryModal} savedAt={recoveryTimestamp} onrestore={handleRestore} ondiscard={handleDiscard} />
 
-<!--
-	Root-level toast portal (B6). Non-blocking one-line notifications
-	for low-stakes feedback like "Loaded <example>". Separate from the
-	existing NotificationStore/ToastContainer which handles alert-style
-	messages at top-center; this stack lives bottom-right and uses the
-	pushToast(message, kind, durationMs) API from $stores/toastStore.
--->
+<!-- Root-level toast portal (bottom-right). See $stores/toastStore. -->
 <Toast />
 
 <!--

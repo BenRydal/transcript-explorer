@@ -1,31 +1,26 @@
 <script lang="ts">
 	import { fly } from 'svelte/transition';
 	import { flip } from 'svelte/animate';
-	import { CircleCheck, CircleX, Info, X } from '@lucide/svelte';
+	import { CircleCheck, CircleX, Info, TriangleAlert, X } from '@lucide/svelte';
 	import type { Component } from 'svelte';
 	import { toasts, type ToastKind } from '../../stores/toastStore';
 
 	/**
-	 * Bottom-right toast stack. Non-blocking chrome for one-line
-	 * feedback  -  separate from the existing NotificationStore /
-	 * ToastContainer (which is top-center, heavier, daisyUI-styled).
-	 *
-	 * Motion: items fly in from below; the CSS-level reduced-motion
-	 * guard in app.css clamps transition duration so users who opt
-	 * out see an instant pop rather than a slide.
-	 *
-	 * Accessibility: the stack itself is a polite live region; each
-	 * toast is a role="status". Dismiss is keyboard-reachable.
+	 * Bottom-right toast stack: non-blocking, one-line feedback. Items fly in
+	 * from below (reduced-motion guarded in app.css). The stack is a polite live
+	 * region; each toast is role="status" with a keyboard-reachable dismiss.
 	 */
 	const icons: Record<ToastKind, Component> = {
 		info: Info,
 		success: CircleCheck,
+		warning: TriangleAlert,
 		error: CircleX
 	};
 
 	const iconColors: Record<ToastKind, string> = {
 		info: 'var(--te-fg-muted)',
 		success: '#16a34a',
+		warning: 'var(--te-warning, #d97706)',
 		error: 'var(--te-danger)'
 	};
 </script>
@@ -44,12 +39,7 @@
 				<Icon size={16} aria-hidden="true" />
 			</span>
 			<span class="te-toast__msg">{toast.message}</span>
-			<button
-				type="button"
-				class="te-toast__close"
-				aria-label="Dismiss notification"
-				onclick={() => toasts.dismiss(toast.id)}
-			>
+			<button type="button" class="te-toast__close" aria-label="Dismiss notification" onclick={() => toasts.dismiss(toast.id)}>
 				<X size={14} aria-hidden="true" />
 			</button>
 		</div>
@@ -90,6 +80,10 @@
 
 	.te-toast--success {
 		border-left-color: #16a34a;
+	}
+
+	.te-toast--warning {
+		border-left-color: var(--te-warning, #d97706);
 	}
 
 	.te-toast--error {
