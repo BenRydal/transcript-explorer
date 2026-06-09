@@ -15,3 +15,6 @@ CLAUDE.md
 !.yarn/releases
 !.yarn/sdks
 !.yarn/versions
+
+# PhD paper-drafting artifacts — belong in the writing repo/Notion, not the app
+docs/data/

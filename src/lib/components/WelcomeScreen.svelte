@@ -24,15 +24,9 @@
 	}
 
 	/**
-	 * Spacious landing screen: the primary entry point that replaces the
-	 * cramped sidebar help panel. Built on the same modal scaffolding as
-	 * WelcomeDialog (role="dialog" + focus trap + Escape + backdrop), but
-	 * split into a few short tabs so users can dive straight into a sample
-	 * dataset or start their own work without a wall of text.
-	 *
-	 * Presentational/self-contained: the examples catalog is inlined here
-	 * (mirroring HelpPanel's source) so the screen never reaches into the
-	 * page shell. All callbacks are optional and guarded with `?.`.
+	 * Landing screen and primary entry point. Tabbed modal (role="dialog" +
+	 * focus trap + Escape + backdrop). Self-contained: examples catalog is
+	 * inlined; all callbacks optional and guarded with `?.`.
 	 */
 	let {
 		open = $bindable(false),
