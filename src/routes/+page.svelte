@@ -1370,7 +1370,6 @@
 							speedLockedReason="Video is playing; the timeline follows media playback and the speed multiplier is temporarily inactive."
 							selectionStart={$TimelineStore.leftMarker - $TimelineStore.startTime}
 							selectionEnd={$TimelineStore.rightMarker - $TimelineStore.startTime}
-							playheadFollowsSelectionStart={true}
 							formatTime={scrubberFormatTime}
 							onSeek={handleScrubberSeek}
 							onPlayToggle={handleScrubberPlayToggle}

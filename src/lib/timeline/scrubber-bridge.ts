@@ -18,7 +18,7 @@ export function handleScrubberPlayToggle(nowPlaying: boolean) {
 	const wasPlaying = get(TimelineStore).isAnimating;
 	// On play start, snap the playhead to the left selection handle so
 	// playback always animates from the start of the current selection
-	// (matches the scrubber's playheadFollowsSelectionStart behavior).
+	// (playback always animates from the start of the current selection).
 	if (nowPlaying && !wasPlaying) {
 		TimelineStore.update((t) => ({ ...t, isAnimating: nowPlaying, currTime: t.leftMarker }));
 	} else {
