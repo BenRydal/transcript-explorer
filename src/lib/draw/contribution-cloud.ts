@@ -102,7 +102,9 @@ export class ContributionCloud {
 
 	getBufferCacheKey(filteredWordCount: number): string {
 		const userStates = this.ctx.users.map((u) => `${u.name}:${u.color}:${u.enabled}`).join(',');
-		const codeStates = get(CodeStore).map((c) => `${c.code}:${c.color}:${c.enabled}`).join(',');
+		const codeStates = get(CodeStore)
+			.map((c) => `${c.code}:${c.color}:${c.enabled}`)
+			.join(',');
 		return [
 			this.bounds.x,
 			this.bounds.y,

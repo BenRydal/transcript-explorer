@@ -24,17 +24,20 @@
 		{
 			target: '[data-tour="examples"]',
 			title: 'Load a Transcript',
-			content: 'Start here to load your own transcript or one of the sample datasets. Reopen the welcome screen anytime from the ? button in the left rail.'
+			content:
+				'Start here to load your own transcript or one of the sample datasets. Reopen the welcome screen anytime from the ? button in the left rail.'
 		},
 		{
 			target: '[data-tour="viz-modes"]',
 			title: 'Sidebar & Workspaces',
-			content: 'Use this rail to switch visualizations, filters, upload data, and settings. Switch workspaces with Edit / Present / Transcribe (keys 1 / 2 / 3) in the top bar.'
+			content:
+				'Use this rail to switch visualizations, filters, upload data, and settings. Switch workspaces with Edit / Present / Transcribe (keys 1 / 2 / 3) in the top bar.'
 		},
 		{
 			target: '[data-tour="visualization"]',
 			title: 'Visualization Canvas',
-			content: 'Your transcript visualizations appear here. Each one has its own playback style. Left-click to play video, right-click for more actions.'
+			content:
+				'Your transcript visualizations appear here. Each one has its own playback style. Left-click to play video, right-click for more actions.'
 		},
 		{
 			target: '[data-tour="speakers"]',
@@ -44,7 +47,8 @@
 		{
 			target: '[data-tour="timeline"]',
 			title: 'Timeline Controls',
-			content: 'Animate through the conversation. Drag the handles to set the range. The left handle marks where Play starts, and the playhead follows it.'
+			content:
+				'Animate through the conversation. Drag the handles to set the range. The left handle marks where Play starts, and the playhead follows it.'
 		}
 	];
 
@@ -116,17 +120,12 @@
 		     ignore it. -->
 		<!-- svelte-ignore a11y_click_events_have_key_events -->
 		<!-- svelte-ignore a11y_no_static_element_interactions -->
-		<div
-			class="absolute inset-0 bg-black/50 pointer-events-auto cursor-default"
-			aria-hidden="true"
-			onclick={end}
-		></div>
+		<div class="absolute inset-0 bg-black/50 pointer-events-auto cursor-default" aria-hidden="true" onclick={end}></div>
 
 		{#if rect}
 			<div
 				class="tour-highlight"
-				style="top: {rect.top - 4}px; left: {rect.left - 4}px; width: {rect.width + 8}px; height: {rect.height +
-					8}px;"
+				style="top: {rect.top - 4}px; left: {rect.left - 4}px; width: {rect.width + 8}px; height: {rect.height + 8}px;"
 			></div>
 		{/if}
 

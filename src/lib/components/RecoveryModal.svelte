@@ -43,14 +43,7 @@
 {#if isOpen}
 	<!-- svelte-ignore a11y_no_static_element_interactions -->
 	<div class="modal modal-open" onkeydown={handleKey}>
-		<div
-			bind:this={dialogEl}
-			class="modal-box"
-			role="dialog"
-			aria-modal="true"
-			aria-labelledby="recovery-title"
-			aria-describedby="recovery-desc"
-		>
+		<div bind:this={dialogEl} class="modal-box" role="dialog" aria-modal="true" aria-labelledby="recovery-title" aria-describedby="recovery-desc">
 			<h3 id="recovery-title" class="font-bold text-lg">Recover Unsaved Work?</h3>
 			<p id="recovery-desc" class="py-4">
 				We found a transcript from your previous session

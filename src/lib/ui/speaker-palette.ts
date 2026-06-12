@@ -2,11 +2,7 @@ import { writable, derived, get } from 'svelte/store';
 import UserStore from '../../stores/userStore';
 import CodeStore from '../../stores/codeStore';
 import P5Store from '../../stores/p5Store';
-import {
-	SPEAKER_PALETTES,
-	DEFAULT_SPEAKER_PALETTE,
-	type SpeakerPaletteChoice
-} from './palette';
+import { SPEAKER_PALETTES, DEFAULT_SPEAKER_PALETTE, type SpeakerPaletteChoice } from './palette';
 
 /**
  * Speaker color palette preference. Mirrors the persistence pattern in

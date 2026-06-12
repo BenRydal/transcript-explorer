@@ -8,11 +8,7 @@
 			(function () {
 				try {
 					var stored = localStorage.getItem('te:ui:theme');
-					var resolved =
-						stored ||
-						(window.matchMedia('(prefers-color-scheme: dark)').matches
-							? 'dark'
-							: 'light');
+					var resolved = stored || (window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light');
 					document.documentElement.setAttribute('data-theme', resolved);
 				} catch (_) {}
 			})();

@@ -68,13 +68,7 @@
 			if (e.key === 'Escape' && !isTranscribing) handleClose();
 		}}
 	>
-		<div
-			bind:this={dialogEl}
-			class="modal-box max-w-lg"
-			role="dialog"
-			aria-modal="true"
-			aria-labelledby="transcription-modal-title"
-		>
+		<div bind:this={dialogEl} class="modal-box max-w-lg" role="dialog" aria-modal="true" aria-labelledby="transcription-modal-title">
 			<div class="flex justify-between items-center mb-6">
 				<h3 id="transcription-modal-title" class="font-bold text-xl">Auto-Transcribe Video</h3>
 				{#if !isTranscribing}

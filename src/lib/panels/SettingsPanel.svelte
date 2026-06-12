@@ -11,10 +11,7 @@
 	import { SPEAKER_PALETTES, type SpeakerPaletteChoice } from '$lib/ui/palette';
 	import { speakerPalette, selectSpeakerPalette } from '$lib/ui/speaker-palette';
 
-	const SPEAKER_PALETTE_ENTRIES = Object.entries(SPEAKER_PALETTES) as [
-		SpeakerPaletteChoice,
-		(typeof SPEAKER_PALETTES)[SpeakerPaletteChoice]
-	][];
+	const SPEAKER_PALETTE_ENTRIES = Object.entries(SPEAKER_PALETTES) as [SpeakerPaletteChoice, (typeof SPEAKER_PALETTES)[SpeakerPaletteChoice]][];
 
 	function setVizField<K extends keyof VizStoreType>(key: K, value: VizStoreType[K]) {
 		VizStore.update((store) => ({ ...store, [key]: value }));
@@ -152,9 +149,7 @@
 		<p class="settings-panel__section-label">Video Playback</p>
 		<label class="settings-panel__slider-label">
 			<span>Turn preview: {$AppSettingsStore.snippetDurationSeconds}s</span>
-			<p class="settings-panel__hint">
-				When clicking a speaker in the distribution diagram, plays this duration from each turn.
-			</p>
+			<p class="settings-panel__hint">When clicking a speaker in the distribution diagram, plays this duration from each turn.</p>
 			<input
 				type="range"
 				min="1"
@@ -162,8 +157,7 @@
 				step="1"
 				value={$AppSettingsStore.snippetDurationSeconds}
 				class="settings-panel__slider"
-				oninput={(e) =>
-					setAppSettingsField('snippetDurationSeconds', parseInt((e.target as HTMLInputElement).value))}
+				oninput={(e) => setAppSettingsField('snippetDurationSeconds', parseInt((e.target as HTMLInputElement).value))}
 			/>
 		</label>
 	</section>
@@ -171,19 +165,12 @@
 	<!-- Appearance -->
 	<section class="settings-panel__section">
 		<p class="settings-panel__section-label">Appearance</p>
-		<select
-			class="settings-panel__input"
-			aria-label="Theme"
-			value={$themeChoice}
-			onchange={(e) => selectTheme(e.currentTarget.value as ThemeChoice)}
-		>
+		<select class="settings-panel__input" aria-label="Theme" value={$themeChoice} onchange={(e) => selectTheme(e.currentTarget.value as ThemeChoice)}>
 			<option value="light">Light</option>
 			<option value="dark">Dark</option>
 			<option value="system">System</option>
 		</select>
-		<p class="settings-panel__hint">
-			System follows your OS preference; Light and Dark persist across reloads.
-		</p>
+		<p class="settings-panel__hint">System follows your OS preference; Light and Dark persist across reloads.</p>
 
 		<p class="settings-panel__sub-label">Speaker colors</p>
 		<select
@@ -201,9 +188,7 @@
 				<span class="settings-panel__preview-swatch" style:background={color}></span>
 			{/each}
 		</div>
-		<p class="settings-panel__hint">
-			Sets default colors for new speakers and re-colors existing ones.
-		</p>
+		<p class="settings-panel__hint">Sets default colors for new speakers and re-colors existing ones.</p>
 	</section>
 </div>
 

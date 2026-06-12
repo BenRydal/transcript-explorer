@@ -53,14 +53,7 @@
 {#if isOpen}
 	<!-- svelte-ignore a11y_no_static_element_interactions -->
 	<div class="modal modal-open" onkeydown={handleKey}>
-		<div
-			bind:this={dialogEl}
-			class="modal-box"
-			role="dialog"
-			aria-modal="true"
-			aria-labelledby={titleId}
-			aria-describedby={descId}
-		>
+		<div bind:this={dialogEl} class="modal-box" role="dialog" aria-modal="true" aria-labelledby={titleId} aria-describedby={descId}>
 			<h3 id={titleId} class="font-bold text-lg">{title}</h3>
 			<p id={descId} class="py-4">{message}</p>
 			<div class="modal-action">

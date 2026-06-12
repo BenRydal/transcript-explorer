@@ -188,7 +188,9 @@ export class WordJourney {
 		for (const ro of rendered) {
 			const isHovered = hoveredOcc === ro;
 			const user = this.ctx.userMap.get(ro.occurrence.speaker);
-			const color = this.ctx.sk.color(getWordColor(ro.occurrence.dataPoint.codes, user?.color || '#999999', this.ctx.codeColorMap, this.ctx.config.codeColorMode));
+			const color = this.ctx.sk.color(
+				getWordColor(ro.occurrence.dataPoint.codes, user?.color || '#999999', this.ctx.codeColorMap, this.ctx.config.codeColorMode)
+			);
 
 			const shouldDim = crossHighlight.active && crossHighlight.speaker != null && ro.occurrence.speaker !== crossHighlight.speaker;
 

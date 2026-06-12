@@ -8,11 +8,7 @@
 	import TranscriptStore from '../../stores/transcriptStore';
 	import P5Store from '../../stores/p5Store';
 	import { clearAllCodes } from '$lib/core/code-utils';
-	import {
-		handleSpeakerToggle,
-		handleSpeakerColorChange,
-		handleSpeakerRename
-	} from '$lib/speakers/speaker-handlers';
+	import { handleSpeakerToggle, handleSpeakerColorChange, handleSpeakerRename } from '$lib/speakers/speaker-handlers';
 
 	let speakerEntities: Entity[] = $derived(
 		$UserStore.map((u) => ({
@@ -113,11 +109,7 @@
 	</section>
 
 	<!-- Speakers -->
-	<section
-		class="filters-panel__section filters-panel__speakers"
-		data-tour="speakers"
-		aria-labelledby="filters-speakers-label"
-	>
+	<section class="filters-panel__section filters-panel__speakers" data-tour="speakers" aria-labelledby="filters-speakers-label">
 		<p id="filters-speakers-label" class="filters-panel__section-label">Speakers</p>
 		{#if speakerEntities.length === 0}
 			<p class="filters-panel__empty">No speakers loaded.</p>
@@ -137,13 +129,7 @@
 			<p id="filters-codes-label" class="filters-panel__section-label">Codes</p>
 
 			<label class="filters-panel__check-row">
-				<input
-					type="checkbox"
-					role="switch"
-					aria-checked={allCodesEnabled}
-					checked={allCodesEnabled}
-					onchange={handleToggleAllCodes}
-				/>
+				<input type="checkbox" role="switch" aria-checked={allCodesEnabled} checked={allCodesEnabled} onchange={handleToggleAllCodes} />
 				<span>Enable All</span>
 			</label>
 
@@ -174,8 +160,7 @@
 								role="switch"
 								aria-checked={code.enabled}
 								checked={code.enabled}
-								onchange={(e) =>
-									handleCodeEnabledChange(code.code, (e.currentTarget as HTMLInputElement).checked)}
+								onchange={(e) => handleCodeEnabledChange(code.code, (e.currentTarget as HTMLInputElement).checked)}
 							/>
 							<span class="te-truncate">{code.code}</span>
 						</label>
@@ -210,9 +195,7 @@
 			/>
 			<span>Scale to Visible Data</span>
 		</label>
-		<p class="filters-panel__hint">
-			When enabled, visualizations scale to the current selection.
-		</p>
+		<p class="filters-panel__hint">When enabled, visualizations scale to the current selection.</p>
 	</section>
 
 	<!-- Stopwords -->
@@ -229,9 +212,7 @@
 			<span>Filter common words</span>
 		</label>
 		{#if $FiltersStore.stopWordsEnabled}
-			<label class="filters-panel__stopwords-label" for="filters-stopwords-custom">
-				Additional words to filter (comma or newline separated)
-			</label>
+			<label class="filters-panel__stopwords-label" for="filters-stopwords-custom"> Additional words to filter (comma or newline separated) </label>
 			<textarea
 				id="filters-stopwords-custom"
 				class="filters-panel__stopwords-input"
@@ -240,11 +221,7 @@
 				onblur={commitCustomStopWords}
 				placeholder="um, yeah, okay"
 			></textarea>
-			<button
-				type="button"
-				class="filters-panel__reset"
-				onclick={handleResetStopWords}
-			>Reset custom list</button>
+			<button type="button" class="filters-panel__reset" onclick={handleResetStopWords}>Reset custom list</button>
 		{/if}
 	</section>
 </div>

@@ -31,6 +31,4 @@ export const EXAMPLES: readonly ExampleOption[] = [
  * surface which example (if any) is currently active in chrome that
  * only has the id in hand.
  */
-export const EXAMPLE_LABELS: Readonly<Record<string, string>> = Object.fromEntries(
-	EXAMPLES.map((e) => [e.value, e.label])
-);
+export const EXAMPLE_LABELS: Readonly<Record<string, string>> = Object.fromEntries(EXAMPLES.map((e) => [e.value, e.label]));

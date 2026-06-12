@@ -31,28 +31,12 @@
 		{/if}
 	</button>
 {:else}
-	<div
-		class="te-btn-group"
-		role="group"
-		aria-label="Theme: Light, Dark, or follow system setting"
-	>
-		<button
-			type="button"
-			class="te-btn te-btn--sm"
-			aria-pressed={$themeChoice === 'light'}
-			onclick={() => selectTheme('light')}
-			title="Light theme"
-		>
+	<div class="te-btn-group" role="group" aria-label="Theme: Light, Dark, or follow system setting">
+		<button type="button" class="te-btn te-btn--sm" aria-pressed={$themeChoice === 'light'} onclick={() => selectTheme('light')} title="Light theme">
 			<Sun size={14} />
 			Light
 		</button>
-		<button
-			type="button"
-			class="te-btn te-btn--sm"
-			aria-pressed={$themeChoice === 'dark'}
-			onclick={() => selectTheme('dark')}
-			title="Dark theme"
-		>
+		<button type="button" class="te-btn te-btn--sm" aria-pressed={$themeChoice === 'dark'} onclick={() => selectTheme('dark')} title="Dark theme">
 			<Moon size={14} />
 			Dark
 		</button>

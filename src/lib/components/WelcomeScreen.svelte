@@ -1,17 +1,6 @@
 <script lang="ts">
 	import { trapFocus } from '$lib/a11y/focus-trap';
-	import {
-		ShieldCheck,
-		CloudUpload,
-		ClipboardPaste,
-		Mic,
-		Lightbulb,
-		CirclePlay,
-		MessageSquare,
-		Github,
-		Video,
-		Tags
-	} from '@lucide/svelte';
+	import { ShieldCheck, CloudUpload, ClipboardPaste, Mic, Lightbulb, CirclePlay, MessageSquare, Github, Video, Tags } from '@lucide/svelte';
 
 	interface Props {
 		open?: boolean;
@@ -28,15 +17,7 @@
 	 * focus trap + Escape + backdrop). Self-contained: examples catalog is
 	 * inlined; all callbacks optional and guarded with `?.`.
 	 */
-	let {
-		open = $bindable(false),
-		onLoadExample,
-		onOpenUpload,
-		onOpenPaste,
-		onStartTranscribe,
-		onStartTour,
-		onDismiss
-	}: Props = $props();
+	let { open = $bindable(false), onLoadExample, onOpenUpload, onOpenPaste, onStartTranscribe, onStartTour, onDismiss }: Props = $props();
 
 	let dialogEl: HTMLDivElement | null = $state(null);
 	let dontShowAgain = $state(true);
@@ -68,8 +49,7 @@
 	function onTabKey(e: KeyboardEvent, index: number) {
 		let next = index;
 		if (e.key === 'ArrowRight' || e.key === 'ArrowDown') next = (index + 1) % tabs.length;
-		else if (e.key === 'ArrowLeft' || e.key === 'ArrowUp')
-			next = (index - 1 + tabs.length) % tabs.length;
+		else if (e.key === 'ArrowLeft' || e.key === 'ArrowUp') next = (index - 1 + tabs.length) % tabs.length;
 		else if (e.key === 'Home') next = 0;
 		else if (e.key === 'End') next = tabs.length - 1;
 		else return;
@@ -145,20 +125,12 @@
 {#if open}
 	<!-- svelte-ignore a11y_no_static_element_interactions -->
 	<div class="modal modal-open" onkeydown={handleKey}>
-		<div
-			bind:this={dialogEl}
-			class="modal-box welcome-screen"
-			role="dialog"
-			aria-modal="true"
-			aria-labelledby={titleId}
-			aria-describedby={descId}
-		>
+		<div bind:this={dialogEl} class="modal-box welcome-screen" role="dialog" aria-modal="true" aria-labelledby={titleId} aria-describedby={descId}>
 			<!-- Compact header + tab strip -->
 			<div class="welcome-screen__top">
 				<h1 id={titleId} class="welcome-screen__title">Welcome to Transcript Explorer</h1>
 				<p id={descId} class="welcome-screen__pitch">
-					Turn conversation transcripts into interactive visualizations across speakers, time,
-					and qualitative codes. Everything runs in your browser.
+					Turn conversation transcripts into interactive visualizations across speakers, time, and qualitative codes. Everything runs in your browser.
 				</p>
 				<div class="welcome-screen__tabs" role="tablist" aria-label="Welcome sections">
 					{#each tabs as tab, i}
@@ -183,30 +155,14 @@
 			<!-- Tab panels (only the active one renders) -->
 			<div class="welcome-screen__body">
 				{#if activeTab === 'start'}
-					<div
-						role="tabpanel"
-						id={panelId('start')}
-						aria-labelledby={tabId('start')}
-						tabindex="0"
-						class="welcome-screen__panel"
-					>
+					<div role="tabpanel" id={panelId('start')} aria-labelledby={tabId('start')} tabindex="0" class="welcome-screen__panel">
 						<section class="welcome-screen__section">
 							<p class="welcome-screen__section-label">Try a sample dataset</p>
-							<p class="welcome-screen__section-hint">
-								Load a ready-made transcript and start exploring immediately.
-							</p>
+							<p class="welcome-screen__section-hint">Load a ready-made transcript and start exploring immediately.</p>
 							<div class="welcome-screen__examples">
 								{#each examples as example}
-									<button
-										type="button"
-										class="welcome-screen__example"
-										onclick={() => loadExample(example.id)}
-									>
-										<img
-											src={example.thumb}
-											alt={example.title}
-											class="welcome-screen__example-thumb"
-										/>
+									<button type="button" class="welcome-screen__example" onclick={() => loadExample(example.id)}>
+										<img src={example.thumb} alt={example.title} class="welcome-screen__example-thumb" />
 										<div class="welcome-screen__example-body">
 											<h3>{example.title}</h3>
 											<p>{example.description}</p>
@@ -257,24 +213,14 @@
 									<span>Transcribe a video</span>
 								</button>
 							</div>
-							<p class="welcome-screen__section-hint">
-								New to importing? See the Import data tab for accepted formats.
-							</p>
+							<p class="welcome-screen__section-hint">New to importing? See the Import data tab for accepted formats.</p>
 						</section>
 					</div>
 				{:else if activeTab === 'import'}
-					<div
-						role="tabpanel"
-						id={panelId('import')}
-						aria-labelledby={tabId('import')}
-						tabindex="0"
-						class="welcome-screen__panel"
-					>
+					<div role="tabpanel" id={panelId('import')} aria-labelledby={tabId('import')} tabindex="0" class="welcome-screen__panel">
 						<section class="welcome-screen__section">
 							<p class="welcome-screen__section-label">Transcript formats</p>
-							<p class="welcome-screen__section-hint">
-								Upload CSV, TXT, SRT, or VTT, or paste plain text. Open a format for an example.
-							</p>
+							<p class="welcome-screen__section-hint">Upload CSV, TXT, SRT, or VTT, or paste plain text. Open a format for an example.</p>
 
 							<details class="welcome-screen__details" open>
 								<summary>CSV</summary>
@@ -283,9 +229,7 @@
 										speaker, content, start, end<br />
 										Teacher, "Good morning", 0, 3
 									</p>
-									<p class="welcome-screen__note">
-										Times optional. Seconds, MM:SS, or HH:MM:SS.
-									</p>
+									<p class="welcome-screen__note">Times optional. Seconds, MM:SS, or HH:MM:SS.</p>
 								</div>
 							</details>
 
@@ -325,20 +269,13 @@
 							<div class="welcome-screen__hint-box">
 								<Video size={16} />
 								<div>
-									<strong>Link with video:</strong> If your transcript has timestamps, upload
-									an MP4 or paste a YouTube link to sync.
+									<strong>Link with video:</strong> If your transcript has timestamps, upload an MP4 or paste a YouTube link to sync.
 								</div>
 							</div>
 						</section>
 					</div>
 				{:else}
-					<div
-						role="tabpanel"
-						id={panelId('how')}
-						aria-labelledby={tabId('how')}
-						tabindex="0"
-						class="welcome-screen__panel"
-					>
+					<div role="tabpanel" id={panelId('how')} aria-labelledby={tabId('how')} tabindex="0" class="welcome-screen__panel">
 						<section class="welcome-screen__section">
 							<p class="welcome-screen__section-label">Workspaces</p>
 							<ul class="welcome-screen__workspaces">
@@ -355,12 +292,7 @@
 									<Lightbulb size={15} />
 									<span>Take a quick tour</span>
 								</button>
-								<a
-									class="te-btn"
-									href="https://youtu.be/_2_3ilMm4pQ"
-									target="_blank"
-									rel="noopener noreferrer"
-								>
+								<a class="te-btn" href="https://youtu.be/_2_3ilMm4pQ" target="_blank" rel="noopener noreferrer">
 									<CirclePlay size={15} />
 									<span>Watch demo video</span>
 								</a>
@@ -405,8 +337,8 @@
 									<div class="welcome-screen__hint-box welcome-screen__hint-box--amber">
 										<Tags size={16} />
 										<div>
-											<strong>Using codes:</strong> After loading, use the Filters panel to
-											toggle codes, switch to code-based coloring, and hide uncoded data.
+											<strong>Using codes:</strong> After loading, use the Filters panel to toggle codes, switch to code-based coloring, and hide uncoded
+											data.
 										</div>
 									</div>
 								</div>
@@ -428,17 +360,11 @@
 							<MessageSquare size={13} />
 							Feedback
 						</a>
-						<a
-							href="https://github.com/BenRydal/transcript-explorer"
-							target="_blank"
-							rel="noopener noreferrer"
-						>
+						<a href="https://github.com/BenRydal/transcript-explorer" target="_blank" rel="noopener noreferrer">
 							<Github size={13} />
 							Open Source
 						</a>
-						<a href="https://doi.org/10.1145/3706598.3713490" target="_blank" rel="noopener noreferrer">
-							Shapiro et al. (2025)
-						</a>
+						<a href="https://doi.org/10.1145/3706598.3713490" target="_blank" rel="noopener noreferrer"> Shapiro et al. (2025) </a>
 					</div>
 				</div>
 				<div class="welcome-screen__footer-bottom">
@@ -446,9 +372,7 @@
 						<input id={checkboxId} type="checkbox" bind:checked={dontShowAgain} />
 						<span>Don&rsquo;t show this again</span>
 					</label>
-					<button type="button" class="te-btn te-btn--ghost" onclick={dismiss}>
-						Skip, explore on my own
-					</button>
+					<button type="button" class="te-btn te-btn--ghost" onclick={dismiss}> Skip, explore on my own </button>
 				</div>
 			</footer>
 		</div>
@@ -519,7 +443,9 @@
 		font-weight: 600;
 		color: var(--te-fg-muted);
 		cursor: pointer;
-		transition: color 0.12s ease, border-color 0.12s ease;
+		transition:
+			color 0.12s ease,
+			border-color 0.12s ease;
 	}
 
 	.welcome-screen__tab:hover {
@@ -614,7 +540,9 @@
 		overflow: hidden;
 		text-align: left;
 		font: inherit;
-		transition: border-color 0.12s ease, background 0.12s ease;
+		transition:
+			border-color 0.12s ease,
+			background 0.12s ease;
 	}
 
 	.welcome-screen__example:hover {

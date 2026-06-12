@@ -182,7 +182,7 @@ We welcome contributions! Here's how you can help:
 
 If you use Transcript Explorer in your research, please cite:
 
-> Shapiro, B. R., Hall, R., Mathur, A., & Zhao, E. (2025). Exploratory Visual Analysis of Transcripts for Interaction Analysis in Human-Computer Interaction. In *Proceedings of the 2025 CHI Conference on Human Factors in Computing Systems* (CHI '25). ACM, 17 pages. https://doi.org/10.1145/3706598.3713490
+> Shapiro, B. R., Hall, R., Mathur, A., & Zhao, E. (2025). Exploratory Visual Analysis of Transcripts for Interaction Analysis in Human-Computer Interaction. In _Proceedings of the 2025 CHI Conference on Human Factors in Computing Systems_ (CHI '25). ACM, 17 pages. https://doi.org/10.1145/3706598.3713490
 
 <details>
 <summary>BibTeX</summary>

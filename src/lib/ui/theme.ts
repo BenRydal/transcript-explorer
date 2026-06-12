@@ -13,7 +13,7 @@ export const THEME_STORAGE_KEY = 'te:ui:theme';
 export const THEME_ORDER: readonly ThemeChoice[] = ['light', 'dark', 'system'] as const;
 
 /**
- * Resolve what 'system' currently means. Safe to call on the server  - 
+ * Resolve what 'system' currently means. Safe to call on the server  -
  * returns 'light' outside a browser.
  */
 export function resolveSystemTheme(): 'light' | 'dark' {

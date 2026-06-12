@@ -175,12 +175,7 @@ export function buildCodeColorMap(codeEntries: CodeEntry[]): Map<string, string>
  * When codeColorMode is off: speaker color.
  * When codeColorMode is on: gray (uncoded), code color (one code), black (multiple codes).
  */
-export function getWordColor(
-	codes: string[],
-	speakerColor: string,
-	codeColorMap: Map<string, string>,
-	codeColorMode: boolean
-): string {
+export function getWordColor(codes: string[], speakerColor: string, codeColorMap: Map<string, string>, codeColorMode: boolean): string {
 	if (!codeColorMode) return speakerColor;
 	if (codes.length === 0) return NO_CODE_COLOR;
 
@@ -200,12 +195,7 @@ export function getWordColor(
  * Counts how many words have each code across all points and returns the most frequent code's color.
  * Falls back to gray if no codes, black if there's an exact tie between multiple codes.
  */
-export function getDominantCodeColor(
-	points: DataPoint[],
-	speakerColor: string,
-	codeColorMap: Map<string, string>,
-	codeColorMode: boolean
-): string {
+export function getDominantCodeColor(points: DataPoint[], speakerColor: string, codeColorMap: Map<string, string>, codeColorMode: boolean): string {
 	if (!codeColorMode || points.length === 0) return speakerColor;
 
 	const codeCounts = new Map<string, number>();

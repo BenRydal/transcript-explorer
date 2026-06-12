@@ -1,15 +1,5 @@
 <script lang="ts">
-	import {
-		Menu,
-		X,
-		Video,
-		VideoOff,
-		Upload,
-		FileText,
-		CircleCheck,
-		Loader2,
-		TriangleAlert
-	} from '@lucide/svelte';
+	import { Menu, X, Video, VideoOff, Upload, FileText, CircleCheck, Loader2, TriangleAlert } from '@lucide/svelte';
 	import ThemeToggle from './ThemeToggle.svelte';
 	import type { Workspace } from '../../stores/uiStateStore';
 	import { WORKSPACE_LABELS, WORKSPACE_ORDER } from '$lib/ui/workspaces';
@@ -69,9 +59,7 @@
 	// Label of the currently active example (if any), surfaced in the
 	// center transcript-name region so the user can see at a glance which
 	// example is loaded.
-	let selectedExampleLabel = $derived(
-		selectedExampleId ? (EXAMPLE_LABELS[selectedExampleId] ?? '') : ''
-	);
+	let selectedExampleLabel = $derived(selectedExampleId ? (EXAMPLE_LABELS[selectedExampleId] ?? '') : '');
 
 	/**
 	 * Radiogroup keyboard navigation for the workspace segmented control.
@@ -83,9 +71,7 @@
 		const keys = ['ArrowRight', 'ArrowDown', 'ArrowLeft', 'ArrowUp', 'Home', 'End'];
 		if (!keys.includes(event.key)) return;
 		event.preventDefault();
-		const radios = Array.from(
-			group.querySelectorAll<HTMLButtonElement>('[role="radio"]')
-		);
+		const radios = Array.from(group.querySelectorAll<HTMLButtonElement>('[role="radio"]'));
 		if (radios.length === 0) return;
 		const currentIdx = radios.findIndex((r) => r.getAttribute('aria-checked') === 'true');
 		let nextIdx = currentIdx < 0 ? 0 : currentIdx;
@@ -134,9 +120,7 @@
 		return `${m}m ${s.toString().padStart(2, '0')}s`;
 	}
 
-	let displayTranscriptName = $derived(
-		transcriptLabel || selectedExampleLabel || 'Custom transcript'
-	);
+	let displayTranscriptName = $derived(transcriptLabel || selectedExampleLabel || 'Custom transcript');
 
 	// ============================================================
 	// Autosave indicator
@@ -165,9 +149,7 @@
 
 <header class="navbar min-h-14 bg-base-100" aria-label="Primary">
 	<div class="flex-none px-2">
-		<span class="te-wordmark text-lg" style="color: var(--te-fg);">
-			Transcript Explorer
-		</span>
+		<span class="te-wordmark text-lg" style="color: var(--te-fg);"> Transcript Explorer </span>
 	</div>
 
 	<!-- Center region: transcript name + quick stats + autosave indicator.
@@ -175,14 +157,8 @@
 	     flex-1 makes it the elastic center between the logo and the right
 	     cluster; min-w-0 enables the name's ellipsis truncation. -->
 	{#if hasTranscript}
-		<div
-			class="hidden xl:flex flex-1 min-w-0 px-3 items-center gap-3 te-transcript-region"
-			aria-label="Active transcript"
-		>
-			<span
-				class="te-truncate te-transcript-name"
-				title={displayTranscriptName}
-			>
+		<div class="hidden xl:flex flex-1 min-w-0 px-3 items-center gap-3 te-transcript-region" aria-label="Active transcript">
+			<span class="te-truncate te-transcript-name" title={displayTranscriptName}>
 				{displayTranscriptName}
 			</span>
 			<span class="te-transcript-stats" aria-label="Transcript statistics">
@@ -215,11 +191,7 @@
 						<span>{autosaveLabel(autosave)}</span>
 					</button>
 				{:else}
-					<span
-						class="te-autosave te-autosave--{autosave}"
-						role="status"
-						aria-live="polite"
-					>
+					<span class="te-autosave te-autosave--{autosave}" role="status" aria-live="polite">
 						{#if autosave === 'saving'}
 							<Loader2 size={12} class="te-autosave__spinner" aria-hidden="true" />
 						{:else if autosave === 'saved'}
@@ -257,13 +229,7 @@
 		     aria-checked reflects selection. Only the checked option
 		     is in the tab order (roving tabindex). Digits 1/2/3 are
 		     handled globally in +page.svelte; surfaced here via <kbd>. -->
-		<div
-			class="te-btn-group"
-			role="radiogroup"
-			aria-label="Workspace"
-			tabindex="-1"
-			onkeydown={(e) => handleWorkspaceKey(e, e.currentTarget)}
-		>
+		<div class="te-btn-group" role="radiogroup" aria-label="Workspace" tabindex="-1" onkeydown={(e) => handleWorkspaceKey(e, e.currentTarget)}>
 			{#each WORKSPACE_ORDER as id, idx}
 				{@const checked = activeWorkspace === id}
 				{@const digit = idx + 1}
@@ -293,11 +259,7 @@
 			disabled={!isVideoLoaded}
 			aria-pressed={isVideoVisible}
 			aria-label={isVideoVisible ? 'Hide video' : 'Show video'}
-			title={!isVideoLoaded
-				? 'Load a video to enable'
-				: isVideoVisible
-					? 'Hide video'
-					: 'Show video'}
+			title={!isVideoLoaded ? 'Load a video to enable' : isVideoVisible ? 'Hide video' : 'Show video'}
 		>
 			{#if isVideoVisible}
 				<Video size={16} aria-hidden="true" />
@@ -331,11 +293,7 @@
 						{/if}
 					</p>
 					{#if autosave !== 'idle'}
-						<p
-							class="mobile-menu__autosave mobile-menu__autosave--{autosave}"
-							role="status"
-							aria-live="polite"
-						>
+						<p class="mobile-menu__autosave mobile-menu__autosave--{autosave}" role="status" aria-live="polite">
 							{autosaveLabel(autosave)}
 						</p>
 					{/if}

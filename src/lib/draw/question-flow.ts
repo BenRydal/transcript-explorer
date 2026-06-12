@@ -80,7 +80,9 @@ export class QuestionFlow {
 		const visibleMaxWords = Math.max(...wordCounts.flatMap((w) => [w.qWords, w.aWords]));
 		// Use full transcript max when scaling to full transcript
 		const maxWords =
-			!this.ctx.config.scaleToVisibleData && this.fullTranscriptMaxWords > 0 ? Math.max(visibleMaxWords, this.fullTranscriptMaxWords) : visibleMaxWords;
+			!this.ctx.config.scaleToVisibleData && this.fullTranscriptMaxWords > 0
+				? Math.max(visibleMaxWords, this.fullTranscriptMaxWords)
+				: visibleMaxWords;
 
 		// Draw speaker labels on Y axis
 		this.drawSpeakerLabels();
@@ -242,7 +244,12 @@ export class QuestionFlow {
 				// Keep the base speaker color as a parseable string for
 				// pickTextColor; `this.ctx.sk.color(...)` only consumes it
 				// for the alpha'd fill below.
-				const qBaseColor = getWordColor(rp.pair.questionFirstWord.codes, qUser?.color || '#999999', this.ctx.codeColorMap, this.ctx.config.codeColorMode);
+				const qBaseColor = getWordColor(
+					rp.pair.questionFirstWord.codes,
+					qUser?.color || '#999999',
+					this.ctx.codeColorMap,
+					this.ctx.config.codeColorMode
+				);
 				const qColor = this.ctx.sk.color(qBaseColor);
 
 				if (isHovered) {
@@ -271,7 +278,9 @@ export class QuestionFlow {
 			if (rp.ax !== null && rp.ay !== null && rp.pair.answerSpeaker) {
 				withDimming(this.ctx.sk.drawingContext, shouldDim, () => {
 					const aUser = this.ctx.userMap.get(rp.pair.answerSpeaker!);
-					const aColor = this.ctx.sk.color(getWordColor(rp.pair.answerFirstWord!.codes, aUser?.color || '#999999', this.ctx.codeColorMap, this.ctx.config.codeColorMode));
+					const aColor = this.ctx.sk.color(
+						getWordColor(rp.pair.answerFirstWord!.codes, aUser?.color || '#999999', this.ctx.codeColorMap, this.ctx.config.codeColorMode)
+					);
 
 					if (isHovered) {
 						this.ctx.sk.stroke(aColor);
@@ -330,7 +339,9 @@ export class QuestionFlow {
 
 		if (pair.answerSpeaker && pair.answerContent) {
 			const aUser = this.ctx.userMap.get(pair.answerSpeaker);
-			const aColor = pair.answerFirstWord ? getWordColor(pair.answerFirstWord.codes, aUser?.color || '#999999', this.ctx.codeColorMap, this.ctx.config.codeColorMode) : aUser?.color || '#999999';
+			const aColor = pair.answerFirstWord
+				? getWordColor(pair.answerFirstWord.codes, aUser?.color || '#999999', this.ctx.codeColorMap, this.ctx.config.codeColorMode)
+				: aUser?.color || '#999999';
 			content += `\n\n<span style="color: ${aColor}"><b>${pair.answerSpeaker}</b> responds:\n"${this.truncateText(pair.answerContent)}"</span>`;
 		} else {
 			content += '\n\n<span style="opacity: 0.6">(No immediate answer)</span>';

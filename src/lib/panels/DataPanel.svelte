@@ -13,13 +13,7 @@
 		selectedExample?: string;
 	}
 
-	let {
-		onOpenUpload,
-		onOpenPaste,
-		onCreateNew,
-		onLoadExample,
-		selectedExample = ''
-	}: Props = $props();
+	let { onOpenUpload, onOpenPaste, onCreateNew, onLoadExample, selectedExample = '' }: Props = $props();
 
 	// Default-open so the sample datasets are visible at a glance  -  they're
 	// a primary onboarding affordance, not a buried option.
@@ -29,9 +23,7 @@
 	// Resolve the active example's label for the disclosure summary.
 	// `selectedExample` is an id (e.g. 'example-1') shared with the
 	// AppNavbar examples menu; fall back to empty if no example is active.
-	let selectedExampleLabel = $derived(
-		selectedExample ? (EXAMPLE_LABELS[selectedExample] ?? '') : ''
-	);
+	let selectedExampleLabel = $derived(selectedExample ? (EXAMPLE_LABELS[selectedExample] ?? '') : '');
 </script>
 
 <div class="data-panel">
@@ -41,39 +33,21 @@
 	<section class="data-panel__section">
 		<p class="data-panel__section-label">Load transcript</p>
 		<div class="data-panel__load-grid">
-			<button
-				type="button"
-				class="te-btn te-btn--primary data-panel__load-btn"
-				data-data-panel-upload
-				onclick={() => onOpenUpload?.()}
-			>
+			<button type="button" class="te-btn te-btn--primary data-panel__load-btn" data-data-panel-upload onclick={() => onOpenUpload?.()}>
 				<CloudUpload size={18} />
 				<span>Upload file</span>
 			</button>
-			<button
-				type="button"
-				class="te-btn data-panel__load-btn"
-				onclick={() => onOpenPaste?.()}
-			>
+			<button type="button" class="te-btn data-panel__load-btn" onclick={() => onOpenPaste?.()}>
 				<ClipboardPaste size={18} />
 				<span>Paste text</span>
 			</button>
-			<button
-				type="button"
-				class="te-btn data-panel__load-btn"
-				onclick={() => onCreateNew?.()}
-			>
+			<button type="button" class="te-btn data-panel__load-btn" onclick={() => onCreateNew?.()}>
 				<FilePlus size={18} />
 				<span>New transcript</span>
 			</button>
 		</div>
 
-		<button
-			type="button"
-			class="data-panel__disclosure"
-			aria-expanded={showExamples}
-			onclick={() => (showExamples = !showExamples)}
-		>
+		<button type="button" class="data-panel__disclosure" aria-expanded={showExamples} onclick={() => (showExamples = !showExamples)}>
 			<span class="data-panel__disclosure-label">
 				<span>Example</span>
 				{#if selectedExampleLabel}
@@ -106,12 +80,7 @@
 
 	{#if hasTranscript}
 		<section class="data-panel__section">
-			<button
-				type="button"
-				class="data-panel__disclosure"
-				aria-expanded={showStats}
-				onclick={() => (showStats = !showStats)}
-			>
+			<button type="button" class="data-panel__disclosure" aria-expanded={showStats} onclick={() => (showStats = !showStats)}>
 				<span>{showStats ? 'Hide transcript statistics' : 'Show transcript statistics'}</span>
 				<span aria-hidden="true">{showStats ? '–' : '+'}</span>
 			</button>
@@ -205,9 +174,7 @@
 			{/if}
 		</section>
 	{:else}
-		<p class="data-panel__empty">
-			No transcript loaded yet. Use one of the actions above to get started.
-		</p>
+		<p class="data-panel__empty">No transcript loaded yet. Use one of the actions above to get started.</p>
 	{/if}
 </div>
 

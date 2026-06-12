@@ -82,21 +82,14 @@ const LEGACY_WORKSPACE_MIGRATIONS: Record<string, Workspace> = {
 	code: 'edit',
 	present: 'present'
 };
-const VALID_ONBOARDING_STATES: readonly OnboardingState[] = [
-	'unseen',
-	'dismissed',
-	'seen'
-] as const;
+const VALID_ONBOARDING_STATES: readonly OnboardingState[] = ['unseen', 'dismissed', 'seen'] as const;
 
 function isValidWorkspace(value: unknown): value is Workspace {
 	return typeof value === 'string' && (VALID_WORKSPACES as readonly string[]).includes(value);
 }
 
 function isValidOnboardingState(value: unknown): value is OnboardingState {
-	return (
-		typeof value === 'string' &&
-		(VALID_ONBOARDING_STATES as readonly string[]).includes(value)
-	);
+	return typeof value === 'string' && (VALID_ONBOARDING_STATES as readonly string[]).includes(value);
 }
 
 function readPersistedWorkspace(): Workspace | null {

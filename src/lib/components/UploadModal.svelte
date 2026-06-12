@@ -124,14 +124,7 @@
 		}}
 		onkeydown={handleKeydown}
 	>
-		<div
-			bind:this={dialogEl}
-			class="modal-box w-11/12 max-w-lg"
-			role="dialog"
-			aria-modal="true"
-			aria-labelledby="upload-modal-title"
-			tabindex="-1"
-		>
+		<div bind:this={dialogEl} class="modal-box w-11/12 max-w-lg" role="dialog" aria-modal="true" aria-labelledby="upload-modal-title" tabindex="-1">
 			{#if csvPreview}
 				<!-- CSV Preview -->
 				<div class="flex justify-between items-center mb-4">
@@ -139,7 +132,9 @@
 						<button class="btn btn-ghost btn-sm btn-square" onclick={() => oncancelPreview?.()} aria-label="Back">
 							<ArrowLeft size={18} />
 						</button>
-						<h3 id="upload-modal-title" class="font-bold text-lg truncate max-w-[300px]" title={csvPreview.fileName}>Preview: {csvPreview.fileName}</h3>
+						<h3 id="upload-modal-title" class="font-bold text-lg truncate max-w-[300px]" title={csvPreview.fileName}>
+							Preview: {csvPreview.fileName}
+						</h3>
 					</div>
 					<button
 						class="btn btn-circle btn-sm"
@@ -246,7 +241,9 @@
 						<button class="btn btn-ghost btn-sm btn-square" onclick={() => oncancelCodePreview?.()} aria-label="Back">
 							<ArrowLeft size={18} />
 						</button>
-						<h3 id="upload-modal-title" class="font-bold text-lg truncate max-w-[300px]" title={codePreview.fileName}>Preview: {codePreview.fileName}</h3>
+						<h3 id="upload-modal-title" class="font-bold text-lg truncate max-w-[300px]" title={codePreview.fileName}>
+							Preview: {codePreview.fileName}
+						</h3>
 					</div>
 					<button
 						class="btn btn-circle btn-sm"
