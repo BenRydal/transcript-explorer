@@ -9,8 +9,7 @@ export type Workspace = 'edit' | 'present' | 'transcribe';
  * the next client render. `seen` = user started the tour from the dialog.
  * `dismissed` = user explicitly opted out via the "don't show again"
  * checkbox. Both `seen` and `dismissed` suppress the dialog on subsequent
- * loads; the user can reset to `unseen` via HelpPanel's "Show welcome
- * again" affordance.
+ * loads.
  */
 export type OnboardingState = 'unseen' | 'dismissed' | 'seen';
 

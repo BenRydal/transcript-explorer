@@ -79,9 +79,6 @@
 		el?.focus();
 	}
 
-	// Same example catalog HelpPanel renders (id / title / description /
-	// speakers / duration / thumb). Kept inline so this component stays
-	// self-contained and the cards match the panel users already know.
 	const examples = [
 		{
 			id: 'example-1',
