@@ -49,7 +49,7 @@
 
 		<button type="button" class="data-panel__disclosure" aria-expanded={showExamples} onclick={() => (showExamples = !showExamples)}>
 			<span class="data-panel__disclosure-label">
-				<span>Example</span>
+				<span class="data-panel__section-label">Example</span>
 				{#if selectedExampleLabel}
 					<span class="data-panel__disclosure-sublabel">{selectedExampleLabel}</span>
 				{/if}
@@ -118,61 +118,63 @@
 			{/if}
 		</section>
 
-		<section class="data-panel__section">
-			<p class="data-panel__section-label">Speakers</p>
-			{#if $UserStore.length === 0}
-				<p class="data-panel__empty">No speakers loaded.</p>
-			{:else}
-				{#each $UserStore as user}
-					<details class="data-panel__speaker">
-						<summary class="data-panel__speaker-summary">
-							<span class="data-panel__swatch" style="background-color: {user.color};" aria-hidden="true"></span>
-							<span class="data-panel__speaker-name" title={toTitleCase(user.name)}>{toTitleCase(user.name)}</span>
-						</summary>
-						<div class="data-panel__speaker-body">
-							<p>
-								<span class="data-panel__stat-label">Status:</span>
-								<span class={user.enabled ? 'data-panel__status-on' : 'data-panel__status-off'}>
-									{user.enabled ? 'Active' : 'Inactive'}
-								</span>
-							</p>
-							<p>
-								<span class="data-panel__stat-label">Color:</span>
-								<span>{user.color}</span>
-							</p>
-							{#if $TranscriptStore.wordArray.length > 0}
-								{@const userWords = $TranscriptStore.wordArray.filter((dp) => dp.speaker === user.name)}
-								{@const userTurns = new Set(userWords.map((dp) => dp.turnNumber))}
+		{#if showStats}
+			<section class="data-panel__section">
+				<p class="data-panel__section-label">Speakers</p>
+				{#if $UserStore.length === 0}
+					<p class="data-panel__empty">No speakers loaded.</p>
+				{:else}
+					{#each $UserStore as user}
+						<details class="data-panel__speaker">
+							<summary class="data-panel__speaker-summary">
+								<span class="data-panel__swatch" style="background-color: {user.color};" aria-hidden="true"></span>
+								<span class="data-panel__speaker-name" title={toTitleCase(user.name)}>{toTitleCase(user.name)}</span>
+							</summary>
+							<div class="data-panel__speaker-body">
 								<p>
-									<span class="data-panel__stat-label">Words:</span>
-									<span>{userWords.length}</span>
+									<span class="data-panel__stat-label">Status:</span>
+									<span class={user.enabled ? 'data-panel__status-on' : 'data-panel__status-off'}>
+										{user.enabled ? 'Active' : 'Inactive'}
+									</span>
 								</p>
 								<p>
-									<span class="data-panel__stat-label">Turns:</span>
-									<span>{userTurns.size}</span>
+									<span class="data-panel__stat-label">Color:</span>
+									<span>{user.color}</span>
 								</p>
+								{#if $TranscriptStore.wordArray.length > 0}
+									{@const userWords = $TranscriptStore.wordArray.filter((dp) => dp.speaker === user.name)}
+									{@const userTurns = new Set(userWords.map((dp) => dp.turnNumber))}
+									<p>
+										<span class="data-panel__stat-label">Words:</span>
+										<span>{userWords.length}</span>
+									</p>
+									<p>
+										<span class="data-panel__stat-label">Turns:</span>
+										<span>{userTurns.size}</span>
+									</p>
 
-								{#if userWords.length > 0}
-									<p class="data-panel__sample-label">Recent samples:</p>
-									<ul class="data-panel__samples">
-										{#each userWords.slice(-3) as dataPoint}
-											<li>
-												<span class="data-panel__sample-word">"{dataPoint.word}"</span>
-												{#if $TranscriptStore.timingMode !== 'untimed'}
-													<span class="data-panel__sample-time">
-														{dataPoint.startTime.toFixed(2)}s – {dataPoint.endTime.toFixed(2)}s
-													</span>
-												{/if}
-											</li>
-										{/each}
-									</ul>
+									{#if userWords.length > 0}
+										<p class="data-panel__sample-label">Recent samples:</p>
+										<ul class="data-panel__samples">
+											{#each userWords.slice(-3) as dataPoint}
+												<li>
+													<span class="data-panel__sample-word">"{dataPoint.word}"</span>
+													{#if $TranscriptStore.timingMode !== 'untimed'}
+														<span class="data-panel__sample-time">
+															{dataPoint.startTime.toFixed(2)}s – {dataPoint.endTime.toFixed(2)}s
+														</span>
+													{/if}
+												</li>
+											{/each}
+										</ul>
+									{/if}
 								{/if}
-							{/if}
-						</div>
-					</details>
-				{/each}
-			{/if}
-		</section>
+							</div>
+						</details>
+					{/each}
+				{/if}
+			</section>
+		{/if}
 	{:else}
 		<p class="data-panel__empty">No transcript loaded yet. Use one of the actions above to get started.</p>
 	{/if}
