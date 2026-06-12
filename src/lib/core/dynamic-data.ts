@@ -2,10 +2,12 @@ import type { DataPoint } from '../../models/dataPoint';
 import TranscriptStore from '../../stores/transcriptStore';
 import TimelineStore from '../../stores/timelineStore';
 import UserStore from '../../stores/userStore';
-import ConfigStore, { type ConfigStoreType } from '../../stores/configStore';
+import VizStore, { type VizStoreType } from '../../stores/vizStore';
+import FiltersStore, { type FiltersStoreType } from '../../stores/filtersStore';
 import CodeStore, { type CodeEntry } from '../../stores/codeStore';
 import { get } from 'svelte/store';
 import { clearScalingCache, clearCloudBuffer } from '../draw/contribution-cloud';
+import { registerVizCacheReset } from '../draw/viz-cache-registry';
 import { normalizeWord } from './string-utils';
 import type { NetworkData } from '../draw/turn-network';
 
@@ -69,72 +71,180 @@ export interface SpeakerFingerprintData {
 // Safe division helper - returns 0 when denominator is 0
 const ratio = (num: number, denom: number): number => (denom > 0 ? num / denom : 0);
 
+/**
+ * Computes adjusted residuals (z-scores) for every (from, to) cell of a
+ * transition matrix built as a nested Map<from, Map<to, {count}>>. Keys are
+ * "from→to". See `getDynamicArrayForTurnNetwork` for the formula.
+ *
+ * Observed counts come from `count` on each inner map entry. Row sums, column
+ * sums, and grand total are computed across the union of all speakers that
+ * appear as source or target so the contingency table is square-ish.
+ */
+function computeAdjustedResiduals(
+	transitions: Map<string, Map<string, { count: number; wordCount: number; turnStartPoints: DataPoint[] }>>
+): Map<string, number> {
+	const result = new Map<string, number>();
+
+	// Collect all speakers that appear on either axis.
+	const speakers = new Set<string>();
+	for (const [from, targets] of transitions) {
+		speakers.add(from);
+		for (const to of targets.keys()) speakers.add(to);
+	}
+
+	// Build observed matrix + sums.
+	const rowSum = new Map<string, number>();
+	const colSum = new Map<string, number>();
+	let grandTotal = 0;
+	for (const [from, targets] of transitions) {
+		for (const [to, entry] of targets) {
+			const count = entry.count;
+			rowSum.set(from, (rowSum.get(from) ?? 0) + count);
+			colSum.set(to, (colSum.get(to) ?? 0) + count);
+			grandTotal += count;
+		}
+	}
+
+	if (grandTotal === 0) return result;
+
+	for (const from of speakers) {
+		for (const to of speakers) {
+			const observed = transitions.get(from)?.get(to)?.count ?? 0;
+			const ri = rowSum.get(from) ?? 0;
+			const cj = colSum.get(to) ?? 0;
+			const expected = (ri * cj) / grandTotal;
+			if (expected <= 0) {
+				result.set(`${from}→${to}`, 0);
+				continue;
+			}
+			const residual = observed - expected;
+			const denom = Math.sqrt(expected * (1 - ri / grandTotal) * (1 - cj / grandTotal));
+			const z = denom > 0 ? residual / denom : 0;
+			result.set(`${from}→${to}`, z);
+		}
+	}
+
+	return result;
+}
+
 // Interrogative words for question detection
 const QUESTION_STARTERS = new Set(
 	'what who where when why how is are was were am do does did can could will would should shall may might have has had'.split(' ')
 );
 
-// Module-level stop words Set (created once, shared by all instances)
-const STOP_WORDS = new Set(
-	[
-		// Articles, conjunctions, prepositions
-		'a an the and or but if then than because while until although though',
-		'of to in from by with as at for on about into during after before',
-		'above below around between under out over through off',
-		// Pronouns
-		'i you he she it we they me him her us them my your his its our their',
-		'that which who whom whose what this these those',
-		// Quantifiers
-		'all any some each every both either neither more most less least',
-		'much many few such other another same',
-		// Be/Have/Do/Modal verbs
-		'is are was were am be been being have has had having do does did doing',
-		'can could will would may might must shall should',
-		// Common verbs (only semantically empty ones; know/think/say/see kept visible)
-		'get got getting goes go going gone went come coming came',
-		'make made making',
-		// Adverbs
-		'not no yes here there when where how why up down even very just so',
-		'only now still also too well really quite rather always never often',
-		'sometimes already again back away',
-		// Contractions
-		"don't doesn't didn't won't can't couldn't wouldn't shouldn't",
-		"isn't aren't wasn't weren't haven't hasn't hadn't",
-		"i'm you're he's she's it's we're they're",
-		"i've you've we've they've i'll you'll he'll she'll we'll they'll",
-		"i'd you'd he'd she'd we'd they'd that's there's here's what's who's let's",
-		// Spoken fillers
-		'uh um like yeah okay ok oh ah gonna wanna gotta kinda sorta',
-		'basically actually literally right mean'
-	]
-		.join(' ')
-		.split(' ')
-);
+// Default stopword list. Exported read-only so the Filters panel can show
+// the baseline, and the active filter is computed as the union of this set
+// with the user's custom entries (see `getActiveStopWords`).
+export const DEFAULT_STOPWORDS: readonly string[] = [
+	// Articles, conjunctions, prepositions
+	'a an the and or but if then than because while until although though',
+	'of to in from by with as at for on about into during after before',
+	'above below around between under out over through off',
+	// Pronouns
+	'i you he she it we they me him her us them my your his its our their',
+	'that which who whom whose what this these those',
+	// Quantifiers
+	'all any some each every both either neither more most less least',
+	'much many few such other another same',
+	// Be/Have/Do/Modal verbs
+	'is are was were am be been being have has had having do does did doing',
+	'can could will would may might must shall should',
+	// Common verbs (only semantically empty ones; know/think/say/see kept visible)
+	'get got getting goes go going gone went come coming came',
+	'make made making',
+	// Adverbs
+	'not no yes here there when where how why up down even very just so',
+	'only now still also too well really quite rather always never often',
+	'sometimes already again back away',
+	// Contractions
+	"don't doesn't didn't won't can't couldn't wouldn't shouldn't",
+	"isn't aren't wasn't weren't haven't hasn't hadn't",
+	"i'm you're he's she's it's we're they're",
+	"i've you've we've they've i'll you'll he'll she'll we'll they'll",
+	"i'd you'd he'd she'd we'd they'd that's there's here's what's who's let's",
+	// Spoken fillers
+	'uh um like yeah okay ok oh ah gonna wanna gotta kinda sorta',
+	'basically actually literally right mean'
+]
+	.join(' ')
+	.split(' ');
 
-let config: ConfigStoreType;
+const DEFAULT_STOPWORDS_SET = new Set(DEFAULT_STOPWORDS);
+
+// Snapshot of the active stopword set  -  always includes DEFAULT_STOPWORDS
+// plus any user-supplied customStopWords. Whether filtering is APPLIED is
+// decided at call site (in getProcessedWords) by either the legacy
+// `stopWordsToggle` or the new `stopWordsEnabled` flag; this set is what
+// `isStopWord` consults when filtering runs.
+let activeStopWords: Set<string> = new Set(DEFAULT_STOPWORDS_SET);
+
+function rebuildActiveStopWords(filters: FiltersStoreType): void {
+	const merged = new Set(DEFAULT_STOPWORDS_SET);
+	for (const raw of filters.customStopWords) {
+		const token = normalizeWord(raw);
+		if (token) merged.add(token);
+	}
+	activeStopWords = merged;
+}
+
+// Merged snapshot of viz + filter fields used by this module's logic.
+// Kept as a merged object so existing `config.X` reads continue to resolve
+// regardless of which underlying store owns the field.
+let config: VizStoreType & FiltersStoreType = { ...get(VizStore), ...get(FiltersStore) };
 let codeEntries: CodeEntry[] = [];
 
-// Subscription kept for change-detection: clears caches when relevant toggles change.
+// Subscriptions kept for change-detection: clear caches when relevant toggles change.
 // Intentionally module-level (lives for app lifetime, no cleanup needed).
-ConfigStore.subscribe((value) => {
+VizStore.subscribe((value) => {
 	if (
 		config &&
 		(config.lastWordToggle !== value.lastWordToggle ||
 			config.echoWordsToggle !== value.echoWordsToggle ||
 			config.stopWordsToggle !== value.stopWordsToggle ||
 			config.sortToggle !== value.sortToggle ||
-			config.separateToggle !== value.separateToggle)
+			config.separateToggle !== value.separateToggle ||
+			config.contributionCloudWeighting !== value.contributionCloudWeighting)
 	) {
 		clearScalingCache();
 		clearCloudBuffer();
 	}
-	config = value;
+	config = { ...config, ...value };
 });
+
+FiltersStore.subscribe((value) => {
+	const prev = config;
+	config = { ...config, ...value };
+	// Stopword set only needs rebuilding when the toggles or custom list change.
+	if (!prev || prev.stopWordsEnabled !== value.stopWordsEnabled || prev.customStopWords !== value.customStopWords) {
+		rebuildActiveStopWords(value);
+		clearScalingCache();
+		clearCloudBuffer();
+	}
+});
+
+// Initial build so the first paint uses the right list.
+rebuildActiveStopWords(get(FiltersStore));
 
 CodeStore.subscribe((value) => {
 	codeEntries = value;
 	clearScalingCache();
 	clearCloudBuffer();
+});
+
+// Memoized full-transcript max values for the speaker-fingerprint radar.
+// In overlay/small-multiples mode with `scaleToVisibleData=false`, this
+// was recomputed every frame (a full wordArray scan just to derive two
+// numbers). Key on (wordArray ref, filterStopWords) so toggling the
+// stop-words filter still invalidates, and the transcript-lifecycle
+// reset clears it outright.
+let fullTranscriptFingerprintMaxCache: {
+	wordArray: unknown;
+	filterStopWords: boolean;
+	avgTurnLength: number;
+	participation: number;
+} | null = null;
+registerVizCacheReset(() => {
+	fullTranscriptFingerprintMaxCache = null;
 });
 
 interface TurnData {
@@ -160,7 +270,7 @@ export class DynamicData {
 	}
 
 	isStopWord(stringWord: string): boolean {
-		return STOP_WORDS.has(normalizeWord(stringWord));
+		return activeStopWords.has(normalizeWord(stringWord));
 	}
 
 	/** Builds per-turn aggregated data from a words array. */
@@ -226,8 +336,13 @@ export class DynamicData {
 		const result: DataPoint[] = [];
 		const countMap = new Map<string, DataPoint[]>();
 
+		// Stopword filtering gate: either the legacy per-viz `stopWordsToggle`
+		// (Settings panel) or the Filters-panel-level `stopWordsEnabled`
+		// triggers filtering. Custom stopwords augment the default list when
+		// `stopWordsEnabled` is on (see `rebuildActiveStopWords`).
+		const filterStopWords = config.stopWordsToggle || config.stopWordsEnabled;
 		for (const word of slice) {
-			if (config.stopWordsToggle && this.isStopWord(word.word)) continue;
+			if (filterStopWords && this.isStopWord(word.word)) continue;
 			// Code visibility: hide words whose codes are all disabled, or uncoded words when showUncoded is off
 			if (enabledCodes) {
 				if (word.codes.length > 0 && !word.codes.some((c) => enabledCodes.has(c))) continue;
@@ -307,6 +422,12 @@ export class DynamicData {
 	getDynamicArraySortedForContributionCloud(): DataPoint[] {
 		const words = this.getProcessedWords(true);
 
+		// tfidf overwrites `count` so the log(count)/log(maxCount) scaling path
+		// is unchanged. doc = speaker's wordstream; idf = log(N/df).
+		if (config.contributionCloudWeighting === 'tfidf') {
+			this.applyTfidfWeighting(words);
+		}
+
 		const needsSeparate = config.separateToggle;
 		const needsSort = config.sortToggle;
 
@@ -324,6 +445,71 @@ export class DynamicData {
 		}
 
 		return words;
+	}
+
+	/**
+	 * Overwrites each DataPoint's `count` with the TF-IDF weight of its
+	 * (speaker, word) pair on the same integer scale frequency mode produces.
+	 * Words uniform across all speakers collapse to count=1.
+	 */
+	private applyTfidfWeighting(words: DataPoint[]): void {
+		if (words.length === 0) return;
+
+		// TF: term count per (speaker, term); also total term count per speaker.
+		const tf = new Map<string, Map<string, number>>();
+		const speakerTotals = new Map<string, number>();
+		for (const w of words) {
+			const term = normalizeWord(w.word);
+			let speakerMap = tf.get(w.speaker);
+			if (!speakerMap) {
+				speakerMap = new Map();
+				tf.set(w.speaker, speakerMap);
+			}
+			speakerMap.set(term, (speakerMap.get(term) ?? 0) + 1);
+			speakerTotals.set(w.speaker, (speakerTotals.get(w.speaker) ?? 0) + 1);
+		}
+
+		// Document frequency: how many speakers use each term.
+		const df = new Map<string, number>();
+		for (const [, speakerMap] of tf) {
+			for (const term of speakerMap.keys()) {
+				df.set(term, (df.get(term) ?? 0) + 1);
+			}
+		}
+
+		const N = tf.size;
+		if (N === 0) return;
+
+		// Precompute TF-IDF per (speaker, term). Standard formula with a
+		// +1 in the IDF denominator to avoid divide-by-zero on terms that
+		// somehow have df=0; log base is natural.
+		const tfidf = new Map<string, Map<string, number>>();
+		let maxTfidf = 0;
+		for (const [speaker, speakerMap] of tf) {
+			const total = speakerTotals.get(speaker) ?? 1;
+			const innerMap = new Map<string, number>();
+			for (const [term, count] of speakerMap) {
+				const termTf = count / total;
+				const termDf = df.get(term) ?? 1;
+				const idf = Math.log(N / termDf);
+				const score = termTf * Math.max(0, idf);
+				innerMap.set(term, score);
+				if (score > maxTfidf) maxTfidf = score;
+			}
+			tfidf.set(speaker, innerMap);
+		}
+		if (maxTfidf <= 0) return;
+
+		// Map TF-IDF scores into the existing integer count scale. Target
+		// range: 1..~20 so log-based size scaling behaves similarly to the
+		// frequency path. 1 + round(score / maxTfidf * 19) keeps the range.
+		const SCALE_TARGET = 20;
+		for (const w of words) {
+			const term = normalizeWord(w.word);
+			const score = tfidf.get(w.speaker)?.get(term) ?? 0;
+			const scaled = Math.max(1, Math.round(1 + (score / maxTfidf) * (SCALE_TARGET - 1)));
+			w.count = scaled;
+		}
 	}
 
 	getTurnSummaries(): { speaker: string; wordCount: number; firstDataPoint: DataPoint; content: string }[] {
@@ -397,7 +583,14 @@ export class DynamicData {
 		this.sortSpeakerEntries(statsEntries, (s) => s);
 		const sortedStats = new Map(statsEntries);
 
-		return { transitions, speakerStats: sortedStats, searchMatchingTurns, turnWordCounts };
+		// Lag-sequential adjusted residuals (z-scores) per transition cell, over
+		// the full pre-filter matrix. Contingency-table formula; |z|>=1.96 ~ p<0.05:
+		//   expected[i][j] = rowSum[i] * colSum[j] / grandTotal
+		//   adjRes[i][j]   = (observed - expected) /
+		//                    sqrt(expected * (1 - rowSum/grandTotal) * (1 - colSum/grandTotal))
+		const adjustedResiduals = computeAdjustedResiduals(transitions);
+
+		return { transitions, speakerStats: sortedStats, searchMatchingTurns, turnWordCounts, adjustedResiduals };
 	}
 
 	/**
@@ -544,12 +737,30 @@ export class DynamicData {
 	 * Computes max values from the full transcript for consistent normalization.
 	 * Includes ALL speakers so values remain stable when toggling speaker visibility.
 	 * Respects stop words filter. Does NOT filter by time range or enabled speakers.
+	 *
+	 * Memoized module-side keyed on (wordArray ref, filterStopWords). The
+	 * result is a function of the full wordArray only  -  speaker toggles and
+	 * timeline markers don't affect it  -  so without memoization this scan
+	 * repeats every frame while the fingerprint viz is active.
 	 */
 	private computeFullTranscriptMaxValues(): { avgTurnLength: number; participation: number } {
 		const wordArray = get(TranscriptStore).wordArray || [];
 		if (wordArray.length === 0) return { avgTurnLength: 0, participation: 0 };
 
-		const filterStopWords = config.stopWordsToggle;
+		// Mirror the gating in getProcessedWords: either legacy VizStore
+		// toggle or the new FiltersStore gate engages filtering.
+		const filterStopWords = !!(config.stopWordsToggle || config.stopWordsEnabled);
+
+		if (
+			fullTranscriptFingerprintMaxCache &&
+			fullTranscriptFingerprintMaxCache.wordArray === wordArray &&
+			fullTranscriptFingerprintMaxCache.filterStopWords === filterStopWords
+		) {
+			return {
+				avgTurnLength: fullTranscriptFingerprintMaxCache.avgTurnLength,
+				participation: fullTranscriptFingerprintMaxCache.participation
+			};
+		}
 
 		// Aggregate from full wordArray across all speakers for stable normalization
 		const speakerData = new Map<string, { wordCount: number; turns: Set<number> }>();
@@ -576,6 +787,12 @@ export class DynamicData {
 			maxPart = Math.max(maxPart, ratio(data.turns.size, totalTurns));
 		}
 
+		fullTranscriptFingerprintMaxCache = {
+			wordArray,
+			filterStopWords,
+			avgTurnLength: maxAvg,
+			participation: maxPart
+		};
 		return { avgTurnLength: maxAvg, participation: maxPart };
 	}
 

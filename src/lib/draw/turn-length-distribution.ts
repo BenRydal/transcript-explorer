@@ -4,6 +4,7 @@ import type { Bounds } from './types/bounds';
 import { withDimming, formatTurnPreviewLines, getCrossHighlight, getDominantCodeColor } from './draw-utils';
 import { normalizeWord } from '../core/string-utils';
 import { DrawContext } from './draw-context';
+import { registerVizCacheReset } from './viz-cache-registry';
 
 const LEFT_MARGIN = 60;
 const BOTTOM_MARGIN = 40;
@@ -12,6 +13,14 @@ const BAR_PADDING = 2;
 const HOVER_OUTLINE_WEIGHT = 2;
 const TARGET_BIN_COUNT = 15;
 const Y_TICKS = 5;
+
+// Module-level memo (a fresh TurnLengthDistribution is built every frame and
+// each scans the full wordArray). Keyed on (wordArray ref, binCount); reset on
+// transcript change.
+let fullTranscriptBinCountCache: { wordArray: unknown; binCount: number; result: number } | null = null;
+registerVizCacheReset(() => {
+	fullTranscriptBinCountCache = null;
+});
 
 interface TurnSummary {
 	speaker: string;
@@ -128,13 +137,14 @@ export class TurnLengthDistribution {
 		this.ctx.sk.textSize(Math.max(8, Math.min(10, this.bounds.height * 0.03)));
 		this.ctx.sk.textAlign(this.ctx.sk.RIGHT, this.ctx.sk.CENTER);
 		this.ctx.sk.noStroke();
+		const theme = this.ctx.theme;
 		for (let i = 0; i <= Y_TICKS; i++) {
 			const frac = i / Y_TICKS;
 			const val = Math.round(frac * maxCount);
 			const y = this.gy + this.gh - frac * this.gh;
-			this.ctx.sk.fill(120);
+			this.ctx.sk.fill(theme.fgMuted);
 			this.ctx.sk.text(String(val), this.gx - 8, y);
-			this.ctx.sk.stroke(240);
+			this.ctx.sk.stroke(theme.borderMuted);
 			this.ctx.sk.strokeWeight(1);
 			this.ctx.sk.line(this.gx, y, this.gx + this.gw, y);
 			this.ctx.sk.noStroke();
@@ -165,7 +175,12 @@ export class TurnLengthDistribution {
 						(crossHighlight.speaker != null && speaker !== crossHighlight.speaker));
 				withDimming(this.ctx.sk.drawingContext, shouldDim, () => {
 					const user = this.ctx.userMap.get(speaker);
-					const barColor = getDominantCodeColor(turns.map((t) => t.dataPoint), user!.color, this.ctx.codeColorMap, this.ctx.config.codeColorMode);
+					const barColor = getDominantCodeColor(
+						turns.map((t) => t.dataPoint),
+						user!.color,
+						this.ctx.codeColorMap,
+						this.ctx.config.codeColorMode
+					);
 					const c = this.ctx.sk.color(barColor);
 					c.setAlpha(200);
 					this.ctx.sk.fill(c);
@@ -190,7 +205,7 @@ export class TurnLengthDistribution {
 	private drawXAxis(bins: Bin[], barWidth: number): void {
 		const fontSize = Math.max(8, Math.min(10, this.bounds.height * 0.03));
 		this.ctx.sk.textSize(fontSize);
-		this.ctx.sk.fill(120);
+		this.ctx.sk.fill(this.ctx.theme.fgMuted);
 		this.ctx.sk.noStroke();
 		this.ctx.sk.textAlign(this.ctx.sk.CENTER, this.ctx.sk.TOP);
 		const labelInterval = Math.max(1, Math.floor(bins.length / 10));
@@ -201,14 +216,22 @@ export class TurnLengthDistribution {
 		}
 
 		this.ctx.sk.textSize(fontSize + 1);
-		this.ctx.sk.fill(100);
+		this.ctx.sk.fill(this.ctx.theme.fg);
 		this.ctx.sk.text('Words per turn', this.gx + this.gw / 2, this.gy + this.gh + 5 + fontSize + 4);
 	}
 
 	private drawHoverEffect(hovered: HoveredSegment, barWidth: number, bins: Bin[]): void {
 		const user = this.ctx.userMap.get(hovered.speaker);
 		const hoverTurns = bins[hovered.binIndex].speakers.get(hovered.speaker);
-		const hoverColor = hoverTurns && hoverTurns.length > 0 ? getDominantCodeColor(hoverTurns.map((t) => t.dataPoint), user?.color || '#cccccc', this.ctx.codeColorMap, this.ctx.config.codeColorMode) : user?.color || '#cccccc';
+		const hoverColor =
+			hoverTurns && hoverTurns.length > 0
+				? getDominantCodeColor(
+						hoverTurns.map((t) => t.dataPoint),
+						user?.color || '#cccccc',
+						this.ctx.codeColorMap,
+						this.ctx.config.codeColorMode
+					)
+				: user?.color || '#cccccc';
 		this.ctx.sk.noFill();
 		this.ctx.sk.stroke(hoverColor);
 		this.ctx.sk.strokeWeight(HOVER_OUTLINE_WEIGHT);
@@ -221,7 +244,15 @@ export class TurnLengthDistribution {
 		const user = this.ctx.userMap.get(hovered.speaker);
 		const multiTurn = turns.length > 1;
 		const content = `<b>${hovered.speaker}</b> · ${turns.length} turn${multiTurn ? 's' : ''}\n${formatTurnPreviewLines(turns)}`;
-		const tooltipColor = turns.length > 0 ? getDominantCodeColor(turns.map((t) => t.dataPoint), user?.color || '#cccccc', this.ctx.codeColorMap, this.ctx.config.codeColorMode) : user?.color || '#cccccc';
+		const tooltipColor =
+			turns.length > 0
+				? getDominantCodeColor(
+						turns.map((t) => t.dataPoint),
+						user?.color || '#cccccc',
+						this.ctx.codeColorMap,
+						this.ctx.config.codeColorMode
+					)
+				: user?.color || '#cccccc';
 		showTooltip(this.ctx.sk.mouseX, this.ctx.sk.mouseY, content, tooltipColor, this.bounds.y + this.bounds.height);
 	}
 
@@ -271,39 +302,49 @@ export class TurnLengthDistribution {
 
 	/**
 	 * Computes the max bin count from the full transcript for stable scaling.
+	 * Memoized on (wordArray ref, binCount) to avoid a full-transcript scan
+	 * every frame. Invalidated by the transcript-lifecycle cache reset.
 	 */
 	private computeFullTranscriptMaxBinCount(): number {
-		if (this.ctx.transcript.wordArray.length === 0) return 0;
+		const wordArray = this.ctx.transcript.wordArray;
+		if (wordArray.length === 0) return 0;
+		const targetBins = this.ctx.config.turnLengthBinCount > 0 ? this.ctx.config.turnLengthBinCount : TARGET_BIN_COUNT;
 
-		// Build turn summaries from full transcript
-		const turnMap = new Map<number, { wordCount: number }>();
-		for (const word of this.ctx.transcript.wordArray) {
-			const existing = turnMap.get(word.turnNumber);
-			if (existing) {
-				existing.wordCount++;
-			} else {
-				turnMap.set(word.turnNumber, { wordCount: 1 });
-			}
+		if (fullTranscriptBinCountCache && fullTranscriptBinCountCache.wordArray === wordArray && fullTranscriptBinCountCache.binCount === targetBins) {
+			return fullTranscriptBinCountCache.result;
 		}
 
-		const turns = Array.from(turnMap.values());
-		if (turns.length === 0) return 0;
+		// Build turn summaries from full transcript
+		const turnMap = new Map<number, number>();
+		for (const word of wordArray) {
+			turnMap.set(word.turnNumber, (turnMap.get(word.turnNumber) ?? 0) + 1);
+		}
+		if (turnMap.size === 0) {
+			fullTranscriptBinCountCache = { wordArray, binCount: targetBins, result: 0 };
+			return 0;
+		}
 
-		const wordCounts = turns.map((t) => t.wordCount);
-		const maxWordCount = Math.max(...wordCounts);
-		const minWordCount = Math.min(...wordCounts);
+		let maxWordCount = -Infinity;
+		let minWordCount = Infinity;
+		for (const c of turnMap.values()) {
+			if (c > maxWordCount) maxWordCount = c;
+			if (c < minWordCount) minWordCount = c;
+		}
 		const range = maxWordCount - minWordCount;
 
-		const targetBins = this.ctx.config.turnLengthBinCount > 0 ? this.ctx.config.turnLengthBinCount : TARGET_BIN_COUNT;
 		const binSize = range === 0 ? 1 : Math.max(1, Math.ceil(range / targetBins));
 		const numBins = range === 0 ? 1 : Math.ceil(range / binSize) + 1;
 
 		const binCounts = new Array(numBins).fill(0);
-		for (const turn of turns) {
-			const binIndex = Math.min(numBins - 1, Math.floor((turn.wordCount - minWordCount) / binSize));
+		for (const c of turnMap.values()) {
+			const binIndex = Math.min(numBins - 1, Math.floor((c - minWordCount) / binSize));
 			binCounts[binIndex]++;
 		}
 
-		return Math.max(...binCounts);
+		let result = 0;
+		for (const bc of binCounts) if (bc > result) result = bc;
+
+		fullTranscriptBinCountCache = { wordArray, binCount: targetBins, result };
+		return result;
 	}
 }

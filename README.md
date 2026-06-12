@@ -7,7 +7,7 @@
 <p align="center">
   <a href="https://www.transcriptexplorer.org"><img src="https://img.shields.io/badge/Visit_Site-orange" alt="Visit Site"></a>
   <a href="https://www.gnu.org/licenses/gpl-3.0"><img src="https://img.shields.io/badge/License-GPLv3-blue.svg" alt="License: GPL v3"></a>
-  <img src="https://img.shields.io/badge/Svelte-4-FF3E00?logo=svelte&logoColor=white" alt="Svelte">
+  <img src="https://img.shields.io/badge/Svelte-5-FF3E00?logo=svelte&logoColor=white" alt="Svelte">
   <img src="https://img.shields.io/badge/TypeScript-5-3178C6?logo=typescript&logoColor=white" alt="TypeScript">
   <img src="https://img.shields.io/badge/p5.js-ED225D?logo=p5.js&logoColor=white" alt="p5.js">
   <img src="https://img.shields.io/badge/100%25-Client--Side-success" alt="Client-Side">
@@ -97,8 +97,8 @@ You can also load:
 
 ### Prerequisites
 
-- Node.js 18+
-- Yarn
+- Node.js 20+ (a `.nvmrc` pins the version; run `nvm use` if you use nvm)
+- [Corepack](https://nodejs.org/api/corepack.html) (ships with Node) — activates the pinned Yarn version automatically
 
 ### Installation
 
@@ -106,6 +106,9 @@ You can also load:
 # Clone the repository
 git clone https://github.com/BenRydal/transcript-explorer.git
 cd transcript-explorer
+
+# Activate the pinned Yarn (4.5.3) via Corepack
+corepack enable
 
 # Install dependencies
 yarn install
@@ -115,6 +118,28 @@ yarn dev
 ```
 
 Visit `http://localhost:5173` in your browser.
+
+### Running the `refactor/svelte-p5-library-adoption` branch
+
+This branch consumes the in-progress [`svelte-p5`](https://github.com/edw1nzhao/svelte-p5)
+canvas-UI component library directly from preview builds (via
+[pkg.pr.new](https://pkg.pr.new/)), so you do **not** need a local checkout of the
+library to run it:
+
+```bash
+git clone https://github.com/BenRydal/transcript-explorer.git
+cd transcript-explorer
+git checkout refactor/svelte-p5-library-adoption
+corepack enable
+yarn install   # pulls svelte-p5* from pkg.pr.new (PR #52 of the library repo)
+yarn dev
+```
+
+The three `svelte-p5*` dependencies in `package.json` point at
+`https://pkg.pr.new/svelte-p5*@52` — the preview tarballs published by CI for the
+library's open PR. When the library work is released to npm, these will switch to
+normal version ranges. A peer-dependency warning about `svelte-p5` during install is
+expected (a `workspace:` protocol artifact in the preview tarballs) and is harmless.
 
 ### Available Scripts
 
@@ -157,7 +182,7 @@ We welcome contributions! Here's how you can help:
 
 If you use Transcript Explorer in your research, please cite:
 
-> Shapiro, B. R., Hall, R., Mathur, A., & Zhao, E. (2025). Exploratory Visual Analysis of Transcripts for Interaction Analysis in Human-Computer Interaction. In *Proceedings of the 2025 CHI Conference on Human Factors in Computing Systems* (CHI '25). ACM, 17 pages. https://doi.org/10.1145/3706598.3713490
+> Shapiro, B. R., Hall, R., Mathur, A., & Zhao, E. (2025). Exploratory Visual Analysis of Transcripts for Interaction Analysis in Human-Computer Interaction. In _Proceedings of the 2025 CHI Conference on Human Factors in Computing Systems_ (CHI '25). ACM, 17 pages. https://doi.org/10.1145/3706598.3713490
 
 <details>
 <summary>BibTeX</summary>

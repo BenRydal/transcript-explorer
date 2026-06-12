@@ -4,6 +4,7 @@
  */
 
 import { toSeconds } from './time-utils';
+import { estimateDuration } from './timing-utils';
 import { normalizeSpeakerName, splitIntoWords } from './string-utils';
 import { hasSpeakerNameAndContent, HEADERS_TRANSCRIPT_WITH_TIME } from './core-utils';
 import type { ParseResult, ParsedTurn, DetectedFormat } from './text-parser';
@@ -136,15 +137,13 @@ export function parseCSVRows(rows: Record<string, unknown>[], speechRateWordsPer
 					endTime = nextRowStartTime;
 				} else {
 					// Estimate from word count
-					const duration = Math.max(1, words.length / speechRateWordsPerSecond);
-					endTime = startTime + duration;
+					endTime = startTime + estimateDuration(words.length, speechRateWordsPerSecond);
 				}
 			}
 
 			// Ensure end > start
 			if (endTime <= startTime) {
-				const duration = Math.max(1, words.length / speechRateWordsPerSecond);
-				endTime = startTime + duration;
+				endTime = startTime + estimateDuration(words.length, speechRateWordsPerSecond);
 			}
 
 			state.lastValidStartTime = startTime;

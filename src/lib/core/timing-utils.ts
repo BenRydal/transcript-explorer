@@ -1,7 +1,7 @@
 import { get } from 'svelte/store';
 import type { DataPoint } from '../../models/dataPoint';
 import TimelineStore from '../../stores/timelineStore';
-import ConfigStore from '../../stores/configStore';
+import AppSettingsStore from '../../stores/appSettingsStore';
 import type { TimingMode } from '../../models/transcript';
 
 /**
@@ -43,7 +43,7 @@ export function recalculateWordCountTimes(wordArray: DataPoint[]): DataPoint[] {
 
 /**
  * Recalculate end times for startOnly mode.
- * Behavior depends on ConfigStore.preserveGapsBetweenTurns:
+ * Behavior depends on AppSettingsStore.preserveGapsBetweenTurns:
  * - If false (default): endTime = next turn's startTime (fills gaps)
  * - If true: endTime = startTime + (wordCount / speechRate) (preserves gaps)
  * Last turn always uses speech rate estimation.
@@ -51,9 +51,9 @@ export function recalculateWordCountTimes(wordArray: DataPoint[]): DataPoint[] {
 export function recalculateEndTimesFromStarts(wordArray: DataPoint[]): DataPoint[] {
 	if (wordArray.length === 0) return wordArray;
 
-	const config = get(ConfigStore);
-	const preserveGaps = config.preserveGapsBetweenTurns;
-	const speechRate = config.speechRateWordsPerSecond;
+	const settings = get(AppSettingsStore);
+	const preserveGaps = settings.preserveGapsBetweenTurns;
+	const speechRate = settings.speechRateWordsPerSecond;
 
 	// Group words by turn and get each turn's start time and word count
 	const turnStartTimes = new Map<number, number>();

@@ -1,127 +1,15 @@
-import { writable, derived } from 'svelte/store';
+// This module is a thin aggregator kept ONLY for the `ConfigStoreType` type alias,
+// which is consumed pervasively by draw-context.ts and the viz draw classes that
+// receive a merged config snapshot via `DrawContext.config`.
+//
+// All state now lives in four cohesive stores (vizStore, filtersStore,
+// appSettingsStore, uiStateStore). Import those stores directly. Only import
+// `ConfigStoreType` from here when you need the merged snapshot type.
+import type { VizStoreType, SpeakerSortOrder } from './vizStore';
+import type { FiltersStoreType } from './filtersStore';
+import type { AppSettingsStoreType } from './appSettingsStore';
+import type { UIStateStoreType } from './uiStateStore';
 
-export type SpeakerSortOrder = 'default' | 'words' | 'turns' | 'alpha';
+export type ConfigStoreType = VizStoreType & FiltersStoreType & AppSettingsStoreType & UIStateStoreType;
 
-export interface ConfigStoreType {
-	speakerGardenToggle: boolean;
-	turnChartToggle: boolean;
-	contributionCloudToggle: boolean;
-	turnNetworkToggle: boolean;
-	wordRainToggle: boolean;
-	dashboardToggle: boolean;
-	speakerHeatmapToggle: boolean;
-	turnLengthToggle: boolean;
-	speakerFingerprintToggle: boolean;
-	questionFlowToggle: boolean;
-	wordJourneyToggle: boolean;
-	silenceOverlapToggle: boolean;
-	separateToggle: boolean;
-	sortToggle: boolean;
-	lastWordToggle: boolean;
-	echoWordsToggle: boolean;
-	stopWordsToggle: boolean;
-	repeatedWordsToggle: boolean;
-	animationRate: number;
-	repeatWordSliderValue: number;
-	wordToSearch: string;
-	// Start-only mode settings
-	preserveGapsBetweenTurns: boolean;
-	speechRateWordsPerSecond: number;
-	// Video playback settings
-	snippetDurationSeconds: number;
-	// Dashboard panel selection
-	dashboardPanels: string[];
-	// Speaker sort order (shared across Speaker Garden, Turn Network, etc.)
-	speakerSortOrder: SpeakerSortOrder;
-	// Word Rain settings
-	wordRainMinFrequency: number;
-	wordRainTemporalBinning: boolean;
-	wordRainBinCount: number;
-	// Turn Network settings
-	turnNetworkWeightByWords: boolean;
-	turnNetworkHideSelfLoops: boolean;
-	turnNetworkMinTransitions: number;
-	// Speaker Heatmap settings
-	heatmapBinCount: number;
-	// Turn Length settings
-	turnLengthBinCount: number;
-	// Legend overlay
-	legendVisible: boolean;
-	// Speaker Fingerprint settings
-	fingerprintOverlayMode: boolean;
-	// Visualization scaling
-	scaleToVisibleData: boolean;
-	// Code coloring
-	codeColorMode: boolean;
-	showUncoded: boolean;
-}
-
-export const DASHBOARD_PANEL_OPTIONS = [
-	{ key: 'speakerGarden', label: 'Speaker Garden' },
-	{ key: 'turnChart', label: 'Turn Chart' },
-	{ key: 'contributionCloud', label: 'Contribution Cloud' },
-	{ key: 'turnNetwork', label: 'Turn Network' },
-	{ key: 'wordRain', label: 'Word Rain' },
-	{ key: 'speakerHeatmap', label: 'Speaker Heatmap' },
-	{ key: 'turnLength', label: 'Turn Length' },
-	{ key: 'speakerFingerprint', label: 'Speaker Fingerprint' },
-	{ key: 'questionFlow', label: 'Question Flow' },
-	{ key: 'wordJourney', label: 'Word Journey' }
-] as const;
-
-export const initialConfig: ConfigStoreType = {
-	speakerGardenToggle: true,
-	turnChartToggle: false,
-	contributionCloudToggle: false,
-	turnNetworkToggle: false,
-	wordRainToggle: false,
-	dashboardToggle: false,
-	speakerHeatmapToggle: false,
-	turnLengthToggle: false,
-	speakerFingerprintToggle: false,
-	questionFlowToggle: false,
-	wordJourneyToggle: false,
-	silenceOverlapToggle: true,
-	separateToggle: false,
-	sortToggle: false,
-	lastWordToggle: false,
-	echoWordsToggle: false,
-	stopWordsToggle: false,
-	repeatedWordsToggle: false,
-	animationRate: 3,
-	repeatWordSliderValue: 5,
-	wordToSearch: '',
-	// Start-only mode settings (default: estimate from speech rate)
-	preserveGapsBetweenTurns: true,
-	speechRateWordsPerSecond: 3,
-	// Video playback settings
-	snippetDurationSeconds: 2,
-	// Speaker sort order (used by Speaker Garden, Turn Network, etc.)
-	speakerSortOrder: 'default',
-	// Dashboard panel selection
-	dashboardPanels: ['turnChart', 'contributionCloud', 'speakerGarden'],
-	wordRainMinFrequency: 1,
-	wordRainTemporalBinning: false,
-	wordRainBinCount: 8,
-	turnNetworkWeightByWords: false,
-	turnNetworkHideSelfLoops: false,
-	turnNetworkMinTransitions: 1,
-	heatmapBinCount: 0,
-	turnLengthBinCount: 0,
-	legendVisible: true,
-	fingerprintOverlayMode: true,
-	scaleToVisibleData: false,
-	codeColorMode: false,
-	showUncoded: true
-};
-
-const ConfigStore = writable<ConfigStoreType>(initialConfig);
-
-/**
- * Derived store that emits a stable key when filter toggles change.
- * Using a string key ensures Svelte's reactivity properly detects changes
- * even when boolean values switch from true to false.
- */
-export const filterToggleKey = derived(ConfigStore, ($config) => `${$config.echoWordsToggle}-${$config.lastWordToggle}-${$config.stopWordsToggle}`);
-
-export default ConfigStore;
+export type { SpeakerSortOrder };

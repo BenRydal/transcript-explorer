@@ -41,6 +41,22 @@ const SMALL_MULTIPLE_LABEL_OFFSET = 16;
 // Helper to calculate angle for a given axis index
 const getAxisAngle = (axisIndex: number): number => (axisIndex / NUM_AXES) * Math.PI * 2 - Math.PI / 2;
 
+// Perpendicular distance from point (px, py) to segment (ax, ay) → (bx, by).
+// Used by the parallel-coordinates hover hit-test to pick the closest polyline.
+function pointSegmentDistance(px: number, py: number, ax: number, ay: number, bx: number, by: number): number {
+	const dx = bx - ax;
+	const dy = by - ay;
+	const lenSq = dx * dx + dy * dy;
+	if (lenSq === 0) {
+		return Math.sqrt((px - ax) ** 2 + (py - ay) ** 2);
+	}
+	let t = ((px - ax) * dx + (py - ay) * dy) / lenSq;
+	t = Math.max(0, Math.min(1, t));
+	const cx = ax + t * dx;
+	const cy = ay + t * dy;
+	return Math.sqrt((px - cx) ** 2 + (py - cy) ** 2);
+}
+
 type HoveredVertex = { speaker: string; axisIndex: number } | null;
 
 // --- Main class ---
@@ -61,7 +77,19 @@ export class SpeakerFingerprint {
 			return { snippetPoints: [], hoveredSpeaker: null };
 		}
 
-		return this.ctx.config.fingerprintOverlayMode ? this.drawOverlay(fingerprints) : this.drawSmallMultiples(fingerprints);
+		// parallel coords avoid radar's area distortion and render all speakers
+		// in one frame without occlusion
+		if (this.ctx.config.fingerprintChartMode === 'parallel') {
+			return this.drawParallelCoords(fingerprints);
+		}
+
+		// Resolve the overlay mode:
+		//   'overlay'          -  always a single shared radar
+		//   'small-multiples'  -  always one radar per speaker
+		//   'auto' (default)   -  small-multiples once occlusion bites (>3 speakers)
+		const mode = this.ctx.config.fingerprintOverlayMode;
+		const useOverlay = mode === 'overlay' || (mode === 'auto' && fingerprints.length <= 3);
+		return useOverlay ? this.drawOverlay(fingerprints) : this.drawSmallMultiples(fingerprints);
 	}
 
 	// --- Overlay mode (2-4 speakers) ---
@@ -125,8 +153,11 @@ export class SpeakerFingerprint {
 			if (i === 0) this.drawAxisLabelsShort(cellX, cellY, cellRadius);
 			this.drawSpeakerPolygon(fp, cellX, cellY, cellRadius, hoveredVertex?.speaker === fp.speaker);
 
-			// Draw speaker name below
-			this.ctx.sk.fill(this.resolveSpeakerColor(fp));
+			// Draw speaker name below. Drawn over the canvas background (not
+			// a speaker-colored shape), so we use theme.fg  -  speaker identity
+			// is already carried by the radar polygon above, and pale
+			// speaker colors were unreadable on the dark canvas.
+			this.ctx.sk.fill(this.ctx.theme.fg);
 			this.ctx.sk.noStroke();
 			this.ctx.sk.textAlign(this.ctx.sk.CENTER, this.ctx.sk.TOP);
 			this.ctx.sk.textSize(11);
@@ -137,6 +168,217 @@ export class SpeakerFingerprint {
 		this.showTooltipIfHovered(fingerprints, hoveredSpeaker);
 		const snippetPoints = this.getSnippetPointsForVertex(hoveredVertex, fingerprints);
 		return { snippetPoints, hoveredSpeaker };
+	}
+
+	// Parallel coordinates: 5 vertical axes, each speaker a polyline. Every axis
+	// is max-normalized among visible speakers so lines use the full chart height.
+	private drawParallelCoords(fingerprints: SpeakerFingerprintData[]): { snippetPoints: DataPoint[]; hoveredSpeaker: string | null } {
+		const padLeft = 60;
+		const padRight = 40;
+		const padTop = 40;
+		const padBottom = 40;
+
+		const innerX = this.bounds.x + padLeft;
+		const innerY = this.bounds.y + padTop;
+		const innerW = Math.max(40, this.bounds.width - padLeft - padRight);
+		const innerH = Math.max(40, this.bounds.height - padTop - padBottom);
+
+		// X positions of the 5 axes (evenly spaced left→right).
+		const axisXs: number[] = [];
+		for (let i = 0; i < NUM_AXES; i++) {
+			axisXs.push(innerX + (i / (NUM_AXES - 1)) * innerW);
+		}
+
+		// Rebuild raw per-speaker values (pre-normalization) using the raw
+		// fields on fingerprint data. We then max-normalize each axis across
+		// the currently visible speakers for consistent scaling.
+		const rawByAxis: number[][] = AXIS_KEYS.map((key, axisIndex) => {
+			return fingerprints.map((fp) => {
+				if (axisIndex === 0) {
+					// Turn Length  -  avg words per turn (speaker-level raw).
+					return fp.totalTurns > 0 ? fp.totalWords / fp.totalTurns : 0;
+				}
+				if (axisIndex === 1) return fp.rawParticipationRate;
+				if (axisIndex === 2) return fp.rawConsecutiveRate;
+				if (axisIndex === 3) return fp.rawQuestionRate;
+				if (axisIndex === 4) return fp.rawInterruptionRate;
+				return fp[key] as number;
+			});
+		});
+
+		const axisMax: number[] = rawByAxis.map((values) => {
+			const max = Math.max(...values, 0);
+			return max > 0 ? max : 1;
+		});
+
+		// Draw the axes + endpoint labels.
+		this.drawParallelAxes(axisXs, innerY, innerH, axisMax);
+
+		// Hover detection: closest polyline to the mouse (within a small
+		// pixel threshold). Falls back to per-axis point hover on the
+		// speaker's vertex.
+		const hoveredSpeaker = this.findHoveredParallelSpeaker(fingerprints, axisXs, innerY, innerH, axisMax);
+
+		// Draw polylines. Hovered speaker last + emphasized.
+		const order = [...fingerprints].sort((a, b) => {
+			if (a.speaker === hoveredSpeaker) return 1;
+			if (b.speaker === hoveredSpeaker) return -1;
+			return 0;
+		});
+
+		for (const fp of order) {
+			const isHovered = fp.speaker === hoveredSpeaker;
+			this.drawParallelPolyline(fp, axisXs, innerY, innerH, axisMax, isHovered, hoveredSpeaker != null);
+		}
+
+		if (hoveredSpeaker) {
+			const fp = fingerprints.find((f) => f.speaker === hoveredSpeaker);
+			if (fp) this.showTooltipFor(fp);
+		}
+
+		// Snippet points: whole-speaker turns when hovered (parallel-coords
+		// doesn't expose per-axis drill-down the way radar vertex-hover does).
+		const snippetPoints = hoveredSpeaker ? (fingerprints.find((f) => f.speaker === hoveredSpeaker)?.allTurnFirstWords ?? []) : [];
+
+		return { snippetPoints, hoveredSpeaker };
+	}
+
+	private drawParallelAxes(axisXs: number[], innerY: number, innerH: number, axisMax: number[]): void {
+		const theme = this.ctx.theme;
+
+		// Vertical axis lines.
+		const axisStroke = this.ctx.sk.color(theme.fgMuted);
+		axisStroke.setAlpha(AXIS_OPACITY);
+		this.ctx.sk.stroke(axisStroke);
+		this.ctx.sk.strokeWeight(1);
+		for (const x of axisXs) {
+			this.ctx.sk.line(x, innerY, x, innerY + innerH);
+		}
+
+		// Axis endpoint labels: top (max value), bottom (0), and the axis name
+		// above the top tick.
+		this.ctx.sk.noStroke();
+		this.ctx.sk.textSize(11);
+		this.ctx.sk.textAlign(this.ctx.sk.CENTER, this.ctx.sk.BOTTOM);
+		const labelFill = theme.fg;
+		const disabledFill = theme.fgSubtle;
+
+		for (let i = 0; i < NUM_AXES; i++) {
+			const x = axisXs[i];
+			const isInterruptionsDisabled = AXIS_KEYS[i] === 'interruptionRate' && !this.hasTiming;
+			this.ctx.sk.fill(isInterruptionsDisabled ? disabledFill : labelFill);
+			const label = AXIS_LABELS[i] + (isInterruptionsDisabled ? ' (N/A)' : '');
+			this.ctx.sk.text(label, x, innerY - 18);
+
+			// Value ticks at bottom (0) and top (max).
+			this.ctx.sk.fill(theme.fgMuted);
+			this.ctx.sk.textSize(9);
+			this.ctx.sk.textAlign(this.ctx.sk.CENTER, this.ctx.sk.TOP);
+			// Dimension 0 (turn length) is a word-count scale; others are rates.
+			const topLabel = i === 0 ? `${axisMax[i].toFixed(0)}w` : `${Math.round(axisMax[i] * 100)}%`;
+			this.ctx.sk.text(topLabel, x, innerY - 2);
+			this.ctx.sk.text('0', x, innerY + innerH + 4);
+			this.ctx.sk.textSize(11);
+			this.ctx.sk.textAlign(this.ctx.sk.CENTER, this.ctx.sk.BOTTOM);
+		}
+	}
+
+	private drawParallelPolyline(
+		fp: SpeakerFingerprintData,
+		axisXs: number[],
+		innerY: number,
+		innerH: number,
+		axisMax: number[],
+		isHovered: boolean,
+		someoneHovered: boolean
+	): void {
+		const color = this.ctx.sk.color(this.resolveSpeakerColor(fp));
+		const alpha = isHovered ? 255 : someoneHovered ? 60 : 180;
+		color.setAlpha(alpha);
+		this.ctx.sk.stroke(color);
+		this.ctx.sk.strokeWeight(isHovered ? STROKE_HOVER_WEIGHT : STROKE_WEIGHT);
+		this.ctx.sk.noFill();
+
+		const points = this.getParallelPoints(fp, axisXs, innerY, innerH, axisMax);
+		this.ctx.sk.beginShape();
+		for (const p of points) {
+			this.ctx.sk.vertex(p.x, p.y);
+		}
+		this.ctx.sk.endShape();
+
+		// Vertex dots so readers can see each axis value distinctly.
+		this.ctx.sk.noStroke();
+		color.setAlpha(alpha);
+		this.ctx.sk.fill(color);
+		const dotSize = isHovered ? 6 : 4;
+		for (const p of points) {
+			this.ctx.sk.ellipse(p.x, p.y, dotSize, dotSize);
+		}
+	}
+
+	private getParallelPoints(
+		fp: SpeakerFingerprintData,
+		axisXs: number[],
+		innerY: number,
+		innerH: number,
+		axisMax: number[]
+	): { x: number; y: number }[] {
+		const rawValueAt = (axisIndex: number): number => {
+			if (axisIndex === 0) return fp.totalTurns > 0 ? fp.totalWords / fp.totalTurns : 0;
+			if (axisIndex === 1) return fp.rawParticipationRate;
+			if (axisIndex === 2) return fp.rawConsecutiveRate;
+			if (axisIndex === 3) return fp.rawQuestionRate;
+			if (axisIndex === 4) return fp.rawInterruptionRate;
+			return 0;
+		};
+
+		return axisXs.map((x, i) => {
+			const raw = rawValueAt(i);
+			const normalized = Math.max(0, Math.min(1, axisMax[i] > 0 ? raw / axisMax[i] : 0));
+			// Y flips so 1 = top, 0 = bottom (standard parallel-coords layout).
+			return { x, y: innerY + innerH - normalized * innerH };
+		});
+	}
+
+	private findHoveredParallelSpeaker(
+		fingerprints: SpeakerFingerprintData[],
+		axisXs: number[],
+		innerY: number,
+		innerH: number,
+		axisMax: number[]
+	): string | null {
+		if (!this.ctx.sk.overRect(this.bounds.x, this.bounds.y, this.bounds.width, this.bounds.height)) {
+			return null;
+		}
+
+		const mx = this.ctx.sk.mouseX;
+		const my = this.ctx.sk.mouseY;
+		const hitThreshold = 8; // pixels
+
+		let bestSpeaker: string | null = null;
+		let bestDist = hitThreshold;
+
+		for (const fp of fingerprints) {
+			const points = this.getParallelPoints(fp, axisXs, innerY, innerH, axisMax);
+			// Check distance to each polyline segment.
+			for (let i = 0; i < points.length - 1; i++) {
+				const dist = pointSegmentDistance(mx, my, points[i].x, points[i].y, points[i + 1].x, points[i + 1].y);
+				if (dist < bestDist) {
+					bestDist = dist;
+					bestSpeaker = fp.speaker;
+				}
+			}
+			// Also check vertex proximity so narrow peaks are grabbable.
+			for (const p of points) {
+				const d = Math.sqrt((mx - p.x) ** 2 + (my - p.y) ** 2);
+				if (d < bestDist) {
+					bestDist = d;
+					bestSpeaker = fp.speaker;
+				}
+			}
+		}
+
+		return bestSpeaker;
 	}
 
 	private showTooltipIfHovered(fingerprints: SpeakerFingerprintData[], hoveredSpeaker: string | null): void {
@@ -150,10 +392,14 @@ export class SpeakerFingerprint {
 
 	private drawRadarGrid(cx: number, cy: number, radius: number, minimal = false): void {
 		const rings = minimal ? 2 : GRID_RINGS;
+		const theme = this.ctx.theme;
 
-		// Concentric rings
+		// Concentric rings  -  grid tone with fixed alpha so opacity feels
+		// identical in light/dark (token handles hue inversion).
 		this.ctx.sk.noFill();
-		this.ctx.sk.stroke(200, GRID_OPACITY);
+		const gridStroke = this.ctx.sk.color(theme.border);
+		gridStroke.setAlpha(GRID_OPACITY);
+		this.ctx.sk.stroke(gridStroke);
 		this.ctx.sk.strokeWeight(1);
 		for (let r = 1; r <= rings; r++) {
 			const ringRadius = (radius * r) / rings;
@@ -166,7 +412,9 @@ export class SpeakerFingerprint {
 		}
 
 		// Axis lines
-		this.ctx.sk.stroke(180, AXIS_OPACITY);
+		const axisStroke = this.ctx.sk.color(theme.fgMuted);
+		axisStroke.setAlpha(AXIS_OPACITY);
+		this.ctx.sk.stroke(axisStroke);
 		for (let i = 0; i < NUM_AXES; i++) {
 			const angle = getAxisAngle(i);
 			this.ctx.sk.line(cx, cy, cx + Math.cos(angle) * radius, cy + Math.sin(angle) * radius);
@@ -174,7 +422,7 @@ export class SpeakerFingerprint {
 
 		// Scale labels along the top axis
 		this.ctx.sk.noStroke();
-		this.ctx.sk.fill(100);
+		this.ctx.sk.fill(theme.fgMuted);
 		this.ctx.sk.textSize(minimal ? 8 : 9);
 		this.ctx.sk.textAlign(this.ctx.sk.LEFT, this.ctx.sk.CENTER);
 		const labels = minimal ? ['Low', 'Most'] : ['Low', 'Med', 'High', 'Most'];
@@ -184,17 +432,20 @@ export class SpeakerFingerprint {
 	}
 
 	private drawAxisLabels(cx: number, cy: number, radius: number): void {
-		this.drawAxisLabelsImpl(cx, cy, radius + LABEL_OFFSET, 11, 80, true);
+		// Full mode labels read on both themes  -  use primary fg.
+		this.drawAxisLabelsImpl(cx, cy, radius + LABEL_OFFSET, 11, this.ctx.theme.fg, true);
 	}
 
 	private drawAxisLabelsShort(cx: number, cy: number, radius: number): void {
-		this.drawAxisLabelsImpl(cx, cy, radius + SMALL_MULTIPLE_LABEL_OFFSET, 10, 120, false);
+		// Small-multiples labels are secondary  -  use muted fg.
+		this.drawAxisLabelsImpl(cx, cy, radius + SMALL_MULTIPLE_LABEL_OFFSET, 10, this.ctx.theme.fgMuted, false);
 	}
 
-	private drawAxisLabelsImpl(cx: number, cy: number, labelRadius: number, textSize: number, defaultFill: number, fullMode: boolean): void {
+	private drawAxisLabelsImpl(cx: number, cy: number, labelRadius: number, textSize: number, defaultFill: string, fullMode: boolean): void {
 		this.ctx.sk.noStroke();
 		this.ctx.sk.textSize(textSize);
 		const labels = fullMode ? AXIS_LABELS_FULL : AXIS_LABELS;
+		const disabledFill = this.ctx.theme.fgSubtle;
 
 		for (let i = 0; i < NUM_AXES; i++) {
 			const angle = getAxisAngle(i);
@@ -203,7 +454,7 @@ export class SpeakerFingerprint {
 			this.setTextAlignForAngle(angle);
 
 			const isInterruptionsDisabled = AXIS_KEYS[i] === 'interruptionRate' && !this.hasTiming;
-			this.ctx.sk.fill(isInterruptionsDisabled ? 180 : defaultFill);
+			this.ctx.sk.fill(isInterruptionsDisabled ? disabledFill : defaultFill);
 			const label = isInterruptionsDisabled && fullMode ? labels[i] + ' (N/A)' : labels[i];
 			this.ctx.sk.text(label, x, y);
 		}

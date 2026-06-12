@@ -1,20 +1,18 @@
+import { WONG_PALETTE_NO_BLACK } from '../ui/palette';
+import { activePaletteColors } from '../ui/speaker-palette';
+
 export const DEFAULT_SPEAKER_COLOR = '#cccccc';
 
 /** Canvas spacing used for dashboard panel padding/gap. Shared between p5 and DOM overlay. */
 export const CANVAS_SPACING = 25;
 
-export const USER_COLORS = [
-	'#6a3d9a', // Dark Purple
-	'#ff7f00', // Dark Orange
-	'#33a02c', // Dark Green
-	'#1f78b4', // Dark Blue
-	'#e31a1c', // Dark Red
-	'#b15928', // Dark Brown
-	'#cab2d6', // Light Purple
-	'#fdbf6f', // Light Orange
-	'#b2df8a', //Light Green
-	'#a6cee3', //Light Blue
-	'#fb9a99', //Light Red
-	'#ffed6f' //Yellow
-	// Add more colors as needed
-];
+/** Default palette for new transcripts: USER_COLORS[i % len]. CVD-safe (Wong minus black). */
+export const USER_COLORS: readonly string[] = WONG_PALETTE_NO_BLACK;
+
+/**
+ * Colors for the currently selected palette; use at speaker/code assignment time
+ * so the user's choice takes effect. USER_COLORS is the static fallback.
+ */
+export function getUserColors(): readonly string[] {
+	return activePaletteColors();
+}

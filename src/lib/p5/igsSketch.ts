@@ -2,15 +2,19 @@ import P5Store from '../../stores/p5Store';
 import TranscriptStore from '../../stores/transcriptStore.js';
 import UserStore from '../../stores/userStore';
 import TimelineStore from '../../stores/timelineStore';
-import ConfigStore from '../../stores/configStore';
+import VizStore from '../../stores/vizStore';
+import AppSettingsStore from '../../stores/appSettingsStore';
 import HoverStore, { type HoverState } from '../../stores/hoverStore';
 import EditorStore from '../../stores/editorStore';
 import VideoStore from '../../stores/videoStore';
 import type { VideoState } from '../../stores/videoStore';
+import UIStateStore, { type ContextMenuPayload } from '../../stores/uiStateStore';
 import { handleVisualizationClick } from '../video/video-interaction';
 import { Draw } from '../draw/draw';
 import { DynamicData } from '../core/dynamic-data';
 import { getP5ContainerRect } from '../core/layout-utils';
+import { getDrawTheme, refreshDrawTheme } from '../draw/draw-theme';
+import { hitTest } from 'svelte-p5';
 
 let users: any[] = [];
 let timeline, transcript, currConfig, editorState;
@@ -18,6 +22,9 @@ let hoverState: HoverState;
 let videoState: VideoState;
 let canHover = true;
 let mouseEventLocked = false;
+let themeObserver: MutationObserver | null = null;
+let contextMenuHandler: ((e: MouseEvent) => void) | null = null;
+let contextMenuCanvasEl: HTMLCanvasElement | null = null;
 
 TimelineStore.subscribe((data) => {
 	timeline = data;
@@ -27,8 +34,14 @@ UserStore.subscribe((data) => {
 	users = data;
 });
 
-ConfigStore.subscribe((data) => {
-	currConfig = data;
+// Merged snapshot of the viz + app-settings fields this module reads (viz
+// toggles + animationRate). Kept as a merged object so existing `currConfig.X`
+// reads resolve regardless of which underlying store owns the field.
+VizStore.subscribe((data) => {
+	currConfig = { ...currConfig, ...data };
+});
+AppSettingsStore.subscribe((data) => {
+	currConfig = { ...currConfig, ...data };
 });
 
 HoverStore.subscribe((data) => {
@@ -69,6 +82,40 @@ export const igsSketch = (p5: any) => {
 			canHover = e.target === canvas;
 		});
 
+		// RIGHT-click on the canvas → open the floating context menu near the
+		// cursor (and suppress the browser's native menu). p5 has no built-in
+		// right-click hook, so attach a native 'contextmenu' listener to the
+		// canvas element. Remove any prior listener first  -  setup re-runs on
+		// hot-reload / mode switch and we don't want to stack handlers.
+		if (contextMenuHandler && contextMenuCanvasEl) {
+			contextMenuCanvasEl.removeEventListener('contextmenu', contextMenuHandler);
+		}
+		contextMenuCanvasEl = canvas as HTMLCanvasElement | null;
+		if (contextMenuCanvasEl) {
+			contextMenuHandler = (e: MouseEvent) => {
+				e.preventDefault();
+				p5.openCanvasContextMenu(e.clientX, e.clientY);
+			};
+			contextMenuCanvasEl.addEventListener('contextmenu', contextMenuHandler);
+		}
+
+		// Theme refresh: when the user flips <html data-theme>, snapshot
+		// the new --te-* tokens so the next frame draws with them. The
+		// MutationObserver only fires on attribute changes, so cost is
+		// trivial. Disconnect any prior observer first  -  hot-reload or
+		// mode switching re-runs setup and we don't want to stack them.
+		if (themeObserver) themeObserver.disconnect();
+		themeObserver = new MutationObserver(() => {
+			refreshDrawTheme();
+			// p5 is in its default looping mode, so refreshing the cache
+			// is enough  -  the next p5.draw() tick will build a DrawContext
+			// with the new theme snapshot.
+		});
+		themeObserver.observe(document.documentElement, {
+			attributes: true,
+			attributeFilter: ['data-theme']
+		});
+
 		// If transcript data already exists (e.g., after mode switch), populate it
 		if (transcript.wordArray?.length > 0) {
 			p5.fillAllData();
@@ -86,8 +133,12 @@ export const igsSketch = (p5: any) => {
 	};
 
 	p5.draw = () => {
+		// Paint the canvas background even before data loads so the empty
+		// canvas matches the active theme (otherwise dark mode shows a
+		// white default until the first viz appears).
+		const theme = getDrawTheme();
+		p5.background(theme.bg);
 		if (p5.arrayIsLoaded(transcript.wordArray) && p5.arrayIsLoaded(users)) {
-			p5.background(255);
 			p5.renderer.drawViz();
 		}
 		if (timeline.isAnimating) p5.updateAnimation();
@@ -178,14 +229,91 @@ export const igsSketch = (p5: any) => {
 	};
 
 	p5.mousePressed = () => {
+		// Only LEFT-click drives play/seek. RIGHT-click is handled by the
+		// native 'contextmenu' listener (it opens the menu); ignore it here so
+		// a right-click doesn't also trigger playback.
+		if (p5.mouseButton === p5.RIGHT) return;
 		if (mouseEventLocked) return;
 		mouseEventLocked = true;
 		requestAnimationFrame(() => {
 			mouseEventLocked = false;
 		});
 
+		// Speaker filter lock is a cheap editor-side selection update; it
+		// keeps the editor in sync with visualization hover intent on any
+		// left-click in a speaker-centric viz.
 		p5.handleSpeakerFilterClick();
+
+		// LEFT-click on the canvas → per-viz play / pause-toggle. Dismiss any
+		// open context menu so it doesn't linger over the seeked video frame.
+		// (The context menu now opens on RIGHT-click; see the 'contextmenu'
+		// listener wired in setup.)
+		UIStateStore.update((s) => ({
+			...s,
+			contextMenu: { ...s.contextMenu, open: false, payload: null }
+		}));
+		if (!p5.overRect(0, 0, p5.width, p5.height)) return;
 		p5.handleVideoClick();
+	};
+
+	p5.openCanvasContextMenu = (clientX?: number, clientY?: number) => {
+		const payload = p5.buildContextMenuPayload();
+		// No real data element under the cursor → don't open a menu over empty
+		// canvas space.
+		if (!payload) return;
+
+		// Prefer the viewport coordinates from the triggering 'contextmenu'
+		// event. Fall back to deriving them from p5's canvas-relative
+		// mouseX/mouseY (the ContextMenu is position: fixed).
+		let x: number;
+		let y: number;
+		if (clientX !== undefined && clientY !== undefined) {
+			x = clientX;
+			y = clientY;
+		} else {
+			const canvasEl = document.querySelector('#p5-container canvas') as HTMLCanvasElement | null;
+			if (!canvasEl) return;
+			const rect = canvasEl.getBoundingClientRect();
+			x = rect.left + p5.mouseX;
+			y = rect.top + p5.mouseY;
+		}
+
+		UIStateStore.update((s) => ({
+			...s,
+			contextMenu: { open: true, x, y, payload }
+		}));
+	};
+
+	p5.buildContextMenuPayload = (): ContextMenuPayload | null => {
+		// The hover state already tracks what's under the cursor each frame.
+		// Prefer the richest real data element: a specific word, then a turn
+		// (via firstWords  -  a hovered distribution/snippet panel). Return null
+		// when the cursor is over empty canvas space so no menu opens.
+		const hovered = hoverState.hoveredDataPoint;
+		// turnNumber === -1 marks a synthetic turn-chart "seek to time under
+		// cursor" point  -  that's a left-click play target, not a real data
+		// element, so it doesn't earn a context menu.
+		if (hovered && hovered.turnNumber !== -1) {
+			return {
+				kind: 'word',
+				time: hovered.startTime,
+				word: hovered.word,
+				speakerId: hovered.speaker
+			};
+		}
+
+		const firstWords = hoverState.arrayOfFirstWords;
+		if (firstWords && firstWords.length > 0) {
+			const first = firstWords[0];
+			return {
+				kind: 'turn',
+				time: first.startTime,
+				turnId: String(first.turnNumber),
+				speakerId: first.speaker
+			};
+		}
+
+		return null;
 	};
 
 	// Lock speaker filter in editor when clicking on a speaker-centric visualization
@@ -239,8 +367,7 @@ export const igsSketch = (p5: any) => {
 	};
 
 	p5.overRect = (x: number, y: number, boxWidth: number, boxHeight: number) => {
-		if (!canHover) return false;
-		return p5.mouseX >= x && p5.mouseX <= x + boxWidth && p5.mouseY >= y && p5.mouseY <= y + boxHeight;
+		return canHover && hitTest.rect(p5.mouseX, p5.mouseY, x, y, boxWidth, boxHeight);
 	};
 
 	p5.windowResized = () => {
@@ -251,8 +378,7 @@ export const igsSketch = (p5: any) => {
 	};
 
 	p5.overCircle = (x: number, y: number, diameter: number) => {
-		if (!canHover) return false;
-		return p5.sqrt(p5.sq(x - p5.mouseX) + p5.sq(y - p5.mouseY)) < diameter / 2;
+		return canHover && hitTest.circle(p5.mouseX, p5.mouseY, x, y, diameter);
 	};
 
 	p5.arrayIsLoaded = (data: any) => {

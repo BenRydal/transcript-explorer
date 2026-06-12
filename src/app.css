@@ -1,3 +1,365 @@
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
+
+/* ============================================================
+ * Space Grotesk  -  self-hosted display font for the navbar
+ * wordmark ONLY (see .te-wordmark in AppNavbar.svelte). Kept
+ * local under /static/fonts to honor the "runs entirely in your
+ * browser / no upload" stance  -  no runtime Google Fonts request.
+ * Latin subset; weights 500 + 700 cover the wordmark.
+ * ============================================================ */
+@font-face {
+	font-family: 'Space Grotesk';
+	font-style: normal;
+	font-weight: 500;
+	font-display: swap;
+	src: url('/fonts/space-grotesk-500.woff2') format('woff2');
+}
+@font-face {
+	font-family: 'Space Grotesk';
+	font-style: normal;
+	font-weight: 700;
+	font-display: swap;
+	src: url('/fonts/space-grotesk-700.woff2') format('woff2');
+}
+
+/* ============================================================
+ * Transcript Explorer design tokens
+ * - Neutrals / accent / danger / typography / spacing / radii
+ * - Dark variant under [data-theme="dark"]
+ * - Library CSS custom properties are bridged to --te-* tokens
+ *   below so svelte-p5-components inherit the unified palette.
+ * ============================================================ */
+
+:root {
+	/* Neutrals (light default) */
+	--te-fg: #111827;
+	--te-fg-muted: #6b7280; /* 4.83:1 on white  -  AA body */
+	--te-fg-subtle: #6b7280; /* use this, NEVER #9ca3af on light bg */
+	--te-bg: #ffffff;
+	--te-bg-muted: #f6f5f3; /* bottom bar, rails, side panel */
+	--te-bg-subtle: #fafafa;
+	--te-border: #d1d5db; /* 3.4:1 on white, clear 1px divider */
+	--te-border-muted: #e5e7eb; /* hairline */
+
+	/* Accent */
+	--te-accent: #2563eb;
+	--te-accent-fg: #ffffff;
+	--te-accent-tint: color-mix(in srgb, var(--te-accent) 10%, transparent);
+	--te-focus-ring: color-mix(in srgb, var(--te-accent) 70%, transparent);
+
+	/* Danger */
+	--te-danger: #dc2626;
+
+	/* Typography */
+	--te-font-body: 13px;
+	--te-font-small: 12px;
+	--te-font-label: 10px;
+	--te-leading: 1.4;
+	--te-font-stack: system-ui, -apple-system, 'Segoe UI', sans-serif;
+
+	/* Spacing scale */
+	--te-sp-1: 4px;
+	--te-sp-2: 8px;
+	--te-sp-3: 12px;
+	--te-sp-4: 16px;
+	--te-sp-5: 24px;
+
+	/* Radii */
+	--te-radius-sm: 4px;
+	--te-radius: 6px;
+	--te-radius-lg: 8px;
+	--te-radius-pill: 999px;
+
+	/* ---------------------------------------------------------
+	 * Library CSS variable bridges
+	 * Every library component exposes its own CSS custom
+	 * properties with fallback defaults. Point them all at our
+	 * unified tokens so the surrounding chrome lands in one
+	 * voice without forking the library.
+	 * --------------------------------------------------------- */
+
+	/* ActivityBar */
+	--activity-bar-bg: var(--te-bg-muted);
+	--activity-bar-border: var(--te-border-muted);
+	--activity-bar-fg: var(--te-fg-muted);
+	--activity-bar-bg-hover: var(--te-bg-subtle);
+	--activity-bar-fg-hover: var(--te-fg);
+	--activity-bar-focus: var(--te-focus-ring);
+	--activity-bar-fg-active: var(--te-fg);
+	--activity-bar-bg-active: var(--te-accent-tint);
+	--activity-bar-accent: var(--te-accent);
+	--activity-bar-badge-bg: var(--te-danger);
+	--activity-bar-badge-fg: var(--te-accent-fg);
+
+	/* SidePanel */
+	--side-panel-bg: var(--te-bg);
+	--side-panel-border: var(--te-border-muted);
+	--side-panel-shadow: 2px 0 6px rgba(0, 0, 0, 0.04);
+	--side-panel-title-fg: var(--te-fg-muted);
+	--side-panel-close-fg: var(--te-fg-muted);
+
+	/* TimelineScrubber buttons */
+	--ts-btn-bg: var(--te-bg);
+	--ts-btn-bg-hover: var(--te-bg-muted);
+	--ts-btn-bg-active: var(--te-bg-subtle);
+	--ts-btn-border: var(--te-border);
+	--ts-btn-border-hover: var(--te-fg-muted);
+	--ts-btn-fg: var(--te-fg);
+	--ts-btn-fg-hover: var(--te-fg);
+
+	/* ContextMenu */
+	--context-menu-bg: var(--te-bg);
+	--context-menu-fg: var(--te-fg);
+	--context-menu-border: var(--te-border-muted);
+	--context-menu-item-hover-bg: var(--te-accent-tint);
+	--context-menu-item-hover-fg: var(--te-fg);
+	--context-menu-item-disabled-fg: var(--te-fg-subtle);
+	--context-menu-item-danger-fg: var(--te-danger);
+	--context-menu-item-danger-hover-bg: color-mix(in srgb, var(--te-danger) 10%, transparent);
+
+	/* EntityToggleList */
+	--entity-swatch-size: 14px;
+	--entity-btn-bg: transparent;
+	--entity-btn-bg-hover: var(--te-bg-muted);
+	--entity-btn-fg: var(--te-fg);
+	--entity-btn-fg-hidden: var(--te-fg-subtle);
+	--entity-heading-fg: var(--te-fg-muted);
+}
+
+/* ============================================================
+ * Dark theme overrides  -  swap neutrals + tune accent/focus so
+ * they keep enough contrast on a dark ground.
+ * The bridged library vars above automatically pick these up
+ * because they resolve through --te-*.
+ * ============================================================ */
+
+:root[data-theme='dark'] {
+	--te-fg: #f3f4f6;
+	--te-fg-muted: #9ca3af; /* on dark bg this passes contrast */
+	--te-fg-subtle: #6b7280;
+	--te-bg: #0f1419;
+	--te-bg-muted: #1a1f26;
+	--te-bg-subtle: #131820;
+	--te-border: #2d3748;
+	--te-border-muted: #1f2937;
+
+	--te-accent: #60a5fa;
+	--te-accent-fg: #0f1419;
+	--te-accent-tint: color-mix(in srgb, var(--te-accent) 18%, transparent);
+	--te-focus-ring: color-mix(in srgb, var(--te-accent) 80%, transparent);
+
+	--te-danger: #f87171;
+
+	/* SidePanel shadow reads better with alpha deepened */
+	--side-panel-shadow: 2px 0 6px rgba(0, 0, 0, 0.35);
+}
+
+/* ============================================================
+ * Unified button system (.te-btn)  -  replaces the three
+ * competing button systems (daisyUI .btn, hand-rolled Tailwind,
+ * BEM panel buttons) in chrome regions that this session
+ * touches. Panel-internal BEM buttons are left in place but
+ * now read tokens via --te-*.
+ * ============================================================ */
+
+.te-btn {
+	display: inline-flex;
+	align-items: center;
+	justify-content: center;
+	gap: var(--te-sp-2);
+	min-height: 32px;
+	padding: var(--te-sp-2) var(--te-sp-3);
+	border: 1px solid var(--te-border);
+	border-radius: var(--te-radius);
+	background: transparent;
+	color: var(--te-fg);
+	font: 500 var(--te-font-body) / var(--te-leading) var(--te-font-stack);
+	cursor: pointer;
+	text-decoration: none;
+	transition:
+		background-color 120ms ease,
+		border-color 120ms ease,
+		color 120ms ease;
+	white-space: nowrap;
+}
+
+.te-btn:hover:not(:disabled) {
+	background: var(--te-bg-muted);
+}
+
+.te-btn:focus-visible {
+	outline: 2px solid var(--te-focus-ring);
+	outline-offset: 2px;
+}
+
+.te-btn:disabled,
+.te-btn[aria-disabled='true'] {
+	opacity: 0.5;
+	cursor: not-allowed;
+}
+
+/* Primary / active */
+.te-btn--primary,
+.te-btn[aria-pressed='true'],
+.te-btn[aria-checked='true'] {
+	background: var(--te-accent);
+	border-color: var(--te-accent);
+	color: var(--te-accent-fg);
+}
+
+.te-btn--primary:hover:not(:disabled),
+.te-btn[aria-pressed='true']:hover:not(:disabled),
+.te-btn[aria-checked='true']:hover:not(:disabled) {
+	background: color-mix(in srgb, var(--te-accent) 88%, black);
+	border-color: color-mix(in srgb, var(--te-accent) 88%, black);
+}
+
+/* Ghost  -  no border, hover fill */
+.te-btn--ghost {
+	border-color: transparent;
+}
+
+.te-btn--ghost:hover:not(:disabled) {
+	background: var(--te-bg-muted);
+}
+
+/* Subtle  -  lighter divider-weight border */
+.te-btn--subtle {
+	border-color: var(--te-border-muted);
+}
+
+/* Size modifiers */
+.te-btn--sm {
+	min-height: 26px;
+	padding: var(--te-sp-1) var(--te-sp-2);
+	font-size: var(--te-font-small);
+}
+
+/* Icon-only variants  -  square, tight */
+.te-btn--icon {
+	width: 32px;
+	min-width: 32px;
+	height: 32px;
+	min-height: 32px;
+	padding: 0;
+	gap: 0;
+}
+
+.te-btn--icon.te-btn--sm {
+	width: 28px;
+	min-width: 28px;
+	height: 28px;
+	min-height: 28px;
+}
+
+/* Join / segmented group  -  flatten borders between siblings */
+.te-btn-group {
+	display: inline-flex;
+	align-items: stretch;
+}
+
+.te-btn-group > .te-btn {
+	border-radius: 0;
+}
+
+.te-btn-group > .te-btn:first-child {
+	border-top-left-radius: var(--te-radius);
+	border-bottom-left-radius: var(--te-radius);
+}
+
+.te-btn-group > .te-btn:last-child {
+	border-top-right-radius: var(--te-radius);
+	border-bottom-right-radius: var(--te-radius);
+}
+
+.te-btn-group > .te-btn + .te-btn {
+	margin-left: -1px;
+}
+
+.te-btn-group > .te-btn[aria-pressed='true'],
+.te-btn-group > .te-btn[aria-checked='true'] {
+	position: relative;
+	z-index: 1;
+}
+
+/* ============================================================
+ * Skip-to-main-content link  -  WCAG 2.4.1 Bypass Blocks.
+ * Visually hidden until focused via keyboard; then pops to the
+ * top-left corner so screen-reader + keyboard users can skip the
+ * navbar and left-rail chrome.
+ * ============================================================ */
+
+.te-skip-link {
+	position: absolute;
+	left: 8px;
+	top: 8px;
+	padding: 8px 12px;
+	background: var(--te-accent);
+	color: var(--te-accent-fg);
+	border-radius: var(--te-radius);
+	font: 600 var(--te-font-body) / var(--te-leading) var(--te-font-stack);
+	text-decoration: none;
+	z-index: 10000;
+	transform: translateY(-150%);
+	transition: transform 120ms ease;
+}
+
+.te-skip-link:focus,
+.te-skip-link:focus-visible {
+	transform: translateY(0);
+	outline: 2px solid var(--te-focus-ring);
+	outline-offset: 2px;
+}
+
+/* ============================================================
+ * Long-label truncation utility for panel rows where content
+ * width is unbounded (speaker names, code names, filenames).
+ * Pair with a `title=""` attribute for the full text on hover.
+ * ============================================================ */
+
+.te-truncate {
+	overflow: hidden;
+	text-overflow: ellipsis;
+	white-space: nowrap;
+	min-width: 0;
+}
+
+/* ============================================================
+ * Theme-swap color transitions (B5). Target the chrome that
+ * actually changes color/bg on theme toggle  -  going broader than
+ * this creates transition noise on every hover/focus.
+ * The reduced-motion media query below overrides transition-
+ * duration globally so motion-sensitive users get instant swaps.
+ * ============================================================ */
+
+html,
+body,
+.side-panel,
+.activity-bar,
+.te-btn,
+.entity-toggle-list__item {
+	transition:
+		color 180ms ease,
+		background-color 180ms ease,
+		border-color 180ms ease;
+}
+
+/* ============================================================
+ * prefers-reduced-motion: short-circuit animated chrome. The
+ * library ContextMenu already guards its own animation; this
+ * block covers SidePanel + VizPanel tile transitions + other
+ * TE-owned effects so motion-sensitive users see no slide-ins.
+ * ============================================================ */
+
+@media (prefers-reduced-motion: reduce) {
+	*,
+	*::before,
+	*::after {
+		animation-duration: 0.01ms !important;
+		animation-iteration-count: 1 !important;
+		transition-duration: 0.01ms !important;
+		scroll-behavior: auto !important;
+	}
+}

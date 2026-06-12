@@ -4,7 +4,7 @@
 	import TranscriptStore from '../../stores/transcriptStore';
 	import UserStore from '../../stores/userStore';
 	import EditorStore from '../../stores/editorStore';
-	import ConfigStore from '../../stores/configStore';
+	import FiltersStore from '../../stores/filtersStore';
 	import HoverStore, { initialHoverState } from '../../stores/hoverStore';
 	import P5Store from '../../stores/p5Store';
 	import HistoryStore from '../../stores/historyStore';
@@ -14,7 +14,7 @@
 	import type { Turn } from '$lib/core/turn-utils';
 	import { DataPoint } from '../../models/dataPoint';
 	import { normalizeWord, splitIntoWordTokens } from '$lib/core/string-utils';
-	import { USER_COLORS, DEFAULT_SPEAKER_COLOR } from '$lib/constants/ui';
+	import { getUserColors, DEFAULT_SPEAKER_COLOR } from '$lib/constants/ui';
 	import EditorToolbar from './EditorToolbar.svelte';
 	import TranscriptEditorRow from './TranscriptEditorRow.svelte';
 	import ConfirmModal from './ConfirmModal.svelte';
@@ -48,7 +48,7 @@
 		turns.filter((turn) => {
 			if (!enabledSpeakers.has(turn.speaker)) return false;
 			if ($EditorStore.selection.filteredSpeaker && turn.speaker !== $EditorStore.selection.filteredSpeaker) return false;
-			if ($ConfigStore.wordToSearch && !normalizeWord(getTurnContent(turn)).includes(normalizeWord($ConfigStore.wordToSearch))) return false;
+			if ($FiltersStore.wordToSearch && !normalizeWord(getTurnContent(turn)).includes(normalizeWord($FiltersStore.wordToSearch))) return false;
 			return true;
 		})
 	);
@@ -96,7 +96,7 @@
 			}
 		}));
 
-		// Update ConfigStore to sync with visualizations
+		// Sync selection with visualizations (HoverStore)
 		const transcript = get(TranscriptStore);
 		const turnWords = transcript.wordArray.filter((dp) => dp.turnNumber === turn.turnNumber);
 
@@ -203,7 +203,8 @@
 					let updatedUsers = [...users];
 					if (!updatedUsers.some((u) => u.name === newSpeakerName)) {
 						const usedColors = updatedUsers.map((u) => u.color);
-						const availableColor = USER_COLORS.find((c) => !usedColors.includes(c)) || USER_COLORS[updatedUsers.length % USER_COLORS.length];
+						const userColors = getUserColors();
+						const availableColor = userColors.find((c) => !usedColors.includes(c)) || userColors[updatedUsers.length % userColors.length];
 						updatedUsers.push({ name: newSpeakerName!, color: availableColor, enabled: true });
 					}
 

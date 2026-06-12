@@ -11,24 +11,18 @@
 	}
 
 	let { icon: Icon, tooltip = '', id = '', disabled = false, onclick, onkeydown }: Props = $props();
-
-	function handleClick(e: MouseEvent) {
-		if (!disabled) {
-			onclick?.(e);
-		}
-	}
 </script>
 
-<div
+<button
+	type="button"
+	class="te-btn te-btn--icon te-btn--ghost tooltip tooltip-bottom"
 	data-tip={tooltip}
-	class="tooltip tooltip-bottom btn capitalize icon max-h-8 bg-[#ffffff] border-[#ffffff] max-w-16 flex items-center justify-center"
-	class:btn-disabled={disabled}
-	class:opacity-50={disabled}
-	role="button"
-	tabindex={disabled ? -1 : 0}
+	aria-label={tooltip}
+	title={tooltip}
 	{id}
-	onclick={handleClick}
+	{disabled}
+	{onclick}
 	{onkeydown}
 >
 	<Icon size={20} />
-</div>
+</button>

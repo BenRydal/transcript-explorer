@@ -6,7 +6,7 @@
 	import { toTitleCase, normalizeSpeakerName } from '$lib/core/string-utils';
 	import VideoStore from '../../stores/videoStore';
 	import type { TimingMode } from '../../models/transcript';
-	import { notifications } from '../../stores/notificationStore';
+	import { toast } from '../../stores/toastStore';
 	import { DEFAULT_SPEAKER_COLOR } from '$lib/constants/ui';
 
 	let rowElement: HTMLElement;
@@ -101,7 +101,7 @@
 	function saveStartTime() {
 		const parsed = toSeconds(editedStartTime);
 		if (parsed === null) {
-			notifications.warning('Invalid time format. Use HH:MM:SS, MM:SS, or seconds.');
+			toast.warning('Invalid time format. Use HH:MM:SS, MM:SS, or seconds.');
 			editMode = 'none';
 			return;
 		}
@@ -126,7 +126,7 @@
 	function saveEndTime() {
 		const parsed = toSeconds(editedEndTime);
 		if (parsed === null) {
-			notifications.warning('Invalid time format. Use HH:MM:SS, MM:SS, or seconds.');
+			toast.warning('Invalid time format. Use HH:MM:SS, MM:SS, or seconds.');
 			editMode = 'none';
 			return;
 		}

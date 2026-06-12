@@ -47,7 +47,7 @@ export class WordJourney {
 
 	draw(data: { word: string; occurrences: WordOccurrence[] }): { hoveredDataPoint: DataPoint | null; hoveredSpeaker: string | null } {
 		if (!data.word || this.speakers.length === 0) {
-			this.drawCenteredMessage(data.word ? 'No matching words found' : 'Type a word in the search box to see its journey');
+			this.drawCenteredMessage(data.word ? 'No matching words found' : 'Type a word in the Filter search box to see its journey');
 			return { hoveredDataPoint: null, hoveredSpeaker: null };
 		}
 
@@ -63,7 +63,7 @@ export class WordJourney {
 		this.drawSpeakerLanes();
 
 		// Draw timeline axis
-		drawTimeAxis(this.ctx.sk, this.bounds, this, this.timeline);
+		drawTimeAxis(this.ctx.sk, this.bounds, this, this.timeline, this.ctx.theme);
 
 		// Render occurrences
 		const rendered = this.renderOccurrences(data.occurrences);
@@ -86,7 +86,7 @@ export class WordJourney {
 	}
 
 	private drawCenteredMessage(message: string): void {
-		this.ctx.sk.fill(120);
+		this.ctx.sk.fill(this.ctx.theme.fgMuted);
 		this.ctx.sk.noStroke();
 		this.ctx.sk.textAlign(this.ctx.sk.CENTER, this.ctx.sk.CENTER);
 		this.ctx.sk.textSize(20);
@@ -94,7 +94,7 @@ export class WordJourney {
 	}
 
 	private drawTitle(word: string, count: number): void {
-		this.ctx.sk.fill(80);
+		this.ctx.sk.fill(this.ctx.theme.fg);
 		this.ctx.sk.noStroke();
 		this.ctx.sk.textAlign(this.ctx.sk.LEFT, this.ctx.sk.TOP);
 		this.ctx.sk.textSize(Math.max(10, Math.min(14, this.bounds.height * 0.03)));
@@ -109,11 +109,14 @@ export class WordJourney {
 			const user = this.ctx.userMap.get(speaker);
 			const y = this.gy + laneHeight * i + laneHeight / 2;
 
-			// Speaker label
+			// Speaker label  -  drawn in the left margin over the canvas
+			// background. Use theme.fg so pale speaker colors don't vanish
+			// on dark mode; the lane line below still carries speaker
+			// identity via the tinted stroke.
 			this.ctx.sk.textSize(Math.max(9, Math.min(11, this.bounds.height * 0.025)));
 			this.ctx.sk.textAlign(this.ctx.sk.RIGHT, this.ctx.sk.CENTER);
 			this.ctx.sk.noStroke();
-			this.ctx.sk.fill(user?.color || '#666666');
+			this.ctx.sk.fill(this.ctx.theme.fg);
 			this.ctx.sk.text(speaker, this.gx - 10, y);
 
 			// Lane line (horizontal track)
@@ -174,7 +177,7 @@ export class WordJourney {
 				curr.occurrence.speaker !== crossHighlight.speaker;
 
 			withDimming(this.ctx.sk.drawingContext, shouldDim, () => {
-				const c = this.ctx.sk.color(150);
+				const c = this.ctx.sk.color(this.ctx.theme.fgMuted);
 				c.setAlpha(80);
 				this.ctx.sk.stroke(c);
 				this.ctx.sk.line(prev.x, prev.y, curr.x, curr.y);
@@ -185,7 +188,9 @@ export class WordJourney {
 		for (const ro of rendered) {
 			const isHovered = hoveredOcc === ro;
 			const user = this.ctx.userMap.get(ro.occurrence.speaker);
-			const color = this.ctx.sk.color(getWordColor(ro.occurrence.dataPoint.codes, user?.color || '#999999', this.ctx.codeColorMap, this.ctx.config.codeColorMode));
+			const color = this.ctx.sk.color(
+				getWordColor(ro.occurrence.dataPoint.codes, user?.color || '#999999', this.ctx.codeColorMap, this.ctx.config.codeColorMode)
+			);
 
 			const shouldDim = crossHighlight.active && crossHighlight.speaker != null && ro.occurrence.speaker !== crossHighlight.speaker;
 

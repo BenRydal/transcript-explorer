@@ -4,6 +4,7 @@
 	import { isRequired, allRequiredMapped, type ColumnMatch } from '$lib/core/column-mapper';
 	import type { CSVPreview, CodePreview } from '../../models/csv-preview';
 	import type { TimingMode } from '../../models/transcript';
+	import { trapFocus } from '$lib/a11y/focus-trap';
 
 	interface Props {
 		isOpen?: boolean;
@@ -100,9 +101,18 @@
 		if (value == null || value === '') return '\u2014';
 		return String(value);
 	}
+
+	let dialogEl: HTMLDivElement | null = $state(null);
+
+	$effect(() => {
+		if (!isOpen || !dialogEl) return;
+		return trapFocus(dialogEl);
+	});
 </script>
 
 {#if isOpen}
+	<!-- svelte-ignore a11y_no_static_element_interactions -->
+	<!-- svelte-ignore a11y_click_events_have_key_events -->
 	<div
 		class="modal modal-open"
 		onclick={(e) => {
@@ -113,11 +123,8 @@
 			}
 		}}
 		onkeydown={handleKeydown}
-		role="dialog"
-		aria-modal="true"
-		tabindex="-1"
 	>
-		<div class="modal-box w-11/12 max-w-lg">
+		<div bind:this={dialogEl} class="modal-box w-11/12 max-w-lg" role="dialog" aria-modal="true" aria-labelledby="upload-modal-title" tabindex="-1">
 			{#if csvPreview}
 				<!-- CSV Preview -->
 				<div class="flex justify-between items-center mb-4">
@@ -125,7 +132,9 @@
 						<button class="btn btn-ghost btn-sm btn-square" onclick={() => oncancelPreview?.()} aria-label="Back">
 							<ArrowLeft size={18} />
 						</button>
-						<h3 class="font-bold text-lg truncate max-w-[300px]" title={csvPreview.fileName}>Preview: {csvPreview.fileName}</h3>
+						<h3 id="upload-modal-title" class="font-bold text-lg truncate max-w-[300px]" title={csvPreview.fileName}>
+							Preview: {csvPreview.fileName}
+						</h3>
 					</div>
 					<button
 						class="btn btn-circle btn-sm"
@@ -135,7 +144,7 @@
 						}}
 						aria-label="Close"
 					>
-						<X size={20} />
+						<X size={20} aria-hidden="true" />
 					</button>
 				</div>
 
@@ -154,7 +163,7 @@
 						{csvPreview.turnCount} turn{csvPreview.turnCount !== 1 ? 's' : ''},
 						{csvPreview.wordCount} word{csvPreview.wordCount !== 1 ? 's' : ''}
 						{#if csvPreview.timingMode}
-							&mdash; Timing: {timingModeLabels[csvPreview.timingMode]}
+							&middot; Timing: {timingModeLabels[csvPreview.timingMode]}
 						{/if}
 					</div>
 				{:else if !canImport()}
@@ -178,7 +187,7 @@
 									oncolumnMappingChange?.(match.expected, val || null);
 								}}
 							>
-								<option value="">{required ? '— Select column —' : '— Skip —'}</option>
+								<option value="">{required ? 'Select column…' : 'Skip'}</option>
 								{#each csvPreview.allColumns as col}
 									<option value={col}>{col}</option>
 								{/each}
@@ -232,7 +241,9 @@
 						<button class="btn btn-ghost btn-sm btn-square" onclick={() => oncancelCodePreview?.()} aria-label="Back">
 							<ArrowLeft size={18} />
 						</button>
-						<h3 class="font-bold text-lg truncate max-w-[300px]" title={codePreview.fileName}>Preview: {codePreview.fileName}</h3>
+						<h3 id="upload-modal-title" class="font-bold text-lg truncate max-w-[300px]" title={codePreview.fileName}>
+							Preview: {codePreview.fileName}
+						</h3>
 					</div>
 					<button
 						class="btn btn-circle btn-sm"
@@ -256,7 +267,7 @@
 
 				<!-- Summary -->
 				<div class="text-sm text-gray-600 mb-3">
-					{codePreview.formatLabel} codes &mdash;
+					{codePreview.formatLabel} codes:
 					{codePreview.codeNames.length} code{codePreview.codeNames.length !== 1 ? 's' : ''} found,
 					{codePreview.rowCount} row{codePreview.rowCount !== 1 ? 's' : ''}
 				</div>
@@ -307,9 +318,9 @@
 			{:else}
 				<!-- Normal upload UI -->
 				<div class="flex justify-between mb-4">
-					<h3 class="font-bold text-lg">Upload Files</h3>
+					<h3 id="upload-modal-title" class="font-bold text-lg">Upload Files</h3>
 					<button class="btn btn-circle btn-sm" onclick={() => (isOpen = false)} aria-label="Close">
-						<X size={20} />
+						<X size={20} aria-hidden="true" />
 					</button>
 				</div>
 

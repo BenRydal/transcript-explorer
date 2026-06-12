@@ -143,13 +143,14 @@ export class SpeakerGarden {
 	drawFlowerGuideLines(): void {
 		const top = this.yPosTop + this.maxFlowerRadius;
 		const halfSpacing = CANVAS_SPACING / 2;
+		const theme = this.ctx.theme;
 
-		this.ctx.sk.stroke(0);
+		this.ctx.sk.stroke(theme.fg);
 		this.ctx.sk.strokeWeight(2);
 		this.ctx.sk.line(this.bounds.x, top, this.bounds.x, this.yPosBottom);
 		this.ctx.sk.line(this.bounds.x - halfSpacing, top, this.bounds.x + halfSpacing, top);
 
-		this.ctx.sk.fill(0);
+		this.ctx.sk.fill(theme.fg);
 		this.ctx.sk.noStroke();
 		this.ctx.sk.textAlign(this.ctx.sk.LEFT, this.ctx.sk.BASELINE);
 		this.ctx.sk.textSize(Math.max(10, Math.min(16, this.bounds.height * 0.04)));

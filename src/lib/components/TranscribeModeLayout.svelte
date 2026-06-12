@@ -5,7 +5,7 @@
 	import TranscriptStore from '../../stores/transcriptStore';
 	import EditorStore from '../../stores/editorStore';
 	import { playVideo, pauseVideo, seekTo, type VideoPlayer } from '../video/video-service';
-	import SplitPane from './SplitPane.svelte';
+	import { SplitPane } from 'svelte-p5-components';
 	import TranscribeModeToolbar from './TranscribeModeToolbar.svelte';
 	import TranscriptEditor from './TranscriptEditor.svelte';
 	import VideoPlayerComponent from './VideoPlayer.svelte';

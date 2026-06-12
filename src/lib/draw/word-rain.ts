@@ -173,7 +173,7 @@ export class WordRain {
 		}
 
 		if (index > 0) {
-			const divColor = this.ctx.sk.color(150);
+			const divColor = this.ctx.sk.color(this.ctx.theme.fgMuted);
 			divColor.setAlpha(SPEAKER_BAND_DIVIDER_ALPHA);
 			this.ctx.sk.stroke(divColor);
 			this.ctx.sk.strokeWeight(0.5);
@@ -181,7 +181,11 @@ export class WordRain {
 		}
 
 		this.ctx.sk.noStroke();
-		this.ctx.sk.fill(user.color);
+		// Speaker label sits on the band background  -  an alpha-15 tint
+		// where the canvas bg dominates, so treat this as "over canvas
+		// background" per the draw-theme rules. theme.fg stays legible in
+		// both themes; the band's speaker tint still carries identity.
+		this.ctx.sk.fill(this.ctx.theme.fg);
 		this.ctx.sk.textSize(SPEAKER_LABEL_SIZE);
 		this.ctx.sk.textAlign(this.ctx.sk.LEFT, this.ctx.sk.TOP);
 		this.ctx.sk.text(toTitleCase(user.name), this.bounds.x + 4, bandY + 2);
@@ -332,7 +336,7 @@ export class WordRain {
 		const prevDash = ctx.getLineDash();
 
 		ctx.setLineDash(BIN_DIVIDER_DASH);
-		const c = this.ctx.sk.color(150);
+		const c = this.ctx.sk.color(this.ctx.theme.fgMuted);
 		c.setAlpha(BIN_DIVIDER_ALPHA);
 		this.ctx.sk.stroke(c);
 		this.ctx.sk.strokeWeight(1);
@@ -527,7 +531,7 @@ export class WordRain {
 
 		const bottomMargin = Math.max(15, this.bounds.height * BOTTOM_MARGIN_RATIO);
 		this.ctx.sk.textSize(Math.max(8, bottomMargin * 0.5));
-		this.ctx.sk.fill(120);
+		this.ctx.sk.fill(this.ctx.theme.fgMuted);
 		this.ctx.sk.noStroke();
 
 		const labelY = this.bounds.y + this.bounds.height - bottomMargin + 5;
@@ -565,9 +569,12 @@ export class WordRain {
 	private drawHoverEffect(hovered: PlacedWord): void {
 		const centerX = hovered.x + hovered.width / 2;
 
-		// Semi-transparent overlay
+		// Semi-transparent overlay  -  theme.overlay tracks bg, so the
+		// dim-the-scene effect reads as "fade to canvas" in either theme.
 		this.ctx.sk.noStroke();
-		this.ctx.sk.fill(255, 255, 255, HOVER_OVERLAY_ALPHA);
+		const overlayColor = this.ctx.sk.color(this.ctx.theme.overlay);
+		overlayColor.setAlpha(HOVER_OVERLAY_ALPHA);
+		this.ctx.sk.fill(overlayColor);
 		this.ctx.sk.rect(this.bounds.x, this.bounds.y, this.bounds.width, this.bounds.height);
 
 		// Hovered bar
@@ -612,6 +619,12 @@ export class WordRain {
 		}
 		let content = `<b>${title}</b>`;
 
+		// binning off: x = mean occurrence time, which can fall in a gap where the
+		// word was never said; warn in the tooltip
+		if (!this.ctx.config.wordRainTemporalBinning) {
+			content += `\n<span style="opacity: 0.6; font-size: 0.8em">(Showing mean time, may not reflect when word was actually said.)</span>`;
+		}
+
 		// Per-speaker breakdown
 		const speakerCounts = new Map<string, number>();
 		for (const dp of agg.occurrences) {
@@ -641,6 +654,8 @@ export class WordRain {
 		const seenTurns = new Set<number>();
 		const samples: string[] = [];
 
+		// PERF: O(occurrences * totalWords) but runs only on hover and short-circuits
+		// at MAX_SAMPLE_TURNS; precompute a turn->DataPoint[] map if this gets hot
 		for (const dp of agg.occurrences) {
 			if (seenTurns.has(dp.turnNumber)) continue;
 			seenTurns.add(dp.turnNumber);

@@ -5,6 +5,7 @@ import type { CodeEntry } from '../../stores/codeStore';
 import type { HoverState } from '../../stores/hoverStore';
 import type { Bounds } from './types/bounds';
 import { formatTimeCompact } from '../core/time-utils';
+import type { DrawTheme } from './draw-theme';
 
 const DIM_ALPHA = 0.2;
 
@@ -75,11 +76,12 @@ export function drawTimeAxis(
 	sk: p5,
 	bounds: Bounds,
 	grid: { gx: number; gy: number; gw: number; gh: number },
-	timeline: { leftMarker: number; rightMarker: number }
+	timeline: { leftMarker: number; rightMarker: number },
+	theme: DrawTheme
 ): void {
 	const fontSize = Math.max(8, Math.min(10, bounds.height * 0.025));
 	sk.textSize(fontSize);
-	sk.fill(120);
+	sk.fill(theme.fgMuted);
 	sk.noStroke();
 	sk.textAlign(sk.CENTER, sk.TOP);
 
@@ -92,13 +94,13 @@ export function drawTimeAxis(
 		const x = grid.gx + frac * grid.gw;
 
 		// Tick mark
-		sk.stroke(200);
+		sk.stroke(theme.border);
 		sk.strokeWeight(1);
 		sk.line(x, grid.gy + grid.gh, x, grid.gy + grid.gh + 5);
 
 		// Time label
 		sk.noStroke();
-		sk.fill(120);
+		sk.fill(theme.fgMuted);
 		sk.text(formatTimeCompact(time), x, grid.gy + grid.gh + 8);
 	}
 }
@@ -123,7 +125,7 @@ export function drawPlayhead(sk: p5, currTime: number, leftMarker: number, right
 
 const TOOLTIP_MAX_TURNS = 4;
 const TOOLTIP_PREVIEW_WORDS = 8;
-const TURN_SEPARATOR = '<span style="opacity: 0.2">———</span>';
+const TURN_SEPARATOR = '<span style="opacity: 0.2">---</span>';
 
 export interface TurnPreview {
 	wordCount: number;
@@ -173,12 +175,7 @@ export function buildCodeColorMap(codeEntries: CodeEntry[]): Map<string, string>
  * When codeColorMode is off: speaker color.
  * When codeColorMode is on: gray (uncoded), code color (one code), black (multiple codes).
  */
-export function getWordColor(
-	codes: string[],
-	speakerColor: string,
-	codeColorMap: Map<string, string>,
-	codeColorMode: boolean
-): string {
+export function getWordColor(codes: string[], speakerColor: string, codeColorMap: Map<string, string>, codeColorMode: boolean): string {
 	if (!codeColorMode) return speakerColor;
 	if (codes.length === 0) return NO_CODE_COLOR;
 
@@ -198,12 +195,7 @@ export function getWordColor(
  * Counts how many words have each code across all points and returns the most frequent code's color.
  * Falls back to gray if no codes, black if there's an exact tie between multiple codes.
  */
-export function getDominantCodeColor(
-	points: DataPoint[],
-	speakerColor: string,
-	codeColorMap: Map<string, string>,
-	codeColorMode: boolean
-): string {
+export function getDominantCodeColor(points: DataPoint[], speakerColor: string, codeColorMap: Map<string, string>, codeColorMode: boolean): string {
 	if (!codeColorMode || points.length === 0) return speakerColor;
 
 	const codeCounts = new Map<string, number>();

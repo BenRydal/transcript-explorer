@@ -6,6 +6,7 @@ import { DEFAULT_SPEAKER_COLOR } from '../constants/ui';
 import { withDimming, formatTurnPreviewLines, getCrossHighlight, getDominantCodeColor } from './draw-utils';
 import { normalizeWord } from '../core/string-utils';
 import { DrawContext } from './draw-context';
+import { registerVizCacheReset } from './viz-cache-registry';
 
 const LEFT_MARGIN = 100;
 const BOTTOM_MARGIN = 30;
@@ -16,6 +17,14 @@ const MAX_OPACITY = 230;
 const HOVER_OUTLINE_WEIGHT = 2;
 const TIME_LABEL_COUNT = 6;
 const TARGET_CELL_WIDTH = 15;
+
+// Module-level memo (a fresh SpeakerHeatmap is built every frame, so a class
+// field can't cache). Keyed on (wordArray ref, binCount, speakerSet); reset on
+// transcript change.
+let fullTranscriptCellCountCache: { wordArray: unknown; binCount: number; speakerKey: string; result: number } | null = null;
+registerVizCacheReset(() => {
+	fullTranscriptCellCountCache = null;
+});
 
 interface TimeBin {
 	startTime: number;
@@ -38,7 +47,6 @@ interface HoveredCell {
 export class SpeakerHeatmap {
 	private ctx: DrawContext;
 	private bounds: Bounds;
-	private fullTranscriptMaxCellCount: number | null = null;
 
 	constructor(ctx: DrawContext, bounds: Bounds) {
 		this.ctx = ctx;
@@ -55,12 +63,10 @@ export class SpeakerHeatmap {
 		const searchTerm = this.ctx.config.wordToSearch ? normalizeWord(this.ctx.config.wordToSearch) : '';
 		const binnedData = this.binWords(words, numBins, speakers);
 
-		// When scaling to full transcript, use the global max cell count
+		// scaling to full transcript uses the module-memoized global max
 		if (!this.ctx.config.scaleToVisibleData) {
-			if (this.fullTranscriptMaxCellCount === null) {
-				this.fullTranscriptMaxCellCount = this.binFullTranscript(numBins, speakers).maxCellCount;
-			}
-			binnedData.maxCellCount = Math.max(binnedData.maxCellCount, this.fullTranscriptMaxCellCount);
+			const globalMax = this.getFullTranscriptMaxCellCount(numBins, speakers);
+			binnedData.maxCellCount = Math.max(binnedData.maxCellCount, globalMax);
 		}
 		const cellWidth = grid.width / numBins;
 		const cellHeight = grid.height / speakers.length;
@@ -94,9 +100,12 @@ export class SpeakerHeatmap {
 		this.ctx.sk.textAlign(this.ctx.sk.RIGHT, this.ctx.sk.CENTER);
 		this.ctx.sk.noStroke();
 		const labelWidth = grid.x - this.bounds.x - 10;
+		// Labels render in the left margin over the canvas background (not
+		// a speaker-colored shape), so use theme.fg to stay readable in
+		// both themes. The heatmap's colored cells to the right still
+		// carry the speaker-identity channel.
+		this.ctx.sk.fill(this.ctx.theme.fg);
 		for (let row = 0; row < speakers.length; row++) {
-			const user = this.ctx.userMap.get(speakers[row]);
-			this.ctx.sk.fill(user?.color || DEFAULT_SPEAKER_COLOR);
 			const label = this.truncateLabel(speakers[row], labelWidth);
 			this.ctx.sk.text(label, grid.x - 8, grid.y + row * cellHeight + cellHeight / 2);
 		}
@@ -123,7 +132,12 @@ export class SpeakerHeatmap {
 				withDimming(this.ctx.sk.drawingContext, shouldDim, () => {
 					if (cellWords.length > 0) {
 						const user = this.ctx.userMap.get(speakers[row]);
-						const cellColor = getDominantCodeColor(cellWords, user?.color || DEFAULT_SPEAKER_COLOR, this.ctx.codeColorMap, this.ctx.config.codeColorMode);
+						const cellColor = getDominantCodeColor(
+							cellWords,
+							user?.color || DEFAULT_SPEAKER_COLOR,
+							this.ctx.codeColorMap,
+							this.ctx.config.codeColorMode
+						);
 						let alpha = this.ctx.sk.map(cellWords.length, 0, binnedData.maxCellCount, MIN_OPACITY, MAX_OPACITY);
 						if (searchTerm && !this.cellMatchesSearch(cellWords, searchTerm)) {
 							alpha *= 0.2;
@@ -132,7 +146,9 @@ export class SpeakerHeatmap {
 						c.setAlpha(alpha);
 						this.ctx.sk.fill(c);
 					} else {
-						this.ctx.sk.fill(245);
+						// Empty-cell "no data" tile  -  muted canvas tone, not
+						// white (white blows out on dark theme).
+						this.ctx.sk.fill(this.ctx.theme.borderMuted);
 					}
 					this.ctx.sk.rect(x, y, cw, ch);
 				});
@@ -146,7 +162,7 @@ export class SpeakerHeatmap {
 
 		const isUntimed = this.ctx.transcript.timingMode === 'untimed';
 		this.ctx.sk.textSize(Math.max(8, Math.min(10, this.bounds.height * 0.03)));
-		this.ctx.sk.fill(120);
+		this.ctx.sk.fill(this.ctx.theme.fgMuted);
 		this.ctx.sk.noStroke();
 
 		const labelStep = Math.max(1, Math.floor(numBins / TIME_LABEL_COUNT));
@@ -225,7 +241,12 @@ export class SpeakerHeatmap {
 		const multiTurn = turns.length > 1;
 
 		const content = `<b>${hovered.speaker}</b> · ${turns.length} turn${multiTurn ? 's' : ''} · ${timeRange}\n${formatTurnPreviewLines(turns)}`;
-		const tooltipColor = getDominantCodeColor(hovered.words, user?.color || DEFAULT_SPEAKER_COLOR, this.ctx.codeColorMap, this.ctx.config.codeColorMode);
+		const tooltipColor = getDominantCodeColor(
+			hovered.words,
+			user?.color || DEFAULT_SPEAKER_COLOR,
+			this.ctx.codeColorMap,
+			this.ctx.config.codeColorMode
+		);
 		showTooltip(this.ctx.sk.mouseX, this.ctx.sk.mouseY, content, tooltipColor, this.bounds.y + this.bounds.height);
 	}
 
@@ -280,16 +301,38 @@ export class SpeakerHeatmap {
 	}
 
 	/**
-	 * Bins the full transcript wordArray to find the global max cell count.
+	 * Returns the global max cell count across the full transcript wordArray.
+	 * Memoized module-side on (wordArray ref, numBins, speaker set) because
+	 * the class is recreated per-frame; an instance cache wouldn't survive
+	 * between draws. Cache is cleared on transcript load via the viz cache
+	 * registry.
 	 */
-	private binFullTranscript(numBins: number, speakers: string[]): { maxCellCount: number } {
+	private getFullTranscriptMaxCellCount(numBins: number, speakers: string[]): number {
+		const wordArray = this.ctx.transcript.wordArray;
+		// Stable key for the speaker set  -  order doesn't matter for which
+		// cells exist, only which speakers participate. Sort once so toggle
+		// order doesn't defeat the cache.
+		const speakerKey = [...speakers].sort().join('\0');
+
+		if (
+			fullTranscriptCellCountCache &&
+			fullTranscriptCellCountCache.wordArray === wordArray &&
+			fullTranscriptCellCountCache.binCount === numBins &&
+			fullTranscriptCellCountCache.speakerKey === speakerKey
+		) {
+			return fullTranscriptCellCountCache.result;
+		}
+
 		const fullRange = this.ctx.transcript.totalTimeInSeconds || this.ctx.timeline.endTime;
-		if (fullRange <= 0) return { maxCellCount: 0 };
+		if (fullRange <= 0) {
+			fullTranscriptCellCountCache = { wordArray, binCount: numBins, speakerKey, result: 0 };
+			return 0;
+		}
 
 		const binWidth = fullRange / numBins;
 		const cellCounts = new Map<string, number>();
 
-		for (const word of this.ctx.transcript.wordArray) {
+		for (const word of wordArray) {
 			const binIndex = Math.min(numBins - 1, Math.max(0, Math.floor(word.startTime / binWidth)));
 			const key = `${binIndex}-${word.speaker}`;
 			cellCounts.set(key, (cellCounts.get(key) || 0) + 1);
@@ -300,6 +343,7 @@ export class SpeakerHeatmap {
 			if (count > maxCellCount) maxCellCount = count;
 		}
 
-		return { maxCellCount };
+		fullTranscriptCellCountCache = { wordArray, binCount: numBins, speakerKey, result: maxCellCount };
+		return maxCellCount;
 	}
 }
