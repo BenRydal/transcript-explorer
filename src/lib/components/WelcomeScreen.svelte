@@ -104,6 +104,14 @@
 			thumb: '/images/thumbs/example-2.webp'
 		},
 		{
+			id: 'example-4',
+			title: '8th Grade Science Lesson',
+			description: 'Students explore science concepts in an 8th grade classroom (TIMSS 1999 Video Study).',
+			speakers: 6,
+			duration: '60 min',
+			thumb: '/images/thumbs/example-4.webp'
+		},
+		{
 			id: 'example-2',
 			title: 'Museum Gallery Visit',
 			description: 'A family of five visits a museum gallery featuring early country and bluegrass artists',
