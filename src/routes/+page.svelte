@@ -1444,7 +1444,6 @@
 	}}
 	onOpenUpload={() => (showUploadModal = true)}
 	onOpenPaste={() => (showPasteModal = true)}
-	onStartTranscribe={() => switchWorkspace('transcribe')}
 	onStartTour={handleWelcomeStartTour}
 	onDismiss={handleWelcomeDismiss}
 />
