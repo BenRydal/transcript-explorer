@@ -24,7 +24,7 @@
 
 	let {
 		isVideoLoaded = false,
-		activeWorkspace = 'edit',
+		activeWorkspace = 'visualize',
 		selectedExampleId = '',
 		transcriptLabel = '',
 		onselectWorkspace,
@@ -223,7 +223,7 @@
 
 	<!-- Desktop navigation -->
 	<div class="hidden xl:flex flex-none px-2 items-center gap-2">
-		<!-- Workspace Switcher (Edit / Present / Transcribe)  -  APG
+		<!-- Workspace Switcher (Edit / Visualize / Transcribe)  -  APG
 		     radiogroup pattern: mutually exclusive choices with arrow-
 		     key navigation. Each option is a role="radio" button and
 		     aria-checked reflects selection. Only the checked option

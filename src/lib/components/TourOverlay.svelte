@@ -31,7 +31,7 @@
 			target: '[data-tour="viz-modes"]',
 			title: 'Sidebar & Workspaces',
 			content:
-				'Use this rail to switch visualizations, filters, upload data, and settings. Switch workspaces with Edit / Present / Transcribe (keys 1 / 2 / 3) in the top bar.'
+				'Use this rail to switch visualizations, filters, upload data, and settings. Switch workspaces with Visualize / Edit / Transcribe (keys 1 / 2 / 3) in the top bar.'
 		},
 		{
 			target: '[data-tour="visualization"]',

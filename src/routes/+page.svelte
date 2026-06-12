@@ -423,7 +423,7 @@
 	// Reactive bindings to stores
 	let isVideoLoaded = $derived($VideoStore.isLoaded);
 	let hasVideoSource = $derived($VideoStore.source.type !== null);
-	// Transcribe is now a workspace (Edit / Present / Transcribe) rather than
+	// Transcribe is now a workspace (Edit / Visualize / Transcribe) rather than
 	// a separate toggle: the dedicated full-screen TranscribeModeLayout is
 	// shown whenever the active workspace is 'transcribe'.
 	let isTranscribeModeActive = $derived($UIStateStore.activeWorkspace === 'transcribe');
@@ -554,7 +554,7 @@
 		window.addEventListener('beforeunload', saveStateImmediate);
 
 		// Workspace keyboard shortcuts: 1 / 2 / 3 switch between Edit /
-		// Present / Transcribe (driven off WORKSPACE_ORDER). Skip while the
+		// Visualize / Transcribe (driven off WORKSPACE_ORDER). Skip while the
 		// user is editing text (inputs,
 		// textareas, contenteditable) so we don't yank focus mid-type. Skip
 		// when a modifier is held to avoid colliding with browser shortcuts

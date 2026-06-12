@@ -311,7 +311,7 @@
 						</button>
 
 						<p class="welcome-screen__workspaces-inline">
-							Switch workspaces with <kbd>1</kbd> Edit · <kbd>2</kbd> Present · <kbd>3</kbd> Transcribe
+							Switch workspaces with <kbd>1</kbd> Visualize · <kbd>2</kbd> Edit · <kbd>3</kbd> Transcribe
 						</p>
 					</div>
 				{:else}
@@ -665,10 +665,11 @@
 	/* Example grid */
 	.welcome-screen__examples-heading {
 		margin: 0 0 var(--te-sp-1) 0;
-		font-size: 0.95rem;
+		font-size: 0.875rem;
 		font-weight: 700;
 		color: var(--te-fg);
 		letter-spacing: -0.01em;
+		text-align: center;
 	}
 
 	.welcome-screen__examples {

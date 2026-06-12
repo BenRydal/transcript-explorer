@@ -3,7 +3,7 @@ import EditorStore from '../../stores/editorStore';
 import VizStore from '../../stores/vizStore';
 
 /**
- * Phase F  -  Task workspaces (Edit / Present / Transcribe).
+ * Phase F  -  Task workspaces (Edit / Visualize / Transcribe).
  *
  * Each preset is a DaVinci-style named layout snapshot: which sidebar tab
  * is open, whether the editor pane is visible, and whether the multi-viz
@@ -28,7 +28,7 @@ export const WORKSPACE_PRESETS: Record<Workspace, WorkspacePreset> = {
 		editorVisible: true,
 		dashboardVisible: false
 	},
-	present: {
+	visualize: {
 		sidebarTab: null,
 		editorVisible: false,
 		dashboardVisible: false
@@ -42,11 +42,11 @@ export const WORKSPACE_PRESETS: Record<Workspace, WorkspacePreset> = {
 
 export const WORKSPACE_LABELS: Record<Workspace, string> = {
 	edit: 'Edit',
-	present: 'Present',
+	visualize: 'Visualize',
 	transcribe: 'Transcribe'
 };
 
-export const WORKSPACE_ORDER: readonly Workspace[] = ['edit', 'present', 'transcribe'] as const;
+export const WORKSPACE_ORDER: readonly Workspace[] = ['visualize', 'edit', 'transcribe'] as const;
 
 /**
  * Apply a workspace preset to the relevant stores. This reshuffles the

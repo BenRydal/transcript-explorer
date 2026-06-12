@@ -2,7 +2,7 @@ import { writable } from 'svelte/store';
 
 export type SidebarTab = 'viz' | 'filters' | 'data' | 'settings' | 'help';
 
-export type Workspace = 'edit' | 'present' | 'transcribe';
+export type Workspace = 'edit' | 'visualize' | 'transcribe';
 
 /**
  * First-load onboarding lifecycle. `unseen` = show the welcome dialog on
@@ -41,7 +41,7 @@ export interface UIStateStoreType {
 	// Floating selection-contextual action menu (Phase E).
 	contextMenu: ContextMenuState;
 	// Task workspace preset (Phase F). Drives default chrome layout for
-	// Edit / Present / Transcribe modes.
+	// Edit / Visualize / Transcribe modes.
 	activeWorkspace: Workspace;
 	// First-load welcome-dialog lifecycle. Persisted across reloads.
 	onboardingState: OnboardingState;
@@ -70,18 +70,8 @@ export const initialContextMenu: ContextMenuState = {
 const ACTIVE_WORKSPACE_STORAGE_KEY = 'te:ui:activeWorkspace';
 const ONBOARDING_STATE_STORAGE_KEY = 'te:ui:onboardingState';
 
-const VALID_WORKSPACES: readonly Workspace[] = ['edit', 'present', 'transcribe'] as const;
+const VALID_WORKSPACES: readonly Workspace[] = ['edit', 'visualize', 'transcribe'] as const;
 
-/**
- * Legacy workspace names (pre-rename: Analyze / Code / Present) map onto the
- * current modes when hydrating a persisted value. Analyze and Code both
- * collapse into Edit; Present is unchanged.
- */
-const LEGACY_WORKSPACE_MIGRATIONS: Record<string, Workspace> = {
-	analyze: 'edit',
-	code: 'edit',
-	present: 'present'
-};
 const VALID_ONBOARDING_STATES: readonly OnboardingState[] = ['unseen', 'dismissed', 'seen'] as const;
 
 function isValidWorkspace(value: unknown): value is Workspace {
@@ -96,14 +86,7 @@ function readPersistedWorkspace(): Workspace | null {
 	if (typeof window === 'undefined') return null;
 	try {
 		const raw = window.localStorage.getItem(ACTIVE_WORKSPACE_STORAGE_KEY);
-		if (raw === null) return null;
-		if (isValidWorkspace(raw)) return raw;
-		// Migrate legacy workspace names (analyze/code → edit, present → present).
-		// Anything unrecognized falls through to the caller's default ('edit').
-		if (typeof raw === 'string' && raw in LEGACY_WORKSPACE_MIGRATIONS) {
-			return LEGACY_WORKSPACE_MIGRATIONS[raw];
-		}
-		return null;
+		return isValidWorkspace(raw) ? raw : null;
 	} catch {
 		return null;
 	}
@@ -126,7 +109,7 @@ export const initialUIState: UIStateStoreType = {
 	activeSidebarTab: null,
 	sidebarWidth: 280,
 	contextMenu: initialContextMenu,
-	activeWorkspace: readPersistedWorkspace() ?? 'edit',
+	activeWorkspace: readPersistedWorkspace() ?? 'visualize',
 	onboardingState: readPersistedOnboardingState() ?? 'unseen'
 };
 
