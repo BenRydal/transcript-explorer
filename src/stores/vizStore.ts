@@ -72,9 +72,7 @@ export const initialViz: VizStoreType = {
 	repeatWordSliderValue: 5,
 	speakerSortOrder: 'default',
 	wordRainMinFrequency: 1,
-	// on by default: without binning a word's x is its mean time, which can land
-	// in a gap where it was never actually said
-	wordRainTemporalBinning: true,
+	wordRainTemporalBinning: false,
 	wordRainBinCount: 8,
 	turnNetworkWeightByWords: false,
 	turnNetworkHideSelfLoops: false,
