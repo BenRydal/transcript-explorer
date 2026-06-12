@@ -47,7 +47,7 @@ export class WordJourney {
 
 	draw(data: { word: string; occurrences: WordOccurrence[] }): { hoveredDataPoint: DataPoint | null; hoveredSpeaker: string | null } {
 		if (!data.word || this.speakers.length === 0) {
-			this.drawCenteredMessage(data.word ? 'No matching words found' : 'Type a word in the search box to see its journey');
+			this.drawCenteredMessage(data.word ? 'No matching words found' : 'Type a word in the Filter search box to see its journey');
 			return { hoveredDataPoint: null, hoveredSpeaker: null };
 		}
 
