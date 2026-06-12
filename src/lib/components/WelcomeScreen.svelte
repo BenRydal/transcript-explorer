@@ -669,7 +669,6 @@
 		font-weight: 700;
 		color: var(--te-fg);
 		letter-spacing: -0.01em;
-		text-align: center;
 	}
 
 	.welcome-screen__examples {
