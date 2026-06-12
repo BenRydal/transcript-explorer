@@ -75,7 +75,7 @@ export const initialViz: VizStoreType = {
 	wordRainTemporalBinning: false,
 	wordRainBinCount: 8,
 	turnNetworkWeightByWords: false,
-	turnNetworkHideSelfLoops: false,
+	turnNetworkHideSelfLoops: true,
 	turnNetworkMinTransitions: 1,
 	turnNetworkStatisticalMode: false,
 	heatmapBinCount: 0,
