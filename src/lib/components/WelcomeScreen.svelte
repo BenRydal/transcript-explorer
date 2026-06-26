@@ -275,13 +275,13 @@
 									<span class="welcome-screen__cta-sub">Interactive walkthrough of the interface</span>
 								</span>
 							</button>
-							<a class="welcome-screen__cta-card" href="https://youtu.be/_2_3ilMm4pQ" target="_blank" rel="noopener noreferrer">
+							<a class="welcome-screen__cta-card" href="https://youtu.be/N4Y0zuysoso" target="_blank" rel="noopener noreferrer">
 								<span class="welcome-screen__cta-icon">
 									<CirclePlay size={18} />
 								</span>
 								<span class="welcome-screen__cta-body">
 									<span class="welcome-screen__cta-title">Watch demo video</span>
-									<span class="welcome-screen__cta-sub">See the tool in action (3 min)</span>
+									<span class="welcome-screen__cta-sub">See the tool in action (5 min)</span>
 								</span>
 							</a>
 						</div>
