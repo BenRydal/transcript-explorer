@@ -97,7 +97,9 @@ export class ContributionCloud {
 		const scaling = calculateScaling(this.ctx.sk, layoutWords, this.bounds, this.ctx.config, this.fullTranscriptMaxCount);
 		const cacheKey = this.getBufferCacheKey(layoutWords.length);
 
-		if (cacheKey !== bufferCache.cacheKey || !bufferCache.buffer) {
+		// Also re-render if the buffer is owned by a dead p5 instance (workspace
+		// remount) - otherwise image() below draws a stranded buffer.
+		if (cacheKey !== bufferCache.cacheKey || !bufferCache.buffer || bufferCache.owner !== this.ctx.sk) {
 			this.renderToBuffer(layoutWords, scaling);
 			bufferCache.cacheKey = cacheKey;
 		}
@@ -131,6 +133,9 @@ export class ContributionCloud {
 			this.ctx.config.dashboardToggle,
 			this.ctx.config.wordToSearch || '',
 			this.ctx.config.codeColorMode,
+			// Changes the maxCount baseline baked into every word's text size;
+			// without it the buffer stays stale after toggling the setting.
+			this.ctx.config.scaleToVisibleData,
 			userStates,
 			codeStates,
 			this.ctx.timeline.leftMarker,
