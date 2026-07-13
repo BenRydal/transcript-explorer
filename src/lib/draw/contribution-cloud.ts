@@ -42,26 +42,39 @@ const HOVER_OUTLINE_WEIGHT = 2;
 const MAX_TOOLTIP_LENGTH = 300;
 const OVERLAY_OPACITY = 200;
 
+// `owner` = the p5 instance that created the buffer. This cache is
+// module-global and outlives its sketch (a Transcribe-workspace round trip
+// remounts <Sketch> as a new instance), so we track the owner to detect a
+// buffer stranded by a dead instance and avoid using or remove()-ing it.
 let bufferCache: {
 	buffer: p5.Graphics | null;
+	owner: p5 | null;
 	positions: WordPosition[];
 	cacheKey: string | null;
 	hasOverflow: boolean;
 } = {
 	buffer: null,
+	owner: null,
 	positions: [],
 	cacheKey: null,
 	hasOverflow: false
 };
 
-export function clearCloudBuffer(): void {
-	if (bufferCache.buffer) {
-		// p5.Graphics buffers are GPU-backed  -  .remove() frees the WebGL
-		// context / 2D canvas backing. Skipping this leaks VRAM across
-		// transcript reloads.
-		bufferCache.buffer.remove();
+// Guarded: p5's remove() throws if the owning instance is gone, and an
+// uncaught throw here would abort the draw loop and blank the canvas. Dropping
+// the reference frees the backing canvas either way.
+function disposeBuffer(buffer: p5.Graphics | null): void {
+	if (!buffer) return;
+	try {
+		buffer.remove();
+	} catch {
+		// ignore - see comment above
 	}
-	bufferCache = { buffer: null, positions: [], cacheKey: null, hasOverflow: false };
+}
+
+export function clearCloudBuffer(): void {
+	disposeBuffer(bufferCache.buffer);
+	bufferCache = { buffer: null, owner: null, positions: [], cacheKey: null, hasOverflow: false };
 }
 
 // Register the buffer clear so the central transcript-load hook can free
@@ -126,12 +139,23 @@ export class ContributionCloud {
 	}
 
 	renderToBuffer(words: DataPoint[], scaling: Scaling): void {
-		if (bufferCache.buffer) {
-			bufferCache.buffer.remove();
-		}
+		// Reuse the cached buffer (just clear it) instead of reallocating on
+		// every re-render. Only reusable if same owner and same size; a buffer
+		// from a dead instance is ignored here and dropped below.
+		const sk = this.ctx.sk;
+		const existing = bufferCache.owner === sk ? bufferCache.buffer : null;
+		const sizeMatches = existing && existing.width === this.bounds.width && existing.height === this.bounds.height;
 
-		const buffer = this.ctx.sk.createGraphics(this.bounds.width, this.bounds.height);
-		buffer.textFont(this.ctx.sk.font);
+		let buffer: p5.Graphics;
+		if (existing && sizeMatches) {
+			buffer = existing;
+			buffer.clear();
+		} else {
+			if (existing) disposeBuffer(existing); // free only a buffer we still own
+			buffer = sk.createGraphics(this.bounds.width, this.bounds.height);
+			bufferCache.owner = sk;
+		}
+		buffer.textFont(sk.font);
 
 		const positions = this.calculateWordPositions(words, scaling);
 		bufferCache.positions = positions;
