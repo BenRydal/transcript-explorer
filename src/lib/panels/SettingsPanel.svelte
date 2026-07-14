@@ -45,151 +45,162 @@
 </script>
 
 <div class="settings-panel">
-	<!-- Timeline Duration -->
-	<section class="settings-panel__section">
-		<p class="settings-panel__section-label">
-			{$TranscriptStore.timingMode === 'untimed' ? 'Total Words' : 'Timeline Duration'}
-		</p>
-		{#if $TranscriptStore.timingMode === 'untimed'}
-			<p class="settings-panel__hint">Total word count for the timeline range</p>
-			<input
-				type="text"
-				class="settings-panel__input"
-				value={Math.round($TimelineStore.endTime)}
-				placeholder="e.g. 500"
-				onchange={(e) => {
-					const input = e.target as HTMLInputElement;
-					const val = parseInt(input.value);
-					if (!isNaN(val) && val > 0) setTimelineDuration(val);
-					input.value = String(Math.round($TimelineStore.endTime));
-				}}
-			/>
-		{:else}
-			<p class="settings-panel__hint">Enter as seconds, MM:SS, or HH:MM:SS</p>
-			<input
-				type="text"
-				class="settings-panel__input"
-				value={formatTimeAuto($TimelineStore.endTime)}
-				placeholder="e.g. 90, 1:30, or 0:01:30"
-				onchange={(e) => {
-					const input = e.target as HTMLInputElement;
-					const seconds = toSeconds(input.value);
-					if (seconds !== null && seconds > 0) setTimelineDuration(seconds);
-					input.value = formatTimeAuto($TimelineStore.endTime);
-				}}
-			/>
-		{/if}
-	</section>
+	<!-- General group  -  app-wide settings, not tied to a specific transcript. -->
+	<div class="settings-panel__group">
+		<div class="settings-panel__group-header">
+			<p class="settings-panel__group-title">General</p>
+		</div>
 
-	<!-- Start-Only Mode Settings -->
-	{#if $TranscriptStore.timingMode === 'startOnly'}
+		<!-- Appearance -->
 		<section class="settings-panel__section">
-			<p class="settings-panel__section-label">Turn End Time Calculation</p>
-			<p class="settings-panel__hint">For transcripts with only start times</p>
-			<label class="settings-panel__radio-row">
+			<p class="settings-panel__section-label">Appearance</p>
+			<select class="settings-panel__input" aria-label="Theme" value={$themeChoice} onchange={(e) => selectTheme(e.currentTarget.value as ThemeChoice)}>
+				<option value="light">Light</option>
+				<option value="dark">Dark</option>
+				<option value="system">System</option>
+			</select>
+			<p class="settings-panel__hint">System follows your OS preference; Light and Dark persist across reloads.</p>
+
+			<p class="settings-panel__sub-label">Speaker colors</p>
+			<select
+				class="settings-panel__input"
+				aria-label="Speaker color palette"
+				value={$speakerPalette}
+				onchange={(e) => selectSpeakerPalette(e.currentTarget.value as SpeakerPaletteChoice)}
+			>
+				{#each SPEAKER_PALETTE_ENTRIES as [key, palette] (key)}
+					<option value={key}>{palette.label}</option>
+				{/each}
+			</select>
+			<div class="settings-panel__swatch-preview" aria-hidden="true">
+				{#each SPEAKER_PALETTES[$speakerPalette].colors as color (color)}
+					<span class="settings-panel__preview-swatch" style:background={color}></span>
+				{/each}
+			</div>
+			<p class="settings-panel__hint">Sets default colors for new speakers and re-colors existing ones.</p>
+		</section>
+
+		<!-- Display & playback  -  merged: viz scaling + video snippet preview. -->
+		<section class="settings-panel__section">
+			<p class="settings-panel__section-label">Display &amp; playback</p>
+			<label class="settings-panel__check-row">
 				<input
-					type="radio"
-					name="endTimeCalculation"
-					checked={!$AppSettingsStore.preserveGapsBetweenTurns}
-					onchange={() => {
-						setAppSettingsField('preserveGapsBetweenTurns', false);
-						recalculateStartOnlyEndTimes();
-					}}
+					type="checkbox"
+					role="switch"
+					aria-checked={$VizStore.scaleToVisibleData}
+					checked={$VizStore.scaleToVisibleData}
+					onchange={() => setVizField('scaleToVisibleData', !$VizStore.scaleToVisibleData)}
 				/>
-				<span>Fill to next turn <span class="settings-panel__sub">(no gaps)</span></span>
+				<span>Scale to visible data</span>
 			</label>
-			<label class="settings-panel__radio-row">
-				<input
-					type="radio"
-					name="endTimeCalculation"
-					checked={$AppSettingsStore.preserveGapsBetweenTurns}
-					onchange={() => {
-						setAppSettingsField('preserveGapsBetweenTurns', true);
-						recalculateStartOnlyEndTimes();
-					}}
-				/>
-				<span>Estimate from speech rate <span class="settings-panel__sub">(preserves silence)</span></span>
-			</label>
+			<p class="settings-panel__hint">When enabled, visualizations scale to the current selection instead of the full transcript.</p>
+
 			<label class="settings-panel__slider-label">
-				<span>Speech rate: {$AppSettingsStore.speechRateWordsPerSecond} words/sec</span>
+				<span>Turn preview: {$AppSettingsStore.snippetDurationSeconds}s</span>
+				<p class="settings-panel__hint">When clicking a speaker in the distribution diagram, plays this duration from each turn.</p>
 				<input
 					type="range"
 					min="1"
-					max="6"
-					step="0.5"
-					value={$AppSettingsStore.speechRateWordsPerSecond}
+					max="5"
+					step="1"
+					value={$AppSettingsStore.snippetDurationSeconds}
 					class="settings-panel__slider"
-					oninput={(e) => {
-						setAppSettingsField('speechRateWordsPerSecond', parseFloat((e.target as HTMLInputElement).value));
-						recalculateStartOnlyEndTimes();
-					}}
+					oninput={(e) => setAppSettingsField('snippetDurationSeconds', parseInt((e.target as HTMLInputElement).value))}
 				/>
 			</label>
 		</section>
-	{/if}
+	</div>
 
-	<!-- Visualization -->
-	<section class="settings-panel__section">
-		<p class="settings-panel__section-label">Visualization</p>
-		<label class="settings-panel__check-row">
-			<input
-				type="checkbox"
-				role="switch"
-				aria-checked={$VizStore.scaleToVisibleData}
-				checked={$VizStore.scaleToVisibleData}
-				onchange={() => setVizField('scaleToVisibleData', !$VizStore.scaleToVisibleData)}
-			/>
-			<span>Scale to visible data</span>
-		</label>
-		<p class="settings-panel__hint">When enabled, visualizations scale to the current selection instead of the full transcript.</p>
-	</section>
-
-	<!-- Video Playback -->
-	<section class="settings-panel__section">
-		<p class="settings-panel__section-label">Video Playback</p>
-		<label class="settings-panel__slider-label">
-			<span>Turn preview: {$AppSettingsStore.snippetDurationSeconds}s</span>
-			<p class="settings-panel__hint">When clicking a speaker in the distribution diagram, plays this duration from each turn.</p>
-			<input
-				type="range"
-				min="1"
-				max="5"
-				step="1"
-				value={$AppSettingsStore.snippetDurationSeconds}
-				class="settings-panel__slider"
-				oninput={(e) => setAppSettingsField('snippetDurationSeconds', parseInt((e.target as HTMLInputElement).value))}
-			/>
-		</label>
-	</section>
-
-	<!-- Appearance -->
-	<section class="settings-panel__section">
-		<p class="settings-panel__section-label">Appearance</p>
-		<select class="settings-panel__input" aria-label="Theme" value={$themeChoice} onchange={(e) => selectTheme(e.currentTarget.value as ThemeChoice)}>
-			<option value="light">Light</option>
-			<option value="dark">Dark</option>
-			<option value="system">System</option>
-		</select>
-		<p class="settings-panel__hint">System follows your OS preference; Light and Dark persist across reloads.</p>
-
-		<p class="settings-panel__sub-label">Speaker colors</p>
-		<select
-			class="settings-panel__input"
-			aria-label="Speaker color palette"
-			value={$speakerPalette}
-			onchange={(e) => selectSpeakerPalette(e.currentTarget.value as SpeakerPaletteChoice)}
-		>
-			{#each SPEAKER_PALETTE_ENTRIES as [key, palette] (key)}
-				<option value={key}>{palette.label}</option>
-			{/each}
-		</select>
-		<div class="settings-panel__swatch-preview" aria-hidden="true">
-			{#each SPEAKER_PALETTES[$speakerPalette].colors as color (color)}
-				<span class="settings-panel__preview-swatch" style:background={color}></span>
-			{/each}
+	<!-- Transcript group  -  scoped to the loaded transcript; resets per file. -->
+	<div class="settings-panel__group">
+		<div class="settings-panel__group-header">
+			<p class="settings-panel__group-title">Transcript</p>
+			<p class="settings-panel__hint">These apply to the currently loaded transcript.</p>
 		</div>
-		<p class="settings-panel__hint">Sets default colors for new speakers and re-colors existing ones.</p>
-	</section>
+
+		<!-- Timeline Duration -->
+		<section class="settings-panel__section">
+			<p class="settings-panel__section-label">
+				{$TranscriptStore.timingMode === 'untimed' ? 'Total Words' : 'Timeline Duration'}
+			</p>
+			{#if $TranscriptStore.timingMode === 'untimed'}
+				<p class="settings-panel__hint">Total word count for the timeline range</p>
+				<input
+					type="text"
+					class="settings-panel__input"
+					value={Math.round($TimelineStore.endTime)}
+					placeholder="e.g. 500"
+					onchange={(e) => {
+						const input = e.target as HTMLInputElement;
+						const val = parseInt(input.value);
+						if (!isNaN(val) && val > 0) setTimelineDuration(val);
+						input.value = String(Math.round($TimelineStore.endTime));
+					}}
+				/>
+			{:else}
+				<p class="settings-panel__hint">Enter as seconds, MM:SS, or HH:MM:SS</p>
+				<input
+					type="text"
+					class="settings-panel__input"
+					value={formatTimeAuto($TimelineStore.endTime)}
+					placeholder="e.g. 90, 1:30, or 0:01:30"
+					onchange={(e) => {
+						const input = e.target as HTMLInputElement;
+						const seconds = toSeconds(input.value);
+						if (seconds !== null && seconds > 0) setTimelineDuration(seconds);
+						input.value = formatTimeAuto($TimelineStore.endTime);
+					}}
+				/>
+			{/if}
+		</section>
+
+		<!-- Start-Only Mode Settings -->
+		{#if $TranscriptStore.timingMode === 'startOnly'}
+			<section class="settings-panel__section">
+				<p class="settings-panel__section-label">Turn End Time Calculation</p>
+				<p class="settings-panel__hint">For transcripts with only start times</p>
+				<label class="settings-panel__radio-row">
+					<input
+						type="radio"
+						name="endTimeCalculation"
+						checked={!$AppSettingsStore.preserveGapsBetweenTurns}
+						onchange={() => {
+							setAppSettingsField('preserveGapsBetweenTurns', false);
+							recalculateStartOnlyEndTimes();
+						}}
+					/>
+					<span>Fill to next turn <span class="settings-panel__sub">(no gaps)</span></span>
+				</label>
+				<label class="settings-panel__radio-row">
+					<input
+						type="radio"
+						name="endTimeCalculation"
+						checked={$AppSettingsStore.preserveGapsBetweenTurns}
+						onchange={() => {
+							setAppSettingsField('preserveGapsBetweenTurns', true);
+							recalculateStartOnlyEndTimes();
+						}}
+					/>
+					<span>Estimate from speech rate <span class="settings-panel__sub">(preserves silence)</span></span>
+				</label>
+				<label class="settings-panel__slider-label">
+					<span>Speech rate: {$AppSettingsStore.speechRateWordsPerSecond} words/sec</span>
+					<input
+						type="range"
+						min="1"
+						max="6"
+						step="0.5"
+						value={$AppSettingsStore.speechRateWordsPerSecond}
+						class="settings-panel__slider"
+						oninput={(e) => {
+							setAppSettingsField('speechRateWordsPerSecond', parseFloat((e.target as HTMLInputElement).value));
+							recalculateStartOnlyEndTimes();
+						}}
+					/>
+				</label>
+			</section>
+		{/if}
+	</div>
 </div>
 
 <style>
@@ -197,8 +208,34 @@
 		display: flex;
 		flex-direction: column;
 		padding: var(--te-sp-3);
-		gap: 14px;
+		gap: 18px;
 		font: var(--te-font-body) / var(--te-leading) var(--te-font-stack);
+		color: var(--te-fg);
+	}
+
+	/* Two scope groups: General (app-wide) and Transcript (per-file). The
+	   second group is set off by a divider rule so the scope shift reads. */
+	.settings-panel__group {
+		display: flex;
+		flex-direction: column;
+		gap: 14px;
+	}
+
+	.settings-panel__group + .settings-panel__group {
+		border-top: 1px solid var(--te-border);
+		padding-top: 18px;
+	}
+
+	.settings-panel__group-header {
+		display: flex;
+		flex-direction: column;
+		gap: 2px;
+	}
+
+	.settings-panel__group-title {
+		margin: 0;
+		font-size: var(--te-font-body);
+		font-weight: 600;
 		color: var(--te-fg);
 	}
 
