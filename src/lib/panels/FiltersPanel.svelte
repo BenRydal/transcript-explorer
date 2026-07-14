@@ -34,11 +34,7 @@
 	const hasStopWords = $derived($FiltersStore.stopWordsEnabled);
 
 	const activeFilterCount = $derived(
-		(hasWordSearch ? 1 : 0) +
-			(hasHiddenSpeakers ? 1 : 0) +
-			(hasDisabledCodes ? 1 : 0) +
-			(hasHiddenUncoded ? 1 : 0) +
-			(hasStopWords ? 1 : 0)
+		(hasWordSearch ? 1 : 0) + (hasHiddenSpeakers ? 1 : 0) + (hasDisabledCodes ? 1 : 0) + (hasHiddenUncoded ? 1 : 0) + (hasStopWords ? 1 : 0)
 	);
 
 	function handleWordSearch(event: Event) {
@@ -138,14 +134,7 @@
 				{activeFilterCount} active {activeFilterCount === 1 ? 'filter' : 'filters'}
 			{/if}
 		</span>
-		<button
-			type="button"
-			class="filters-panel__clear-all"
-			onclick={handleClearAllFilters}
-			disabled={activeFilterCount === 0}
-		>
-			Clear all
-		</button>
+		<button type="button" class="filters-panel__clear-all" onclick={handleClearAllFilters} disabled={activeFilterCount === 0}> Clear all </button>
 	</div>
 
 	<!-- Word Search -->

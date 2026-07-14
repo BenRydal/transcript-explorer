@@ -54,7 +54,12 @@
 		<!-- Appearance -->
 		<section class="settings-panel__section">
 			<p class="settings-panel__section-label">Appearance</p>
-			<select class="settings-panel__input" aria-label="Theme" value={$themeChoice} onchange={(e) => selectTheme(e.currentTarget.value as ThemeChoice)}>
+			<select
+				class="settings-panel__input"
+				aria-label="Theme"
+				value={$themeChoice}
+				onchange={(e) => selectTheme(e.currentTarget.value as ThemeChoice)}
+			>
 				<option value="light">Light</option>
 				<option value="dark">Dark</option>
 				<option value="system">System</option>

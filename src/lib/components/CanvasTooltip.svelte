@@ -101,19 +101,12 @@
 		});
 	});
 
-	let containerStyle = $derived(
-		`left: ${left}px; top: ${top}px; max-width: ${maxWidth}px; visibility: ${measured ? 'visible' : 'hidden'};`
-	);
+	let containerStyle = $derived(`left: ${left}px; top: ${top}px; max-width: ${maxWidth}px; visibility: ${measured ? 'visible' : 'hidden'};`);
 </script>
 
 {#if $TooltipStore.visible}
 	<div class="canvas-tooltip" style={containerStyle} bind:this={tooltipEl}>
-		<div
-			class="tooltip-content"
-			style="border-color: {$TooltipStore.speakerColor}; max-height: {maxHeight
-				? `${maxHeight}px`
-				: 'none'}"
-		>
+		<div class="tooltip-content" style="border-color: {$TooltipStore.speakerColor}; max-height: {maxHeight ? `${maxHeight}px` : 'none'}">
 			<p style="color: {$TooltipStore.speakerColor}">{@html displayContent}</p>
 		</div>
 		<div

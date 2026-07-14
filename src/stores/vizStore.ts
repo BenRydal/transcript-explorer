@@ -101,8 +101,7 @@ const VizStore = writable<VizStoreType>(initialViz);
  */
 export const filterToggleKey = derived(
 	[VizStore, FiltersStore],
-	([$viz, $filters]) =>
-		`${$viz.echoWordsToggle}-${$viz.lastWordToggle}-${$filters.stopWordsEnabled}-${$filters.customStopWords.join(',')}`
+	([$viz, $filters]) => `${$viz.echoWordsToggle}-${$viz.lastWordToggle}-${$filters.stopWordsEnabled}-${$filters.customStopWords.join(',')}`
 );
 
 export default VizStore;
