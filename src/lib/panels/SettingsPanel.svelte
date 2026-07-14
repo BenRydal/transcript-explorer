@@ -128,20 +128,20 @@
 		</section>
 	{/if}
 
-	<!-- Word Filtering -->
+	<!-- Visualization -->
 	<section class="settings-panel__section">
-		<p class="settings-panel__section-label">Word Filtering</p>
+		<p class="settings-panel__section-label">Visualization</p>
 		<label class="settings-panel__check-row">
 			<input
 				type="checkbox"
 				role="switch"
-				aria-checked={$VizStore.stopWordsToggle}
-				checked={$VizStore.stopWordsToggle}
-				onchange={() => setVizField('stopWordsToggle', !$VizStore.stopWordsToggle)}
+				aria-checked={$VizStore.scaleToVisibleData}
+				checked={$VizStore.scaleToVisibleData}
+				onchange={() => setVizField('scaleToVisibleData', !$VizStore.scaleToVisibleData)}
 			/>
-			<span>Hide stop words</span>
+			<span>Scale to visible data</span>
 		</label>
-		<p class="settings-panel__hint">Removes common words (the, is, and, etc.) from all visualizations.</p>
+		<p class="settings-panel__hint">When enabled, visualizations scale to the current selection instead of the full transcript.</p>
 	</section>
 
 	<!-- Video Playback -->

@@ -1,4 +1,5 @@
 import { writable, derived } from 'svelte/store';
+import FiltersStore from './filtersStore';
 
 export type SpeakerSortOrder = 'default' | 'words' | 'turns' | 'alpha';
 export type FingerprintOverlayMode = 'auto' | 'overlay' | 'small-multiples';
@@ -22,7 +23,6 @@ export interface VizStoreType {
 	sortToggle: boolean;
 	lastWordToggle: boolean;
 	echoWordsToggle: boolean;
-	stopWordsToggle: boolean;
 	repeatedWordsToggle: boolean;
 	repeatWordSliderValue: number;
 	// Speaker sort order (shared across Speaker Garden, Turn Network, etc.)
@@ -48,6 +48,11 @@ export interface VizStoreType {
 	// Contribution Cloud settings
 	// tfidf surfaces speaker-distinctive words instead of raw frequency
 	contributionCloudWeighting: ContributionCloudWeighting;
+	// When true, visualizations normalize/scale to the current selection
+	// (timeline range + enabled speakers) instead of the full transcript.
+	// A rendering behavior rather than a content filter, so it lives in the
+	// Settings panel alongside other viz-behavior options.
+	scaleToVisibleData: boolean;
 }
 
 export const initialViz: VizStoreType = {
@@ -67,7 +72,6 @@ export const initialViz: VizStoreType = {
 	sortToggle: false,
 	lastWordToggle: false,
 	echoWordsToggle: false,
-	stopWordsToggle: false,
 	repeatedWordsToggle: false,
 	repeatWordSliderValue: 5,
 	speakerSortOrder: 'default',
@@ -82,16 +86,23 @@ export const initialViz: VizStoreType = {
 	turnLengthBinCount: 0,
 	fingerprintOverlayMode: 'auto',
 	fingerprintChartMode: 'radar',
-	contributionCloudWeighting: 'frequency'
+	contributionCloudWeighting: 'frequency',
+	scaleToVisibleData: false
 };
 
 const VizStore = writable<VizStoreType>(initialViz);
 
 /**
- * Derived store that emits a stable key when filter toggles change.
- * Using a string key ensures Svelte's reactivity properly detects changes
- * even when boolean values switch from true to false.
+ * Derived store that emits a stable key when word-processing filters change,
+ * so consumers can re-fill the visible data set. Using a string key ensures
+ * Svelte's reactivity properly detects changes even when boolean values switch
+ * from true to false. Stopword state lives in FiltersStore (the single source
+ * of truth), so we combine both stores here to catch its changes too.
  */
-export const filterToggleKey = derived(VizStore, ($viz) => `${$viz.echoWordsToggle}-${$viz.lastWordToggle}-${$viz.stopWordsToggle}`);
+export const filterToggleKey = derived(
+	[VizStore, FiltersStore],
+	([$viz, $filters]) =>
+		`${$viz.echoWordsToggle}-${$viz.lastWordToggle}-${$filters.stopWordsEnabled}-${$filters.customStopWords.join(',')}`
+);
 
 export default VizStore;
