@@ -92,7 +92,7 @@
 			{ type: 'toggle', key: 'lastWordToggle', label: 'Emphasize Last Word' },
 			{ type: 'toggle', key: 'echoWordsToggle', label: 'Echo Last Words' },
 			{ type: 'toggle', key: 'repeatedWordsToggle', label: 'Only Repeated Words' },
-			{ type: 'slider', key: 'repeatWordSliderValue', label: 'Size Range', min: 2, max: 30 }
+			{ type: 'slider', key: 'repeatWordSliderValue', label: 'Minimum Repetitions', min: 2, max: 30 }
 		],
 		wordRain: [
 			{ type: 'toggle', key: 'separateToggle', label: 'Group by Speaker' },
