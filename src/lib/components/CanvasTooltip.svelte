@@ -3,7 +3,6 @@
 	import TooltipStore from '../../stores/tooltipStore';
 	import { getP5ContainerRect, clamp } from '../core/layout-utils';
 
-	const TOOLTIP_MAX_WIDTH = 500;
 	const EDGE_PADDING = 20;
 	const MAX_PREVIEW_WORDS = 100;
 
@@ -16,11 +15,14 @@
 		return `${words.slice(0, MAX_PREVIEW_WORDS).join(' ')}... (${words.length} words)`;
 	}
 
+	// Gap in px between the mouse pointer and the nearest edge of the tooltip.
+	const POINTER_GAP = 20;
+
 	let displayContent = $derived(formatContent($TooltipStore.content));
 
 	// Get the p5 container for positioning relative to it
 	let containerRect: DOMRect | null = $state(null);
-	let tooltipEl: HTMLDivElement;
+	let tooltipEl: HTMLDivElement | undefined = $state();
 
 	$effect(() => {
 		if ($TooltipStore.visible) {
@@ -28,102 +30,92 @@
 		}
 	});
 
-	// Track arrow position in pixels from left edge of tooltip
+	// Resolved placement, computed after measuring the rendered tooltip so it can
+	// never spill past any container edge. `measured` gates visibility so the very
+	// first frame (before we know the tooltip's size) isn't painted at a stale spot.
+	let left = $state(0);
+	let top = $state(0);
 	let arrowLeftPx = $state(0);
-	let usePixelArrow = $state(false);
+	let arrowSide: 'above' | 'below' = $state('above');
+	let measured = $state(false);
 
-	// Calculate tooltip position with edge detection
-	// This is a pure computation returning style + arrow info as an object
-	let tooltipPositioning = $derived.by(() => {
-		if (!containerRect || !$TooltipStore.visible) return { style: '', pixelArrow: false, arrowPx: 0, needsRightEdgeMeasure: false };
+	// Cap width/height so an unusually large tooltip stays inside the container
+	// (e.g. a long tooltip in a narrow split-pane, or a short viewport). These are
+	// derived from the container so the cap is applied to the DOM *before* we
+	// measure below — otherwise the measured width would ignore the constraint.
+	const TOOLTIP_MAX_WIDTH = 500;
+	let maxWidth = $derived.by(() => {
+		const rect = containerRect;
+		if (!rect) return TOOLTIP_MAX_WIDTH;
+		return Math.min(TOOLTIP_MAX_WIDTH, rect.width - 2 * EDGE_PADDING);
+	});
+	let maxHeight = $derived.by(() => {
+		const rect = containerRect;
+		if (!rect) return 0;
+		return rect.height - 2 * EDGE_PADDING;
+	});
 
+	// Re-hide (and re-measure) whenever the tooltip is dismissed.
+	$effect(() => {
+		if (!$TooltipStore.visible) measured = false;
+	});
+
+	// Measure the actual rendered tooltip, then clamp it fully on-screen on both
+	// axes. Depends on x/y/content + containerRect so it recomputes as the pointer
+	// moves or the content changes.
+	$effect(() => {
+		if (!$TooltipStore.visible || !containerRect) return;
 		const { x, y, position } = $TooltipStore;
-		const containerWidth = containerRect.width;
+		const rect = containerRect;
 
-		// Default: center on mouse
-		let left = x;
-		let translateX = '-50%';
-		let pixelArrow = false;
-		let arrowPx = 0;
-		let needsRightEdgeMeasure = false;
+		tick().then(() => {
+			if (!tooltipEl || !$TooltipStore.visible) return;
 
-		// Only adjust if tooltip would go off-screen
-		// Estimate tooltip taking up half its max width on each side
-		const halfWidth = TOOLTIP_MAX_WIDTH / 2;
+			const cw = rect.width;
+			const ch = rect.height;
+			const tw = tooltipEl.offsetWidth;
+			const th = tooltipEl.offsetHeight;
 
-		if (x < halfWidth + EDGE_PADDING) {
-			// Too close to left edge - anchor to left
-			left = EDGE_PADDING;
-			translateX = '0';
-			pixelArrow = true;
-			// Arrow position is mouse X relative to tooltip left edge
-			arrowPx = Math.max(12, x - EDGE_PADDING);
-		} else if (x > containerWidth - halfWidth - EDGE_PADDING) {
-			// Too close to right edge - anchor to right
-			left = containerWidth - EDGE_PADDING;
-			translateX = '-100%';
-			pixelArrow = true;
-			needsRightEdgeMeasure = true;
-		}
+			// Horizontal: center on the pointer, then clamp within the padding.
+			const maxLeft = Math.max(EDGE_PADDING, cw - tw - EDGE_PADDING);
+			const resolvedLeft = clamp(x - tw / 2, EDGE_PADDING, maxLeft);
 
-		// Vertical position
-		let top: number;
-		if (position === 'below') {
-			top = y + 20;
-		} else {
-			top = y - 20;
-		}
+			// Vertical: honour the requested side when it fits, otherwise flip, then
+			// clamp as a last resort (very tall tooltip / very short container).
+			const fitsAbove = y - POINTER_GAP - th >= EDGE_PADDING;
+			const fitsBelow = y + POINTER_GAP + th <= ch - EDGE_PADDING;
+			let side: 'above' | 'below';
+			if (position === 'above') side = fitsAbove || !fitsBelow ? 'above' : 'below';
+			else side = fitsBelow || !fitsAbove ? 'below' : 'above';
 
-		const translateY = position === 'above' ? 'translateY(-100%)' : '';
+			const maxTop = Math.max(EDGE_PADDING, ch - th - EDGE_PADDING);
+			const rawTop = side === 'above' ? y - POINTER_GAP - th : y + POINTER_GAP;
+			const resolvedTop = clamp(rawTop, EDGE_PADDING, maxTop);
 
-		const style = `
-			left: ${left}px;
-			top: ${top}px;
-			transform: translateX(${translateX}) ${translateY};
-		`;
-
-		return { style, pixelArrow, arrowPx, needsRightEdgeMeasure };
+			left = resolvedLeft;
+			top = resolvedTop;
+			arrowSide = side;
+			// Point the arrow at the pointer, kept within the tooltip's own width.
+			arrowLeftPx = clamp(x - resolvedLeft, 12, Math.max(12, tw - 12));
+			measured = true;
+		});
 	});
 
-	// Apply arrow positioning from the derived computation
-	$effect(() => {
-		usePixelArrow = tooltipPositioning.pixelArrow;
-		if (!tooltipPositioning.needsRightEdgeMeasure) {
-			arrowLeftPx = tooltipPositioning.arrowPx;
-		}
-	});
-
-	// Handle the async right-edge measurement that requires tick + DOM measurement
-	$effect(() => {
-		if (tooltipPositioning.needsRightEdgeMeasure && containerRect) {
-			const containerWidth = containerRect.width;
-			const x = $TooltipStore.x;
-			tick().then(() => {
-				if (tooltipEl) {
-					const tooltipWidth = tooltipEl.offsetWidth;
-					const tooltipLeft = containerWidth - EDGE_PADDING - tooltipWidth;
-					arrowLeftPx = clamp(x - tooltipLeft, 12, tooltipWidth - 12);
-				}
-			});
-		}
-	});
-
-	// Arrow style - use pixel positioning when near edges, otherwise center
-	let arrowStyle = $derived(usePixelArrow ? `left: ${arrowLeftPx}px;` : `left: 50%;`);
+	let containerStyle = $derived(`left: ${left}px; top: ${top}px; max-width: ${maxWidth}px; visibility: ${measured ? 'visible' : 'hidden'};`);
 </script>
 
 {#if $TooltipStore.visible}
-	<div class="canvas-tooltip" style={tooltipPositioning.style} bind:this={tooltipEl}>
-		<div class="tooltip-content" style="border-color: {$TooltipStore.speakerColor}">
+	<div class="canvas-tooltip" style={containerStyle} bind:this={tooltipEl}>
+		<div class="tooltip-content" style="border-color: {$TooltipStore.speakerColor}; max-height: {maxHeight ? `${maxHeight}px` : 'none'}">
 			<p style="color: {$TooltipStore.speakerColor}">{@html displayContent}</p>
 		</div>
 		<div
 			class="tooltip-arrow"
-			class:arrow-up={$TooltipStore.position === 'below'}
-			class:arrow-down={$TooltipStore.position === 'above'}
-			style="{arrowStyle} border-bottom-color: {$TooltipStore.position === 'below'
+			class:arrow-up={arrowSide === 'below'}
+			class:arrow-down={arrowSide === 'above'}
+			style="left: {arrowLeftPx}px; border-bottom-color: {arrowSide === 'below'
 				? $TooltipStore.speakerColor
-				: 'transparent'}; border-top-color: {$TooltipStore.position === 'above' ? $TooltipStore.speakerColor : 'transparent'};"
+				: 'transparent'}; border-top-color: {arrowSide === 'above' ? $TooltipStore.speakerColor : 'transparent'};"
 		></div>
 	</div>
 {/if}
@@ -144,6 +136,9 @@
 		border-radius: 8px;
 		padding: 10px 14px;
 		box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+		/* Keeps an unusually tall tooltip from spilling past the container; the
+		   max-height cap is applied inline from the measured container height. */
+		overflow: hidden;
 	}
 
 	.tooltip-content p {

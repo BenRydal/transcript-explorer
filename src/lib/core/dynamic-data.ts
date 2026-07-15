@@ -173,9 +173,8 @@ const DEFAULT_STOPWORDS_SET = new Set(DEFAULT_STOPWORDS);
 
 // Snapshot of the active stopword set  -  always includes DEFAULT_STOPWORDS
 // plus any user-supplied customStopWords. Whether filtering is APPLIED is
-// decided at call site (in getProcessedWords) by either the legacy
-// `stopWordsToggle` or the new `stopWordsEnabled` flag; this set is what
-// `isStopWord` consults when filtering runs.
+// decided at call site (in getProcessedWords) by the `stopWordsEnabled` flag;
+// this set is what `isStopWord` consults when filtering runs.
 let activeStopWords: Set<string> = new Set(DEFAULT_STOPWORDS_SET);
 
 function rebuildActiveStopWords(filters: FiltersStoreType): void {
@@ -200,7 +199,6 @@ VizStore.subscribe((value) => {
 		config &&
 		(config.lastWordToggle !== value.lastWordToggle ||
 			config.echoWordsToggle !== value.echoWordsToggle ||
-			config.stopWordsToggle !== value.stopWordsToggle ||
 			config.sortToggle !== value.sortToggle ||
 			config.separateToggle !== value.separateToggle ||
 			config.contributionCloudWeighting !== value.contributionCloudWeighting)
@@ -336,11 +334,10 @@ export class DynamicData {
 		const result: DataPoint[] = [];
 		const countMap = new Map<string, DataPoint[]>();
 
-		// Stopword filtering gate: either the legacy per-viz `stopWordsToggle`
-		// (Settings panel) or the Filters-panel-level `stopWordsEnabled`
+		// Stopword filtering gate: the Filters-panel `stopWordsEnabled` flag
 		// triggers filtering. Custom stopwords augment the default list when
-		// `stopWordsEnabled` is on (see `rebuildActiveStopWords`).
-		const filterStopWords = config.stopWordsToggle || config.stopWordsEnabled;
+		// it's on (see `rebuildActiveStopWords`).
+		const filterStopWords = config.stopWordsEnabled;
 		for (const word of slice) {
 			if (filterStopWords && this.isStopWord(word.word)) continue;
 			// Code visibility: hide words whose codes are all disabled, or uncoded words when showUncoded is off
@@ -747,9 +744,9 @@ export class DynamicData {
 		const wordArray = get(TranscriptStore).wordArray || [];
 		if (wordArray.length === 0) return { avgTurnLength: 0, participation: 0 };
 
-		// Mirror the gating in getProcessedWords: either legacy VizStore
-		// toggle or the new FiltersStore gate engages filtering.
-		const filterStopWords = !!(config.stopWordsToggle || config.stopWordsEnabled);
+		// Mirror the gating in getProcessedWords: the FiltersStore gate
+		// engages stopword filtering.
+		const filterStopWords = !!config.stopWordsEnabled;
 
 		if (
 			fullTranscriptFingerprintMaxCache &&

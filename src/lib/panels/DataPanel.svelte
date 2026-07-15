@@ -2,8 +2,8 @@
 	import TranscriptStore from '../../stores/transcriptStore';
 	import UserStore from '../../stores/userStore';
 	import { toTitleCase } from '$lib/core/string-utils';
-	import { CloudUpload, ClipboardPaste, FilePlus } from '@lucide/svelte';
-	import { EXAMPLES, EXAMPLE_LABELS } from '$lib/ui/examples';
+	import { CloudUpload, ClipboardPaste, FilePlus, ChevronRight } from '@lucide/svelte';
+	import { EXAMPLES } from '$lib/ui/examples';
 
 	interface Props {
 		onOpenUpload?: () => void;
@@ -15,21 +15,13 @@
 
 	let { onOpenUpload, onOpenPaste, onCreateNew, onLoadExample, selectedExample = '' }: Props = $props();
 
-	// Default-open so the sample datasets are visible at a glance  -  they're
-	// a primary onboarding affordance, not a buried option.
-	let showExamples = $state(true);
 	let showStats = $state(false);
 	let hasTranscript = $derived($TranscriptStore.wordArray.length > 0);
-	// Resolve the active example's label for the disclosure summary.
-	// `selectedExample` is an id (e.g. 'example-1') shared with the
-	// AppNavbar examples menu; fall back to empty if no example is active.
-	let selectedExampleLabel = $derived(selectedExample ? (EXAMPLE_LABELS[selectedExample] ?? '') : '');
 </script>
 
 <div class="data-panel">
 	<!-- Load transcript section  -  promoted from top nav. Upload / Paste /
-	     New are the primary actions; examples live in a collapsible list
-	     below so they don't dominate the panel. -->
+	     New are the primary actions. -->
 	<section class="data-panel__section">
 		<p class="data-panel__section-label">Load transcript</p>
 		<div class="data-panel__load-grid">
@@ -46,46 +38,43 @@
 				<span>New transcript</span>
 			</button>
 		</div>
+	</section>
 
-		<button type="button" class="data-panel__disclosure" aria-expanded={showExamples} onclick={() => (showExamples = !showExamples)}>
-			<span class="data-panel__disclosure-label">
-				<span class="data-panel__section-label">Example</span>
-				{#if selectedExampleLabel}
-					<span class="data-panel__disclosure-sublabel">{selectedExampleLabel}</span>
-				{/if}
-			</span>
-			<span aria-hidden="true">{showExamples ? '–' : '+'}</span>
-		</button>
-
-		{#if showExamples}
-			<ul class="data-panel__examples">
-				{#each EXAMPLES as item}
-					{@const Icon = item.icon}
-					<li>
-						<button
-							type="button"
-							class="data-panel__example"
-							class:data-panel__example--active={selectedExample === item.value}
-							aria-current={selectedExample === item.value ? 'true' : undefined}
-							onclick={() => onLoadExample?.(item.value)}
-						>
-							<Icon size={14} class="flex-shrink-0" />
-							<span>{item.label}</span>
-						</button>
-					</li>
-				{/each}
-			</ul>
-		{/if}
+	<!-- Example datasets  -  promoted to a standalone, always-visible section
+	     so first-time users notice they can explore sample data here (not just
+	     from the welcome screen). Rendered as cards to stand out from the
+	     outline load buttons above. -->
+	<section class="data-panel__section">
+		<p class="data-panel__section-label">Example datasets</p>
+		<p class="data-panel__hint">Explore sample conversation data</p>
+		<ul class="data-panel__examples">
+			{#each EXAMPLES as item}
+				{@const Icon = item.icon}
+				<li>
+					<button
+						type="button"
+						class="data-panel__example"
+						class:data-panel__example--active={selectedExample === item.value}
+						aria-current={selectedExample === item.value ? 'true' : undefined}
+						onclick={() => onLoadExample?.(item.value)}
+					>
+						<span class="data-panel__example-icon" aria-hidden="true"><Icon size={16} /></span>
+						<span class="data-panel__example-label">{item.label}</span>
+						<ChevronRight size={15} class="data-panel__example-arrow" aria-hidden="true" />
+					</button>
+				</li>
+			{/each}
+		</ul>
 	</section>
 
 	{#if hasTranscript}
-		<section class="data-panel__section">
-			<button type="button" class="data-panel__disclosure" aria-expanded={showStats} onclick={() => (showStats = !showStats)}>
-				<span>{showStats ? 'Hide transcript statistics' : 'Show transcript statistics'}</span>
-				<span aria-hidden="true">{showStats ? '–' : '+'}</span>
-			</button>
+		<details class="data-panel__section" bind:open={showStats}>
+			<summary class="data-panel__summary">
+				<ChevronRight size={14} class="data-panel__chevron" aria-hidden="true" />
+				<span class="data-panel__section-label">Transcript statistics</span>
+			</summary>
 
-			{#if showStats}
+			<div class="data-panel__disclosure-body">
 				<div class="data-panel__stats">
 					<div>
 						<span class="data-panel__stat-label">Total Words:</span>
@@ -115,8 +104,8 @@
 						<span>"{$TranscriptStore.mostFrequentWord}" ({$TranscriptStore.maxCountOfMostRepeatedWord})</span>
 					</div>
 				</div>
-			{/if}
-		</section>
+			</div>
+		</details>
 
 		{#if showStats}
 			<section class="data-panel__section">
@@ -218,72 +207,115 @@
 		padding: var(--te-sp-2) var(--te-sp-3);
 	}
 
-	.data-panel__disclosure {
-		display: inline-flex;
-		align-items: center;
-		justify-content: space-between;
-		width: 100%;
-		padding: 6px 10px;
-		margin-top: 4px;
-		background: transparent;
-		border: 1px dashed var(--te-border-muted);
-		border-radius: var(--te-radius);
-		color: var(--te-fg-muted);
-		font: inherit;
+	.data-panel__hint {
+		margin: 0;
 		font-size: var(--te-font-small);
-		cursor: pointer;
-	}
-
-	.data-panel__disclosure-label {
-		display: flex;
-		flex-direction: column;
-		align-items: flex-start;
-		gap: 1px;
-		text-align: left;
-	}
-
-	.data-panel__disclosure-sublabel {
 		color: var(--te-fg-muted);
-		font-size: 11px;
 	}
 
-	.data-panel__disclosure:hover {
+	/* Collapsible section header  -  matches the Filters/Settings panels
+	   (native <details> + rotating chevron) for a consistent feel. */
+	.data-panel__summary {
+		display: flex;
+		align-items: center;
+		gap: 6px;
+		padding: 4px 2px;
+		cursor: pointer;
+		list-style: none;
+		user-select: none;
+		border-radius: var(--te-radius);
+	}
+
+	.data-panel__summary::-webkit-details-marker {
+		display: none;
+	}
+
+	.data-panel__summary:hover {
 		background: var(--te-bg-muted);
-		color: var(--te-fg);
 	}
 
-	.data-panel__disclosure:focus-visible {
+	.data-panel__summary:focus-visible {
 		outline: 2px solid var(--te-focus-ring);
 		outline-offset: 1px;
 	}
 
+	.data-panel__summary :global(.data-panel__chevron) {
+		color: var(--te-fg-muted);
+		flex: 0 0 auto;
+		transition: transform 120ms ease;
+	}
+
+	details[open] > .data-panel__summary :global(.data-panel__chevron) {
+		transform: rotate(90deg);
+	}
+
+	.data-panel__disclosure-body {
+		padding-top: 6px;
+	}
+
 	.data-panel__examples {
 		list-style: none;
-		margin: 4px 0 0 0;
+		margin: 2px 0 0 0;
 		padding: 0;
 		display: flex;
 		flex-direction: column;
-		gap: 2px;
+		gap: 6px;
 	}
 
+	/* Card-style example so the sample datasets read as primary, tappable
+	   items rather than a thin list users skim past. */
 	.data-panel__example {
-		display: inline-flex;
+		display: flex;
 		align-items: center;
 		gap: var(--te-sp-2);
 		width: 100%;
-		padding: 6px 10px;
-		background: transparent;
-		border: 1px solid transparent;
-		border-radius: var(--te-radius-sm);
+		padding: 8px 10px;
+		background: var(--te-bg);
+		border: 1px solid var(--te-border);
+		border-radius: var(--te-radius);
 		color: var(--te-fg);
 		font: inherit;
 		font-size: var(--te-font-small);
 		text-align: left;
 		cursor: pointer;
+		transition:
+			border-color 100ms ease,
+			background 100ms ease;
+	}
+
+	.data-panel__example-icon {
+		display: inline-flex;
+		align-items: center;
+		justify-content: center;
+		width: 28px;
+		height: 28px;
+		flex: 0 0 auto;
+		border-radius: var(--te-radius);
+		background: var(--te-accent-tint);
+		color: var(--te-accent);
+	}
+
+	.data-panel__example-label {
+		flex: 1 1 auto;
+		min-width: 0;
+		font-weight: 500;
+	}
+
+	.data-panel__example :global(.data-panel__example-arrow) {
+		color: var(--te-fg-muted);
+		flex: 0 0 auto;
+		opacity: 0.6;
+		transition: transform 100ms ease;
 	}
 
 	.data-panel__example:hover {
 		background: var(--te-bg-muted);
+		border-color: var(--te-accent);
+	}
+
+	.data-panel__example:hover :global(.data-panel__example-arrow) {
+		transform: translateX(2px);
+		opacity: 1;
 	}
 
 	.data-panel__example:focus-visible {
@@ -293,6 +325,7 @@
 
 	.data-panel__example--active {
 		background: var(--te-accent-tint);
+		border-color: var(--te-accent);
 		color: var(--te-fg);
 	}
 

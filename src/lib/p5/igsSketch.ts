@@ -25,6 +25,7 @@ let mouseEventLocked = false;
 let themeObserver: MutationObserver | null = null;
 let contextMenuHandler: ((e: MouseEvent) => void) | null = null;
 let contextMenuCanvasEl: HTMLCanvasElement | null = null;
+let pointerMoveHandler: ((e: PointerEvent) => void) | null = null;
 
 TimelineStore.subscribe((data) => {
 	timeline = data;
@@ -76,11 +77,15 @@ export const igsSketch = (p5: any) => {
 		p5.textFont(p5.font);
 		p5.animationCounter = 0; // controls animation of data
 
-		// Track if mouse is over canvas (not blocked by UI elements)
+		// Track whether the mouse is over the canvas (not blocked by UI). Remove
+		// any prior listener first: setup re-runs on remount, and an anonymous
+		// handler would leak one document listener per mount.
 		const canvas = document.querySelector('#p5-container canvas');
-		document.addEventListener('pointermove', (e) => {
+		if (pointerMoveHandler) document.removeEventListener('pointermove', pointerMoveHandler);
+		pointerMoveHandler = (e) => {
 			canHover = e.target === canvas;
-		});
+		};
+		document.addEventListener('pointermove', pointerMoveHandler);
 
 		// RIGHT-click on the canvas → open the floating context menu near the
 		// cursor (and suppress the browser's native menu). p5 has no built-in
@@ -115,6 +120,34 @@ export const igsSketch = (p5: any) => {
 			attributes: true,
 			attributeFilter: ['data-theme']
 		});
+
+		// svelte-p5 calls p5.remove() when <Sketch> unmounts (e.g. entering
+		// Transcribe mode). Wrap it to drop this instance's listeners and clear
+		// P5Store - left set, it points at the dead instance and callers like
+		// TranscriptEditor invoke methods on it. __cleanupInstalled prevents
+		// double-wrapping if setup re-runs on the same instance.
+		if (!p5.__cleanupInstalled) {
+			p5.__cleanupInstalled = true;
+			const originalRemove = p5.remove.bind(p5);
+			p5.remove = () => {
+				if (pointerMoveHandler) {
+					document.removeEventListener('pointermove', pointerMoveHandler);
+					pointerMoveHandler = null;
+				}
+				if (contextMenuHandler && contextMenuCanvasEl) {
+					contextMenuCanvasEl.removeEventListener('contextmenu', contextMenuHandler);
+					contextMenuHandler = null;
+				}
+				if (themeObserver) {
+					themeObserver.disconnect();
+					themeObserver = null;
+				}
+				// Only clear if it still points at THIS instance; a remounting
+				// instance may have already claimed the store.
+				P5Store.update((cur) => (cur === p5 ? null : cur));
+				originalRemove();
+			};
+		}
 
 		// If transcript data already exists (e.g., after mode switch), populate it
 		if (transcript.wordArray?.length > 0) {
@@ -344,6 +377,7 @@ export const igsSketch = (p5: any) => {
 	};
 
 	p5.fillAllData = () => {
+		if (!p5.dynamicData) return; // unset before setup() and after teardown
 		p5.setAnimationCounter(transcript.wordArray.length);
 	};
 

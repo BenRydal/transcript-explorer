@@ -47,11 +47,17 @@ interface TimedSegment {
 /**
  * Creates a transcript from timed segments (used by Whisper and subtitle parsers).
  * Words are distributed evenly within each segment's time span.
+ *
+ * @param timingMode - Timing mode for the resulting transcript. Subtitles have real
+ *   start and end times, so they use 'startEnd'. Whisper only produces reliable start
+ *   times (word ends are frequently null), so it uses 'startOnly' and lets the app
+ *   calculate end times natively — avoiding zero-duration turns from missing ends.
  */
 function createTranscriptFromTimedSegments(
 	segments: TimedSegment[],
 	defaultSpeaker: string,
 	defaultColor: string,
+	timingMode: TimingMode = 'startEnd',
 	overrideDuration?: number
 ): TranscriptCreationResult {
 	const wordArray: DataPoint[] = [];
@@ -76,7 +82,7 @@ function createTranscriptFromTimedSegments(
 
 	const transcript = new Transcript();
 	transcript.wordArray = wordArray;
-	transcript.timingMode = 'startEnd';
+	transcript.timingMode = timingMode;
 	transcript.totalNumOfWords = wordArray.length;
 	transcript.totalConversationTurns = turnIndex;
 	transcript.totalTimeInSeconds = overrideDuration ?? maxTime;
@@ -86,7 +92,10 @@ function createTranscriptFromTimedSegments(
 }
 
 export function createTranscriptFromWhisper(segments: TranscriptionSegment[], videoDuration: number, defaultColor: string): TranscriptCreationResult {
-	return createTranscriptFromTimedSegments(segments, 'SPEAKER 1', defaultColor, videoDuration || undefined);
+	// Whisper produces reliable word start times but frequently null end times.
+	// Use 'startOnly' so the app calculates end times natively (see recalculateEndTimesFromStarts),
+	// which prevents zero-duration turns caused by missing/collapsed end timestamps.
+	return createTranscriptFromTimedSegments(segments, 'SPEAKER 1', defaultColor, 'startOnly', videoDuration || undefined);
 }
 
 /**
