@@ -1,4 +1,13 @@
-import { GraduationCap, Landmark, Mic, Bot, Terminal } from '@lucide/svelte';
+import {
+	GraduationCap,
+	Landmark,
+	Mic,
+	Bot,
+	Terminal,
+	MessageSquare,
+	Wrench,
+	Network
+} from '@lucide/svelte';
 import type { Component } from 'svelte';
 
 /**
@@ -25,7 +34,11 @@ export const EXAMPLES: readonly ExampleOption[] = [
 	{ value: 'example-2', label: 'Family Gallery Visit', icon: Landmark },
 	{ value: 'example-5', label: 'Biden-Trump 2020 Debate', icon: Mic },
 	{ value: 'claude-code-sample', label: 'Claude Code Session (schema demo)', icon: Bot },
-	{ value: 'claude-code-2', label: 'Claude Code Session (real, CSV)', icon: Terminal }
+	{ value: 'claude-code-2', label: 'Claude Code Session (real, CSV)', icon: Terminal },
+	{ value: 'claude-chat', label: 'Claude Code — Chat Only', icon: MessageSquare },
+	{ value: 'claude-tools', label: 'Claude Code — With Tools', icon: Wrench },
+	{ value: 'claude-agent', label: 'Claude Code — Single Agent', icon: Bot },
+	{ value: 'claude-multi-agent', label: 'Claude Code — Multi-Agent', icon: Network }
 ] as const;
 
 /**

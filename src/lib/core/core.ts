@@ -43,7 +43,11 @@ const examples: Record<string, { files: string[]; videoId: string }> = {
 		// Real Claude Code session (converted CSV from feature/claude). No video.
 		files: ['conversation.csv'],
 		videoId: ''
-	}
+	},
+	'claude-chat': { files: ['conversation.csv'], videoId: '' },
+	'claude-tools': { files: ['conversation.csv'], videoId: '' },
+	'claude-agent': { files: ['conversation.csv'], videoId: '' },
+	'claude-multi-agent': { files: ['conversation.csv'], videoId: '' }
 };
 
 export class Core {
