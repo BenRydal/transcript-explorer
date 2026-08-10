@@ -47,7 +47,11 @@ export const EXAMPLES: readonly ExampleOption[] = [
 	{ value: 'trip-chat', label: 'Trip Planning — Chat Only', icon: MessageSquare },
 	{ value: 'trip-tools', label: 'Trip Planning — With Tools', icon: Wrench },
 	{ value: 'trip-agent', label: 'Trip Planning — Single Agent', icon: Bot },
-	{ value: 'trip-multi-agent', label: 'Trip Planning — Multi-Agent', icon: Network }
+	{ value: 'trip-multi-agent', label: 'Trip Planning — Multi-Agent', icon: Network },
+	{ value: 'web-design-chat', label: 'Claude-Web-Design-Chat', icon: MessageSquare },
+	{ value: 'web-design-tools', label: 'Claude-Web-Design-Tools', icon: Wrench },
+	{ value: 'web-design-single-agent', label: 'Claude-Web-Design-Single-Agent', icon: Bot },
+	{ value: 'web-design-multi-agent', label: 'Claude-Web-Design-Multi-Agent', icon: Network }
 ] as const;
 
 /**

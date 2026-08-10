@@ -1,0 +1,4173 @@
+te_source_kind,speaker,content,start,end,event_type,role,tool_name,agent_type,agent_id,model,tokens_out,event_id,content_type
+ai,Ben,"do not use any tools, agents, sub-agents or anything in this chat. Only work by chatting direclty to me. Understand",0.0,2.709,message,user,,,,,,15737f4c-0450-43fb-8d74-38bdd0aa5ded,text
+ai,Claude,"Understood. I won't use any tools, agents, or sub-agents in this chat. I'll work with you purely through conversation here.
+
+What would you like to talk through?",2.709,21.284,message,assistant,,,,claude-opus-4-8,85,1f752a9e-e54c-4e68-b043-553708d967bd,text
+ai,Ben,"I'd like to design a nice website for a new course I am teaching. Here is some context: LT 2010 – Computer Skills for the Information Age
+ Overview & Learning Goals
+Computing, technology, and artificial intelligence (AI) now shape how we learn, work, communicate, and make decisions. This course helps you become a thoughtful, capable, and ethical participant in a digital and AI-saturated world. Specifically, this course will cover a variety of topics including how to use computing as a tool to work and create with data; learn effectively (with and without AI); find and judge digital information; reason about the ethics of technology; and create a professional digital presence for your careers. This course is designed for students with a variety of different backgrounds, no prerequisites are required.
+
+Course Schedule & Timeline
+Topics and readings are subject to change. Please always check this online schedule
+** Indicates you have 2 weeks to complete this unit to give you time to work on your final assignment
+ 
+Topic    Assignments & Discussions    Reading    Date Due
+Learning in a Digital & AI Age    Week 1 Discussion
+AI/digital tool survey        Jan. 17
+Learning How to Learn    Week 2 Discussion        Jan. 24
+Digital Communication and Collaboration    Week 3 Discussion        Jan. 31
+Information Literacy    Week 4 Discussion
+Assignment 1        Feb. 7
+AI Literacy    Week 5 Discussion        Feb. 14
+Ethics, Privacy & Power in an AI Age    Week 6 Discussion        Feb. 21
+Human-Centered Design    Week 7 Discussion        Feb. 28
+Professional Identity and Self-Presentation    Week 8 Discussion
+Assignment 2        Mar. 7
+Working with Data    Week 9 Discussion        Mar. 14
+Fall/Spring Break
+Data Storytelling and Visualization    Week 10 Discussion        April 4
+Coding & Computational Thinking    Week 11 Discussion        April 19
+Assignment 3    Assignment 3        April 26",21.284,42.554,message,user,,,,,,42646465-be94-4672-9ae2-857d6bc50409,text
+ai,Claude,"Love this — a course on computing/AI literacy deserves a website that itself feels thoughtful and modern. Since I'm chatting only (no file-writing tools), I'll deliver the site as a complete, self-contained HTML file you can copy into a `.html` file and open/host anywhere. Before I build, a few quick decisions so I get it right the first time:
+
+**1. How will you host/use it?**
+- Single self-contained HTML file (open locally, or drop on GitHub Pages / any static host) — *my recommendation, most portable*
+- Paste into your LMS (Canvas/Blackboard) — this constrains styling, so I'd give you a simpler version
+- Something else?
+
+**2. Branding.** What school is this for (you mentioned ""LT 2010"")? If you share the university/department and its colors — or a logo — I'll match them. Otherwise I'll design a clean, neutral palette with a subtle ""digital/AI"" accent.
+
+**3. Aesthetic.** Which direction appeals to you?
+- **Warm academic** — serif headings, calm off-white, editorial feel
+- **Modern tech** — clean sans-serif, subtle gradients, a touch of futurism (fits the AI theme)
+- **Minimalist** — lots of whitespace, very restrained
+
+**4. Scope.** Should it be a single scrolling page (Overview → Goals → Schedule → Assignments → About/Contact), or multiple linked pages? A single page is easiest to maintain and share — I'd recommend that.
+
+**5. Anything to add** that wasn't in your text? For example: your name/contact, office hours, a syllabus PDF link, grading breakdown, or a course description tagline.
+
+---
+
+If you'd rather not answer all of that, just say **""just build it""** and I'll make smart defaults: a single-page, modern-tech aesthetic, neutral palette with a blue/violet accent, an interactive-feeling schedule table, and placeholder spots for your name/contact and links. Which way do you want to go?",42.554,67.806,message,assistant,,,,claude-opus-4-8,1263,843e454a-ccb0-4cf7-8ce8-ca23bd21d43f,text
+ai,Ben,"I will host it on github. This is for a learning sciences department, blue/red colors. Lets go with minimalist. Single page is fine.",93.059,97.659,message,user,,,,,,1d1cc63e-4248-402c-8682-ed543928dd1d,text
+ai,Claude,"Perfect — here's a complete, self-contained single-page site. Minimalist, blue/red accents, everything inline (no external fonts or scripts), so it'll work as-is on GitHub Pages.
+
+Copy this into a file named **`index.html`**, drop it in a repo, and enable Pages (steps at the bottom). I've marked every spot you'll want to personalize with `<!-- EDIT -->` comments.
+
+```html
+<!DOCTYPE html>
+<html lang=""en"">
+<head>
+<meta charset=""UTF-8"">
+<meta name=""viewport"" content=""width=device-width, initial-scale=1.0"">
+<title>LT 2010 — Computer Skills for the Information Age</title>
+<style>
+  :root {
+    --blue: #1d4ed8;
+    --blue-dark: #1e3a8a;
+    --red: #dc2626;
+    --ink: #18181b;
+    --muted: #6b7280;
+    --line: #e5e7eb;
+    --bg: #ffffff;
+    --bg-soft: #fafafa;
+    --maxw: 860px;
+  }
+  * { box-sizing: border-box; }
+  html { scroll-behavior: smooth; }
+  body {
+    margin: 0;
+    font-family: -apple-system, BlinkMacSystemFont, ""Segoe UI"", Roboto, Helvetica, Arial, sans-serif;
+    color: var(--ink);
+    background: var(--bg);
+    line-height: 1.65;
+    font-size: 17px;
+    -webkit-font-smoothing: antialiased;
+  }
+  a { color: var(--blue); text-decoration: none; }
+  a:hover { text-decoration: underline; }
+
+  /* Nav */
+  nav {
+    position: sticky; top: 0; z-index: 10;
+    background: rgba(255,255,255,0.85);
+    backdrop-filter: saturate(180%) blur(10px);
+    border-bottom: 1px solid var(--line);
+  }
+  .nav-inner {
+    max-width: var(--maxw); margin: 0 auto;
+    padding: 14px 24px;
+    display: flex; align-items: center; justify-content: space-between;
+    flex-wrap: wrap; gap: 8px;
+  }
+  .brand { font-weight: 700; letter-spacing: -0.01em; font-size: 15px; }
+  .brand .code { color: var(--red); }
+  .nav-links { display: flex; gap: 22px; font-size: 14px; }
+  .nav-links a { color: var(--muted); }
+  .nav-links a:hover { color: var(--ink); text-decoration: none; }
+
+  /* Layout */
+  section { max-width: var(--maxw); margin: 0 auto; padding: 64px 24px; }
+  section + section { border-top: 1px solid var(--line); }
+  h1, h2, h3 { letter-spacing: -0.02em; line-height: 1.2; }
+  h2 {
+    font-size: 14px; text-transform: uppercase; letter-spacing: 0.08em;
+    color: var(--blue); margin: 0 0 24px; font-weight: 700;
+  }
+
+  /* Hero */
+  .hero { padding-top: 88px; padding-bottom: 72px; }
+  .eyebrow {
+    display: inline-block; font-size: 13px; font-weight: 600;
+    color: var(--red); letter-spacing: 0.06em; text-transform: uppercase;
+    margin-bottom: 18px;
+  }
+  .hero h1 { font-size: 44px; margin: 0 0 20px; font-weight: 800; }
+  .hero p.lede { font-size: 20px; color: var(--muted); max-width: 640px; margin: 0; }
+  .accent-bar {
+    width: 64px; height: 4px; margin-top: 28px;
+    background: linear-gradient(90deg, var(--blue), var(--red));
+    border-radius: 2px;
+  }
+
+  /* Overview text */
+  .prose p { margin: 0 0 18px; }
+  .prose p:last-child { margin-bottom: 0; }
+
+  /* Goals */
+  .goals { list-style: none; padding: 0; margin: 0; display: grid; gap: 4px; }
+  .goals li {
+    padding: 16px 0; border-bottom: 1px solid var(--line);
+    display: flex; gap: 16px; align-items: baseline;
+  }
+  .goals li:last-child { border-bottom: none; }
+  .goals .num {
+    color: var(--blue); font-weight: 700; font-variant-numeric: tabular-nums;
+    min-width: 24px;
+  }
+
+  /* Schedule table */
+  .table-wrap { overflow-x: auto; -webkit-overflow-scrolling: touch; }
+  table { width: 100%; border-collapse: collapse; font-size: 15px; min-width: 560px; }
+  thead th {
+    text-align: left; font-size: 12px; text-transform: uppercase; letter-spacing: 0.06em;
+    color: var(--muted); font-weight: 600; padding: 0 16px 12px 0; border-bottom: 2px solid var(--ink);
+  }
+  tbody td { padding: 16px 16px 16px 0; border-bottom: 1px solid var(--line); vertical-align: top; }
+  tbody tr:hover { background: var(--bg-soft); }
+  td.topic { font-weight: 600; }
+  td.date { white-space: nowrap; color: var(--muted); font-variant-numeric: tabular-nums; }
+  .tag {
+    display: inline-block; font-size: 12px; font-weight: 600; padding: 2px 8px;
+    border-radius: 999px; margin: 2px 4px 2px 0; white-space: nowrap;
+  }
+  .tag.disc { background: #eff6ff; color: var(--blue-dark); }
+  .tag.assign { background: #fef2f2; color: var(--red); }
+  .tag.extra { background: #f4f4f5; color: var(--muted); }
+  .star { color: var(--red); font-weight: 700; }
+  .break-row td {
+    text-align: center; font-style: italic; color: var(--muted);
+    background: var(--bg-soft); font-size: 14px;
+  }
+  .note {
+    font-size: 14px; color: var(--muted); margin-top: 18px;
+    display: flex; gap: 8px; align-items: baseline;
+  }
+
+  /* Assignments */
+  .cards { display: grid; gap: 16px; grid-template-columns: repeat(3, 1fr); }
+  .card {
+    border: 1px solid var(--line); border-radius: 12px; padding: 20px;
+    border-top: 3px solid var(--red);
+  }
+  .card h3 { margin: 0 0 6px; font-size: 17px; }
+  .card .due { font-size: 13px; color: var(--muted); font-weight: 600; }
+  .card p { margin: 10px 0 0; font-size: 14px; color: var(--muted); }
+
+  /* Info / contact */
+  .info-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 32px; }
+  .info-grid dt { font-size: 12px; text-transform: uppercase; letter-spacing: 0.06em; color: var(--muted); }
+  .info-grid dd { margin: 4px 0 20px; }
+
+  footer {
+    max-width: var(--maxw); margin: 0 auto; padding: 40px 24px 64px;
+    border-top: 1px solid var(--line); color: var(--muted); font-size: 14px;
+  }
+
+  @media (max-width: 640px) {
+    .hero h1 { font-size: 34px; }
+    .hero p.lede { font-size: 18px; }
+    section { padding: 48px 20px; }
+    .cards { grid-template-columns: 1fr; }
+    .info-grid { grid-template-columns: 1fr; gap: 0; }
+    .nav-links { display: none; }
+  }
+</style>
+</head>
+<body>
+
+<nav>
+  <div class=""nav-inner"">
+    <div class=""brand""><span class=""code"">LT 2010</span> · Computer Skills for the Information Age</div>
+    <div class=""nav-links"">
+      <a href=""#overview"">Overview</a>
+      <a href=""#goals"">Goals</a>
+      <a href=""#schedule"">Schedule</a>
+      <a href=""#assignments"">Assignments</a>
+      <a href=""#info"">Info</a>
+    </div>
+  </div>
+</nav>
+
+<header class=""hero"">
+  <section style=""padding-top:0;padding-bottom:0;border:none;"">
+    <span class=""eyebrow"">Department of Learning Sciences <!-- EDIT: dept/university --></span>
+    <h1>Computer Skills for the Information Age</h1>
+    <p class=""lede"">Becoming a thoughtful, capable, and ethical participant in a digital and AI-saturated world.</p>
+    <div class=""accent-bar""></div>
+  </section>
+</header>
+
+<section id=""overview"">
+  <h2>Overview</h2>
+  <div class=""prose"">
+    <p>Computing, technology, and artificial intelligence now shape how we learn, work, communicate, and make decisions. This course helps you become a thoughtful, capable, and ethical participant in a digital and AI-saturated world.</p>
+    <p>Over the semester we cover a range of topics: how to use computing as a tool to work and create with data; how to learn effectively (with and without AI); how to find and judge digital information; how to reason about the ethics of technology; and how to build a professional digital presence for your career.</p>
+    <p>This course is designed for students from a variety of backgrounds. <strong>No prerequisites are required.</strong></p>
+  </div>
+</section>
+
+<section id=""goals"">
+  <h2>What you'll learn</h2>
+  <ul class=""goals"">
+    <li><span class=""num"">01</span><span>Use computing as a tool to work and create with data.</span></li>
+    <li><span class=""num"">02</span><span>Learn effectively — with and without AI.</span></li>
+    <li><span class=""num"">03</span><span>Find, evaluate, and judge digital information.</span></li>
+    <li><span class=""num"">04</span><span>Reason about the ethics, privacy, and power dynamics of technology.</span></li>
+    <li><span class=""num"">05</span><span>Create a professional digital presence for your career.</span></li>
+  </ul>
+</section>
+
+<section id=""schedule"">
+  <h2>Schedule</h2>
+  <div class=""table-wrap"">
+    <table>
+      <thead>
+        <tr>
+          <th>Topic</th>
+          <th>Assignments &amp; Discussions</th>
+          <th>Due</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td class=""topic"">Learning in a Digital &amp; AI Age</td>
+          <td><span class=""tag disc"">Week 1 Discussion</span><span class=""tag extra"">AI/digital tool survey</span></td>
+          <td class=""date"">Jan 17</td>
+        </tr>
+        <tr>
+          <td class=""topic"">Learning How to Learn</td>
+          <td><span class=""tag disc"">Week 2 Discussion</span></td>
+          <td class=""date"">Jan 24</td>
+        </tr>
+        <tr>
+          <td class=""topic"">Digital Communication &amp; Collaboration</td>
+          <td><span class=""tag disc"">Week 3 Discussion</span></td>
+          <td class=""date"">Jan 31</td>
+        </tr>
+        <tr>
+          <td class=""topic"">Information Literacy</td>
+          <td><span class=""tag disc"">Week 4 Discussion</span><span class=""tag assign"">Assignment 1</span></td>
+          <td class=""date"">Feb 7</td>
+        </tr>
+        <tr>
+          <td class=""topic"">AI Literacy</td>
+          <td><span class=""tag disc"">Week 5 Discussion</span></td>
+          <td class=""date"">Feb 14</td>
+        </tr>
+        <tr>
+          <td class=""topic"">Ethics, Privacy &amp; Power in an AI Age</td>
+          <td><span class=""tag disc"">Week 6 Discussion</span></td>
+          <td class=""date"">Feb 21</td>
+        </tr>
+        <tr>
+          <td class=""topic"">Human-Centered Design</td>
+          <td><span class=""tag disc"">Week 7 Discussion</span></td>
+          <td class=""date"">Feb 28</td>
+        </tr>
+        <tr>
+          <td class=""topic"">Professional Identity &amp; Self-Presentation</td>
+          <td><span class=""tag disc"">Week 8 Discussion</span><span class=""tag assign"">Assignment 2</span></td>
+          <td class=""date"">Mar 7</td>
+        </tr>
+        <tr>
+          <td class=""topic"">Working with Data</td>
+          <td><span class=""tag disc"">Week 9 Discussion</span></td>
+          <td class=""date"">Mar 14</td>
+        </tr>
+        <tr class=""break-row"">
+          <td colspan=""3"">Fall / Spring Break</td>
+        </tr>
+        <tr>
+          <td class=""topic"">Data Storytelling &amp; Visualization <span class=""star"" title=""Two weeks to complete"">**</span></td>
+          <td><span class=""tag disc"">Week 10 Discussion</span></td>
+          <td class=""date"">Apr 4</td>
+        </tr>
+        <tr>
+          <td class=""topic"">Coding &amp; Computational Thinking <span class=""star"" title=""Two weeks to complete"">**</span></td>
+          <td><span class=""tag disc"">Week 11 Discussion</span></td>
+          <td class=""date"">Apr 19</td>
+        </tr>
+        <tr>
+          <td class=""topic"">Final Assignment</td>
+          <td><span class=""tag assign"">Assignment 3</span></td>
+          <td class=""date"">Apr 26</td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+  <p class=""note""><span class=""star"">**</span><span>You have two weeks to complete this unit, giving you time to work on your final assignment. Topics and readings are subject to change — always check this schedule for the latest.</span></p>
+</section>
+
+<section id=""assignments"">
+  <h2>Major Assignments</h2>
+  <div class=""cards"">
+    <div class=""card"">
+      <div class=""due"">Due Feb 7</div>
+      <h3>Assignment 1</h3>
+      <p><!-- EDIT: short description -->Information literacy in practice.</p>
+    </div>
+    <div class=""card"">
+      <div class=""due"">Due Mar 7</div>
+      <h3>Assignment 2</h3>
+      <p><!-- EDIT: short description -->Building your professional digital identity.</p>
+    </div>
+    <div class=""card"">
+      <div class=""due"">Due Apr 26</div>
+      <h3>Assignment 3 · Final</h3>
+      <p><!-- EDIT: short description -->A capstone project bringing the course together.</p>
+    </div>
+  </div>
+</section>
+
+<section id=""info"">
+  <h2>Course Info</h2>
+  <dl class=""info-grid"">
+    <div>
+      <dt>Instructor</dt>
+      <dd>Your Name <!-- EDIT --></dd>
+      <dt>Email</dt>
+      <dd><a href=""mailto:you@university.edu"">you@university.edu</a> <!-- EDIT --></dd>
+    </div>
+    <div>
+      <dt>Office Hours</dt>
+      <dd>Day / time / location <!-- EDIT --></dd>
+      <dt>Prerequisites</dt>
+      <dd>None</dd>
+    </div>
+  </dl>
+</section>
+
+<footer>
+  LT 2010 · Computer Skills for the Information Age — Department of Learning Sciences <!-- EDIT -->.
+  Spring 2026. Schedule subject to change.
+</footer>
+
+</body>
+</html>
+```
+
+---
+
+**Design notes**
+- Minimalist: system fonts, generous whitespace, thin rules, no clutter. The only color is your blue/red — used as a gradient accent bar, tab-style tags (blue = discussions, red = assignments), and card top-borders.
+- The schedule scrolls horizontally on phones so it never breaks the layout; the `**` two-week units are flagged in red with a hover tooltip.
+- Sticky blurred nav for quick jumps.
+
+**To publish on GitHub Pages**
+1. Create a repo (e.g. `lt2010`), add this file as `index.html`.
+2. Repo **Settings → Pages → Source: Deploy from a branch → `main` / `root`**.
+3. Your site goes live at `https://<username>.github.io/lt2010/` in ~1 minute.
+
+Want me to adjust anything — fill in real assignment descriptions, add a grading breakdown or readings column, tweak the palette to your exact university hex codes, or add a dark mode?",162.761,222.761,message,assistant,,,,claude-opus-4-8,6708,bbe091ed-8b03-4a80-8fb9-7289a66b84b5,text
+ai,Ben,"lets make the headers larger, add imagery in key places",289.137,291.137,message,user,,,,,,9384caf7-8bbb-4463-8bb0-0ef61afaa509,text
+ai,Claude,"Good call — bigger headings give it more presence, and some light geometric imagery suits the digital/AI theme without breaking the minimalism. I've kept everything **inline SVG** (no external image files) so it stays fully self-contained for GitHub.
+
+Here's the updated `index.html`:
+
+```html
+<!DOCTYPE html>
+<html lang=""en"">
+<head>
+<meta charset=""UTF-8"">
+<meta name=""viewport"" content=""width=device-width, initial-scale=1.0"">
+<title>LT 2010 — Computer Skills for the Information Age</title>
+<style>
+  :root {
+    --blue: #1d4ed8;
+    --blue-dark: #1e3a8a;
+    --red: #dc2626;
+    --ink: #18181b;
+    --muted: #6b7280;
+    --line: #e5e7eb;
+    --bg: #ffffff;
+    --bg-soft: #fafafa;
+    --maxw: 900px;
+  }
+  * { box-sizing: border-box; }
+  html { scroll-behavior: smooth; }
+  body {
+    margin: 0;
+    font-family: -apple-system, BlinkMacSystemFont, ""Segoe UI"", Roboto, Helvetica, Arial, sans-serif;
+    color: var(--ink);
+    background: var(--bg);
+    line-height: 1.65;
+    font-size: 17px;
+    -webkit-font-smoothing: antialiased;
+  }
+  a { color: var(--blue); text-decoration: none; }
+  a:hover { text-decoration: underline; }
+
+  /* Nav */
+  nav {
+    position: sticky; top: 0; z-index: 10;
+    background: rgba(255,255,255,0.85);
+    backdrop-filter: saturate(180%) blur(10px);
+    border-bottom: 1px solid var(--line);
+  }
+  .nav-inner {
+    max-width: var(--maxw); margin: 0 auto;
+    padding: 14px 24px;
+    display: flex; align-items: center; justify-content: space-between;
+    flex-wrap: wrap; gap: 8px;
+  }
+  .brand { font-weight: 700; letter-spacing: -0.01em; font-size: 15px; }
+  .brand .code { color: var(--red); }
+  .nav-links { display: flex; gap: 22px; font-size: 14px; }
+  .nav-links a { color: var(--muted); }
+  .nav-links a:hover { color: var(--ink); text-decoration: none; }
+
+  /* Layout */
+  section { max-width: var(--maxw); margin: 0 auto; padding: 72px 24px; }
+  section + section { border-top: 1px solid var(--line); }
+
+  /* Section headers — larger, with kicker + icon */
+  .head { display: flex; align-items: center; gap: 14px; margin: 0 0 32px; }
+  .head .ico {
+    flex: none; width: 40px; height: 40px; border-radius: 10px;
+    display: grid; place-items: center;
+    background: linear-gradient(135deg, #eff6ff, #fef2f2);
+    color: var(--blue);
+  }
+  .head .ico svg { width: 22px; height: 22px; }
+  .kicker {
+    display: block; font-size: 12px; font-weight: 700; letter-spacing: 0.09em;
+    text-transform: uppercase; color: var(--red); margin-bottom: 2px;
+  }
+  .head h2 { font-size: 32px; margin: 0; font-weight: 800; letter-spacing: -0.02em; line-height: 1.15; }
+
+  /* Hero */
+  .hero-wrap { border-bottom: 1px solid var(--line); overflow: hidden; position: relative; }
+  .hero {
+    max-width: var(--maxw); margin: 0 auto; padding: 96px 24px 84px;
+    position: relative; z-index: 1;
+  }
+  .hero-art {
+    position: absolute; top: 0; right: 0; height: 100%; width: 46%;
+    opacity: 0.9; pointer-events: none; z-index: 0;
+    -webkit-mask-image: linear-gradient(90deg, transparent, #000 40%);
+            mask-image: linear-gradient(90deg, transparent, #000 40%);
+  }
+  .hero-art svg { height: 100%; width: 100%; }
+  .eyebrow {
+    display: inline-block; font-size: 13px; font-weight: 600;
+    color: var(--red); letter-spacing: 0.06em; text-transform: uppercase;
+    margin-bottom: 18px;
+  }
+  .hero h1 { font-size: 56px; margin: 0 0 22px; font-weight: 800; letter-spacing: -0.03em; line-height: 1.05; max-width: 620px; }
+  .hero p.lede { font-size: 21px; color: var(--muted); max-width: 560px; margin: 0; }
+  .accent-bar {
+    width: 72px; height: 5px; margin-top: 30px;
+    background: linear-gradient(90deg, var(--blue), var(--red));
+    border-radius: 3px;
+  }
+
+  /* Prose */
+  .prose { max-width: 680px; }
+  .prose p { margin: 0 0 18px; }
+  .prose p:last-child { margin-bottom: 0; }
+
+  /* Goals */
+  .goals { list-style: none; padding: 0; margin: 0; display: grid; gap: 4px; }
+  .goals li {
+    padding: 18px 0; border-bottom: 1px solid var(--line);
+    display: flex; gap: 18px; align-items: baseline;
+  }
+  .goals li:last-child { border-bottom: none; }
+  .goals .num {
+    color: var(--blue); font-weight: 800; font-size: 20px; font-variant-numeric: tabular-nums;
+    min-width: 30px;
+  }
+
+  /* Schedule table */
+  .table-wrap { overflow-x: auto; -webkit-overflow-scrolling: touch; }
+  table { width: 100%; border-collapse: collapse; font-size: 15px; min-width: 560px; }
+  thead th {
+    text-align: left; font-size: 12px; text-transform: uppercase; letter-spacing: 0.06em;
+    color: var(--muted); font-weight: 600; padding: 0 16px 12px 0; border-bottom: 2px solid var(--ink);
+  }
+  tbody td { padding: 16px 16px 16px 0; border-bottom: 1px solid var(--line); vertical-align: top; }
+  tbody tr:hover { background: var(--bg-soft); }
+  td.topic { font-weight: 600; }
+  td.date { white-space: nowrap; color: var(--muted); font-variant-numeric: tabular-nums; }
+  .tag {
+    display: inline-block; font-size: 12px; font-weight: 600; padding: 2px 8px;
+    border-radius: 999px; margin: 2px 4px 2px 0; white-space: nowrap;
+  }
+  .tag.disc { background: #eff6ff; color: var(--blue-dark); }
+  .tag.assign { background: #fef2f2; color: var(--red); }
+  .tag.extra { background: #f4f4f5; color: var(--muted); }
+  .star { color: var(--red); font-weight: 700; }
+  .break-row td {
+    text-align: center; font-style: italic; color: var(--muted);
+    background: var(--bg-soft); font-size: 14px;
+  }
+  .note {
+    font-size: 14px; color: var(--muted); margin-top: 18px;
+    display: flex; gap: 8px; align-items: baseline;
+  }
+
+  /* Assignments */
+  .cards { display: grid; gap: 16px; grid-template-columns: repeat(3, 1fr); }
+  .card {
+    border: 1px solid var(--line); border-radius: 12px; padding: 22px;
+    border-top: 3px solid var(--red);
+  }
+  .card h3 { margin: 0 0 6px; font-size: 18px; }
+  .card .due { font-size: 13px; color: var(--muted); font-weight: 600; }
+  .card p { margin: 10px 0 0; font-size: 14px; color: var(--muted); }
+
+  /* Info / contact */
+  .info-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 32px; }
+  .info-grid dt { font-size: 12px; text-transform: uppercase; letter-spacing: 0.06em; color: var(--muted); }
+  .info-grid dd { margin: 4px 0 20px; }
+
+  footer {
+    max-width: var(--maxw); margin: 0 auto; padding: 40px 24px 64px;
+    border-top: 1px solid var(--line); color: var(--muted); font-size: 14px;
+  }
+
+  @media (max-width: 720px) {
+    .hero h1 { font-size: 40px; }
+    .hero p.lede { font-size: 18px; }
+    .hero-art { display: none; }
+    .head h2 { font-size: 26px; }
+    section { padding: 56px 20px; }
+    .cards { grid-template-columns: 1fr; }
+    .info-grid { grid-template-columns: 1fr; gap: 0; }
+    .nav-links { display: none; }
+  }
+</style>
+</head>
+<body>
+
+<nav>
+  <div class=""nav-inner"">
+    <div class=""brand""><span class=""code"">LT 2010</span> · Computer Skills for the Information Age</div>
+    <div class=""nav-links"">
+      <a href=""#overview"">Overview</a>
+      <a href=""#goals"">Goals</a>
+      <a href=""#schedule"">Schedule</a>
+      <a href=""#assignments"">Assignments</a>
+      <a href=""#info"">Info</a>
+    </div>
+  </div>
+</nav>
+
+<div class=""hero-wrap"">
+  <!-- Hero imagery: abstract network of nodes (blue/red) -->
+  <div class=""hero-art"" aria-hidden=""true"">
+    <svg viewBox=""0 0 400 500"" fill=""none"" xmlns=""http://www.w3.org/2000/svg"">
+      <g stroke=""#1d4ed8"" stroke-width=""1.2"" opacity=""0.5"">
+        <line x1=""120"" y1=""90""  x2=""250"" y2=""140""/>
+        <line x1=""250"" y1=""140"" x2=""340"" y2=""90""/>
+        <line x1=""250"" y1=""140"" x2=""300"" y2=""250""/>
+        <line x1=""120"" y1=""90""  x2=""150"" y2=""220""/>
+        <line x1=""150"" y1=""220"" x2=""300"" y2=""250""/>
+        <line x1=""150"" y1=""220"" x2=""220"" y2=""330""/>
+        <line x1=""300"" y1=""250"" x2=""360"" y2=""360""/>
+        <line x1=""220"" y1=""330"" x2=""360"" y2=""360""/>
+        <line x1=""220"" y1=""330"" x2=""270"" y2=""430""/>
+        <line x1=""360"" y1=""360"" x2=""270"" y2=""430""/>
+      </g>
+      <g>
+        <circle cx=""120"" cy=""90""  r=""6"" fill=""#1d4ed8""/>
+        <circle cx=""250"" cy=""140"" r=""9"" fill=""#dc2626""/>
+        <circle cx=""340"" cy=""90""  r=""5"" fill=""#1d4ed8""/>
+        <circle cx=""150"" cy=""220"" r=""7"" fill=""#1d4ed8""/>
+        <circle cx=""300"" cy=""250"" r=""10"" fill=""#dc2626""/>
+        <circle cx=""220"" cy=""330"" r=""6"" fill=""#1d4ed8""/>
+        <circle cx=""360"" cy=""360"" r=""7"" fill=""#1d4ed8""/>
+        <circle cx=""270"" cy=""430"" r=""8"" fill=""#dc2626""/>
+      </g>
+    </svg>
+  </div>
+  <header class=""hero"">
+    <span class=""eyebrow"">Department of Learning Sciences <!-- EDIT: dept/university --></span>
+    <h1>Computer Skills for the Information Age</h1>
+    <p class=""lede"">Becoming a thoughtful, capable, and ethical participant in a digital and AI-saturated world.</p>
+    <div class=""accent-bar""></div>
+  </header>
+</div>
+
+<section id=""overview"">
+  <div class=""head"">
+    <span class=""ico""><svg viewBox=""0 0 24 24"" fill=""none"" stroke=""currentColor"" stroke-width=""2"" stroke-linecap=""round"" stroke-linejoin=""round""><path d=""M2 3h20v14H2z""/><path d=""M8 21h8M12 17v4""/></svg></span>
+    <div><span class=""kicker"">About the course</span><h2>Overview</h2></div>
+  </div>
+  <div class=""prose"">
+    <p>Computing, technology, and artificial intelligence now shape how we learn, work, communicate, and make decisions. This course helps you become a thoughtful, capable, and ethical participant in a digital and AI-saturated world.</p>
+    <p>Over the semester we cover a range of topics: how to use computing as a tool to work and create with data; how to learn effectively (with and without AI); how to find and judge digital information; how to reason about the ethics of technology; and how to build a professional digital presence for your career.</p>
+    <p>This course is designed for students from a variety of backgrounds. <strong>No prerequisites are required.</strong></p>
+  </div>
+</section>
+
+<section id=""goals"">
+  <div class=""head"">
+    <span class=""ico""><svg viewBox=""0 0 24 24"" fill=""none"" stroke=""currentColor"" stroke-width=""2"" stroke-linecap=""round"" stroke-linejoin=""round""><circle cx=""12"" cy=""12"" r=""9""/><circle cx=""12"" cy=""12"" r=""5""/><circle cx=""12"" cy=""12"" r=""1""/></svg></span>
+    <div><span class=""kicker"">Learning goals</span><h2>What you'll learn</h2></div>
+  </div>
+  <ul class=""goals"">
+    <li><span class=""num"">01</span><span>Use computing as a tool to work and create with data.</span></li>
+    <li><span class=""num"">02</span><span>Learn effectively — with and without AI.</span></li>
+    <li><span class=""num"">03</span><span>Find, evaluate, and judge digital information.</span></li>
+    <li><span class=""num"">04</span><span>Reason about the ethics, privacy, and power dynamics of technology.</span></li>
+    <li><span class=""num"">05</span><span>Create a professional digital presence for your career.</span></li>
+  </ul>
+</section>
+
+<section id=""schedule"">
+  <div class=""head"">
+    <span class=""ico""><svg viewBox=""0 0 24 24"" fill=""none"" stroke=""currentColor"" stroke-width=""2"" stroke-linecap=""round"" stroke-linejoin=""round""><rect x=""3"" y=""4"" width=""18"" height=""18"" rx=""2""/><path d=""M16 2v4M8 2v4M3 10h18""/></svg></span>
+    <div><span class=""kicker"">Week by week</span><h2>Schedule</h2></div>
+  </div>
+  <div class=""table-wrap"">
+    <table>
+      <thead>
+        <tr>
+          <th>Topic</th>
+          <th>Assignments &amp; Discussions</th>
+          <th>Due</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td class=""topic"">Learning in a Digital &amp; AI Age</td>
+          <td><span class=""tag disc"">Week 1 Discussion</span><span class=""tag extra"">AI/digital tool survey</span></td>
+          <td class=""date"">Jan 17</td>
+        </tr>
+        <tr>
+          <td class=""topic"">Learning How to Learn</td>
+          <td><span class=""tag disc"">Week 2 Discussion</span></td>
+          <td class=""date"">Jan 24</td>
+        </tr>
+        <tr>
+          <td class=""topic"">Digital Communication &amp; Collaboration</td>
+          <td><span class=""tag disc"">Week 3 Discussion</span></td>
+          <td class=""date"">Jan 31</td>
+        </tr>
+        <tr>
+          <td class=""topic"">Information Literacy</td>
+          <td><span class=""tag disc"">Week 4 Discussion</span><span class=""tag assign"">Assignment 1</span></td>
+          <td class=""date"">Feb 7</td>
+        </tr>
+        <tr>
+          <td class=""topic"">AI Literacy</td>
+          <td><span class=""tag disc"">Week 5 Discussion</span></td>
+          <td class=""date"">Feb 14</td>
+        </tr>
+        <tr>
+          <td class=""topic"">Ethics, Privacy &amp; Power in an AI Age</td>
+          <td><span class=""tag disc"">Week 6 Discussion</span></td>
+          <td class=""date"">Feb 21</td>
+        </tr>
+        <tr>
+          <td class=""topic"">Human-Centered Design</td>
+          <td><span class=""tag disc"">Week 7 Discussion</span></td>
+          <td class=""date"">Feb 28</td>
+        </tr>
+        <tr>
+          <td class=""topic"">Professional Identity &amp; Self-Presentation</td>
+          <td><span class=""tag disc"">Week 8 Discussion</span><span class=""tag assign"">Assignment 2</span></td>
+          <td class=""date"">Mar 7</td>
+        </tr>
+        <tr>
+          <td class=""topic"">Working with Data</td>
+          <td><span class=""tag disc"">Week 9 Discussion</span></td>
+          <td class=""date"">Mar 14</td>
+        </tr>
+        <tr class=""break-row"">
+          <td colspan=""3"">Fall / Spring Break</td>
+        </tr>
+        <tr>
+          <td class=""topic"">Data Storytelling &amp; Visualization <span class=""star"" title=""Two weeks to complete"">**</span></td>
+          <td><span class=""tag disc"">Week 10 Discussion</span></td>
+          <td class=""date"">Apr 4</td>
+        </tr>
+        <tr>
+          <td class=""topic"">Coding &amp; Computational Thinking <span class=""star"" title=""Two weeks to complete"">**</span></td>
+          <td><span class=""tag disc"">Week 11 Discussion</span></td>
+          <td class=""date"">Apr 19</td>
+        </tr>
+        <tr>
+          <td class=""topic"">Final Assignment</td>
+          <td><span class=""tag assign"">Assignment 3</span></td>
+          <td class=""date"">Apr 26</td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+  <p class=""note""><span class=""star"">**</span><span>You have two weeks to complete this unit, giving you time to work on your final assignment. Topics and readings are subject to change — always check this schedule for the latest.</span></p>
+</section>
+
+<section id=""assignments"">
+  <div class=""head"">
+    <span class=""ico""><svg viewBox=""0 0 24 24"" fill=""none"" stroke=""currentColor"" stroke-width=""2"" stroke-linecap=""round"" stroke-linejoin=""round""><path d=""M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z""/><path d=""M14 2v6h6M9 15h6M9 11h2""/></svg></span>
+    <div><span class=""kicker"">Deliverables</span><h2>Major Assignments</h2></div>
+  </div>
+  <div class=""cards"">
+    <div class=""card"">
+      <div class=""due"">Due Feb 7</div>
+      <h3>Assignment 1</h3>
+      <p><!-- EDIT: short description -->Information literacy in practice.</p>
+    </div>
+    <div class=""card"">
+      <div class=""due"">Due Mar 7</div>
+      <h3>Assignment 2</h3>
+      <p><!-- EDIT: short description -->Building your professional digital identity.</p>
+    </div>
+    <div class=""card"">
+      <div class=""due"">Due Apr 26</div>
+      <h3>Assignment 3 · Final</h3>
+      <p><!-- EDIT: short description -->A capstone project bringing the course together.</p>
+    </div>
+  </div>
+</section>
+
+<section id=""info"">
+  <div class=""head"">
+    <span class=""ico""><svg viewBox=""0 0 24 24"" fill=""none"" stroke=""currentColor"" stroke-width=""2"" stroke-linecap=""round"" stroke-linejoin=""round""><circle cx=""12"" cy=""12"" r=""9""/><path d=""M12 16v-4M12 8h.01""/></svg></span>
+    <div><span class=""kicker"">Logistics</span><h2>Course Info</h2></div>
+  </div>
+  <dl class=""info-grid"">
+    <div>
+      <dt>Instructor</dt>
+      <dd>Your Name <!-- EDIT --></dd>
+      <dt>Email</dt>
+      <dd><a href=""mailto:you@university.edu"">you@university.edu</a> <!-- EDIT --></dd>
+    </div>
+    <div>
+      <dt>Office Hours</dt>
+      <dd>Day / time / location <!-- EDIT --></dd>
+      <dt>Prerequisites</dt>
+      <dd>None</dd>
+    </div>
+  </dl>
+</section>
+
+<footer>
+  LT 2010 · Computer Skills for the Information Age — Department of Learning Sciences <!-- EDIT -->.
+  Spring 2026. Schedule subject to change.
+</footer>
+
+</body>
+</html>
+```
+
+**What changed**
+- **Bigger headers:** hero title jumped to 56px, and every section now has a real 32px heading with a small red kicker above it — much stronger hierarchy than the old tiny uppercase labels.
+- **Imagery, all inline SVG (self-contained):**
+  - A faint blue/red **node-network graphic** in the hero (fades out on the left so text stays readable; hidden on mobile).
+  - A **line icon in a soft blue→red gradient tile** next to each section heading — book/monitor for Overview, target for Goals, calendar for Schedule, document for Assignments, info for Course Info.
+
+Since it's all vector, it stays crisp at any size and adds zero image files to your repo.
+
+Want me to go further — e.g. a full-width hero background pattern, small thematic illustrations inside each schedule row or assignment card, or a photo of you in the Course Info section? And if you give me your exact university blue/red hex values, I'll swap them in.",375.542,380.176,message,assistant,,,,claude-opus-4-8,8513,308cfa20-67d8-4738-b06b-2ff70cc0e405,text
+ai,Ben,Do you see other potential approaches to this site? Give me 5 different ways we might approach building this site different than this one--just explain them here in text and how they are different.,380.176,405.151,message,user,,,,,,cd46980e-2975-461e-bf72-17af0ad0ea8f,text
+ai,Claude,"Here are five genuinely different directions — not just restyles, but different structural and conceptual bets about what the site *is*. The current version is essentially a **single-page brochure**: scroll top-to-bottom, read static content. Each of these breaks from that in a specific way.
+
+**1. The living syllabus / ""what's due next"" dashboard**
+Instead of a static schedule you scroll to, the site's centerpiece is a dynamic view anchored to *today's date*. It computes the current week and surfaces ""This week: AI Literacy — Week 5 Discussion due Feb 14"" at the top, with past weeks collapsed/dimmed and future weeks previewed. A little JavaScript reads the current date and highlights where students are in the term. **How it differs:** the current site treats all 13 weeks equally; this one is time-aware and answers the student's real question — ""what do I need to do right now?"" — the moment they land.
+
+**2. Timeline / journey layout**
+Rebuild the schedule as a vertical timeline the student walks down — a spine with connected nodes, each topic a station on a path from ""Learning in a Digital Age"" to the final project. Fits the course narrative (skills building on skills) and turns the imagery into the structure itself rather than decoration. **How it differs:** the current version uses a data table (good for scanning/comparison); a timeline is a *story* (good for conveying arc and momentum). Trades some scannability for narrative and visual distinctiveness.
+
+**3. Multi-page / topic-per-page site**
+Instead of one long scroll, make each of the 11 topics its own page, with the homepage as a hub of cards linking out. Each topic page holds readings, the discussion prompt, slides, and resources — room to grow as the term goes on. **How it differs:** the single-page version is a fixed snapshot; this is a *container that scales*. Better when you'll keep adding material weekly, and better for deep-linking (""here's the AI Literacy page"") — at the cost of more files to maintain. Pairs naturally with a static-site generator (see #5).
+
+**4. Interactive/filterable course explorer**
+Keep one page, but make the content *manipulable*: filter chips (""Show only assignments,"" ""Show only AI topics""), a search box, expand/collapse rows for details, maybe a toggle between ""list view"" and ""calendar view."" The schedule becomes a small app rather than a printed table. **How it differs:** the current site is read-only; this treats the schedule as data students query. Great for a course with lots of moving parts, but it's more JS and more that can break — arguably over-engineered for 11 rows unless you plan to grow it.
+
+**5. Markdown-driven static site (Jekyll / MkDocs / Hugo)**
+Rather than hand-authoring HTML, you write content in Markdown files and a generator turns them into the site — with themes, navigation, and search for free. GitHub Pages runs Jekyll natively, so you'd `git push` a Markdown file to add a week. **How it differs:** everything above concerns *what the visitor sees*; this changes *how you maintain it*. The current single HTML file is dead-simple to host but tedious to update by hand; a generator is more setup up front but far easier to edit week-to-week, especially if a TA helps. Best when the site will be edited often over the semester.
+
+---
+
+A quick way to think about the trade-off space: the current build optimizes for **simplicity and one-glance overview**. #1 optimizes for **relevance-right-now**, #2 for **narrative**, #3 for **room to grow**, #4 for **interactivity**, and #5 for **ease of ongoing editing**. They're also combinable — e.g. a Markdown site (#5) with a timeline layout (#2) and a date-aware ""this week"" banner (#1) would be a strong, maintainable combination.
+
+Want me to prototype any of these, or sketch how a hybrid would look?",405.151,438.323,message,assistant,,,,claude-opus-4-8,1343,04ee9c69-5b10-487c-9521-406df4a98a3f,text
+ai,Ben,I like the narraive approach. Give me the code for the timeline/journey layout. Ask me any questions you need,471.496,492.654,message,user,,,,,,0d61ca9a-bee3-4746-a802-00363a7aa70c,text
+ai,Claude,"The timeline is a great fit for this course's arc. Three decisions will shape the layout meaningfully — tell me your picks (or say ""just build it"" and I'll use the **bolded** defaults):
+
+**1. Spine layout.**
+- **Single left-aligned spine** (nodes down the left, content to the right) — cleaner, reads like a story, degrades perfectly on mobile. *My recommendation.*
+- Alternating zig-zag (content left/right of a center line) — more visually dramatic, but cramped on phones and harder to scan dates.
+
+**2. ""You are here"" marker.**
+Since you liked the narrative angle, I can make the timeline **date-aware** — it detects today's date and marks the current week (""You are here""), dims completed weeks, and previews upcoming ones. Turns the journey metaphor literal. **Yes, include it** — it's a small bit of JS and adds a lot. Say no if you'd rather keep it fully static.
+
+**3. What surrounds the timeline.**
+- **Keep a short intro** (hero + overview + learning goals), then the timeline *is* the schedule, then Assignments + Course Info at the end. *Recommended — balanced.*
+- Timeline-only: fold everything into stations on the path (goals become the first station, etc.) — most immersive but buries the practical info.
+
+One more thing that affects grouping: the course has natural **arcs** (roughly: *Learning* → *Information & AI* → *Ethics & Design* → *Identity & Data* → *Making*). Want me to label these as **chapter dividers** along the timeline (e.g. ""Part I — Learning How to Learn"")? It reinforces the narrative. I'd **recommend yes** with light grouping.
+
+If you're good with all four defaults, just say ""go"" and I'll write it. Otherwise give me your answers and anything else (real dates already look set; assignment descriptions still placeholder — fine to leave?).",492.654,512.188,message,assistant,,,,claude-opus-4-8,1040,7c3cb884-883d-425e-b480-a01ae523ec16,text
+ai,Ben,I like these defaults and yes label the chapter dividers,512.188,514.188,message,user,,,,,,c3ea6675-f13a-4735-b7bd-4ea1dd5faf21,text
+ai,Claude,"Locked in: single left spine, date-aware ""You are here,"" short intro → timeline → assignments/info, with five chapter dividers. Here's the full `index.html`.
+
+```html
+<!DOCTYPE html>
+<html lang=""en"">
+<head>
+<meta charset=""UTF-8"">
+<meta name=""viewport"" content=""width=device-width, initial-scale=1.0"">
+<title>LT 2010 — Computer Skills for the Information Age</title>
+<style>
+  :root {
+    --blue: #1d4ed8;
+    --blue-dark: #1e3a8a;
+    --red: #dc2626;
+    --ink: #18181b;
+    --muted: #6b7280;
+    --line: #e5e7eb;
+    --bg: #ffffff;
+    --bg-soft: #fafafa;
+    --maxw: 900px;
+  }
+  * { box-sizing: border-box; }
+  html { scroll-behavior: smooth; }
+  body {
+    margin: 0;
+    font-family: -apple-system, BlinkMacSystemFont, ""Segoe UI"", Roboto, Helvetica, Arial, sans-serif;
+    color: var(--ink); background: var(--bg);
+    line-height: 1.65; font-size: 17px; -webkit-font-smoothing: antialiased;
+  }
+  a { color: var(--blue); text-decoration: none; }
+  a:hover { text-decoration: underline; }
+
+  /* Nav */
+  nav {
+    position: sticky; top: 0; z-index: 10;
+    background: rgba(255,255,255,0.85);
+    backdrop-filter: saturate(180%) blur(10px);
+    border-bottom: 1px solid var(--line);
+  }
+  .nav-inner {
+    max-width: var(--maxw); margin: 0 auto; padding: 14px 24px;
+    display: flex; align-items: center; justify-content: space-between;
+    flex-wrap: wrap; gap: 8px;
+  }
+  .brand { font-weight: 700; letter-spacing: -0.01em; font-size: 15px; }
+  .brand .code { color: var(--red); }
+  .nav-links { display: flex; gap: 22px; font-size: 14px; }
+  .nav-links a { color: var(--muted); }
+  .nav-links a:hover { color: var(--ink); text-decoration: none; }
+
+  /* Layout */
+  section { max-width: var(--maxw); margin: 0 auto; padding: 72px 24px; }
+  section + section { border-top: 1px solid var(--line); }
+
+  /* Section headers */
+  .head { display: flex; align-items: center; gap: 14px; margin: 0 0 32px; }
+  .head .ico {
+    flex: none; width: 40px; height: 40px; border-radius: 10px;
+    display: grid; place-items: center;
+    background: linear-gradient(135deg, #eff6ff, #fef2f2); color: var(--blue);
+  }
+  .head .ico svg { width: 22px; height: 22px; }
+  .kicker {
+    display: block; font-size: 12px; font-weight: 700; letter-spacing: 0.09em;
+    text-transform: uppercase; color: var(--red); margin-bottom: 2px;
+  }
+  .head h2 { font-size: 32px; margin: 0; font-weight: 800; letter-spacing: -0.02em; line-height: 1.15; }
+
+  /* Hero */
+  .hero-wrap { border-bottom: 1px solid var(--line); overflow: hidden; position: relative; }
+  .hero { max-width: var(--maxw); margin: 0 auto; padding: 96px 24px 84px; position: relative; z-index: 1; }
+  .hero-art {
+    position: absolute; top: 0; right: 0; height: 100%; width: 46%;
+    opacity: 0.9; pointer-events: none; z-index: 0;
+    -webkit-mask-image: linear-gradient(90deg, transparent, #000 40%);
+            mask-image: linear-gradient(90deg, transparent, #000 40%);
+  }
+  .hero-art svg { height: 100%; width: 100%; }
+  .eyebrow {
+    display: inline-block; font-size: 13px; font-weight: 600; color: var(--red);
+    letter-spacing: 0.06em; text-transform: uppercase; margin-bottom: 18px;
+  }
+  .hero h1 { font-size: 56px; margin: 0 0 22px; font-weight: 800; letter-spacing: -0.03em; line-height: 1.05; max-width: 620px; }
+  .hero p.lede { font-size: 21px; color: var(--muted); max-width: 560px; margin: 0; }
+  .accent-bar { width: 72px; height: 5px; margin-top: 30px; background: linear-gradient(90deg, var(--blue), var(--red)); border-radius: 3px; }
+
+  /* Prose + goals */
+  .prose { max-width: 680px; }
+  .prose p { margin: 0 0 18px; }
+  .prose p:last-child { margin-bottom: 0; }
+  .goals { list-style: none; padding: 0; margin: 0; display: grid; gap: 4px; }
+  .goals li { padding: 18px 0; border-bottom: 1px solid var(--line); display: flex; gap: 18px; align-items: baseline; }
+  .goals li:last-child { border-bottom: none; }
+  .goals .num { color: var(--blue); font-weight: 800; font-size: 20px; font-variant-numeric: tabular-nums; min-width: 30px; }
+
+  /* ===== JOURNEY / TIMELINE ===== */
+  .journey { position: relative; margin-top: 8px; }
+  .journey::before {
+    content: """"; position: absolute; left: 19px; top: 14px; bottom: 18px;
+    width: 2px; background: var(--line);
+  }
+
+  /* Chapter dividers */
+  .chapter { position: relative; padding-left: 56px; margin: 40px 0 22px; }
+  .chapter:first-child { margin-top: 0; }
+  .chap-node {
+    position: absolute; left: 9px; top: 4px; width: 22px; height: 22px; border-radius: 50%;
+    background: linear-gradient(135deg, var(--blue), var(--red)); box-shadow: 0 0 0 4px var(--bg);
+  }
+  .chap-kicker { display: block; font-size: 12px; font-weight: 700; letter-spacing: 0.09em; text-transform: uppercase; color: var(--red); }
+  .chap-title { font-size: 22px; font-weight: 800; letter-spacing: -0.02em; line-height: 1.2; }
+
+  /* Stations */
+  .station { position: relative; padding: 0 0 30px 56px; }
+  .station:last-child { padding-bottom: 0; }
+  .node {
+    position: absolute; left: 12px; top: 5px; width: 16px; height: 16px; border-radius: 50%;
+    background: var(--bg); border: 2px solid var(--blue); box-shadow: 0 0 0 4px var(--bg); box-sizing: border-box;
+  }
+  .st-date { font-size: 13px; font-weight: 600; color: var(--muted); font-variant-numeric: tabular-nums; }
+  .st-title { font-size: 19px; font-weight: 700; margin: 2px 0 8px; letter-spacing: -0.01em; }
+  .st-tags { display: flex; flex-wrap: wrap; gap: 4px; }
+  .star { color: var(--red); font-weight: 700; }
+
+  .tag { display: inline-block; font-size: 12px; font-weight: 600; padding: 2px 9px; border-radius: 999px; white-space: nowrap; }
+  .tag.disc { background: #eff6ff; color: var(--blue-dark); }
+  .tag.assign { background: #fef2f2; color: var(--red); }
+  .tag.extra { background: #f4f4f5; color: var(--muted); }
+
+  /* Date-aware states */
+  .station.past { opacity: 0.5; }
+  .station.past .node { background: var(--line); border-color: var(--line); }
+  .station.future .node { background: var(--bg); border-color: var(--blue); }
+  .station.current .node {
+    background: var(--red); border-color: var(--red);
+    box-shadow: 0 0 0 4px var(--bg), 0 0 0 7px rgba(220,38,38,0.25);
+  }
+  .here-badge {
+    display: inline-block; vertical-align: middle; margin-left: 10px;
+    font-size: 11px; font-weight: 700; letter-spacing: 0.05em; text-transform: uppercase;
+    color: #fff; background: var(--red); padding: 3px 9px; border-radius: 999px;
+  }
+  @media (prefers-reduced-motion: no-preference) {
+    .station.current .node { animation: pulse 2.2s ease-in-out infinite; }
+    @keyframes pulse {
+      0%, 100% { box-shadow: 0 0 0 4px var(--bg), 0 0 0 7px rgba(220,38,38,0.28); }
+      50%      { box-shadow: 0 0 0 4px var(--bg), 0 0 0 10px rgba(220,38,38,0.10); }
+    }
+  }
+
+  /* Break marker */
+  .brk { position: relative; padding-left: 56px; margin: 6px 0 24px; }
+  .brk .node { background: var(--bg-soft); border: 2px dashed var(--muted); }
+  .brk span { font-size: 14px; font-style: italic; color: var(--muted); }
+
+  /* Assignments */
+  .cards { display: grid; gap: 16px; grid-template-columns: repeat(3, 1fr); }
+  .card { border: 1px solid var(--line); border-radius: 12px; padding: 22px; border-top: 3px solid var(--red); }
+  .card h3 { margin: 0 0 6px; font-size: 18px; }
+  .card .due { font-size: 13px; color: var(--muted); font-weight: 600; }
+  .card p { margin: 10px 0 0; font-size: 14px; color: var(--muted); }
+
+  /* Info */
+  .info-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 32px; }
+  .info-grid dt { font-size: 12px; text-transform: uppercase; letter-spacing: 0.06em; color: var(--muted); }
+  .info-grid dd { margin: 4px 0 20px; }
+
+  footer { max-width: var(--maxw); margin: 0 auto; padding: 40px 24px 64px; border-top: 1px solid var(--line); color: var(--muted); font-size: 14px; }
+
+  @media (max-width: 720px) {
+    .hero h1 { font-size: 40px; }
+    .hero p.lede { font-size: 18px; }
+    .hero-art { display: none; }
+    .head h2 { font-size: 26px; }
+    .chap-title { font-size: 20px; }
+    section { padding: 56px 20px; }
+    .cards { grid-template-columns: 1fr; }
+    .info-grid { grid-template-columns: 1fr; gap: 0; }
+    .nav-links { display: none; }
+  }
+</style>
+</head>
+<body>
+
+<nav>
+  <div class=""nav-inner"">
+    <div class=""brand""><span class=""code"">LT 2010</span> · Computer Skills for the Information Age</div>
+    <div class=""nav-links"">
+      <a href=""#overview"">Overview</a>
+      <a href=""#goals"">Goals</a>
+      <a href=""#journey"">The Journey</a>
+      <a href=""#assignments"">Assignments</a>
+      <a href=""#info"">Info</a>
+    </div>
+  </div>
+</nav>
+
+<div class=""hero-wrap"">
+  <div class=""hero-art"" aria-hidden=""true"">
+    <svg viewBox=""0 0 400 500"" fill=""none"" xmlns=""http://www.w3.org/2000/svg"">
+      <g stroke=""#1d4ed8"" stroke-width=""1.2"" opacity=""0.5"">
+        <line x1=""120"" y1=""90"" x2=""250"" y2=""140""/><line x1=""250"" y1=""140"" x2=""340"" y2=""90""/>
+        <line x1=""250"" y1=""140"" x2=""300"" y2=""250""/><line x1=""120"" y1=""90"" x2=""150"" y2=""220""/>
+        <line x1=""150"" y1=""220"" x2=""300"" y2=""250""/><line x1=""150"" y1=""220"" x2=""220"" y2=""330""/>
+        <line x1=""300"" y1=""250"" x2=""360"" y2=""360""/><line x1=""220"" y1=""330"" x2=""360"" y2=""360""/>
+        <line x1=""220"" y1=""330"" x2=""270"" y2=""430""/><line x1=""360"" y1=""360"" x2=""270"" y2=""430""/>
+      </g>
+      <g>
+        <circle cx=""120"" cy=""90"" r=""6"" fill=""#1d4ed8""/><circle cx=""250"" cy=""140"" r=""9"" fill=""#dc2626""/>
+        <circle cx=""340"" cy=""90"" r=""5"" fill=""#1d4ed8""/><circle cx=""150"" cy=""220"" r=""7"" fill=""#1d4ed8""/>
+        <circle cx=""300"" cy=""250"" r=""10"" fill=""#dc2626""/><circle cx=""220"" cy=""330"" r=""6"" fill=""#1d4ed8""/>
+        <circle cx=""360"" cy=""360"" r=""7"" fill=""#1d4ed8""/><circle cx=""270"" cy=""430"" r=""8"" fill=""#dc2626""/>
+      </g>
+    </svg>
+  </div>
+  <header class=""hero"">
+    <span class=""eyebrow"">Department of Learning Sciences <!-- EDIT: dept/university --></span>
+    <h1>Computer Skills for the Information Age</h1>
+    <p class=""lede"">A semester-long journey to becoming a thoughtful, capable, and ethical participant in a digital and AI-saturated world.</p>
+    <div class=""accent-bar""></div>
+  </header>
+</div>
+
+<section id=""overview"">
+  <div class=""head"">
+    <span class=""ico""><svg viewBox=""0 0 24 24"" fill=""none"" stroke=""currentColor"" stroke-width=""2"" stroke-linecap=""round"" stroke-linejoin=""round""><path d=""M2 3h20v14H2z""/><path d=""M8 21h8M12 17v4""/></svg></span>
+    <div><span class=""kicker"">About the course</span><h2>Overview</h2></div>
+  </div>
+  <div class=""prose"">
+    <p>Computing, technology, and artificial intelligence now shape how we learn, work, communicate, and make decisions. This course helps you become a thoughtful, capable, and ethical participant in a digital and AI-saturated world.</p>
+    <p>Over the semester we cover a range of topics: how to use computing as a tool to work and create with data; how to learn effectively (with and without AI); how to find and judge digital information; how to reason about the ethics of technology; and how to build a professional digital presence for your career.</p>
+    <p>This course is designed for students from a variety of backgrounds. <strong>No prerequisites are required.</strong></p>
+  </div>
+</section>
+
+<section id=""goals"">
+  <div class=""head"">
+    <span class=""ico""><svg viewBox=""0 0 24 24"" fill=""none"" stroke=""currentColor"" stroke-width=""2"" stroke-linecap=""round"" stroke-linejoin=""round""><circle cx=""12"" cy=""12"" r=""9""/><circle cx=""12"" cy=""12"" r=""5""/><circle cx=""12"" cy=""12"" r=""1""/></svg></span>
+    <div><span class=""kicker"">Learning goals</span><h2>What you'll learn</h2></div>
+  </div>
+  <ul class=""goals"">
+    <li><span class=""num"">01</span><span>Use computing as a tool to work and create with data.</span></li>
+    <li><span class=""num"">02</span><span>Learn effectively — with and without AI.</span></li>
+    <li><span class=""num"">03</span><span>Find, evaluate, and judge digital information.</span></li>
+    <li><span class=""num"">04</span><span>Reason about the ethics, privacy, and power dynamics of technology.</span></li>
+    <li><span class=""num"">05</span><span>Create a professional digital presence for your career.</span></li>
+  </ul>
+</section>
+
+<section id=""journey"">
+  <div class=""head"">
+    <span class=""ico""><svg viewBox=""0 0 24 24"" fill=""none"" stroke=""currentColor"" stroke-width=""2"" stroke-linecap=""round"" stroke-linejoin=""round""><path d=""M4 20h16M4 20V8M4 20l6-6 4 4 6-8""/></svg></span>
+    <div><span class=""kicker"">Week by week</span><h2>The Journey</h2></div>
+  </div>
+
+  <div class=""journey"">
+
+    <!-- PART I -->
+    <div class=""chapter"">
+      <span class=""chap-node""></span>
+      <span class=""chap-kicker"">Part I</span>
+      <span class=""chap-title"">Learning How to Learn</span>
+    </div>
+    <div class=""station"" data-date=""2026-01-17"">
+      <span class=""node""></span>
+      <div class=""st-date"">Jan 17</div>
+      <div class=""st-title"">Learning in a Digital &amp; AI Age</div>
+      <div class=""st-tags""><span class=""tag disc"">Week 1 Discussion</span><span class=""tag extra"">AI/digital tool survey</span></div>
+    </div>
+    <div class=""station"" data-date=""2026-01-24"">
+      <span class=""node""></span>
+      <div class=""st-date"">Jan 24</div>
+      <div class=""st-title"">Learning How to Learn</div>
+      <div class=""st-tags""><span class=""tag disc"">Week 2 Discussion</span></div>
+    </div>
+    <div class=""station"" data-date=""2026-01-31"">
+      <span class=""node""></span>
+      <div class=""st-date"">Jan 31</div>
+      <div class=""st-title"">Digital Communication &amp; Collaboration</div>
+      <div class=""st-tags""><span class=""tag disc"">Week 3 Discussion</span></div>
+    </div>
+
+    <!-- PART II -->
+    <div class=""chapter"">
+      <span class=""chap-node""></span>
+      <span class=""chap-kicker"">Part II</span>
+      <span class=""chap-title"">Information &amp; AI Literacy</span>
+    </div>
+    <div class=""station"" data-date=""2026-02-07"">
+      <span class=""node""></span>
+      <div class=""st-date"">Feb 7</div>
+      <div class=""st-title"">Information Literacy</div>
+      <div class=""st-tags""><span class=""tag disc"">Week 4 Discussion</span><span class=""tag assign"">Assignment 1</span></div>
+    </div>
+    <div class=""station"" data-date=""2026-02-14"">
+      <span class=""node""></span>
+      <div class=""st-date"">Feb 14</div>
+      <div class=""st-title"">AI Literacy</div>
+      <div class=""st-tags""><span class=""tag disc"">Week 5 Discussion</span></div>
+    </div>
+
+    <!-- PART III -->
+    <div class=""chapter"">
+      <span class=""chap-node""></span>
+      <span class=""chap-kicker"">Part III</span>
+      <span class=""chap-title"">Ethics &amp; Design</span>
+    </div>
+    <div class=""station"" data-date=""2026-02-21"">
+      <span class=""node""></span>
+      <div class=""st-date"">Feb 21</div>
+      <div class=""st-title"">Ethics, Privacy &amp; Power in an AI Age</div>
+      <div class=""st-tags""><span class=""tag disc"">Week 6 Discussion</span></div>
+    </div>
+    <div class=""station"" data-date=""2026-02-28"">
+      <span class=""node""></span>
+      <div class=""st-date"">Feb 28</div>
+      <div class=""st-title"">Human-Centered Design</div>
+      <div class=""st-tags""><span class=""tag disc"">Week 7 Discussion</span></div>
+    </div>
+
+    <!-- PART IV -->
+    <div class=""chapter"">
+      <span class=""chap-node""></span>
+      <span class=""chap-kicker"">Part IV</span>
+      <span class=""chap-title"">Identity &amp; Data</span>
+    </div>
+    <div class=""station"" data-date=""2026-03-07"">
+      <span class=""node""></span>
+      <div class=""st-date"">Mar 7</div>
+      <div class=""st-title"">Professional Identity &amp; Self-Presentation</div>
+      <div class=""st-tags""><span class=""tag disc"">Week 8 Discussion</span><span class=""tag assign"">Assignment 2</span></div>
+    </div>
+    <div class=""station"" data-date=""2026-03-14"">
+      <span class=""node""></span>
+      <div class=""st-date"">Mar 14</div>
+      <div class=""st-title"">Working with Data</div>
+      <div class=""st-tags""><span class=""tag disc"">Week 9 Discussion</span></div>
+    </div>
+    <div class=""brk"">
+      <span class=""node""></span>
+      <span>Fall / Spring Break</span>
+    </div>
+
+    <!-- PART V -->
+    <div class=""chapter"">
+      <span class=""chap-node""></span>
+      <span class=""chap-kicker"">Part V</span>
+      <span class=""chap-title"">Making with Data &amp; Code</span>
+    </div>
+    <div class=""station"" data-date=""2026-04-04"">
+      <span class=""node""></span>
+      <div class=""st-date"">Apr 4</div>
+      <div class=""st-title"">Data Storytelling &amp; Visualization <span class=""star"" title=""Two weeks to complete"">**</span></div>
+      <div class=""st-tags""><span class=""tag disc"">Week 10 Discussion</span></div>
+    </div>
+    <div class=""station"" data-date=""2026-04-19"">
+      <span class=""node""></span>
+      <div class=""st-date"">Apr 19</div>
+      <div class=""st-title"">Coding &amp; Computational Thinking <span class=""star"" title=""Two weeks to complete"">**</span></div>
+      <div class=""st-tags""><span class=""tag disc"">Week 11 Discussion</span></div>
+    </div>
+    <div class=""station"" data-date=""2026-04-26"">
+      <span class=""node""></span>
+      <div class=""st-date"">Apr 26</div>
+      <div class=""st-title"">Final Assignment</div>
+      <div class=""st-tags""><span class=""tag assign"">Assignment 3</span></div>
+    </div>
+
+  </div>
+
+  <p class=""note"" style=""font-size:14px;color:var(--muted);margin-top:26px;display:flex;gap:8px;align-items:baseline;"">
+    <span class=""star"">**</span><span>You have two weeks to complete this unit, giving you time to work on your final assignment. Topics and readings are subject to change — always check this schedule for the latest.</span>
+  </p>
+</section>
+
+<section id=""assignments"">
+  <div class=""head"">
+    <span class=""ico""><svg viewBox=""0 0 24 24"" fill=""none"" stroke=""currentColor"" stroke-width=""2"" stroke-linecap=""round"" stroke-linejoin=""round""><path d=""M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z""/><path d=""M14 2v6h6M9 15h6M9 11h2""/></svg></span>
+    <div><span class=""kicker"">Deliverables</span><h2>Major Assignments</h2></div>
+  </div>
+  <div class=""cards"">
+    <div class=""card"">
+      <div class=""due"">Due Feb 7</div><h3>Assignment 1</h3>
+      <p><!-- EDIT -->Information literacy in practice.</p>
+    </div>
+    <div class=""card"">
+      <div class=""due"">Due Mar 7</div><h3>Assignment 2</h3>
+      <p><!-- EDIT -->Building your professional digital identity.</p>
+    </div>
+    <div class=""card"">
+      <div class=""due"">Due Apr 26</div><h3>Assignment 3 · Final</h3>
+      <p><!-- EDIT -->A capstone project bringing the course together.</p>
+    </div>
+  </div>
+</section>
+
+<section id=""info"">
+  <div class=""head"">
+    <span class=""ico""><svg viewBox=""0 0 24 24"" fill=""none"" stroke=""currentColor"" stroke-width=""2"" stroke-linecap=""round"" stroke-linejoin=""round""><circle cx=""12"" cy=""12"" r=""9""/><path d=""M12 16v-4M12 8h.01""/></svg></span>
+    <div><span class=""kicker"">Logistics</span><h2>Course Info</h2></div>
+  </div>
+  <dl class=""info-grid"">
+    <div>
+      <dt>Instructor</dt><dd>Your Name <!-- EDIT --></dd>
+      <dt>Email</dt><dd><a href=""mailto:you@university.edu"">you@university.edu</a> <!-- EDIT --></dd>
+    </div>
+    <div>
+      <dt>Office Hours</dt><dd>Day / time / location <!-- EDIT --></dd>
+      <dt>Prerequisites</dt><dd>None</dd>
+    </div>
+  </dl>
+</section>
+
+<footer>
+  LT 2010 · Computer Skills for the Information Age — Department of Learning Sciences <!-- EDIT -->.
+  Spring 2026. Schedule subject to change.
+</footer>
+
+<script>
+  // Date-aware ""You are here"" — runs in the student's browser, so it always reflects today.
+  (function () {
+    var today = new Date(); today.setHours(0, 0, 0, 0);
+    var stations = document.querySelectorAll('.station');
+    var currentSet = false;
+    stations.forEach(function (st) {
+      var due = new Date(st.getAttribute('data-date') + 'T00:00:00');
+      if (due < today) {
+        st.classList.add('past');
+      } else if (!currentSet) {
+        st.classList.add('current');
+        currentSet = true;
+        var badge = document.createElement('span');
+        badge.className = 'here-badge';
+        badge.textContent = 'You are here';
+        st.querySelector('.st-title').appendChild(badge);
+      } else {
+        st.classList.add('future');
+      }
+    });
+  })();
+</script>
+
+</body>
+</html>
+```
+
+**How the journey works**
+- **Single spine** runs down the left; each week is a **station** (small node + date + topic + tags). Five **chapter dividers** (Parts I–V, with gradient nodes) group the arc: *Learning How to Learn → Information & AI Literacy → Ethics & Design → Identity & Data → Making with Data & Code*.
+- **Date-aware:** the script compares each station's due date to today. Past weeks dim to 50% with grey filled nodes; the **current/next week** gets a pulsing red node and a **""You are here""** badge; future weeks stay as open blue outlines. Because it runs in the visitor's browser, it's always correct — no manual updating.
+- The **break** sits as a dashed node between Parts IV and V, and the `**` two-week units keep their red markers.
+
+Two notes worth your call:
+1. I set the year to **2026** in the `data-date` attributes. If this is actually Spring 2025 or another year, tell me and I'll adjust — the ""You are here"" logic depends on it.
+2. The chapter titles (Part I–V labels) are my groupings — easy to rename if you'd phrase the arcs differently.
+
+Want me to add anything to each station — a one-line description, a readings link, or a ""view details"" expander — now that there's room beside the spine?",648.725,708.725,message,assistant,,,,claude-opus-4-8,13016,49927fd4-2055-432a-b959-04d2e75cd5c9,text
+ai,Ben,"I don't think the journey is correctly showing on the page. Can you check? It seems to just show as a list of text without any visuals animations, spines or nodes.",708.725,714.925,message,user,,,,,,a61974b0-6e87-4cab-ad78-0c7a7b94df5c,text
+ai,Claude,"The symptom — ""a list of text with no spines, nodes, or animation"" — almost always means the CSS isn't being applied at all, rather than a bug in the timeline itself. The nodes and spine are pure CSS (`<span class=""node"">` is an empty element; the line is a `::before` pseudo-element), so if styles are stripped, they vanish and you're left with just the text content in order. That matches exactly what you're seeing.
+
+Two quick questions to pinpoint it:
+
+1. **Is the *rest* of the page styled?** Do you see the big 56px hero title, the colored blue/red tag pills, and the bordered assignment cards? Or is the *whole* page plain unstyled text?
+2. **How are you viewing it?** Double-clicking the `.html` file so it opens in a browser — or looking at the file on **github.com** (which shows source), or pasted into a **README** / LMS editor?
+
+Here's what each answer means:
+
+- **Whole page is plain text** → the `<style>` block isn't loading. The usual culprits: (a) the HTML got pasted into a **README.md, GitHub file preview, or an LMS rich-text editor**, all of which strip `<style>` and `<script>` for security; (b) the file was saved as `.txt` (or `something.html.txt`) so the browser shows it as text; (c) you're viewing the **raw/source** on github.com instead of the **published Pages URL** (`https://<you>.github.io/<repo>/`).
+- **Rest is styled, only the journey is a bare list** → then it's a code issue and I'll dig in — but I don't think that's what's happening.
+
+To settle it in 10 seconds, save this **minimal test** as `test.html`, then double-click it to open in your browser. If you see a vertical line with three dots down the left, the timeline CSS works and the problem is the viewing context:
+
+```html
+<!DOCTYPE html>
+<html><head><meta charset=""utf-8""><style>
+  .journey { position: relative; margin: 40px; font-family: sans-serif; }
+  .journey::before { content:""""; position:absolute; left:19px; top:8px; bottom:8px; width:2px; background:#e5e7eb; }
+  .station { position: relative; padding: 0 0 28px 56px; }
+  .node { position:absolute; left:12px; top:5px; width:16px; height:16px; border-radius:50%;
+          background:#fff; border:2px solid #1d4ed8; box-shadow:0 0 0 4px #fff; box-sizing:border-box; }
+  .st-title { font-size:19px; font-weight:700; }
+  .st-date { font-size:13px; color:#6b7280; }
+</style></head><body>
+  <div class=""journey"">
+    <div class=""station""><span class=""node""></span><div class=""st-date"">Jan 17</div><div class=""st-title"">Week One</div></div>
+    <div class=""station""><span class=""node""></span><div class=""st-date"">Jan 24</div><div class=""st-title"">Week Two</div></div>
+    <div class=""station""><span class=""node""></span><div class=""st-date"">Jan 31</div><div class=""st-title"">Week Three</div></div>
+  </div>
+</body></html>
+```
+
+- **You see the line + dots** → the full file's code is fine; the issue is *where/how* you're opening the real one. Tell me the setup and I'll get it rendering (for GitHub, the key is opening the **Pages URL**, not the source view).
+- **You still see just three lines of text with no line or dots** → then something in your browser/environment is blocking page CSS, and I'll adapt the approach (e.g. inline styles that can't be stripped).
+
+Which is it? Once I know whether the rest of the page is styled and how you're opening the file, I can tell you the exact fix.",779.437,805.999,message,assistant,,,,claude-opus-4-8,4622,cd80b507-2dcd-4e95-ac83-4efa404e0b4c,text
+ai,Ben,Yes rest of the page is styled and I'm viewing it via vscode live preview extension. Does this in both safari and chrome,832.560,837.160,message,user,,,,,,8ac71dd7-1864-41e1-bbd8-4f73cf2f2cb5,text
+ai,Claude,"Good — that rules out a lot. If the rest of the page (hero, tags, cards) is styled and it's identical in Safari and Chrome, then it's **not** a browser quirk and **not** a general ""styles stripped"" problem. Live Preview serves the file over HTTP at full fidelity, so pseudo-elements and absolute positioning render fine.
+
+That leaves one likely explanation: **the journey-specific CSS rules aren't actually in the file being served.** Everything unique to the timeline (`.journey`, `.node`, `.station`, the `::before` spine) lives in one contiguous block in the middle of the `<style>`. If that block got dropped when pasting — or if Live Preview is serving a *different* `index.html* than the one you edited — you'd see exactly this: the journey's text content renders (it's plain HTML), but with no line, dots, or animation.
+
+Two 15-second checks to confirm:
+
+**1. Is the CSS actually in your file?**
+In VSCode, open the file and press **Cmd+F**, search for:
+```
+.journey::before
+```
+- **Not found** → that's the bug. The style block is incomplete — re-paste the whole file fresh (select all in the file, delete, paste the complete code). Say the word and I'll resend it as one clean block.
+- **Found** → go to check 2.
+
+**2. Is Live Preview serving the file you think?**
+- Are there **multiple `index.html`** files in the workspace? Live Preview serves from the workspace root, so it may be showing a different one. Check the URL/path in the preview.
+- Do a hard reload (stop and restart Live Preview) in case it cached an older version.
+
+**Definitive test:** remember the minimal `test.html` I gave you last message? **Open *that* file through the same Live Preview.**
+- **You see a vertical line with 3 dots** → Live Preview is fine, so the real file is missing the journey CSS → re-paste the full file.
+- **Still just 3 lines of plain text** → then Live Preview *is* dropping those rules somehow, and I'll rework the spine/nodes to not depend on pseudo-elements.
+
+My strong bet is check #1 comes back ""not found"" — the middle CSS block didn't make it into your paste. Want me to just resend the entire file as one clean block so you can replace it wholesale and skip the guesswork?",933.766,955.729,message,assistant,,,,claude-opus-4-8,6619,053262c2-10ff-465d-b14b-a6dacf6cd39a,text
+ai,Ben,"That test.html code you gave me works fine on it's own. I see the line and the dots. here's the complete file I have: <!DOCTYPE html>
+<html lang=""en"">
+<head>
+<meta charset=""UTF-8"">
+<meta name=""viewport"" content=""width=device-width, initial-scale=1.0"">
+<title>LT 2010 — Computer Skills for the Information Age</title>
+<style>
+  :root {
+    --blue: #1d4ed8;
+    --blue-dark: #1e3a8a;
+    --red: #dc2626;
+    --ink: #18181b;
+    --muted: #6b7280;
+    --line: #e5e7eb;
+    --bg: #ffffff;
+    --bg-soft: #fafafa;
+    --maxw: 900px;
+  }
+  * { box-sizing: border-box; }
+  html { scroll-behavior: smooth; }
+  body {
+    margin: 0;
+    font-family: -apple-system, BlinkMacSystemFont, ""Segoe UI"", Roboto, Helvetica, Arial, sans-serif;
+    color: var(--ink); background: var(--bg);
+    line-height: 1.65; font-size: 17px; -webkit-font-smoothing: antialiased;
+  }
+  a { color: var(--blue); text-decoration: none; }
+  a:hover { text-decoration: underline; }
+
+  /* Nav */
+  nav {
+    position: sticky; top: 0; z-index: 10;
+    background: rgba(255,255,255,0.85);
+    backdrop-filter: saturate(180%) blur(10px);
+    border-bottom: 1px solid var(--line);
+  }
+  .nav-inner {
+    max-width: var(--maxw); margin: 0 auto; padding: 14px 24px;
+    display: flex; align-items: center; justify-content: space-between;
+    flex-wrap: wrap; gap: 8px;
+  }
+  .brand { font-weight: 700; letter-spacing: -0.01em; font-size: 15px; }
+  .brand .code { color: var(--red); }
+  .nav-links { display: flex; gap: 22px; font-size: 14px; }
+  .nav-links a { color: var(--muted); }
+  .nav-links a:hover { color: var(--ink); text-decoration: none; }
+
+  /* Layout */
+  section { max-width: var(--maxw); margin: 0 auto; padding: 72px 24px; }
+  section + section { border-top: 1px solid var(--line); }
+
+  /* Section headers */
+  .head { display: flex; align-items: center; gap: 14px; margin: 0 0 32px; }
+  .head .ico {
+    flex: none; width: 40px; height: 40px; border-radius: 10px;
+    display: grid; place-items: center;
+    background: linear-gradient(135deg, #eff6ff, #fef2f2); color: var(--blue);
+  }
+  .head .ico svg { width: 22px; height: 22px; }
+  .kicker {
+    display: block; font-size: 12px; font-weight: 700; letter-spacing: 0.09em;
+    text-transform: uppercase; color: var(--red); margin-bottom: 2px;
+  }
+  .head h2 { font-size: 32px; margin: 0; font-weight: 800; letter-spacing: -0.02em; line-height: 1.15; }
+
+  /* Hero */
+  .hero-wrap { border-bottom: 1px solid var(--line); overflow: hidden; position: relative; }
+  .hero { max-width: var(--maxw); margin: 0 auto; padding: 96px 24px 84px; position: relative; z-index: 1; }
+  .hero-art {
+    position: absolute; top: 0; right: 0; height: 100%; width: 46%;
+    opacity: 0.9; pointer-events: none; z-index: 0;
+    -webkit-mask-image: linear-gradient(90deg, transparent, #000 40%);
+            mask-image: linear-gradient(90deg, transparent, #000 40%);
+  }
+  .hero-art svg { height: 100%; width: 100%; }
+  .eyebrow {
+    display: inline-block; font-size: 13px; font-weight: 600; color: var(--red);
+    letter-spacing: 0.06em; text-transform: uppercase; margin-bottom: 18px;
+  }
+  .hero h1 { font-size: 56px; margin: 0 0 22px; font-weight: 800; letter-spacing: -0.03em; line-height: 1.05; max-width: 620px; }
+  .hero p.lede { font-size: 21px; color: var(--muted); max-width: 560px; margin: 0; }
+  .accent-bar { width: 72px; height: 5px; margin-top: 30px; background: linear-gradient(90deg, var(--blue), var(--red)); border-radius: 3px; }
+
+  /* Prose + goals */
+  .prose { max-width: 680px; }
+  .prose p { margin: 0 0 18px; }
+  .prose p:last-child { margin-bottom: 0; }
+  .goals { list-style: none; padding: 0; margin: 0; display: grid; gap: 4px; }
+  .goals li { padding: 18px 0; border-bottom: 1px solid var(--line); display: flex; gap: 18px; align-ite
+  .goals li:last-child { border-bottom: none; }
+  .goals .num { color: var(--blue); font-weight: 800; font-size: 20px; font-variant-numeric: tabular-num
+
+  /* ===== JOURNEY / TIMELINE ===== */
+  .journey { position: relative; margin-top: 8px; }
+  .journey::before {
+    content: """"; position: absolute; left: 19px; top: 14px; bottom: 18px;
+    width: 2px; background: var(--line);
+  }
+
+  /* Chapter dividers */
+  .chapter { position: relative; padding-left: 56px; margin: 40px 0 22px; }
+  .chapter:first-child { margin-top: 0; }
+  .chap-node {
+    position: absolute; left: 9px; top: 4px; width: 22px; height: 22px; border-radius: 50%;
+    background: linear-gradient(135deg, var(--blue), var(--red)); box-shadow: 0 0 0 4px var(--bg);
+  }
+  .chap-kicker { display: block; font-size: 12px; font-weight: 700; letter-spacing: 0.09em; text-transfoed); }
+  .chap-title { font-size: 22px; font-weight: 800; letter-spacing: -0.02em; line-height: 1.2; }
+
+  /* Stations */
+  .station { position: relative; padding: 0 0 30px 56px; }
+  .station:last-child { padding-bottom: 0; }
+  .node {
+    position: absolute; left: 12px; top: 5px; width: 16px; height: 16px; border-radius: 50%;
+    background: var(--bg); border: 2px solid var(--blue); box-shadow: 0 0 0 4px var(--bg); box-sizing: b
+  }
+  .st-date { font-size: 13px; font-weight: 600; color: var(--muted); font-variant-numeric: tabular-nums;
+  .st-title { font-size: 19px; font-weight: 700; margin: 2px 0 8px; letter-spacing: -0.01em; }
+  .st-tags { display: flex; flex-wrap: wrap; gap: 4px; }
+  .star { color: var(--red); font-weight: 700; }
+
+  .tag { display: inline-block; font-size: 12px; font-weight: 600; padding: 2px 9px; border-radius: 999px; white-space: nowrap; }
+  .tag.disc { background: #eff6ff; color: var(--blue-dark); }
+  .tag.assign { background: #fef2f2; color: var(--red); }
+  .tag.extra { background: #f4f4f5; color: var(--muted); }
+
+  /* Date-aware states */
+  .station.past { opacity: 0.5; }
+  .station.past .node { background: var(--line); border-color: var(--line); }
+  .station.future .node { background: var(--bg); border-color: var(--blue); }
+  .station.current .node {
+    background: var(--red); border-color: var(--red);
+    box-shadow: 0 0 0 4px var(--bg), 0 0 0 7px rgba(220,38,38,0.25);
+  }
+  .here-badge {
+    display: inline-block; vertical-align: middle; margin-left: 10px;
+    font-size: 11px; font-weight: 700; letter-spacing: 0.05em; text-transform: uppercase;
+    color: #fff; background: var(--red); padding: 3px 9px; border-radius: 999px;
+  }
+  @media (prefers-reduced-motion: no-preference) {
+    .station.current .node { animation: pulse 2.2s ease-in-out infinite; }
+    @keyframes pulse {
+      0%, 100% { box-shadow: 0 0 0 4px var(--bg), 0 0 0 7px rgba(220,38,38,0.28); }
+      50%      { box-shadow: 0 0 0 4px var(--bg), 0 0 0 10px rgba(220,38,38,0.10); }
+    }
+  }
+
+  /* Break marker */
+  .brk { position: relative; padding-left: 56px; margin: 6px 0 24px; }
+  .brk .node { background: var(--bg-soft); border: 2px dashed var(--muted); }
+  .brk span { font-size: 14px; font-style: italic; color: var(--muted); }
+
+  /* Assignments */
+  .cards { display: grid; gap: 16px; grid-template-columns: repeat(3, 1fr); }
+  .card { border: 1px solid var(--line); border-radius: 12px; padding: 22px; border-top: 3px solid var(-
+  .card h3 { margin: 0 0 6px; font-size: 18px; }
+  .card .due { font-size: 13px; color: var(--muted); font-weight: 600; }
+  .card p { margin: 10px 0 0; font-size: 14px; color: var(--muted); }
+
+  /* Info */
+  .info-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 32px; }
+  .info-grid dt { font-size: 12px; text-transform: uppercase; letter-spacing: 0.06em; color: var(--muted); }
+  .info-grid dd { margin: 4px 0 20px; }
+
+  footer { max-width: var(--maxw); margin: 0 auto; padding: 40px 24px 64px; border-top: 1px solid var(--ont-size: 14px; }
+
+  @media (max-width: 720px) {
+    .hero h1 { font-size: 40px; }
+    .hero p.lede { font-size: 18px; }
+    .hero-art { display: none; }
+    .head h2 { font-size: 26px; }
+    .chap-title { font-size: 20px; }
+    section { padding: 56px 20px; }
+    .cards { grid-template-columns: 1fr; }
+    .info-grid { grid-template-columns: 1fr; gap: 0; }
+    .nav-links { display: none; }
+  }
+</style>
+</head>
+<body>
+
+<nav>
+  <div class=""nav-inner"">
+    <div class=""brand""><span class=""code"">LT 2010</span> · Computer Skills for the Information Age</div>
+    <div class=""nav-links"">
+      <a href=""#overview"">Overview</a>
+      <a href=""#goals"">Goals</a>
+      <a href=""#journey"">The Journey</a>
+      <a href=""#assignments"">Assignments</a>
+      <a href=""#info"">Info</a>
+    </div>
+  </div>
+</nav>
+
+<div class=""hero-wrap"">
+  <div class=""hero-art"" aria-hidden=""true"">
+    <svg viewBox=""0 0 400 500"" fill=""none"" xmlns=""http://www.w3.org/2000/svg"">
+      <g stroke=""#1d4ed8"" stroke-width=""1.2"" opacity=""0.5"">
+        <line x1=""120"" y1=""90"" x2=""250"" y2=""140""/><line x1=""250"" y1=""140"" x2=""340"" y2=""90""/>
+        <line x1=""250"" y1=""140"" x2=""300"" y2=""250""/><line x1=""120"" y1=""90"" x2=""150"" y2=""220""/>
+        <line x1=""150"" y1=""220"" x2=""300"" y2=""250""/><line x1=""150"" y1=""220"" x2=""220"" y2=""330""/>
+        <line x1=""300"" y1=""250"" x2=""360"" y2=""360""/><line x1=""220"" y1=""330"" x2=""360"" y2=""360""/>
+        <line x1=""220"" y1=""330"" x2=""270"" y2=""430""/><line x1=""360"" y1=""360"" x2=""270"" y2=""430""/>
+      </g>
+      <g>
+        <circle cx=""120"" cy=""90"" r=""6"" fill=""#1d4ed8""/><circle cx=""250"" cy=""140"" r=""9"" fill=""#dc2626""/>
+        <circle cx=""340"" cy=""90"" r=""5"" fill=""#1d4ed8""/><circle cx=""150"" cy=""220"" r=""7"" fill=""#1d4ed8""/>
+        <circle cx=""300"" cy=""250"" r=""10"" fill=""#dc2626""/><circle cx=""220"" cy=""330"" r=""6"" fill=""#1d4ed8""/>
+        <circle cx=""360"" cy=""360"" r=""7"" fill=""#1d4ed8""/><circle cx=""270"" cy=""430"" r=""8"" fill=""#dc2626""/>
+      </g>
+    </svg>
+  </div>
+  <header class=""hero"">
+    <span class=""eyebrow"">Department of Learning Sciences <!-- EDIT: dept/university --></span>
+    <h1>Computer Skills for the Information Age</h1>
+    <p class=""lede"">A semester-long journey to becoming a thoughtful, capable, and ethical participant in a digital and AI-saturated world.</p>
+    <div class=""accent-bar""></div>
+  </header>
+</div>
+
+<section id=""overview"">
+  <div class=""head"">
+    <span class=""ico""><svg viewBox=""0 0 24 24"" fill=""none"" stroke=""currentColor"" stroke-width=""2"" strokeoin=""round""><path d=""M2 3h20v14H2z""/><path d=""M8 21h8M12 17v4""/></svg></span>
+    <div><span class=""kicker"">About the course</span><h2>Overview</h2></div>
+  </div>
+  <div class=""prose"">
+    <p>Computing, technology, and artificial intelligence now shape how we learn, work, communicate, andhelps you become a thoughtful, capable, and ethical participant in a digital and AI-saturated world.</p>
+    <p>Over the semester we cover a range of topics: how to use computing as a tool to work and create with data; how to learn effectively (with and without AI); how to find and judge digital information; how to reason about the ethics of
+technology; and how to build a professional digital presence for your career.</p>
+    <p>This course is designed for students from a variety of backgrounds. <strong>No prerequisites are required.</strong></p>
+  </div>
+</section>
+
+<section id=""goals"">
+  <div class=""head"">
+    <span class=""ico""><svg viewBox=""0 0 24 24"" fill=""none"" stroke=""currentColor"" stroke-width=""2"" stroke-linecap=""round"" stroke-linejoin=""round""><circle cx=""12"" cy=""12"" r=""9""/><circle cx=""12"" cy=""12"" r=""5""/><circle cx=""12"" cy=""12""
+r=""1""/></svg></span>
+    <div><span class=""kicker"">Learning goals</span><h2>What you'll learn</h2></div>
+  </div>
+  <ul class=""goals"">
+    <li><span class=""num"">01</span><span>Use computing as a tool to work and create with data.</span></l
+    <li><span class=""num"">02</span><span>Learn effectively — with and without AI.</span></li>
+    <li><span class=""num"">03</span><span>Find, evaluate, and judge digital information.</span></li>
+    <li><span class=""num"">04</span><span>Reason about the ethics, privacy, and power dynamics of technology.</span></li>
+    <li><span class=""num"">05</span><span>Create a professional digital presence for your career.</span><
+  </ul>
+</section>
+
+<section id=""journey"">
+  <div class=""head"">
+    <span class=""ico""><svg viewBox=""0 0 24 24"" fill=""none"" stroke=""currentColor"" stroke-width=""2"" strokeoin=""round""><path d=""M4 20h16M4 20V8M4 20l6-6 4 4 6-8""/></svg></span>
+    <div><span class=""kicker"">Week by week</span><h2>The Journey</h2></div>
+  </div>
+
+  <div class=""journey"">
+
+    <!-- PART I -->
+    <div class=""chapter"">
+      <span class=""chap-node""></span>
+      <span class=""chap-kicker"">Part I</span>
+      <span class=""chap-title"">Learning How to Learn</span>
+    </div>
+    <div class=""station"" data-date=""2026-01-17"">
+      <span class=""node""></span>
+      <div class=""st-date"">Jan 17</div>
+      <div class=""st-title"">Learning in a Digital &amp; AI Age</div>
+      <div class=""st-tags""><span class=""tag disc"">Week 1 Discussion</span><span class=""tag extra"">AI/dig
+    </div>
+    <div class=""station"" data-date=""2026-01-24"">
+      <span class=""node""></span>
+      <div class=""st-date"">Jan 24</div>
+      <div class=""st-title"">Learning How to Learn</div>
+      <div class=""st-tags""><span class=""tag disc"">Week 2 Discussion</span></div>
+    </div>
+    <div class=""station"" data-date=""2026-01-31"">
+      <span class=""node""></span>
+      <div class=""st-date"">Jan 31</div>
+      <div class=""st-title"">Digital Communication &amp; Collaboration</div>
+      <div class=""st-tags""><span class=""tag disc"">Week 3 Discussion</span></div>
+    </div>
+
+    <!-- PART II -->
+    <div class=""chapter"">
+      <span class=""chap-node""></span>
+      <span class=""chap-kicker"">Part II</span>
+      <span class=""chap-title"">Information &amp; AI Literacy</span>
+    </div>
+    <div class=""station"" data-date=""2026-02-07"">
+      <span class=""node""></span>
+      <div class=""st-date"">Feb 7</div>
+      <div class=""st-title"">Information Literacy</div>
+      <div class=""st-tags""><span class=""tag disc"">Week 4 Discussion</span><span class=""tag assign"">Assignment 1</span></div>
+    </div>
+    <div class=""station"" data-date=""2026-02-14"">
+      <span class=""node""></span>
+      <div class=""st-date"">Feb 14</div>
+      <div class=""st-title"">AI Literacy</div>
+      <div class=""st-tags""><span class=""tag disc"">Week 5 Discussion</span></div>
+    </div>
+
+    <!-- PART III -->
+    <div class=""chapter"">
+      <span class=""chap-node""></span>
+      <span class=""chap-kicker"">Part III</span>
+      <span class=""chap-title"">Ethics &amp; Design</span>
+    </div>
+    <div class=""station"" data-date=""2026-02-21"">
+      <span class=""node""></span>
+      <div class=""st-date"">Feb 21</div>
+      <div class=""st-title"">Ethics, Privacy &amp; Power in an AI Age</div>
+      <div class=""st-tags""><span class=""tag disc"">Week 6 Discussion</span></div>
+    </div>
+    <div class=""station"" data-date=""2026-02-28"">
+      <span class=""node""></span>
+      <div class=""st-date"">Feb 28</div>
+      <div class=""st-title"">Human-Centered Design</div>
+      <div class=""st-tags""><span class=""tag disc"">Week 7 Discussion</span></div>
+    </div>
+
+    <!-- PART IV -->
+    <div class=""chapter"">
+      <span class=""chap-node""></span>
+      <span class=""chap-kicker"">Part IV</span>
+      <span class=""chap-title"">Identity &amp; Data</span>
+    </div>
+    <div class=""station"" data-date=""2026-03-07"">
+      <span class=""node""></span>
+      <div class=""st-date"">Mar 7</div>
+      <div class=""st-title"">Professional Identity &amp; Self-Presentation</div>
+      <div class=""st-tags""><span class=""tag disc"">Week 8 Discussion</span><span class=""tag assign"">Assignment 2</span></div>
+    </div>
+    <div class=""station"" data-date=""2026-03-14"">
+      <span class=""node""></span>
+      <div class=""st-date"">Mar 14</div>
+      <div class=""st-title"">Working with Data</div>
+      <div class=""st-tags""><span class=""tag disc"">Week 9 Discussion</span></div>
+    </div>
+    <div class=""brk"">
+      <span class=""node""></span>
+      <span>Fall / Spring Break</span>
+    </div>
+
+    <!-- PART V -->
+    <div class=""chapter"">
+      <span class=""chap-node""></span>
+      <span class=""chap-kicker"">Part V</span>
+      <span class=""chap-title"">Making with Data &amp; Code</span>
+    </div>
+    <div class=""station"" data-date=""2026-04-04"">
+      <span class=""node""></span>
+      <div class=""st-date"">Apr 4</div>
+      <div class=""st-title"">Data Storytelling &amp; Visualization <span class=""star"" title=""Two weeks to complete"">**</span></div>
+      <div class=""st-tags""><span class=""tag disc"">Week 10 Discussion</span></div>
+    </div>
+    <div class=""station"" data-date=""2026-04-19"">
+      <span class=""node""></span>
+      <div class=""st-date"">Apr 19</div>
+      <div class=""st-title"">Coding &amp; Computational Thinking <span class=""star"" title=""Two weeks to complete"">**</span></div>
+      <div class=""st-tags""><span class=""tag disc"">Week 11 Discussion</span></div>
+    </div>
+    <div class=""station"" data-date=""2026-04-26"">
+      <span class=""node""></span>
+      <div class=""st-date"">Apr 26</div>
+      <div class=""st-title"">Final Assignment</div>
+      <div class=""st-tags""><span class=""tag assign"">Assignment 3</span></div>
+    </div>
+
+  </div>
+
+  <p class=""note"" style=""font-size:14px;color:var(--muted);margin-top:26px;display:flex;gap:8px;align-items:baseline;"">
+    <span class=""star"">**</span><span>You have two weeks to complete this unit, giving you time to work ics and readings are subject to change — always check this schedule for the latest.</span>
+  </p>
+</section>
+
+<section id=""assignments"">
+  <div class=""head"">
+    <span class=""ico""><svg viewBox=""0 0 24 24"" fill=""none"" stroke=""currentColor"" stroke-width=""2"" strokeoin=""round""><path d=""M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z""/><path d=""M14 2v6h6M915h6M9 11h2""/></svg></span>
+    <div><span class=""kicker"">Deliverables</span><h2>Major Assignments</h2></div>
+  </div>
+  <div class=""cards"">
+    <div class=""card"">
+      <div class=""due"">Due Feb 7</div><h3>Assignment 1</h3>
+      <p><!-- EDIT -->Information literacy in practice.</p>
+    </div>
+    <div class=""card"">
+      <div class=""due"">Due Mar 7</div><h3>Assignment 2</h3>
+      <p><!-- EDIT -->Building your professional digital identity.</p>
+    </div>
+    <div class=""card"">
+      <div class=""due"">Due Apr 26</div><h3>Assignment 3 · Final</h3>
+      <p><!-- EDIT -->A capstone project bringing the course together.</p>
+    </div>
+  </div>
+</section>
+
+<section id=""info"">
+  <div class=""head"">
+    <span class=""ico""><svg viewBox=""0 0 24 24"" fill=""none"" stroke=""currentColor"" stroke-width=""2"" strokeoin=""round""><circle cx=""12"" cy=""12"" r=""9""/><path d=""M12 16v-4M12 8h.01""/></svg></span>
+    <div><span class=""kicker"">Logistics</span><h2>Course Info</h2></div>
+  </div>
+  <dl class=""info-grid"">
+    <div>
+      <dt>Instructor</dt><dd>Your Name <!-- EDIT --></dd>
+      <dt>Email</dt><dd><a href=""mailto:you@university.edu"">you@university.edu</a> <!-- EDIT --></dd>
+    </div>
+    <div>
+      <dt>Office Hours</dt><dd>Day / time / location <!-- EDIT --></dd>
+      <dt>Prerequisites</dt><dd>None</dd>
+    </div>
+  </dl>
+</section>
+
+<footer>
+  LT 2010 · Computer Skills for the Information Age — Department of Learning Sciences <!-- EDIT -->.
+  Spring 2026. Schedule subject to change.
+</footer>
+
+<script>
+  // Date-aware ""You are here"" — runs in the student's browser, so it always reflects today.
+  (function () {
+    var today = new Date(); today.setHours(0, 0, 0, 0);
+    var stations = document.querySelectorAll('.station');
+    var currentSet = false;
+    stations.forEach(function (st) {
+      var due = new Date(st.getAttribute('data-date') + 'T00:00:00');
+      if (due < today) {
+        st.classList.add('past');
+      } else if (!currentSet) {
+        st.classList.add('current');
+        currentSet = true;
+        var badge = document.createElement('span');
+        badge.className = 'here-badge';
+        badge.textContent = 'You are here';
+        st.querySelector('.st-title').appendChild(badge);
+      } else {
+        st.classList.add('future');
+      }
+    });
+  })();
+</script>
+
+</body>
+</html>",977.692,1019.288,message,user,,,,,,f6f86e43-3004-46cb-ac1d-3cbc18172f8a,text
+ai,Claude,"Found it — and it's not a design bug, it's **data corruption in the file**. Copying a large code block out of the terminal truncated many of the long lines. Look at these from the file you pasted:
+
+```
+.goals li { … gap: 18px; align-ite          ← cut off (missing ""align-items: baseline; }"")
+.node { … box-shadow: 0 0 0 4px var(--bg); box-sizing: b   ← cut off (""border-box;"")
+.chap-kicker { … text-transfoed); }          ← garbled
+.card { … border-top: 3px solid var(-        ← cut off
+footer { … border-top: 1px solid var(--ont-size: 14px; }   ← garbled
+```
+
+And it hit the text too — your Overview reads *""…how we learn, work, communicate, and**helps you become**…""* with a whole clause missing.
+
+**Why this breaks the timeline specifically:** those truncations leave CSS rules unterminated (no closing `}`). When the browser hits a broken rule like `.node { … box-sizing: b` with no proper close, it mis-parses that rule *and can swallow the ones after it* during error recovery. The coarse styles (hero, cards) mostly survive because their rules happen to land on the safe side of the breaks, but `.node`, `.station`, and the spine get eaten — so the journey collapses to plain text. That `test.html` worked because its lines were all short enough to survive the copy.
+
+So the code is fine; the transfer mangled it. The catch: any time I hand you a ~300-line file to copy out of the terminal, the long lines are liable to truncate again. Two reliable ways forward:
+
+**Option A — let me write the file to disk directly** (via the Write tool). This is bulletproof: no copy-paste, exact bytes, done in one step. You asked me to use no tools, which is why I've stayed in chat — but that rule is now the thing blocking clean delivery. If you're OK lifting it *just for writing this one file*, say so and I'll drop a correct `index.html` straight into your project.
+
+**Option B — I re-send in a copy-safe format**, staying chat-only: I reformat so **every line is short** (one CSS property per line, nothing past ~70 characters), which removes the long-line truncation entirely. Optionally split into `index.html` + `styles.css` so each file is smaller. More lines to copy, but none can get chopped.
+
+I'd recommend **A** — it eliminates the failure mode completely. Which do you want? (If A, I'll write it; if B, tell me whether you want one file or the HTML/CSS split.)",1060.885,1073.639,message,assistant,,,,claude-opus-4-8,5475,db1e2eec-c8a0-4670-9281-98d77a4e6a4e,text
+ai,Ben,stay chat only so resend in copy safe format,1073.639,1075.439,message,user,,,,,,b5990846-2d2b-4ad1-b7e0-ec9e4a94a194,text
+ai,Claude,"Here's the whole file reformatted to be **copy-safe**: one CSS property per line, all inline SVGs broken across lines, and no line longer than ~70 characters — so nothing can get truncated on copy out of the terminal. It's the same design, just formatted differently. Save it as `index.html`.
+
+```html
+<!DOCTYPE html>
+<html lang=""en"">
+<head>
+<meta charset=""UTF-8"">
+<meta name=""viewport"" content=""width=device-width, initial-scale=1.0"">
+<title>LT 2010 — Computer Skills for the Information Age</title>
+<style>
+  :root {
+    --blue: #1d4ed8;
+    --blue-dark: #1e3a8a;
+    --red: #dc2626;
+    --ink: #18181b;
+    --muted: #6b7280;
+    --line: #e5e7eb;
+    --bg: #ffffff;
+    --bg-soft: #fafafa;
+    --maxw: 900px;
+  }
+
+  * {
+    box-sizing: border-box;
+  }
+
+  html {
+    scroll-behavior: smooth;
+  }
+
+  body {
+    margin: 0;
+    font-family:
+      -apple-system, BlinkMacSystemFont, ""Segoe UI"",
+      Roboto, Helvetica, Arial, sans-serif;
+    color: var(--ink);
+    background: var(--bg);
+    line-height: 1.65;
+    font-size: 17px;
+    -webkit-font-smoothing: antialiased;
+  }
+
+  a {
+    color: var(--blue);
+    text-decoration: none;
+  }
+  a:hover {
+    text-decoration: underline;
+  }
+
+  /* Nav */
+  nav {
+    position: sticky;
+    top: 0;
+    z-index: 10;
+    background: rgba(255, 255, 255, 0.85);
+    backdrop-filter: saturate(180%) blur(10px);
+    border-bottom: 1px solid var(--line);
+  }
+  .nav-inner {
+    max-width: var(--maxw);
+    margin: 0 auto;
+    padding: 14px 24px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    flex-wrap: wrap;
+    gap: 8px;
+  }
+  .brand {
+    font-weight: 700;
+    letter-spacing: -0.01em;
+    font-size: 15px;
+  }
+  .brand .code {
+    color: var(--red);
+  }
+  .nav-links {
+    display: flex;
+    gap: 22px;
+    font-size: 14px;
+  }
+  .nav-links a {
+    color: var(--muted);
+  }
+  .nav-links a:hover {
+    color: var(--ink);
+    text-decoration: none;
+  }
+
+  /* Layout */
+  section {
+    max-width: var(--maxw);
+    margin: 0 auto;
+    padding: 72px 24px;
+  }
+  section + section {
+    border-top: 1px solid var(--line);
+  }
+
+  /* Section headers */
+  .head {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    margin: 0 0 32px;
+  }
+  .head .ico {
+    flex: none;
+    width: 40px;
+    height: 40px;
+    border-radius: 10px;
+    display: grid;
+    place-items: center;
+    background: linear-gradient(135deg, #eff6ff, #fef2f2);
+    color: var(--blue);
+  }
+  .head .ico svg {
+    width: 22px;
+    height: 22px;
+  }
+  .kicker {
+    display: block;
+    font-size: 12px;
+    font-weight: 700;
+    letter-spacing: 0.09em;
+    text-transform: uppercase;
+    color: var(--red);
+    margin-bottom: 2px;
+  }
+  .head h2 {
+    font-size: 32px;
+    margin: 0;
+    font-weight: 800;
+    letter-spacing: -0.02em;
+    line-height: 1.15;
+  }
+
+  /* Hero */
+  .hero-wrap {
+    border-bottom: 1px solid var(--line);
+    overflow: hidden;
+    position: relative;
+  }
+  .hero {
+    max-width: var(--maxw);
+    margin: 0 auto;
+    padding: 96px 24px 84px;
+    position: relative;
+    z-index: 1;
+  }
+  .hero-art {
+    position: absolute;
+    top: 0;
+    right: 0;
+    height: 100%;
+    width: 46%;
+    opacity: 0.9;
+    pointer-events: none;
+    z-index: 0;
+    -webkit-mask-image:
+      linear-gradient(90deg, transparent, #000 40%);
+    mask-image:
+      linear-gradient(90deg, transparent, #000 40%);
+  }
+  .hero-art svg {
+    height: 100%;
+    width: 100%;
+  }
+  .eyebrow {
+    display: inline-block;
+    font-size: 13px;
+    font-weight: 600;
+    color: var(--red);
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    margin-bottom: 18px;
+  }
+  .hero h1 {
+    font-size: 56px;
+    margin: 0 0 22px;
+    font-weight: 800;
+    letter-spacing: -0.03em;
+    line-height: 1.05;
+    max-width: 620px;
+  }
+  .hero p.lede {
+    font-size: 21px;
+    color: var(--muted);
+    max-width: 560px;
+    margin: 0;
+  }
+  .accent-bar {
+    width: 72px;
+    height: 5px;
+    margin-top: 30px;
+    background: linear-gradient(90deg, var(--blue), var(--red));
+    border-radius: 3px;
+  }
+
+  /* Prose + goals */
+  .prose {
+    max-width: 680px;
+  }
+  .prose p {
+    margin: 0 0 18px;
+  }
+  .prose p:last-child {
+    margin-bottom: 0;
+  }
+  .goals {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+    display: grid;
+    gap: 4px;
+  }
+  .goals li {
+    padding: 18px 0;
+    border-bottom: 1px solid var(--line);
+    display: flex;
+    gap: 18px;
+    align-items: baseline;
+  }
+  .goals li:last-child {
+    border-bottom: none;
+  }
+  .goals .num {
+    color: var(--blue);
+    font-weight: 800;
+    font-size: 20px;
+    font-variant-numeric: tabular-nums;
+    min-width: 30px;
+  }
+
+  /* ===== JOURNEY / TIMELINE ===== */
+  .journey {
+    position: relative;
+    margin-top: 8px;
+  }
+  .journey::before {
+    content: """";
+    position: absolute;
+    left: 19px;
+    top: 14px;
+    bottom: 18px;
+    width: 2px;
+    background: var(--line);
+  }
+
+  /* Chapter dividers */
+  .chapter {
+    position: relative;
+    padding-left: 56px;
+    margin: 40px 0 22px;
+  }
+  .chapter:first-child {
+    margin-top: 0;
+  }
+  .chap-node {
+    position: absolute;
+    left: 9px;
+    top: 4px;
+    width: 22px;
+    height: 22px;
+    border-radius: 50%;
+    background: linear-gradient(135deg, var(--blue), var(--red));
+    box-shadow: 0 0 0 4px var(--bg);
+  }
+  .chap-kicker {
+    display: block;
+    font-size: 12px;
+    font-weight: 700;
+    letter-spacing: 0.09em;
+    text-transform: uppercase;
+    color: var(--red);
+  }
+  .chap-title {
+    font-size: 22px;
+    font-weight: 800;
+    letter-spacing: -0.02em;
+    line-height: 1.2;
+  }
+
+  /* Stations */
+  .station {
+    position: relative;
+    padding: 0 0 30px 56px;
+  }
+  .station:last-child {
+    padding-bottom: 0;
+  }
+  .node {
+    position: absolute;
+    left: 12px;
+    top: 5px;
+    width: 16px;
+    height: 16px;
+    border-radius: 50%;
+    background: var(--bg);
+    border: 2px solid var(--blue);
+    box-shadow: 0 0 0 4px var(--bg);
+    box-sizing: border-box;
+  }
+  .st-date {
+    font-size: 13px;
+    font-weight: 600;
+    color: var(--muted);
+    font-variant-numeric: tabular-nums;
+  }
+  .st-title {
+    font-size: 19px;
+    font-weight: 700;
+    margin: 2px 0 8px;
+    letter-spacing: -0.01em;
+  }
+  .st-tags {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 4px;
+  }
+  .star {
+    color: var(--red);
+    font-weight: 700;
+  }
+
+  .tag {
+    display: inline-block;
+    font-size: 12px;
+    font-weight: 600;
+    padding: 2px 9px;
+    border-radius: 999px;
+    white-space: nowrap;
+  }
+  .tag.disc {
+    background: #eff6ff;
+    color: var(--blue-dark);
+  }
+  .tag.assign {
+    background: #fef2f2;
+    color: var(--red);
+  }
+  .tag.extra {
+    background: #f4f4f5;
+    color: var(--muted);
+  }
+
+  /* Date-aware states */
+  .station.past {
+    opacity: 0.5;
+  }
+  .station.past .node {
+    background: var(--line);
+    border-color: var(--line);
+  }
+  .station.future .node {
+    background: var(--bg);
+    border-color: var(--blue);
+  }
+  .station.current .node {
+    background: var(--red);
+    border-color: var(--red);
+    box-shadow:
+      0 0 0 4px var(--bg),
+      0 0 0 7px rgba(220, 38, 38, 0.25);
+  }
+  .here-badge {
+    display: inline-block;
+    vertical-align: middle;
+    margin-left: 10px;
+    font-size: 11px;
+    font-weight: 700;
+    letter-spacing: 0.05em;
+    text-transform: uppercase;
+    color: #fff;
+    background: var(--red);
+    padding: 3px 9px;
+    border-radius: 999px;
+  }
+
+  @media (prefers-reduced-motion: no-preference) {
+    .station.current .node {
+      animation: pulse 2.2s ease-in-out infinite;
+    }
+    @keyframes pulse {
+      0%, 100% {
+        box-shadow:
+          0 0 0 4px var(--bg),
+          0 0 0 7px rgba(220, 38, 38, 0.28);
+      }
+      50% {
+        box-shadow:
+          0 0 0 4px var(--bg),
+          0 0 0 10px rgba(220, 38, 38, 0.10);
+      }
+    }
+  }
+
+  /* Break marker */
+  .brk {
+    position: relative;
+    padding-left: 56px;
+    margin: 6px 0 24px;
+  }
+  .brk .node {
+    background: var(--bg-soft);
+    border: 2px dashed var(--muted);
+  }
+  .brk span {
+    font-size: 14px;
+    font-style: italic;
+    color: var(--muted);
+  }
+
+  /* Note under the journey */
+  .note {
+    font-size: 14px;
+    color: var(--muted);
+    margin-top: 26px;
+    display: flex;
+    gap: 8px;
+    align-items: baseline;
+  }
+
+  /* Assignments */
+  .cards {
+    display: grid;
+    gap: 16px;
+    grid-template-columns: repeat(3, 1fr);
+  }
+  .card {
+    border: 1px solid var(--line);
+    border-radius: 12px;
+    padding: 22px;
+    border-top: 3px solid var(--red);
+  }
+  .card h3 {
+    margin: 0 0 6px;
+    font-size: 18px;
+  }
+  .card .due {
+    font-size: 13px;
+    color: var(--muted);
+    font-weight: 600;
+  }
+  .card p {
+    margin: 10px 0 0;
+    font-size: 14px;
+    color: var(--muted);
+  }
+
+  /* Info */
+  .info-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 32px;
+  }
+  .info-grid dt {
+    font-size: 12px;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    color: var(--muted);
+  }
+  .info-grid dd {
+    margin: 4px 0 20px;
+  }
+
+  footer {
+    max-width: var(--maxw);
+    margin: 0 auto;
+    padding: 40px 24px 64px;
+    border-top: 1px solid var(--line);
+    color: var(--muted);
+    font-size: 14px;
+  }
+
+  @media (max-width: 720px) {
+    .hero h1 {
+      font-size: 40px;
+    }
+    .hero p.lede {
+      font-size: 18px;
+    }
+    .hero-art {
+      display: none;
+    }
+    .head h2 {
+      font-size: 26px;
+    }
+    .chap-title {
+      font-size: 20px;
+    }
+    section {
+      padding: 56px 20px;
+    }
+    .cards {
+      grid-template-columns: 1fr;
+    }
+    .info-grid {
+      grid-template-columns: 1fr;
+      gap: 0;
+    }
+    .nav-links {
+      display: none;
+    }
+  }
+</style>
+</head>
+<body>
+
+<nav>
+  <div class=""nav-inner"">
+    <div class=""brand"">
+      <span class=""code"">LT 2010</span>
+      · Computer Skills for the Information Age
+    </div>
+    <div class=""nav-links"">
+      <a href=""#overview"">Overview</a>
+      <a href=""#goals"">Goals</a>
+      <a href=""#journey"">The Journey</a>
+      <a href=""#assignments"">Assignments</a>
+      <a href=""#info"">Info</a>
+    </div>
+  </div>
+</nav>
+
+<div class=""hero-wrap"">
+  <div class=""hero-art"" aria-hidden=""true"">
+    <svg viewBox=""0 0 400 500"" fill=""none""
+         xmlns=""http://www.w3.org/2000/svg"">
+      <g stroke=""#1d4ed8"" stroke-width=""1.2"" opacity=""0.5"">
+        <line x1=""120"" y1=""90"" x2=""250"" y2=""140""/>
+        <line x1=""250"" y1=""140"" x2=""340"" y2=""90""/>
+        <line x1=""250"" y1=""140"" x2=""300"" y2=""250""/>
+        <line x1=""120"" y1=""90"" x2=""150"" y2=""220""/>
+        <line x1=""150"" y1=""220"" x2=""300"" y2=""250""/>
+        <line x1=""150"" y1=""220"" x2=""220"" y2=""330""/>
+        <line x1=""300"" y1=""250"" x2=""360"" y2=""360""/>
+        <line x1=""220"" y1=""330"" x2=""360"" y2=""360""/>
+        <line x1=""220"" y1=""330"" x2=""270"" y2=""430""/>
+        <line x1=""360"" y1=""360"" x2=""270"" y2=""430""/>
+      </g>
+      <g>
+        <circle cx=""120"" cy=""90"" r=""6"" fill=""#1d4ed8""/>
+        <circle cx=""250"" cy=""140"" r=""9"" fill=""#dc2626""/>
+        <circle cx=""340"" cy=""90"" r=""5"" fill=""#1d4ed8""/>
+        <circle cx=""150"" cy=""220"" r=""7"" fill=""#1d4ed8""/>
+        <circle cx=""300"" cy=""250"" r=""10"" fill=""#dc2626""/>
+        <circle cx=""220"" cy=""330"" r=""6"" fill=""#1d4ed8""/>
+        <circle cx=""360"" cy=""360"" r=""7"" fill=""#1d4ed8""/>
+        <circle cx=""270"" cy=""430"" r=""8"" fill=""#dc2626""/>
+      </g>
+    </svg>
+  </div>
+  <header class=""hero"">
+    <span class=""eyebrow"">
+      Department of Learning Sciences <!-- EDIT -->
+    </span>
+    <h1>Computer Skills for the Information Age</h1>
+    <p class=""lede"">
+      A semester-long journey to becoming a thoughtful,
+      capable, and ethical participant in a digital and
+      AI-saturated world.
+    </p>
+    <div class=""accent-bar""></div>
+  </header>
+</div>
+
+<section id=""overview"">
+  <div class=""head"">
+    <span class=""ico"">
+      <svg viewBox=""0 0 24 24"" fill=""none""
+           stroke=""currentColor"" stroke-width=""2""
+           stroke-linecap=""round"" stroke-linejoin=""round"">
+        <path d=""M2 3h20v14H2z""/>
+        <path d=""M8 21h8M12 17v4""/>
+      </svg>
+    </span>
+    <div>
+      <span class=""kicker"">About the course</span>
+      <h2>Overview</h2>
+    </div>
+  </div>
+  <div class=""prose"">
+    <p>
+      Computing, technology, and artificial intelligence
+      now shape how we learn, work, communicate, and make
+      decisions. This course helps you become a thoughtful,
+      capable, and ethical participant in a digital and
+      AI-saturated world.
+    </p>
+    <p>
+      Over the semester we cover a range of topics: how to
+      use computing as a tool to work and create with data;
+      how to learn effectively (with and without AI); how to
+      find and judge digital information; how to reason about
+      the ethics of technology; and how to build a
+      professional digital presence for your career.
+    </p>
+    <p>
+      This course is designed for students from a variety of
+      backgrounds.
+      <strong>No prerequisites are required.</strong>
+    </p>
+  </div>
+</section>
+
+<section id=""goals"">
+  <div class=""head"">
+    <span class=""ico"">
+      <svg viewBox=""0 0 24 24"" fill=""none""
+           stroke=""currentColor"" stroke-width=""2""
+           stroke-linecap=""round"" stroke-linejoin=""round"">
+        <circle cx=""12"" cy=""12"" r=""9""/>
+        <circle cx=""12"" cy=""12"" r=""5""/>
+        <circle cx=""12"" cy=""12"" r=""1""/>
+      </svg>
+    </span>
+    <div>
+      <span class=""kicker"">Learning goals</span>
+      <h2>What you'll learn</h2>
+    </div>
+  </div>
+  <ul class=""goals"">
+    <li>
+      <span class=""num"">01</span>
+      <span>Use computing as a tool to work and create
+      with data.</span>
+    </li>
+    <li>
+      <span class=""num"">02</span>
+      <span>Learn effectively — with and without AI.</span>
+    </li>
+    <li>
+      <span class=""num"">03</span>
+      <span>Find, evaluate, and judge digital
+      information.</span>
+    </li>
+    <li>
+      <span class=""num"">04</span>
+      <span>Reason about the ethics, privacy, and power
+      dynamics of technology.</span>
+    </li>
+    <li>
+      <span class=""num"">05</span>
+      <span>Create a professional digital presence for
+      your career.</span>
+    </li>
+  </ul>
+</section>
+
+<section id=""journey"">
+  <div class=""head"">
+    <span class=""ico"">
+      <svg viewBox=""0 0 24 24"" fill=""none""
+           stroke=""currentColor"" stroke-width=""2""
+           stroke-linecap=""round"" stroke-linejoin=""round"">
+        <path d=""M4 20h16M4 20V8M4 20l6-6 4 4 6-8""/>
+      </svg>
+    </span>
+    <div>
+      <span class=""kicker"">Week by week</span>
+      <h2>The Journey</h2>
+    </div>
+  </div>
+
+  <div class=""journey"">
+
+    <!-- PART I -->
+    <div class=""chapter"">
+      <span class=""chap-node""></span>
+      <span class=""chap-kicker"">Part I</span>
+      <span class=""chap-title"">Learning How to Learn</span>
+    </div>
+    <div class=""station"" data-date=""2026-01-17"">
+      <span class=""node""></span>
+      <div class=""st-date"">Jan 17</div>
+      <div class=""st-title"">
+        Learning in a Digital &amp; AI Age
+      </div>
+      <div class=""st-tags"">
+        <span class=""tag disc"">Week 1 Discussion</span>
+        <span class=""tag extra"">AI/digital tool survey</span>
+      </div>
+    </div>
+    <div class=""station"" data-date=""2026-01-24"">
+      <span class=""node""></span>
+      <div class=""st-date"">Jan 24</div>
+      <div class=""st-title"">Learning How to Learn</div>
+      <div class=""st-tags"">
+        <span class=""tag disc"">Week 2 Discussion</span>
+      </div>
+    </div>
+    <div class=""station"" data-date=""2026-01-31"">
+      <span class=""node""></span>
+      <div class=""st-date"">Jan 31</div>
+      <div class=""st-title"">
+        Digital Communication &amp; Collaboration
+      </div>
+      <div class=""st-tags"">
+        <span class=""tag disc"">Week 3 Discussion</span>
+      </div>
+    </div>
+
+    <!-- PART II -->
+    <div class=""chapter"">
+      <span class=""chap-node""></span>
+      <span class=""chap-kicker"">Part II</span>
+      <span class=""chap-title"">
+        Information &amp; AI Literacy
+      </span>
+    </div>
+    <div class=""station"" data-date=""2026-02-07"">
+      <span class=""node""></span>
+      <div class=""st-date"">Feb 7</div>
+      <div class=""st-title"">Information Literacy</div>
+      <div class=""st-tags"">
+        <span class=""tag disc"">Week 4 Discussion</span>
+        <span class=""tag assign"">Assignment 1</span>
+      </div>
+    </div>
+    <div class=""station"" data-date=""2026-02-14"">
+      <span class=""node""></span>
+      <div class=""st-date"">Feb 14</div>
+      <div class=""st-title"">AI Literacy</div>
+      <div class=""st-tags"">
+        <span class=""tag disc"">Week 5 Discussion</span>
+      </div>
+    </div>
+
+    <!-- PART III -->
+    <div class=""chapter"">
+      <span class=""chap-node""></span>
+      <span class=""chap-kicker"">Part III</span>
+      <span class=""chap-title"">Ethics &amp; Design</span>
+    </div>
+    <div class=""station"" data-date=""2026-02-21"">
+      <span class=""node""></span>
+      <div class=""st-date"">Feb 21</div>
+      <div class=""st-title"">
+        Ethics, Privacy &amp; Power in an AI Age
+      </div>
+      <div class=""st-tags"">
+        <span class=""tag disc"">Week 6 Discussion</span>
+      </div>
+    </div>
+    <div class=""station"" data-date=""2026-02-28"">
+      <span class=""node""></span>
+      <div class=""st-date"">Feb 28</div>
+      <div class=""st-title"">Human-Centered Design</div>
+      <div class=""st-tags"">
+        <span class=""tag disc"">Week 7 Discussion</span>
+      </div>
+    </div>
+
+    <!-- PART IV -->
+    <div class=""chapter"">
+      <span class=""chap-node""></span>
+      <span class=""chap-kicker"">Part IV</span>
+      <span class=""chap-title"">Identity &amp; Data</span>
+    </div>
+    <div class=""station"" data-date=""2026-03-07"">
+      <span class=""node""></span>
+      <div class=""st-date"">Mar 7</div>
+      <div class=""st-title"">
+        Professional Identity &amp; Self-Presentation
+      </div>
+      <div class=""st-tags"">
+        <span class=""tag disc"">Week 8 Discussion</span>
+        <span class=""tag assign"">Assignment 2</span>
+      </div>
+    </div>
+    <div class=""station"" data-date=""2026-03-14"">
+      <span class=""node""></span>
+      <div class=""st-date"">Mar 14</div>
+      <div class=""st-title"">Working with Data</div>
+      <div class=""st-tags"">
+        <span class=""tag disc"">Week 9 Discussion</span>
+      </div>
+    </div>
+    <div class=""brk"">
+      <span class=""node""></span>
+      <span>Fall / Spring Break</span>
+    </div>
+
+    <!-- PART V -->
+    <div class=""chapter"">
+      <span class=""chap-node""></span>
+      <span class=""chap-kicker"">Part V</span>
+      <span class=""chap-title"">
+        Making with Data &amp; Code
+      </span>
+    </div>
+    <div class=""station"" data-date=""2026-04-04"">
+      <span class=""node""></span>
+      <div class=""st-date"">Apr 4</div>
+      <div class=""st-title"">
+        Data Storytelling &amp; Visualization
+        <span class=""star""
+              title=""Two weeks to complete"">**</span>
+      </div>
+      <div class=""st-tags"">
+        <span class=""tag disc"">Week 10 Discussion</span>
+      </div>
+    </div>
+    <div class=""station"" data-date=""2026-04-19"">
+      <span class=""node""></span>
+      <div class=""st-date"">Apr 19</div>
+      <div class=""st-title"">
+        Coding &amp; Computational Thinking
+        <span class=""star""
+              title=""Two weeks to complete"">**</span>
+      </div>
+      <div class=""st-tags"">
+        <span class=""tag disc"">Week 11 Discussion</span>
+      </div>
+    </div>
+    <div class=""station"" data-date=""2026-04-26"">
+      <span class=""node""></span>
+      <div class=""st-date"">Apr 26</div>
+      <div class=""st-title"">Final Assignment</div>
+      <div class=""st-tags"">
+        <span class=""tag assign"">Assignment 3</span>
+      </div>
+    </div>
+
+  </div>
+
+  <p class=""note"">
+    <span class=""star"">**</span>
+    <span>
+      You have two weeks to complete this unit, giving you
+      time to work on your final assignment. Topics and
+      readings are subject to change — always check this
+      schedule for the latest.
+    </span>
+  </p>
+</section>
+
+<section id=""assignments"">
+  <div class=""head"">
+    <span class=""ico"">
+      <svg viewBox=""0 0 24 24"" fill=""none""
+           stroke=""currentColor"" stroke-width=""2""
+           stroke-linecap=""round"" stroke-linejoin=""round"">
+        <path d=""M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0
+                 2 2h12a2 2 0 0 0 2-2V8z""/>
+        <path d=""M14 2v6h6M9 15h6M9 11h2""/>
+      </svg>
+    </span>
+    <div>
+      <span class=""kicker"">Deliverables</span>
+      <h2>Major Assignments</h2>
+    </div>
+  </div>
+  <div class=""cards"">
+    <div class=""card"">
+      <div class=""due"">Due Feb 7</div>
+      <h3>Assignment 1</h3>
+      <p><!-- EDIT -->Information literacy in practice.</p>
+    </div>
+    <div class=""card"">
+      <div class=""due"">Due Mar 7</div>
+      <h3>Assignment 2</h3>
+      <p><!-- EDIT -->Building your professional digital
+      identity.</p>
+    </div>
+    <div class=""card"">
+      <div class=""due"">Due Apr 26</div>
+      <h3>Assignment 3 · Final</h3>
+      <p><!-- EDIT -->A capstone project bringing the
+      course together.</p>
+    </div>
+  </div>
+</section>
+
+<section id=""info"">
+  <div class=""head"">
+    <span class=""ico"">
+      <svg viewBox=""0 0 24 24"" fill=""none""
+           stroke=""currentColor"" stroke-width=""2""
+           stroke-linecap=""round"" stroke-linejoin=""round"">
+        <circle cx=""12"" cy=""12"" r=""9""/>
+        <path d=""M12 16v-4M12 8h.01""/>
+      </svg>
+    </span>
+    <div>
+      <span class=""kicker"">Logistics</span>
+      <h2>Course Info</h2>
+    </div>
+  </div>
+  <dl class=""info-grid"">
+    <div>
+      <dt>Instructor</dt>
+      <dd>Your Name <!-- EDIT --></dd>
+      <dt>Email</dt>
+      <dd>
+        <a href=""mailto:you@university.edu"">
+          you@university.edu
+        </a>
+      </dd>
+    </div>
+    <div>
+      <dt>Office Hours</dt>
+      <dd>Day / time / location <!-- EDIT --></dd>
+      <dt>Prerequisites</dt>
+      <dd>None</dd>
+    </div>
+  </dl>
+</section>
+
+<footer>
+  LT 2010 · Computer Skills for the Information Age —
+  Department of Learning Sciences. Spring 2026.
+  Schedule subject to change.
+</footer>
+
+<script>
+  // Date-aware ""You are here"" marker.
+  // Runs in the visitor's browser, so it always
+  // reflects today's date.
+  (function () {
+    var today = new Date();
+    today.setHours(0, 0, 0, 0);
+    var stations = document.querySelectorAll('.station');
+    var currentSet = false;
+    stations.forEach(function (st) {
+      var raw = st.getAttribute('data-date');
+      var due = new Date(raw + 'T00:00:00');
+      if (due < today) {
+        st.classList.add('past');
+      } else if (!currentSet) {
+        st.classList.add('current');
+        currentSet = true;
+        var badge = document.createElement('span');
+        badge.className = 'here-badge';
+        badge.textContent = 'You are here';
+        st.querySelector('.st-title').appendChild(badge);
+      } else {
+        st.classList.add('future');
+      }
+    });
+  })();
+</script>
+
+</body>
+</html>
+```
+
+**After you paste it**, do a quick sanity check to confirm the copy came through clean: in VSCode press **Cmd+F** and search for `box-sizing: border-box;` — you should get **two** hits (one in `*`, one in `.node`). If both are there and end in `;`, the file is intact and the timeline will render with the spine, nodes, and ""You are here"" pulse.
+
+Two reminders:
+- The dates are set to **Spring 2026**. Since today is Aug 10, 2026, every station is in the past, so they'll all render dimmed with no ""You are here"" badge — that's expected out of term. During the actual semester it'll light up the current week. If the year should be different, change the `data-date` values.
+- If a line ever *does* look chopped again, tell me which selector and I'll resend just that snippet.",1203.224,1252.537,message,assistant,,,,claude-opus-4-8,13398,e41e952f-d248-464d-af19-6ee5c591ade6,text
+ai,Ben,Ok great it's working. Now let's refine the aesthetic. The icons and card designs and even the circles for the timeline journey feel very genric. Let's make them more unique to the course context. What do you propose?,1301.849,1309.449,message,user,,,,,,af576c82-d367-422f-b421-11a166edf848,text
+ai,Claude,"The root issue is there's no *visual language* tying the pieces together — the Feather-style line icons, the plain bordered cards, and the circular nodes are each generic defaults that could belong to any site. The fix is to pick one motif drawn from the course's subject and let it cascade through all three. Here's what I'd propose.
+
+## Primary direction: a ""pixel-module"" system
+
+One idea that directly answers all three complaints: build everything from a single repeated **square module** — a pixel / spreadsheet cell / data block. It reads instantly as *computing and information* without being cold, and it keeps your minimalism (it's still just squares and space). Here's how it cascades:
+
+**Timeline nodes → square modules, not circles.**
+- Weeks become small squares (2px corner radius).
+- Chapter markers become a **2×2 cluster** of that module in the blue→red gradient — so a ""chapter"" literally looks like more data than a ""week.""
+- The spine becomes a **ticked rail** (like a data axis) instead of a plain grey line.
+- ""You are here"" = a filled red module with a monospace `› you are here` and a soft pulse.
+
+```
+Part I  ▪▪   LEARNING HOW TO LEARN
+        ▪▪
+  │
+  ▪──  Jan 17   Learning in a Digital & AI Age
+  │
+  ▪──  Jan 24   Learning How to Learn
+  ▪──  Feb 14   AI Literacy   › you are here
+```
+
+**Icons → custom pixel glyphs.**
+Redraw each section icon on a coarse 5×5 grid out of filled squares — a monitor, a target, a path, a document, an info mark — two-tone (blue with one red accent pixel). Same simplicity as now, but obviously *made for this course* rather than pulled from an icon set.
+
+**Cards → assignment ""records.""**
+Restyle the three assignment cards to look like index/punch-card records: a monospace tag (`A1`, `A2`, `A3 · FINAL`), a thin two-tone top rule, small **corner registration ticks**, the due date as a monospace field, and a very faint pixel-grid watermark.
+
+**One typographic move that de-genericizes everything:** introduce a **monospace face** (system `ui-monospace`) for the small labels only — dates, kickers, the ""01–05"" numbers, the ""you are here."" Body text stays your humanist sans. That mono/sans contrast alone signals ""computational"" and pulls the whole page away from template-land.
+
+**Bonus for the narrative:** give each of the five Parts its own **3×3 pixel emblem**, so the chapters feel individually identified as you descend the journey.
+
+## Two alternatives, if the pixel idea isn't your taste
+
+- **B — Knowledge-graph motif.** Lean into the hero's node-network everywhere: nodes-and-edges as the connective tissue, icons drawn as tiny graphs, cards with small node ornaments. More organic and ""AI-ish,"" warmer than pixels.
+- **C — Terminal / monospace motif.** Command-line styling: `>` prompts, blinking cursor blocks, bracketed labels. Boldest and most overtly ""techy"" — but risks feeling cold for a no-prereq, broad-audience course.
+
+My recommendation: **A (pixel-module), borrowing the monospace-label accent from C.** It's distinctive, on-theme, still minimal, and fixes exactly the three things you flagged. All of it stays inline SVG/CSS, so it remains copy-safe and self-contained.
+
+Two questions before I build:
+1. Go with **A**, or would you rather I prototype **B** or **C**?
+2. Want the **per-chapter pixel emblems** (adds uniqueness and reinforces the five-part arc), or keep chapter markers uniform?",1361.898,1393.496,message,assistant,,,,claude-opus-4-8,3547,442f9c3c-19e6-49d0-973a-4edfb44b9644,text
+ai,Ben,"I like A and yes let's do per-chapter pixel emblems. Before you begin, anything else we should consider before making these edits",1425.095,1429.495,message,user,,,,,,4ec4f5a6-d445-4df6-a124-c3c15c870fd1,text
+ai,Claude,"A few things worth settling now, because they affect coherence and I'd rather not redo:
+
+**1. Round-vs-square coherence.** If nodes and icons go square/pixel but the **tag pills** stay fully rounded (999px) and the **hero network** stays circular dots, the page will read as two visual languages fighting. My recommendation: convert the hero network nodes to little squares too, and soften the tags from pills to **slightly-rounded rectangles** (like cells) so everything shares one geometry. Say if you'd rather keep the pills as deliberate contrast.
+
+**2. Monospace = system fonts only.** To stay self-contained and copy-safe, I'll use the system mono stack (`ui-monospace, SFMono-Regular, Menlo, Consolas, monospace`) — no CDN font. It looks clean and loads instantly. If you have a specific mono in mind (JetBrains Mono, IBM Plex Mono, etc.), that means embedding a font file and the page stops being a single portable file — I'd advise against it here.
+
+**3. How thematic should the 5 chapter emblems be?** I'll design them as **one systematic set** (same 3×3 grid, blue with a single red accent pixel) so they feel like a family, each *lightly* evoking its Part — e.g. a book-ish shape for *Learning How to Learn*, a branching shape for *Making with Data & Code*. Loose and abstract, not literal illustration. Good, or do you want them purely abstract/numbered?
+
+**4. Off-term edge cases.** Today (Aug 10) is past every date, so right now the journey renders all-dimmed with no marker — and before January it'd be all-future. I'll add graceful end states: a small ""you are here"" that clamps sensibly, plus a subtle **start cap and finish cap** on the rail so the timeline looks intentional even out of term. Worth doing while I'm in there.
+
+**5. Delivery format.** Given the earlier truncation pain, I'll send the **entire updated file** in the copy-safe short-line format again so you replace it wholesale — no surgical edits to place by hand. (Alternative would be a dozen small snippets to splice in, which is more error-prone. I recommend wholesale.)
+
+**Out of scope unless you want it:** a **dark mode** — the pixel/mono aesthetic would look sharp in dark, but it adds a chunk of CSS. I'd suggest doing the redesign first, then adding dark mode as a follow-up if you like it.
+
+If you're good with 1–5 as I've recommended (square the hero + soften tags, system mono, lightly-thematic emblems, add off-term caps, deliver whole file), just say ""go"" and I'll build it. Otherwise tell me what to change.",1479.567,1496.177,message,assistant,,,,claude-opus-4-8,3103,38c8535d-0356-4094-93dc-8b36301b2286,text
+ai,Ben,Ok these all sound good. Any other content consideratoins or should we wait until after making these edits?,1512.787,1538.715,message,user,,,,,,986743c1-e032-466d-ac12-65ff8894d2dd,text
+ai,Claude,"Most content is safe to fill in *after* — swapping placeholder text (instructor name, email, office hours, the three assignment descriptions) won't touch the pixel/mono structure at all. But a few content questions actually change the markup I'm about to rewrite, so they're worth a 30-second decision now rather than a redo later:
+
+**1. Readings per week.** Your original schedule had a **Reading** column that we dropped when moving to the timeline. Do you want a readings line back on each station (e.g. a muted mono sub-line under the topic)? If yes, I'll build the station to hold it now. If readings aren't ready, I can still build the *slot* and leave it empty so adding them later is a one-line drop-in. **My rec: build the slot, leave it empty.**
+
+**2. Clickable stations/assignments.** Will each week or assignment eventually link somewhere (LMS discussion, a readings doc, an assignment page)? If so, I'll make the station title and card into proper links now with hover states. If everything lives in Canvas, maybe not. **My rec: make them links with a `#` placeholder href so the affordance exists and you just fill URLs.**
+
+**3. A grading / assessment section.** There's currently no breakdown of how the grade is computed (discussions %, assignments %, participation). Common thing students look for. Want me to add a small section for it while I'm in there? **My rec: add a lightweight placeholder section** you can fill in — cheaper to include now than bolt on later.
+
+Everything else — instructor photo, syllabus PDF link, meeting time/location/credits, course policies — is pure text/asset swapping that won't fight the redesign, so I'd **wait until after**.
+
+So my suggestion: I proceed with the aesthetic build **plus** (1) an empty readings slot, (2) placeholder links, and (3) a small grading section — all as ready-to-fill hooks — so the redesign is future-proof and you're not boxed in. Want all three hooks, or drop any of them?",1538.715,1552.324,message,assistant,,,,claude-opus-4-8,1362,789a8c87-b24e-4ec6-8d4a-fb96c957ec52,text
+ai,Ben,Ok yes go for it,1552.324,1553.324,message,user,,,,,,deece0a3-4e77-4cc3-987c-2651dd4fba6b,text
+ai,Claude,"Building it now — pixel icons, per-chapter emblems, square nodes on a dotted rail with start/finish caps, monospace labels, squared tags, square hero nodes, readings slots, placeholder links, and a grading section. Here's the full copy-safe file. Replace `index.html` wholesale.
+
+```html
+<!DOCTYPE html>
+<html lang=""en"">
+<head>
+<meta charset=""UTF-8"">
+<meta name=""viewport"" content=""width=device-width, initial-scale=1.0"">
+<title>LT 2010 — Computer Skills for the Information Age</title>
+<style>
+  :root {
+    --blue: #1d4ed8;
+    --blue-dark: #1e3a8a;
+    --red: #dc2626;
+    --ink: #18181b;
+    --muted: #6b7280;
+    --line: #e5e7eb;
+    --bg: #ffffff;
+    --bg-soft: #fafafa;
+    --maxw: 900px;
+    --mono:
+      ui-monospace, SFMono-Regular, Menlo,
+      Consolas, ""Liberation Mono"", monospace;
+  }
+
+  * {
+    box-sizing: border-box;
+  }
+
+  html {
+    scroll-behavior: smooth;
+  }
+
+  body {
+    margin: 0;
+    font-family:
+      -apple-system, BlinkMacSystemFont, ""Segoe UI"",
+      Roboto, Helvetica, Arial, sans-serif;
+    color: var(--ink);
+    background: var(--bg);
+    line-height: 1.65;
+    font-size: 17px;
+    -webkit-font-smoothing: antialiased;
+  }
+
+  a {
+    color: var(--blue);
+    text-decoration: none;
+  }
+  a:hover {
+    text-decoration: underline;
+  }
+
+  /* Nav */
+  nav {
+    position: sticky;
+    top: 0;
+    z-index: 10;
+    background: rgba(255, 255, 255, 0.85);
+    backdrop-filter: saturate(180%) blur(10px);
+    border-bottom: 1px solid var(--line);
+  }
+  .nav-inner {
+    max-width: var(--maxw);
+    margin: 0 auto;
+    padding: 14px 24px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    flex-wrap: wrap;
+    gap: 8px;
+  }
+  .brand {
+    font-weight: 700;
+    letter-spacing: -0.01em;
+    font-size: 15px;
+  }
+  .brand .code {
+    font-family: var(--mono);
+    color: var(--red);
+  }
+  .nav-links {
+    display: flex;
+    gap: 20px;
+    font-size: 14px;
+  }
+  .nav-links a {
+    color: var(--muted);
+  }
+  .nav-links a:hover {
+    color: var(--ink);
+    text-decoration: none;
+  }
+
+  /* Layout */
+  section {
+    max-width: var(--maxw);
+    margin: 0 auto;
+    padding: 72px 24px;
+  }
+  section + section {
+    border-top: 1px solid var(--line);
+  }
+
+  /* Section headers */
+  .head {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    margin: 0 0 32px;
+  }
+  .head .ico {
+    flex: none;
+    width: 42px;
+    height: 42px;
+    border-radius: 8px;
+    display: grid;
+    place-items: center;
+    background: linear-gradient(135deg, #eff6ff, #fef2f2);
+  }
+  .head .ico svg {
+    width: 22px;
+    height: 22px;
+  }
+  .kicker {
+    display: block;
+    font-family: var(--mono);
+    font-size: 12px;
+    font-weight: 600;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    color: var(--red);
+    margin-bottom: 3px;
+  }
+  .head h2 {
+    font-size: 32px;
+    margin: 0;
+    font-weight: 800;
+    letter-spacing: -0.02em;
+    line-height: 1.15;
+  }
+
+  /* Hero */
+  .hero-wrap {
+    border-bottom: 1px solid var(--line);
+    overflow: hidden;
+    position: relative;
+  }
+  .hero {
+    max-width: var(--maxw);
+    margin: 0 auto;
+    padding: 96px 24px 84px;
+    position: relative;
+    z-index: 1;
+  }
+  .hero-art {
+    position: absolute;
+    top: 0;
+    right: 0;
+    height: 100%;
+    width: 46%;
+    opacity: 0.9;
+    pointer-events: none;
+    z-index: 0;
+    -webkit-mask-image:
+      linear-gradient(90deg, transparent, #000 40%);
+    mask-image:
+      linear-gradient(90deg, transparent, #000 40%);
+  }
+  .hero-art svg {
+    height: 100%;
+    width: 100%;
+  }
+  .eyebrow {
+    display: inline-block;
+    font-family: var(--mono);
+    font-size: 13px;
+    font-weight: 600;
+    color: var(--red);
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+    margin-bottom: 18px;
+  }
+  .hero h1 {
+    font-size: 56px;
+    margin: 0 0 22px;
+    font-weight: 800;
+    letter-spacing: -0.03em;
+    line-height: 1.05;
+    max-width: 620px;
+  }
+  .hero p.lede {
+    font-size: 21px;
+    color: var(--muted);
+    max-width: 560px;
+    margin: 0;
+  }
+  .accent-bar {
+    width: 72px;
+    height: 5px;
+    margin-top: 30px;
+    background: linear-gradient(90deg, var(--blue), var(--red));
+    border-radius: 2px;
+  }
+
+  /* Prose + goals */
+  .prose {
+    max-width: 680px;
+  }
+  .prose p {
+    margin: 0 0 18px;
+  }
+  .prose p:last-child {
+    margin-bottom: 0;
+  }
+  .goals {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+    display: grid;
+    gap: 4px;
+  }
+  .goals li {
+    padding: 18px 0;
+    border-bottom: 1px solid var(--line);
+    display: flex;
+    gap: 18px;
+    align-items: baseline;
+  }
+  .goals li:last-child {
+    border-bottom: none;
+  }
+  .goals .num {
+    font-family: var(--mono);
+    color: var(--blue);
+    font-weight: 700;
+    font-size: 18px;
+    min-width: 34px;
+  }
+
+  /* ===== JOURNEY / TIMELINE ===== */
+  .journey {
+    position: relative;
+    padding: 24px 0;
+    margin-top: 8px;
+  }
+  .journey::before {
+    content: """";
+    position: absolute;
+    left: 19px;
+    top: 16px;
+    bottom: 16px;
+    width: 2px;
+    background: repeating-linear-gradient(
+      to bottom,
+      var(--line) 0 3px,
+      transparent 3px 7px
+    );
+  }
+  .rail-cap {
+    position: absolute;
+    left: 14px;
+    width: 12px;
+    height: 12px;
+    border-radius: 2px;
+    z-index: 1;
+  }
+  .rail-cap.start {
+    top: 6px;
+    background: var(--bg);
+    border: 2px solid var(--blue);
+  }
+  .rail-cap.end {
+    bottom: 6px;
+    background: linear-gradient(135deg, var(--blue), var(--red));
+  }
+
+  /* Chapter dividers with pixel emblems */
+  .chapter {
+    position: relative;
+    padding-left: 56px;
+    margin: 40px 0 22px;
+    min-height: 30px;
+  }
+  .chapter:first-child {
+    margin-top: 0;
+  }
+  .emblem {
+    position: absolute;
+    left: 6px;
+    top: -2px;
+    width: 28px;
+    height: 28px;
+    background: var(--bg);
+    display: grid;
+    place-items: center;
+    z-index: 1;
+  }
+  .emblem svg {
+    width: 22px;
+    height: 22px;
+  }
+  .chap-kicker {
+    display: block;
+    font-family: var(--mono);
+    font-size: 12px;
+    font-weight: 600;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    color: var(--red);
+  }
+  .chap-title {
+    font-size: 22px;
+    font-weight: 800;
+    letter-spacing: -0.02em;
+    line-height: 1.2;
+  }
+
+  /* Stations */
+  .station {
+    position: relative;
+    padding: 0 0 30px 56px;
+  }
+  .station:last-child {
+    padding-bottom: 0;
+  }
+  .node {
+    position: absolute;
+    left: 12px;
+    top: 5px;
+    width: 16px;
+    height: 16px;
+    border-radius: 2px;
+    background: var(--bg);
+    border: 2px solid var(--blue);
+    box-shadow: 0 0 0 4px var(--bg);
+    box-sizing: border-box;
+    z-index: 1;
+  }
+  .st-date {
+    font-family: var(--mono);
+    font-size: 12px;
+    font-weight: 600;
+    color: var(--muted);
+    letter-spacing: 0.02em;
+  }
+  .st-title {
+    font-size: 19px;
+    font-weight: 700;
+    margin: 2px 0 8px;
+    letter-spacing: -0.01em;
+  }
+  .st-link {
+    color: inherit;
+    text-decoration: none;
+  }
+  .st-link:hover {
+    color: var(--blue);
+  }
+  .st-tags {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 5px;
+  }
+  .st-read {
+    font-family: var(--mono);
+    font-size: 12px;
+    color: var(--muted);
+    margin-top: 8px;
+  }
+  .st-read:empty {
+    display: none;
+  }
+  .star {
+    color: var(--red);
+    font-weight: 700;
+  }
+
+  .tag {
+    display: inline-block;
+    font-size: 12px;
+    font-weight: 600;
+    padding: 3px 9px;
+    border-radius: 4px;
+    white-space: nowrap;
+  }
+  .tag.disc {
+    background: #eff6ff;
+    color: var(--blue-dark);
+  }
+  .tag.assign {
+    background: #fef2f2;
+    color: var(--red);
+  }
+  .tag.extra {
+    background: #f4f4f5;
+    color: var(--muted);
+  }
+
+  /* Date-aware states */
+  .station.past {
+    opacity: 0.5;
+  }
+  .station.past .node {
+    background: var(--line);
+    border-color: var(--line);
+  }
+  .station.future .node {
+    background: var(--bg);
+    border-color: var(--blue);
+  }
+  .station.current .node {
+    background: var(--red);
+    border-color: var(--red);
+    box-shadow:
+      0 0 0 4px var(--bg),
+      0 0 0 7px rgba(220, 38, 38, 0.25);
+  }
+  .here-badge {
+    display: inline-block;
+    vertical-align: middle;
+    margin-left: 10px;
+    font-family: var(--mono);
+    font-size: 11px;
+    font-weight: 700;
+    letter-spacing: 0.02em;
+    color: #fff;
+    background: var(--red);
+    padding: 3px 8px;
+    border-radius: 3px;
+  }
+
+  @media (prefers-reduced-motion: no-preference) {
+    .station.current .node {
+      animation: pulse 2.2s ease-in-out infinite;
+    }
+    @keyframes pulse {
+      0%, 100% {
+        box-shadow:
+          0 0 0 4px var(--bg),
+          0 0 0 7px rgba(220, 38, 38, 0.28);
+      }
+      50% {
+        box-shadow:
+          0 0 0 4px var(--bg),
+          0 0 0 10px rgba(220, 38, 38, 0.10);
+      }
+    }
+  }
+
+  /* Break marker */
+  .brk {
+    position: relative;
+    padding-left: 56px;
+    margin: 6px 0 24px;
+  }
+  .brk .node {
+    background: var(--bg-soft);
+    border: 2px dashed var(--muted);
+  }
+  .brk span {
+    font-family: var(--mono);
+    font-size: 13px;
+    color: var(--muted);
+  }
+
+  /* Note under the journey */
+  .note {
+    font-size: 14px;
+    color: var(--muted);
+    margin-top: 26px;
+    display: flex;
+    gap: 8px;
+    align-items: baseline;
+  }
+
+  /* Assignments (record cards) */
+  .cards {
+    display: grid;
+    gap: 16px;
+    grid-template-columns: repeat(3, 1fr);
+  }
+  .card {
+    position: relative;
+    display: block;
+    border: 1px solid var(--line);
+    border-radius: 10px;
+    padding: 24px 22px 22px;
+    overflow: hidden;
+    color: inherit;
+    text-decoration: none;
+    transition: border-color 0.15s ease, transform 0.15s ease;
+  }
+  .card::before {
+    content: """";
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    height: 3px;
+    background: linear-gradient(90deg, var(--blue), var(--red));
+  }
+  .card:hover {
+    border-color: var(--blue);
+    transform: translateY(-2px);
+    text-decoration: none;
+  }
+  .reg {
+    position: absolute;
+    width: 5px;
+    height: 5px;
+    border-radius: 1px;
+    background: var(--line);
+  }
+  .reg.tr {
+    top: 12px;
+    right: 12px;
+  }
+  .reg.bl {
+    bottom: 12px;
+    left: 12px;
+  }
+  .card:hover .reg {
+    background: var(--blue);
+  }
+  .card-tag {
+    font-family: var(--mono);
+    font-size: 12px;
+    font-weight: 700;
+    letter-spacing: 0.05em;
+    color: var(--blue);
+  }
+  .card .due {
+    font-family: var(--mono);
+    font-size: 12px;
+    color: var(--muted);
+    margin-top: 2px;
+  }
+  .card h3 {
+    margin: 8px 0 0;
+    font-size: 18px;
+  }
+  .card p {
+    margin: 8px 0 0;
+    font-size: 14px;
+    color: var(--muted);
+  }
+
+  /* Grading */
+  .grades {
+    display: grid;
+    gap: 14px;
+    max-width: 620px;
+  }
+  .grade-row {
+    display: grid;
+    grid-template-columns: 170px 1fr 46px;
+    gap: 14px;
+    align-items: center;
+  }
+  .grade-label {
+    font-size: 15px;
+  }
+  .grade-track {
+    height: 8px;
+    background: var(--bg-soft);
+    border: 1px solid var(--line);
+    border-radius: 2px;
+    overflow: hidden;
+  }
+  .grade-fill {
+    display: block;
+    height: 100%;
+    background: linear-gradient(90deg, var(--blue), var(--red));
+  }
+  .grade-pct {
+    font-family: var(--mono);
+    font-size: 14px;
+    color: var(--muted);
+    text-align: right;
+  }
+
+  /* Info */
+  .info-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 32px;
+  }
+  .info-grid dt {
+    font-family: var(--mono);
+    font-size: 12px;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    color: var(--muted);
+  }
+  .info-grid dd {
+    margin: 4px 0 20px;
+  }
+
+  footer {
+    max-width: var(--maxw);
+    margin: 0 auto;
+    padding: 40px 24px 64px;
+    border-top: 1px solid var(--line);
+    color: var(--muted);
+    font-size: 14px;
+  }
+
+  @media (max-width: 720px) {
+    .hero h1 {
+      font-size: 40px;
+    }
+    .hero p.lede {
+      font-size: 18px;
+    }
+    .hero-art {
+      display: none;
+    }
+    .head h2 {
+      font-size: 26px;
+    }
+    .chap-title {
+      font-size: 20px;
+    }
+    section {
+      padding: 56px 20px;
+    }
+    .cards {
+      grid-template-columns: 1fr;
+    }
+    .grade-row {
+      grid-template-columns: 110px 1fr 40px;
+    }
+    .info-grid {
+      grid-template-columns: 1fr;
+      gap: 0;
+    }
+    .nav-links {
+      display: none;
+    }
+  }
+</style>
+</head>
+<body>
+
+<nav>
+  <div class=""nav-inner"">
+    <div class=""brand"">
+      <span class=""code"">LT 2010</span>
+      · Computer Skills for the Information Age
+    </div>
+    <div class=""nav-links"">
+      <a href=""#overview"">Overview</a>
+      <a href=""#goals"">Goals</a>
+      <a href=""#journey"">The Journey</a>
+      <a href=""#assignments"">Assignments</a>
+      <a href=""#grades"">Grades</a>
+      <a href=""#info"">Info</a>
+    </div>
+  </div>
+</nav>
+
+<div class=""hero-wrap"">
+  <div class=""hero-art"" aria-hidden=""true"">
+    <svg viewBox=""0 0 400 500"" fill=""none""
+         shape-rendering=""crispEdges""
+         xmlns=""http://www.w3.org/2000/svg"">
+      <g stroke=""#1d4ed8"" stroke-width=""1.2"" opacity=""0.5"">
+        <line x1=""120"" y1=""90"" x2=""250"" y2=""140""/>
+        <line x1=""250"" y1=""140"" x2=""340"" y2=""90""/>
+        <line x1=""250"" y1=""140"" x2=""300"" y2=""250""/>
+        <line x1=""120"" y1=""90"" x2=""150"" y2=""220""/>
+        <line x1=""150"" y1=""220"" x2=""300"" y2=""250""/>
+        <line x1=""150"" y1=""220"" x2=""220"" y2=""330""/>
+        <line x1=""300"" y1=""250"" x2=""360"" y2=""360""/>
+        <line x1=""220"" y1=""330"" x2=""360"" y2=""360""/>
+        <line x1=""220"" y1=""330"" x2=""270"" y2=""430""/>
+        <line x1=""360"" y1=""360"" x2=""270"" y2=""430""/>
+      </g>
+      <g>
+        <rect x=""115"" y=""85"" width=""10"" height=""10""
+              rx=""1.5"" fill=""#1d4ed8""/>
+        <rect x=""242"" y=""132"" width=""16"" height=""16""
+              rx=""1.5"" fill=""#dc2626""/>
+        <rect x=""336"" y=""86"" width=""9"" height=""9""
+              rx=""1.5"" fill=""#1d4ed8""/>
+        <rect x=""144"" y=""214"" width=""12"" height=""12""
+              rx=""1.5"" fill=""#1d4ed8""/>
+        <rect x=""291"" y=""241"" width=""17"" height=""17""
+              rx=""1.5"" fill=""#dc2626""/>
+        <rect x=""215"" y=""325"" width=""10"" height=""10""
+              rx=""1.5"" fill=""#1d4ed8""/>
+        <rect x=""354"" y=""354"" width=""12"" height=""12""
+              rx=""1.5"" fill=""#1d4ed8""/>
+        <rect x=""263"" y=""423"" width=""14"" height=""14""
+              rx=""1.5"" fill=""#dc2626""/>
+      </g>
+    </svg>
+  </div>
+  <header class=""hero"">
+    <span class=""eyebrow"">
+      Department of Learning Sciences <!-- EDIT -->
+    </span>
+    <h1>Computer Skills for the Information Age</h1>
+    <p class=""lede"">
+      A semester-long journey to becoming a thoughtful,
+      capable, and ethical participant in a digital and
+      AI-saturated world.
+    </p>
+    <div class=""accent-bar""></div>
+  </header>
+</div>
+
+<section id=""overview"">
+  <div class=""head"">
+    <span class=""ico"">
+      <svg viewBox=""0 0 19 19"" fill=""#1d4ed8""
+           shape-rendering=""crispEdges""
+           xmlns=""http://www.w3.org/2000/svg"">
+        <rect x=""0"" y=""0"" width=""3"" height=""3""/>
+        <rect x=""4"" y=""0"" width=""3"" height=""3""/>
+        <rect x=""12"" y=""0"" width=""3"" height=""3""/>
+        <rect x=""16"" y=""0"" width=""3"" height=""3""/>
+        <rect x=""8"" y=""8"" width=""3"" height=""3"" fill=""#dc2626""/>
+        <rect x=""0"" y=""16"" width=""3"" height=""3""/>
+        <rect x=""4"" y=""16"" width=""3"" height=""3""/>
+        <rect x=""12"" y=""16"" width=""3"" height=""3""/>
+        <rect x=""16"" y=""16"" width=""3"" height=""3""/>
+      </svg>
+    </span>
+    <div>
+      <span class=""kicker"">About the course</span>
+      <h2>Overview</h2>
+    </div>
+  </div>
+  <div class=""prose"">
+    <p>
+      Computing, technology, and artificial intelligence
+      now shape how we learn, work, communicate, and make
+      decisions. This course helps you become a thoughtful,
+      capable, and ethical participant in a digital and
+      AI-saturated world.
+    </p>
+    <p>
+      Over the semester we cover a range of topics: how to
+      use computing as a tool to work and create with data;
+      how to learn effectively (with and without AI); how to
+      find and judge digital information; how to reason about
+      the ethics of technology; and how to build a
+      professional digital presence for your career.
+    </p>
+    <p>
+      This course is designed for students from a variety of
+      backgrounds.
+      <strong>No prerequisites are required.</strong>
+    </p>
+  </div>
+</section>
+
+<section id=""goals"">
+  <div class=""head"">
+    <span class=""ico"">
+      <svg viewBox=""0 0 19 19"" fill=""#1d4ed8""
+           shape-rendering=""crispEdges""
+           xmlns=""http://www.w3.org/2000/svg"">
+        <rect x=""8"" y=""0"" width=""3"" height=""3""/>
+        <rect x=""4"" y=""4"" width=""3"" height=""3""/>
+        <rect x=""12"" y=""4"" width=""3"" height=""3""/>
+        <rect x=""0"" y=""8"" width=""3"" height=""3""/>
+        <rect x=""8"" y=""8"" width=""3"" height=""3"" fill=""#dc2626""/>
+        <rect x=""16"" y=""8"" width=""3"" height=""3""/>
+        <rect x=""4"" y=""12"" width=""3"" height=""3""/>
+        <rect x=""12"" y=""12"" width=""3"" height=""3""/>
+        <rect x=""8"" y=""16"" width=""3"" height=""3""/>
+      </svg>
+    </span>
+    <div>
+      <span class=""kicker"">Learning goals</span>
+      <h2>What you'll learn</h2>
+    </div>
+  </div>
+  <ul class=""goals"">
+    <li>
+      <span class=""num"">01</span>
+      <span>Use computing as a tool to work and create
+      with data.</span>
+    </li>
+    <li>
+      <span class=""num"">02</span>
+      <span>Learn effectively — with and without AI.</span>
+    </li>
+    <li>
+      <span class=""num"">03</span>
+      <span>Find, evaluate, and judge digital
+      information.</span>
+    </li>
+    <li>
+      <span class=""num"">04</span>
+      <span>Reason about the ethics, privacy, and power
+      dynamics of technology.</span>
+    </li>
+    <li>
+      <span class=""num"">05</span>
+      <span>Create a professional digital presence for
+      your career.</span>
+    </li>
+  </ul>
+</section>
+
+<section id=""journey"">
+  <div class=""head"">
+    <span class=""ico"">
+      <svg viewBox=""0 0 19 19"" fill=""#1d4ed8""
+           shape-rendering=""crispEdges""
+           xmlns=""http://www.w3.org/2000/svg"">
+        <rect x=""16"" y=""0"" width=""3"" height=""3"" fill=""#dc2626""/>
+        <rect x=""12"" y=""4"" width=""3"" height=""3""/>
+        <rect x=""8"" y=""8"" width=""3"" height=""3""/>
+        <rect x=""4"" y=""12"" width=""3"" height=""3""/>
+        <rect x=""0"" y=""16"" width=""3"" height=""3""/>
+      </svg>
+    </span>
+    <div>
+      <span class=""kicker"">Week by week</span>
+      <h2>The Journey</h2>
+    </div>
+  </div>
+
+  <!--
+    Readings: to add one, type inside a station's
+    <div class=""st-read""></div>, e.g.
+    <div class=""st-read"">Reading: Author, ""Title""</div>
+    Empty slots stay hidden automatically.
+  -->
+  <div class=""journey"">
+    <span class=""rail-cap start""></span>
+    <span class=""rail-cap end""></span>
+
+    <!-- PART I -->
+    <div class=""chapter"">
+      <span class=""emblem"">
+        <svg viewBox=""0 0 11 11"" fill=""#1d4ed8""
+             shape-rendering=""crispEdges""
+             xmlns=""http://www.w3.org/2000/svg"">
+          <rect x=""0"" y=""0"" width=""3"" height=""3""/>
+          <rect x=""4"" y=""0"" width=""3"" height=""3""/>
+          <rect x=""8"" y=""0"" width=""3"" height=""3""/>
+          <rect x=""4"" y=""4"" width=""3"" height=""3"" fill=""#dc2626""/>
+          <rect x=""0"" y=""8"" width=""3"" height=""3""/>
+          <rect x=""4"" y=""8"" width=""3"" height=""3""/>
+          <rect x=""8"" y=""8"" width=""3"" height=""3""/>
+        </svg>
+      </span>
+      <span class=""chap-kicker"">Part I</span>
+      <span class=""chap-title"">Learning How to Learn</span>
+    </div>
+    <div class=""station"" data-date=""2026-01-17"">
+      <span class=""node""></span>
+      <div class=""st-date"">Jan 17</div>
+      <div class=""st-title"">
+        <a class=""st-link"" href=""#"">
+          Learning in a Digital &amp; AI Age
+        </a>
+      </div>
+      <div class=""st-tags"">
+        <span class=""tag disc"">Week 1 Discussion</span>
+        <span class=""tag extra"">AI/digital tool survey</span>
+      </div>
+      <div class=""st-read""></div>
+    </div>
+    <div class=""station"" data-date=""2026-01-24"">
+      <span class=""node""></span>
+      <div class=""st-date"">Jan 24</div>
+      <div class=""st-title"">
+        <a class=""st-link"" href=""#"">Learning How to Learn</a>
+      </div>
+      <div class=""st-tags"">
+        <span class=""tag disc"">Week 2 Discussion</span>
+      </div>
+      <div class=""st-read""></div>
+    </div>
+    <div class=""station"" data-date=""2026-01-31"">
+      <span class=""node""></span>
+      <div class=""st-date"">Jan 31</div>
+      <div class=""st-title"">
+        <a class=""st-link"" href=""#"">
+          Digital Communication &amp; Collaboration
+        </a>
+      </div>
+      <div class=""st-tags"">
+        <span class=""tag disc"">Week 3 Discussion</span>
+      </div>
+      <div class=""st-read""></div>
+    </div>
+
+    <!-- PART II -->
+    <div class=""chapter"">
+      <span class=""emblem"">
+        <svg viewBox=""0 0 11 11"" fill=""#1d4ed8""
+             shape-rendering=""crispEdges""
+             xmlns=""http://www.w3.org/2000/svg"">
+          <rect x=""0"" y=""0"" width=""3"" height=""3""/>
+          <rect x=""8"" y=""0"" width=""3"" height=""3""/>
+          <rect x=""4"" y=""4"" width=""3"" height=""3"" fill=""#dc2626""/>
+          <rect x=""0"" y=""8"" width=""3"" height=""3""/>
+          <rect x=""8"" y=""8"" width=""3"" height=""3""/>
+        </svg>
+      </span>
+      <span class=""chap-kicker"">Part II</span>
+      <span class=""chap-title"">
+        Information &amp; AI Literacy
+      </span>
+    </div>
+    <div class=""station"" data-date=""2026-02-07"">
+      <span class=""node""></span>
+      <div class=""st-date"">Feb 7</div>
+      <div class=""st-title"">
+        <a class=""st-link"" href=""#"">Information Literacy</a>
+      </div>
+      <div class=""st-tags"">
+        <span class=""tag disc"">Week 4 Discussion</span>
+        <span class=""tag assign"">Assignment 1</span>
+      </div>
+      <div class=""st-read""></div>
+    </div>
+    <div class=""station"" data-date=""2026-02-14"">
+      <span class=""node""></span>
+      <div class=""st-date"">Feb 14</div>
+      <div class=""st-title"">
+        <a class=""st-link"" href=""#"">AI Literacy</a>
+      </div>
+      <div class=""st-tags"">
+        <span class=""tag disc"">Week 5 Discussion</span>
+      </div>
+      <div class=""st-read""></div>
+    </div>
+
+    <!-- PART III -->
+    <div class=""chapter"">
+      <span class=""emblem"">
+        <svg viewBox=""0 0 11 11"" fill=""#1d4ed8""
+             shape-rendering=""crispEdges""
+             xmlns=""http://www.w3.org/2000/svg"">
+          <rect x=""4"" y=""0"" width=""3"" height=""3""/>
+          <rect x=""0"" y=""4"" width=""3"" height=""3""/>
+          <rect x=""4"" y=""4"" width=""3"" height=""3"" fill=""#dc2626""/>
+          <rect x=""8"" y=""4"" width=""3"" height=""3""/>
+          <rect x=""4"" y=""8"" width=""3"" height=""3""/>
+        </svg>
+      </span>
+      <span class=""chap-kicker"">Part III</span>
+      <span class=""chap-title"">Ethics &amp; Design</span>
+    </div>
+    <div class=""station"" data-date=""2026-02-21"">
+      <span class=""node""></span>
+      <div class=""st-date"">Feb 21</div>
+      <div class=""st-title"">
+        <a class=""st-link"" href=""#"">
+          Ethics, Privacy &amp; Power in an AI Age
+        </a>
+      </div>
+      <div class=""st-tags"">
+        <span class=""tag disc"">Week 6 Discussion</span>
+      </div>
+      <div class=""st-read""></div>
+    </div>
+    <div class=""station"" data-date=""2026-02-28"">
+      <span class=""node""></span>
+      <div class=""st-date"">Feb 28</div>
+      <div class=""st-title"">
+        <a class=""st-link"" href=""#"">Human-Centered Design</a>
+      </div>
+      <div class=""st-tags"">
+        <span class=""tag disc"">Week 7 Discussion</span>
+      </div>
+      <div class=""st-read""></div>
+    </div>
+
+    <!-- PART IV -->
+    <div class=""chapter"">
+      <span class=""emblem"">
+        <svg viewBox=""0 0 11 11"" fill=""#1d4ed8""
+             shape-rendering=""crispEdges""
+             xmlns=""http://www.w3.org/2000/svg"">
+          <rect x=""4"" y=""0"" width=""3"" height=""3"" fill=""#dc2626""/>
+          <rect x=""0"" y=""4"" width=""3"" height=""3""/>
+          <rect x=""4"" y=""4"" width=""3"" height=""3""/>
+          <rect x=""8"" y=""4"" width=""3"" height=""3""/>
+          <rect x=""4"" y=""8"" width=""3"" height=""3""/>
+        </svg>
+      </span>
+      <span class=""chap-kicker"">Part IV</span>
+      <span class=""chap-title"">Identity &amp; Data</span>
+    </div>
+    <div class=""station"" data-date=""2026-03-07"">
+      <span class=""node""></span>
+      <div class=""st-date"">Mar 7</div>
+      <div class=""st-title"">
+        <a class=""st-link"" href=""#"">
+          Professional Identity &amp; Self-Presentation
+        </a>
+      </div>
+      <div class=""st-tags"">
+        <span class=""tag disc"">Week 8 Discussion</span>
+        <span class=""tag assign"">Assignment 2</span>
+      </div>
+      <div class=""st-read""></div>
+    </div>
+    <div class=""station"" data-date=""2026-03-14"">
+      <span class=""node""></span>
+      <div class=""st-date"">Mar 14</div>
+      <div class=""st-title"">
+        <a class=""st-link"" href=""#"">Working with Data</a>
+      </div>
+      <div class=""st-tags"">
+        <span class=""tag disc"">Week 9 Discussion</span>
+      </div>
+      <div class=""st-read""></div>
+    </div>
+    <div class=""brk"">
+      <span class=""node""></span>
+      <span>Fall / Spring Break</span>
+    </div>
+
+    <!-- PART V -->
+    <div class=""chapter"">
+      <span class=""emblem"">
+        <svg viewBox=""0 0 11 11"" fill=""#1d4ed8""
+             shape-rendering=""crispEdges""
+             xmlns=""http://www.w3.org/2000/svg"">
+          <rect x=""0"" y=""0"" width=""3"" height=""3""/>
+          <rect x=""8"" y=""0"" width=""3"" height=""3""/>
+          <rect x=""4"" y=""4"" width=""3"" height=""3""/>
+          <rect x=""0"" y=""8"" width=""3"" height=""3""/>
+          <rect x=""8"" y=""8"" width=""3"" height=""3"" fill=""#dc2626""/>
+        </svg>
+      </span>
+      <span class=""chap-kicker"">Part V</span>
+      <span class=""chap-title"">
+        Making with Data &amp; Code
+      </span>
+    </div>
+    <div class=""station"" data-date=""2026-04-04"">
+      <span class=""node""></span>
+      <div class=""st-date"">Apr 4</div>
+      <div class=""st-title"">
+        <a class=""st-link"" href=""#"">
+          Data Storytelling &amp; Visualization
+        </a>
+        <span class=""star""
+              title=""Two weeks to complete"">**</span>
+      </div>
+      <div class=""st-tags"">
+        <span class=""tag disc"">Week 10 Discussion</span>
+      </div>
+      <div class=""st-read""></div>
+    </div>
+    <div class=""station"" data-date=""2026-04-19"">
+      <span class=""node""></span>
+      <div class=""st-date"">Apr 19</div>
+      <div class=""st-title"">
+        <a class=""st-link"" href=""#"">
+          Coding &amp; Computational Thinking
+        </a>
+        <span class=""star""
+              title=""Two weeks to complete"">**</span>
+      </div>
+      <div class=""st-tags"">
+        <span class=""tag disc"">Week 11 Discussion</span>
+      </div>
+      <div class=""st-read""></div>
+    </div>
+    <div class=""station"" data-date=""2026-04-26"">
+      <span class=""node""></span>
+      <div class=""st-date"">Apr 26</div>
+      <div class=""st-title"">
+        <a class=""st-link"" href=""#"">Final Assignment</a>
+      </div>
+      <div class=""st-tags"">
+        <span class=""tag assign"">Assignment 3</span>
+      </div>
+      <div class=""st-read""></div>
+    </div>
+
+  </div>
+
+  <p class=""note"">
+    <span class=""star"">**</span>
+    <span>
+      You have two weeks to complete this unit, giving you
+      time to work on your final assignment. Topics and
+      readings are subject to change — always check this
+      schedule for the latest.
+    </span>
+  </p>
+</section>
+
+<section id=""assignments"">
+  <div class=""head"">
+    <span class=""ico"">
+      <svg viewBox=""0 0 19 19"" fill=""#1d4ed8""
+           shape-rendering=""crispEdges""
+           xmlns=""http://www.w3.org/2000/svg"">
+        <rect x=""0"" y=""0"" width=""3"" height=""3""/>
+        <rect x=""8"" y=""0"" width=""3"" height=""3""/>
+        <rect x=""12"" y=""0"" width=""3"" height=""3""/>
+        <rect x=""16"" y=""0"" width=""3"" height=""3""/>
+        <rect x=""0"" y=""8"" width=""3"" height=""3""/>
+        <rect x=""8"" y=""8"" width=""3"" height=""3""/>
+        <rect x=""12"" y=""8"" width=""3"" height=""3""/>
+        <rect x=""16"" y=""8"" width=""3"" height=""3""/>
+        <rect x=""0"" y=""16"" width=""3"" height=""3"" fill=""#dc2626""/>
+        <rect x=""8"" y=""16"" width=""3"" height=""3""/>
+        <rect x=""12"" y=""16"" width=""3"" height=""3""/>
+        <rect x=""16"" y=""16"" width=""3"" height=""3""/>
+      </svg>
+    </span>
+    <div>
+      <span class=""kicker"">Deliverables</span>
+      <h2>Major Assignments</h2>
+    </div>
+  </div>
+  <div class=""cards"">
+    <a class=""card"" href=""#"">
+      <span class=""reg tr""></span>
+      <span class=""reg bl""></span>
+      <span class=""card-tag"">A1</span>
+      <div class=""due"">Due Feb 7</div>
+      <h3>Assignment 1</h3>
+      <p><!-- EDIT -->Information literacy in practice.</p>
+    </a>
+    <a class=""card"" href=""#"">
+      <span class=""reg tr""></span>
+      <span class=""reg bl""></span>
+      <span class=""card-tag"">A2</span>
+      <div class=""due"">Due Mar 7</div>
+      <h3>Assignment 2</h3>
+      <p><!-- EDIT -->Building your professional digital
+      identity.</p>
+    </a>
+    <a class=""card"" href=""#"">
+      <span class=""reg tr""></span>
+      <span class=""reg bl""></span>
+      <span class=""card-tag"">A3 · FINAL</span>
+      <div class=""due"">Due Apr 26</div>
+      <h3>Assignment 3</h3>
+      <p><!-- EDIT -->A capstone project bringing the
+      course together.</p>
+    </a>
+  </div>
+</section>
+
+<section id=""grades"">
+  <div class=""head"">
+    <span class=""ico"">
+      <svg viewBox=""0 0 19 19"" fill=""#1d4ed8""
+           shape-rendering=""crispEdges""
+           xmlns=""http://www.w3.org/2000/svg"">
+        <rect x=""16"" y=""0"" width=""3"" height=""3"" fill=""#dc2626""/>
+        <rect x=""16"" y=""4"" width=""3"" height=""3""/>
+        <rect x=""8"" y=""8"" width=""3"" height=""3""/>
+        <rect x=""16"" y=""8"" width=""3"" height=""3""/>
+        <rect x=""0"" y=""12"" width=""3"" height=""3""/>
+        <rect x=""8"" y=""12"" width=""3"" height=""3""/>
+        <rect x=""16"" y=""12"" width=""3"" height=""3""/>
+        <rect x=""0"" y=""16"" width=""3"" height=""3""/>
+        <rect x=""8"" y=""16"" width=""3"" height=""3""/>
+        <rect x=""16"" y=""16"" width=""3"" height=""3""/>
+      </svg>
+    </span>
+    <div>
+      <span class=""kicker"">Assessment</span>
+      <h2>How You're Graded</h2>
+    </div>
+  </div>
+  <div class=""grades"">
+    <div class=""grade-row"">
+      <span class=""grade-label"">Weekly Discussions</span>
+      <span class=""grade-track"">
+        <span class=""grade-fill"" style=""width: 30%""></span>
+      </span>
+      <span class=""grade-pct"">30%</span>
+    </div>
+    <div class=""grade-row"">
+      <span class=""grade-label"">Assignment 1</span>
+      <span class=""grade-track"">
+        <span class=""grade-fill"" style=""width: 15%""></span>
+      </span>
+      <span class=""grade-pct"">15%</span>
+    </div>
+    <div class=""grade-row"">
+      <span class=""grade-label"">Assignment 2</span>
+      <span class=""grade-track"">
+        <span class=""grade-fill"" style=""width: 15%""></span>
+      </span>
+      <span class=""grade-pct"">15%</span>
+    </div>
+    <div class=""grade-row"">
+      <span class=""grade-label"">Assignment 3 (Final)</span>
+      <span class=""grade-track"">
+        <span class=""grade-fill"" style=""width: 25%""></span>
+      </span>
+      <span class=""grade-pct"">25%</span>
+    </div>
+    <div class=""grade-row"">
+      <span class=""grade-label"">Participation</span>
+      <span class=""grade-track"">
+        <span class=""grade-fill"" style=""width: 15%""></span>
+      </span>
+      <span class=""grade-pct"">15%</span>
+    </div>
+  </div>
+  <p class=""note"">
+    <span class=""star"">*</span>
+    <span><!-- EDIT -->Placeholder weights — adjust to
+    your final grading scheme.</span>
+  </p>
+</section>
+
+<section id=""info"">
+  <div class=""head"">
+    <span class=""ico"">
+      <svg viewBox=""0 0 19 19"" fill=""#1d4ed8""
+           shape-rendering=""crispEdges""
+           xmlns=""http://www.w3.org/2000/svg"">
+        <rect x=""8"" y=""0"" width=""3"" height=""3"" fill=""#dc2626""/>
+        <rect x=""8"" y=""8"" width=""3"" height=""3""/>
+        <rect x=""8"" y=""12"" width=""3"" height=""3""/>
+        <rect x=""8"" y=""16"" width=""3"" height=""3""/>
+      </svg>
+    </span>
+    <div>
+      <span class=""kicker"">Logistics</span>
+      <h2>Course Info</h2>
+    </div>
+  </div>
+  <dl class=""info-grid"">
+    <div>
+      <dt>Instructor</dt>
+      <dd>Your Name <!-- EDIT --></dd>
+      <dt>Email</dt>
+      <dd>
+        <a href=""mailto:you@university.edu"">
+          you@university.edu
+        </a>
+      </dd>
+    </div>
+    <div>
+      <dt>Office Hours</dt>
+      <dd>Day / time / location <!-- EDIT --></dd>
+      <dt>Prerequisites</dt>
+      <dd>None</dd>
+    </div>
+  </dl>
+</section>
+
+<footer>
+  LT 2010 · Computer Skills for the Information Age —
+  Department of Learning Sciences. Spring 2026.
+  Schedule subject to change.
+</footer>
+
+<script>
+  // Date-aware ""You are here"" marker.
+  // Runs in the visitor's browser, so it always
+  // reflects today's date.
+  (function () {
+    var today = new Date();
+    today.setHours(0, 0, 0, 0);
+    var stations = document.querySelectorAll('.station');
+    var currentSet = false;
+    stations.forEach(function (st) {
+      var raw = st.getAttribute('data-date');
+      var due = new Date(raw + 'T00:00:00');
+      if (due < today) {
+        st.classList.add('past');
+      } else if (!currentSet) {
+        st.classList.add('current');
+        currentSet = true;
+        var badge = document.createElement('span');
+        badge.className = 'here-badge';
+        badge.textContent = '\u203A you are here';
+        var title = st.querySelector('.st-title');
+        title.appendChild(badge);
+      } else {
+        st.classList.add('future');
+      }
+    });
+  })();
+</script>
+
+</body>
+</html>
+```
+
+**What changed, at a glance:**
+- **Pixel icons** — every section header now uses a bespoke square-pixel glyph (blue with one red accent pixel): a screen (Overview), bullseye (Goals), ascending path (Journey), checklist (Assignments), bar chart (Grades), an ""i"" (Info). No more Feather stock.
+- **Per-chapter emblems** — each Part I–V has its own 3×3 pixel mark on the rail, a related family with distinct patterns.
+- **Timeline** — nodes are now **square modules**, the spine is a **dotted data-rail**, and it's bracketed by a hollow **start cap** and a gradient **finish cap** so it reads as intentional even out of term.
+- **Monospace labels** — dates, kickers, the ""01–05"" numbers, the course code, the ""you are here"" badge, and info labels now use system mono, giving the whole page a computational voice against the humanist body text.
+- **Cards → records** — assignment cards are now links with a mono tag (`A1`, `A2`, `A3 · FINAL`), a gradient top rule, corner registration marks, and a hover lift.
+- **Tags** softened from pills to rounded rectangles; **hero nodes** are now squares to match.
+- **Hooks added:** empty `st-read` readings slots (auto-hidden until filled), `href=""#""` placeholder links on every station title and card, and a new **Grades** section with placeholder weights.
+
+A couple of notes: the pixel icons/emblems are the fiddliest bit to get pixel-perfect without a live render — if any glyph looks off-balance to you, tell me which and I'll nudge cells. And the two cap positions (`.rail-cap.start`/`.end` `top`/`bottom: 6px`) may want a 2–4px tweak once you see it in your browser. Take a look and tell me how it lands.",1950.905,1950.984,message,assistant,,,,claude-opus-4-8,34235,c44fcc11-0200-490a-b4e7-5909a4f301d6,text
+ai,Ben,Do you see a better approach to the paragraph describing the course? what would be a better description for undergraduate students/from their perspective? The blend of technical and ethical learning in the course is crucial.,1950.984,1957.984,message,user,,,,,,440e9250-20fe-484e-8034-f2b6fd5a1c33,text
+ai,Claude,"Yes — the current opening has a classic syllabus problem: it's written from the *institution's* point of view, not the student's. It opens on a truism (""Computing… now shape how we learn, work…""), then tells students what they'll ""become"" in the abstract. It also buries the technical/ethical blend — the single most compelling thing about the course — inside the adjective ""ethical."" I'd flip all three.
+
+**The better approach, in principle:**
+1. **Start where students already are** — they're *already* using these tools (searching, studying, using AI to write). Name that reality so it feels about their actual life.
+2. **Lead with the payoff, in ""you"" language** — what they'll be able to *do*, not what they'll ""become.""
+3. **Make the technical + ethical blend the explicit thesis** — frame it as a pair: the power to *use* these tools well and the judgment to *question* them. That pairing is the course's whole identity, so it should be the sentence a student remembers.
+
+Here's a rewrite of the opening paragraph in that spirit — it still hands off naturally into your existing ""Over the semester…"" topics paragraph:
+
+> **Option A (recommended — concise, direct):**
+> You already live a good part of your life online — searching, studying, creating, and increasingly leaning on AI to help. This course is about doing all of that *deliberately*. You'll gain real, practical skills: working with data, finding and judging information, learning more effectively, and building a professional presence for your career. Just as importantly, you'll gain the judgment to go with them — asking not only how a tool works, but who it serves, what it gets wrong, and when it's worth trusting. Being capable with technology and being critical of it aren't opposites here; they're two halves of the same skill.
+
+> **Option B (slightly warmer, foregrounds the stakes):**
+> Whatever you're studying and wherever you're headed, technology and AI are already shaping how you learn, work, and make decisions — often in ways that are easy to miss. This course helps you take the controls. You'll build the technical skills to work and create with data, find and judge information, and present yourself professionally — and, right alongside them, the ethical footing to ask harder questions: Who built this tool? Whose interests does it serve? When should you rely on it, and when should you push back? The aim is to leave you both *capable* and *critical* — able to use these tools well, and wise about their limits.
+
+Both put the technical-and-ethical pairing front and center and land it as the closing thought, which is where it sticks. **A** is tighter and reads faster; **B** does a little more to motivate *why it matters* and asks the ethical questions out loud (which undergrads tend to respond to).
+
+Two things I'd suggest alongside the rewrite:
+- Your **hero tagline** (""A semester-long journey to becoming a thoughtful, capable, and ethical participant…"") echoes the same institutional phrasing. If we sharpen the paragraph, I'd tune the tagline to match — e.g. *""Learn to use technology and AI with skill — and to question it with judgment.""*
+- The last two topics in the list (""reason about the ethics of technology"") could be reworded so the ethical thread feels woven through, not tacked on at the end.
+
+Want me to go with **A** or **B** (or a blend), retune the tagline to match, and wire it into the file? And should I also lightly revise the topics paragraph so the ethical framing runs through it?",1989.443,1990.443,message,assistant,,,,claude-opus-4-8,2202,1258d110-4f53-4082-a48c-8cd2e0eeaa2f,text

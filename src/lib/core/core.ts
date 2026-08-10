@@ -49,7 +49,11 @@ const examples: Record<string, { files: string[]; videoId: string }> = {
 	'trip-chat': { files: ['conversation.csv'], videoId: '' },
 	'trip-tools': { files: ['conversation.csv'], videoId: '' },
 	'trip-agent': { files: ['conversation.csv'], videoId: '' },
-	'trip-multi-agent': { files: ['conversation.csv'], videoId: '' }
+	'trip-multi-agent': { files: ['conversation.csv'], videoId: '' },
+	'web-design-chat': { files: ['conversation.csv'], videoId: '' },
+	'web-design-tools': { files: ['conversation.csv'], videoId: '' },
+	'web-design-single-agent': { files: ['conversation.csv'], videoId: '' },
+	'web-design-multi-agent': { files: ['conversation.csv'], videoId: '' }
 };
 
 export class Core {
