@@ -33,7 +33,23 @@ const examples: Record<string, { files: string[]; videoId: string }> = {
 		// Biden/Trump Debate 2020
 		files: ['conversation.csv'],
 		videoId: 'yW8nIA33-zY'
-	}
+	},
+	'claude-chat': { files: ['conversation.csv'], videoId: '' },
+	'claude-tools': { files: ['conversation.csv'], videoId: '' },
+	'claude-agent': { files: ['conversation.csv'], videoId: '' },
+	'claude-multi-agent': { files: ['conversation.csv'], videoId: '' },
+	'cs-chat': { files: ['conversation.csv'], videoId: '' },
+	'cs-tools': { files: ['conversation.csv'], videoId: '' },
+	'cs-agent': { files: ['conversation.csv'], videoId: '' },
+	'cs-multi-agent': { files: ['conversation.csv'], videoId: '' },
+	'cooking-chat': { files: ['conversation.csv'], videoId: '' },
+	'cooking-tools': { files: ['conversation.csv'], videoId: '' },
+	'cooking-agent': { files: ['conversation.csv'], videoId: '' },
+	'cooking-multi-agent': { files: ['conversation.csv'], videoId: '' },
+	'trip-chat': { files: ['conversation.csv'], videoId: '' },
+	'trip-tools': { files: ['conversation.csv'], videoId: '' },
+	'trip-agent': { files: ['conversation.csv'], videoId: '' },
+	'trip-multi-agent': { files: ['conversation.csv'], videoId: '' }
 };
 
 export class Core {
@@ -51,8 +67,10 @@ export class Core {
 	}
 
 	/**
-	 * Fetch an example CSV file and return it as a File object.
-	 * Throws if fetch fails.
+	 * Fetch an example file and return it as a File object. The MIME type is
+	 * derived from the extension so downstream dispatch (which can branch on
+	 * file.type) routes .jsonl/.json sessions to the interaction parser rather
+	 * than the CSV path. Throws if fetch fails.
 	 */
 	async fetchExampleFile(exampleId: string, fileName: string): Promise<File> {
 		const response = await fetch(`/data/${exampleId}/${fileName}`);
@@ -60,7 +78,14 @@ export class Core {
 			throw new Error(`Failed to fetch example file: ${response.statusText}`);
 		}
 		const buffer = await response.arrayBuffer();
-		return new File([buffer], fileName, { type: 'text/csv' });
+		const lower = fileName.toLowerCase();
+		const type =
+			lower.endsWith('.jsonl') || lower.endsWith('.json')
+				? 'application/json'
+				: lower.endsWith('.txt')
+					? 'text/plain'
+					: 'text/csv';
+		return new File([buffer], fileName, { type });
 	}
 
 	/**

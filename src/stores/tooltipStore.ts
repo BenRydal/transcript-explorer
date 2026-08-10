@@ -46,12 +46,10 @@ export function resetTooltipFrame() {
 
 // Call this at the end of each draw frame to hide tooltip if nothing requested it
 export function finalizeTooltipFrame() {
-	if (!tooltipRequestedThisFrame) {
-		TooltipStore.update((state) => ({
-			...state,
-			visible: false
-		}));
-	}
+	if (tooltipRequestedThisFrame) return;
+	// Rewriting an already-hidden tooltip allocated a new object and re-ran the
+	// renderer on every frame the pointer was not over anything.
+	TooltipStore.update((state) => (state.visible ? { ...state, visible: false } : state));
 }
 
 export default TooltipStore;

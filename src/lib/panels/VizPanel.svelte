@@ -110,7 +110,13 @@
 				label: 'Statistical (z-score)',
 				hint: 'Show only transitions that deviate from chance (|z|≥1.96, p<0.05).'
 			},
-			{ type: 'slider', key: 'turnNetworkMinTransitions', label: 'Min Transitions', min: 1, max: 20 }
+			{ type: 'slider', key: 'turnNetworkMinTransitions', label: 'Min Transitions', min: 1, max: 20 },
+			{
+				type: 'toggle',
+				key: 'turnNetworkShortLabels',
+				label: 'Short Labels',
+				hint: 'Trim node labels to five characters. Full name still shows on hover.'
+			}
 		],
 		speakerHeatmap: [{ type: 'slider', key: 'heatmapBinCount', label: 'Bin Count', min: 0, max: 60, formatValue: formatBinCount }],
 		turnLength: [{ type: 'slider', key: 'turnLengthBinCount', label: 'Bin Count', min: 0, max: 60, formatValue: formatBinCount }],

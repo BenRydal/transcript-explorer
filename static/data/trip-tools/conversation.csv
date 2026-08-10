@@ -1,0 +1,205 @@
+te_source_kind,speaker,content,start,end,event_type,role,tool_name,agent_type,agent_id,model,tokens_out,event_id,content_type
+ai,Edwin,"We're thinking about ten days in Japan in November. Two of us, first time there, not a huge budget. Where should we actually go and how do we get around?",0.0,6.0,message,user,,,,,,dc57e8d6-f0e2-461c-a247-2b0c71c20f19,text
+ai,Claude,"For a first trip, ten days, two people, not much budget — the classic Tokyo → Kyoto/Osaka corridor is genuinely the right answer. It's the one time ""do the obvious thing"" is correct: the transport is dense, English signage is everywhere, and you never backtrack.
+
+## The route
+
+**Tokyo — 4 nights.** Base in one place the whole time. Ueno, Asakusa, or Shinjuku for cheap-and-connected. Mix neighborhoods (Shibuya/Shimokitazawa, Yanaka, Tsukiji outer market) with one big day trip.
+
+**Day trip from Tokyo — pick one:** Nikko (shrines + early-November foliage, peaks there ~first week of Nov) or Kamakura (temples + coast, cheaper and closer). Hakone is the third option but works better as a stopover than a day trip.
+
+**Hakone — 1 night, optional.** Onsen ryokan, Mt Fuji views if the weather cooperates. It sits between Tokyo and Kyoto so it costs you almost nothing in transit. Cheapest way to get a ryokan night without a detour.
+
+**Kyoto — 4 nights.** Late November is peak foliage — spectacular and genuinely mobbed. Temples open at 8–9am and the difference between 8:30 and 11:00 at Fushimi Inari or Arashiyama is night and day.
+
+**Osaka — 1 night at the end,** or just day-trip it from Kyoto (28 min, ~¥580). Nara is a better day trip than Osaka if you only get one. Himeji Castle if you want a third.
+
+Fly into Tokyo (Haneda > Narita) and out of Osaka Kansai — ""open-jaw"" tickets usually cost the same as a round trip and save you a wasted travel day.
+
+## Getting around
+
+**Skip the national JR Pass.** It went to ¥50,000/person for 7 days in late 2023 and no longer pays for itself on this route. Tokyo→Kyoto is ~¥14,000 and Kyoto→Osaka is pocket change; you'd need to be doing a lot more long-distance riding to break even. Just buy point-to-point.
+
+**Get IC cards** (Suica/Pasmo in Tokyo, ICOCA in Kansai — all interchangeable). Tap for every subway, bus, train, and convenience store. If you have an iPhone, add Suica directly to Apple Wallet and top up with a card — that sidesteps the physical-card supply issues entirely and is the single best quality-of-life move.
+
+**Shinkansen:** book via the SmartEX app or just buy at the station. Non-reserved cars are cheaper and fine outside holidays. Get a reserved seat on the Tokyo→Kyoto leg though, especially on a weekend in foliage season.
+
+**Cheaper alternatives if the budget is tight:** overnight highway buses (Willer, ~¥5,000 Tokyo→Kyoto, saves a hotel night but costs you a rough sleep), or budget flights on Peach/Jetstar which can undercut the Shinkansen but add airport transit time.
+
+**Worth buying regionally:** a Hakone Free Pass if you go there, and the Kansai-area day passes for Kyoto/Nara/Osaka. These are small and actually pay off, unlike the big one.
+
+## Rough budget
+
+Per person, excluding international flights, at roughly ¥150 to the dollar:
+
+- Lodging: ¥7,000–9,000/night for a business hotel double (APA, Toyoko Inn, Sotetsu Fresa) — so ~¥40,000 each for the trip
+- Intercity transport: ~¥20,000–25,000
+- Food: ¥3,000–5,000/day eating well at conveyor sushi, ramen shops, department-store food halls, and konbini
+- Entry fees: ¥500–1,000 per temple, adds up faster than you'd think
+
+Call it **¥110,000–140,000 (~$750–950) each on the ground.** The ryokan night, if you do one, is ¥15,000–25,000 per person on its own — worth it once.
+
+## Book now, not later
+
+Late-November Kyoto hotels sell out and prices roughly double. If your dates land in the second half of the month, lock lodging in well ahead; everything else can wait.
+
+Two things that would change my advice: are your dates early or late November (that flips the foliage from Nikko/Tokyo to Kyoto), and do you want a rural/onsen night in the mix or would you rather stay in cities the whole time? Tell me and I'll turn this into an actual day-by-day.",35.572,95.572,message,assistant,,,,claude-opus-5,2140,bdebe420-9d82-48e9-a82b-4f8ff480b836,text
+ai,Edwin,What does the rail pass actually cost now? Look it up rather than guessing.,7849.881,7852.893,message,user,,,,,,beefe035-919e-4073-9e66-dbbfde170562,text
+ai,Tool:ToolSearch,"[ToolSearch] {""query"": ""select:WebSearch,WebFetch"", ""max_results"": 5}",7852.893,7855.252,tool_call,tool,ToolSearch,,,claude-opus-5,,1f183f61-74db-49a3-ae47-53cd966de8b3,text
+ai,Tool:WebSearch,"[WebSearch] {""query"": ""Japan Rail Pass price 2026 7-day ordinary""}",7855.252,7855.362,tool_call,tool,WebSearch,,,claude-opus-5,,1827959f-7ba3-42f5-90f1-1c1f784a3ee1,text
+ai,Tool:WebSearch,"[WebSearch] {""query"": ""JR Pass price increase 2026 yen 7 14 21 day cost""}",7855.362,7873.433,tool_call,tool,WebSearch,,,claude-opus-5,,d1cbb37e-062d-4ecd-a503-364419f2597a,text
+ai,Tool:WebSearch,"Web search results for query: ""Japan Rail Pass price 2026 7-day ordinary""
+
+Links: [{""title"":""Is Japan Rail Pass Worth it in 2026? Cost breakdown | Saily"",""url"":""https://saily.com/blog/is-japan-rail-pass-worth-it/""},{""title"":""JR Pass Calculator 2026: Compare Fares vs the Japan Rail Pass"",""url"":""https://explorejapan.ai/jr-pass-calculator""},{""title"":""Japan Rail Pass Price 2026: Official Costs (7, 14, 21 Day Comparison)"",""url"":""https://japanfortravelers.com/japan-rail-pass-price-comparison-2025-is-it-still-worth-it/""},{""title"":""Japan Rail Pass Prices 2026: Official Price List (7, 14 & 21 Days) + When Prices Rise | BluePlanet"",""url"":""https://selfguidejapan.com/blog/japan-rail-pass-price-2026""},{""title"":""JR Pass 2026 Price Update: Is It Still Worth It?"",""url"":""https://tanuki-tabi-travel.com/blog/japan-rail-pass-worth-it""},{""title"":""Is the JR Pass Worth It in 2026? When You Save — and When You Lose | BluePlanet"",""url"":""https://selfguidejapan.com/blog/is-jr-pass-worth-it-2026""},{""title"":""Japan Rail Pass Guide 2026: Price, What It Covers & Is It Really Worth It? - Japan Trip Navi"",""url"":""https://kanko-map.com/en/jr-pass-guide/""},{""title"":""Japan Rail Pass 2026: Is It Worth It? [Price & Cost Comparison] | Japan Train"",""url"":""https://japantrain.net/guide/jr-pass-2026-price""},{""title"":""Japan Rail Pass Guide: How to Buy & Use It (2026)"",""url"":""https://kikispassport.com/japan-rail-pass-guide/""}]
+
+Based on the search results, here's the information about the Japan Rail Pass 7-day Ordinary price for 2026:
+
+The ordinary 7-day Japan Rail Pass is ¥50,000, which is approximately US$330.
+
+However, it's important to note that from 1 October 2026 these rise to ¥53,000. So if you're planning to purchase through overseas agencies and your travel dates allow, buying before October 1, 2026 will lock in the lower price.
+
+
+REMINDER: You MUST include the sources above in your response to the user using markdown hyperlinks.",7873.433,7875.851,tool_result,tool,WebSearch,,,,,ee9fb80a-564e-41e0-8e52-82f008566985,text
+ai,Tool:WebSearch,"Web search results for query: ""JR Pass price increase 2026 yen 7 14 21 day cost""
+
+Links: [{""title"":""Japan Rail Network: JR Pass Price Big Increase from October 2026 to Affect Travel Across Tokyo, Kyoto, Osaka and Northern Japan - Travel And Tour World"",""url"":""https://www.travelandtourworld.com/news/article/japan-rail-network-jr-pass-price-big-increase-from-october-2026-to-affect-travel-across-tokyo-kyoto-osaka-and-northern-japan/""},{""title"":""Is Japan Rail Pass Worth it in 2026? Cost breakdown | Saily"",""url"":""https://saily.com/blog/is-japan-rail-pass-worth-it/""},{""title"":""Japan Rail Pass Price Increase October 2026: New Cost, Impact & Travel Tips | Outlook Traveller"",""url"":""https://www.outlooktraveller.com/News/japan-rail-pass-to-get-costlier-from-october-2026""},{""title"":""Japan Rail Pass Prices Set to Rise (Again): What Travelers Need to Know for 2026 - Travel And Tour World"",""url"":""https://www.travelandtourworld.com/news/article/japan-rail-pass-prices-set-to-rise-again-what-travelers-need-to-know-for-2026/""},{""title"":""Price Increases are Coming to the Nationwide Japan Rail Pass (2026)"",""url"":""https://www.japan.travel/en/ca/news/price-increases-are-coming-to-the-nationwide-japan-rail-pass-2026/""},{""title"":""Japan Rail Pass Prices 2026: Official Price List (7, 14 & 21 Days) + When Prices Rise | BluePlanet"",""url"":""https://selfguidejapan.com/blog/japan-rail-pass-price-2026""},{""title"":""Japan Rail Pass 2026: Is It Worth It? [Price & Cost Comparison] | Japan Train"",""url"":""https://japantrain.net/guide/jr-pass-2026-price""},{""title"":""Japan’s JR Rail Pass Prices Are About to Increase—but There’s Still Time to Buy Before They Do"",""url"":""https://www.afar.com/magazine/prices-for-japans-jr-rail-pass-to-increase-this-year?p=1""},{""title"":""all jr rail passes are increasing in price this october the full list 090723"",""url"":""https://www.timeout.com/tokyo/news/all-jr-rail-passes-are-increasing-in-price-this-october-the-full-list-090723""}]
+
+Based on the search results, here's the information about JR Pass price increases in 2026:
+
+## JR Pass 2026 Price Increase Details
+
+JR Group announced that prices for the nationwide Japan Rail Pass will be increasing as of October 1st, 2026.
+
+### Current Prices (Before October 1, 2026)
+The 2026 nationwide Japan Rail Pass costs ¥50,000 for 7 days, ¥80,000 for 14 days, and ¥100,000 for 21 days in Ordinary class.
+
+### New Prices (October 1, 2026 onwards)
+For standard Ordinary Class passes:
+- 7-day pass now costs 53,000 yen, following a 3,000 yen increase
+- The 14-day option has risen by 4,000 yen to 84,000 yen, while the 21-day pass is now priced at 105,000 yen after a 5,000 yen hike
+
+### Green Car (First Class) Prices
+A 7-day Green Pass will jump from 70,000 yen to 74,000 yen, while the 21-day version will reach 147,000 yen.
+
+### Overall Impact
+The upcoming increase is estimated at roughly 5% to 6% across the board.
+
+**Important Note:** For a limited time, those booking through the Official Japan Rail Pass Website will be able to enjoy the pre-October prices.
+
+
+REMINDER: You MUST include the sources above in your response to the user using markdown hyperlinks.",7875.851,7880.514,tool_result,tool,WebSearch,,,,,6e7d74eb-c34c-45dc-81c0-805dc8d98201,text
+ai,Tool:WebFetch,"[WebFetch] {""url"": ""https://www.japan.travel/en/ca/news/price-increases-are-coming-to-the-nationwide-japan-rail-pass-2026/"", ""prompt"": ""What are the new Japan Rail Pass prices effective October 1 2026, and does the price depend on purchase date or travel/exchange date? List old and new prices for 7/14/21 day ordinary and green.""}",7880.514,7880.59,tool_call,tool,WebFetch,,,claude-opus-5,,2e20075e-4de6-48df-9d41-c68909182323,text
+ai,Tool:WebSearch,"[WebSearch] {""query"": ""JR Pass October 2026 price increase applies to passes purchased before October 1 use date""}",7880.59,7882.59,tool_call,tool,WebSearch,,,claude-opus-5,,1f291ff1-ffe5-41ec-85a3-88bfd339f606,text
+ai,Tool:WebSearch,"Web search results for query: ""JR Pass October 2026 price increase applies to passes purchased before October 1 use date""
+
+Links: [{""title"":""Price Increases are Coming to the Nationwide Japan Rail Pass (2026)"",""url"":""https://www.japan.travel/en/ca/news/price-increases-are-coming-to-the-nationwide-japan-rail-pass-2026/""},{""title"":""JR Pass Price Increase 2026: Buy Online to Pay the Old Price - Get Around Japan"",""url"":""https://www.getaroundjapan.jp/archives/10991""},{""title"":""Japan Rail Network: JR Pass Price Big Increase from October 2026 to Affect Travel Across Tokyo, Kyoto, Osaka and Northern Japan - Travel And Tour World"",""url"":""https://www.travelandtourworld.com/news/article/japan-rail-network-jr-pass-price-big-increase-from-october-2026-to-affect-travel-across-tokyo-kyoto-osaka-and-northern-japan/""},{""title"":""Japan Rail Pass Price Increase October 2026: New Cost, Impact & Travel Tips | Outlook Traveller"",""url"":""https://www.outlooktraveller.com/News/japan-rail-pass-to-get-costlier-from-october-2026""},{""title"":""Japan Rail Pass Prices Set to Diverge in October as Overseas Agency Fares Rise While Official Online Booking Rates Remain Frozen: Everything You Need to Know"",""url"":""https://www.nomadlawyer.org/japan-rail-pass-two-tier-pricing-october-2026""},{""title"":""JR Pass Calculator 2026: Compare Fares vs the Japan Rail Pass"",""url"":""https://explorejapan.ai/jr-pass-calculator""},{""title"":""JR to Increase Rail Pass Prices From October - Transport - Japan Travel"",""url"":""https://en.japantravel.com/news/jr-to-increase-rail-pass-prices-from-october/72518""},{""title"":""Japan Rail Pass Prices 2026: Official Price List (7, 14 & 21 Days) + When Prices Rise | BluePlanet"",""url"":""https://selfguidejapan.com/blog/japan-rail-pass-price-2026""},{""title"":""all jr rail passes are increasing in price this october the full list 090723"",""url"":""https://www.timeout.com/tokyo/news/all-jr-rail-passes-are-increasing-in-price-this-october-the-full-list-090723""}]
+
+Based on the search results, here's what I found about the JR Pass October 2026 price increase:
+
+JR Group announced that prices for the nationwide Japan Rail Pass will be increasing as of October 1st, 2026, and the new prices apply to purchases made on or after October 1, 2026, based on the local time at the point of purchase.
+
+It's important to note that the price increase applies to overseas sales agents, while the official online reservation service is keeping its current prices for now. Travelers can bypass the price hike by purchasing exchange orders by 30 September, securing current agency rates for itineraries extending into early 2027.
+
+The price increases are modest, with overall adult passes increasing by around 5 to 6 percent. For example, the Ordinary Car 7-day adult pass rises from 50,000 to 53,000 yen, the 14-day from 80,000 to 84,000, and the 21-day from 100,000 to 105,000.
+
+
+REMINDER: You MUST include the sources above in your response to the user using markdown hyperlinks.",7938.466,7940.041,tool_result,tool,WebSearch,,,,,a5579669-b0e8-4128-9cf7-3a03943d3ea3,text
+ai,Tool:WebFetch,"# Japan Rail Pass Price Increases (October 1, 2026)
+
+## Price Changes
+
+**Ordinary Pass (Adult/Child):**
+- 7-Day: ¥50,000/25,000 → ¥53,000/27,000
+- 14-Day: ¥80,000/40,000 → ¥84,000/42,000
+- 21-Day: ¥100,000/50,000 → ¥105,000/53,000
+
+**Green Car Pass (Adult/Child):**
+- 7-Day: ¥70,000/35,000 → ¥74,000/37,000
+- 14-Day: ¥110,000/55,000 → ¥116,000/58,000
+- 21-Day: ¥140,000/70,000 → ¥147,000/74,000
+
+## Purchase Date Matters
+
+The article indicates that ""prices for the nationwide Japan Rail Pass will be increasing as of October 1st, 2026 (local time at the location of purchase)."" This suggests the price depends on when you buy the pass, not when you travel. 
+
+Additionally, those booking through the Official Japan Rail Pass Website can ""enjoy the pre-October prices"" for a limited time, confirming that early purchases lock in current rates before the increase takes effect.",7940.041,7945.225,tool_result,tool,WebFetch,,,,,2286f9ed-60ab-4720-8863-42380e1bebb7,text
+ai,Tool:WebFetch,"[WebFetch] {""url"": ""https://www.japanrailpass.net/en/about_jrp.html"", ""prompt"": ""What is the current price of the 7-day, 14-day, 21-day ordinary Japan Rail Pass? Is there any note about price changes October 2026 or different prices for online vs agency purchase?""}",7945.225,7946.38,tool_call,tool,WebFetch,,,claude-opus-5,,e109b596-3063-4f2a-ab53-bcae8c936137,text
+ai,Tool:WebFetch,"[WebFetch] {""url"": ""https://www.getaroundjapan.jp/archives/10991"", ""prompt"": ""Explain the October 2026 JR Pass price increase: which prices rise, does buying online at the official site keep the old price, and what are the deadlines?""}",7946.38,7971.145,tool_call,tool,WebFetch,,,claude-opus-5,,35dd612c-44c3-40a2-8e07-9454e6782718,text
+ai,Tool:WebFetch,getaddrinfo ENOTFOUND www.japanrailpass.net,7971.145,7977.129,tool_result,tool,WebFetch,,,,,539840ed-2f7e-4714-b16d-a644c3bb47e1,error
+ai,Tool:WebFetch,"# JR Pass Price Increase October 2026
+
+## Which Prices Rise
+
+Starting October 1, 2026, fares increase **only at overseas physical sales agents**. Examples of adult Ordinary Car increases:
+
+- 7-day: ¥50,000 → ¥53,000
+- 14-day: ¥80,000 → ¥84,000
+- 21-day: ¥100,000 → ¥105,000
+
+Green Car fares rise proportionally (7-day: ¥70,000 → ¥74,000).
+
+## Official Online Site Keeps Old Prices
+
+Yes, the official JAPAN RAIL PASS Reservation website maintains current pricing. As stated in the announcement, ""the official online reservation service (JAPAN RAIL PASS Reservation) is keeping its current prices for now."" This allows buyers to avoid the hike entirely by purchasing through the official portal.
+
+## Important Deadline Caveat
+
+**No firm end date exists.** The official notice specifies that ""the end date for these held prices 'will be announced once decided.'"" The discounted online window is temporary but indefinite, making prompt purchasing advisable for upcoming trips to avoid potential future increases.
+
+The key takeaway: purchase through the [official JR Pass website](https://japanrailpass.net/en/) to lock in current rates.",7977.129,7983.705,tool_result,tool,WebFetch,,,,,e1d0b6de-a077-47d9-ab2c-d7b6e48bb072,text
+ai,Tool:WebSearch,"[WebSearch] {""query"": ""Tokyo to Kyoto shinkansen fare 2026 yen reserved seat Hikari""}",7983.705,7985.705,tool_call,tool,WebSearch,,,claude-opus-5,,622adc48-9692-4f53-8082-1307013eaed5,text
+ai,Tool:WebSearch,"Web search results for query: ""Tokyo to Kyoto shinkansen fare 2026 yen reserved seat Hikari""
+
+Links: [{""title"":""Tokyo to Kyoto 2026: The Only Transport Comparison You Need (Fastest vs Cheapest) - KKday Blog"",""url"":""https://www.kkday.com/en/blog/96253/tokyo-to-kyoto""},{""title"":""How Much Does it Cost to Ride the Shinkansen? | Tokyo Cheapo"",""url"":""https://tokyocheapo.com/travel/transport/how-much-does-it-cost-to-ride-the-shinkansen/""},{""title"":""Shinkansen Fare Tables | Route & Seat Comparison, Discount Booking | NAVITIME Travel"",""url"":""https://japantravel.navitime.com/en/booking/jr/superexpress/fare/""},{""title"":""Shinkansen Tickets 2026: Booking Guide, Prices & Timetables | Shinkansen Tickets"",""url"":""https://shinkansentickets.net/guide/shinkansen-tickets-2026""},{""title"":""Tokyo to Kyoto Shinkansen 2026: Trains, Seats & Booking - Real Japan Guide"",""url"":""https://real-japan-guide.com/shinkansen-complete-guide-2026/""},{""title"":""Tokyo to Kyoto by Shinkansen — Tickets, Seats, Timing (2026)"",""url"":""https://www.japanauthentic.com/blog/tokyo-to-kyoto-shinkansen""},{""title"":""Tokyo to Kyoto Shinkansen: 2026 Prices, Times & Tickets | Japan Train"",""url"":""https://japantrain.net/guide/tokyo-kyoto-shinkansen-price""},{""title"":""Tokyo to Kyoto 2026: Shinkansen vs Highway Bus vs Flight Compared - Japan Trip Navi"",""url"":""https://kanko-map.com/en/tokyo-kyoto-transport-compare/""},{""title"":""Shinkansen Fare Breakdown: Base vs Express Charges [2026] | Shinkansen Tickets"",""url"":""https://shinkansentickets.net/guide/shinkansen-fare-breakdown""}]
+
+Based on the search results, here's the pricing information for Tokyo to Kyoto Shinkansen reserved seats on the Hikari service in 2026:
+
+## Reserved Seat Fares for Hikari
+
+Regular reserved seat pricing remains consistent with official JR rates of ¥13,850, though prices do vary by season.
+
+During super-peak season, a one-way reserved seat between Tokyo and Kyoto costs ¥14,250 (for Hikari or Kodama services). Meanwhile, the same ticket costs just ¥13,650 during off-peak season.
+
+For unreserved seating as an alternative, unreserved seats on Hikari and Kodama trains cost ¥13,320 — a saving of ¥530.
+
+## Key Details About Hikari
+
+The Hikari service takes approximately 2 hours and 45 minutes to travel from Tokyo to Kyoto. The Hikari is covered by the Japan Rail Pass, whereas the Nozomi requires a supplemental surcharge.
+
+
+REMINDER: You MUST include the sources above in your response to the user using markdown hyperlinks.",13518.781,13540.331,tool_result,tool,WebSearch,,,,,e1cdb0a4-1085-4038-b77c-bcbe91f16b1c,text
+ai,Claude,"Looked it up — and the answer has a wrinkle I didn't know about, because prices split into two tiers as of last October.
+
+## Current 7-day Ordinary pass
+
+| Where you buy | Price |
+|---|---|
+| Official JR Pass website | **¥50,000** |
+| Overseas travel agents | **¥53,000** |
+
+Full ladder: 14-day is ¥80,000 online / ¥84,000 agency, 21-day ¥100,000 / ¥105,000. Green Car 7-day is ¥70,000 / ¥74,000.
+
+JR raised prices ~5–6% on **October 1, 2026** — but the increase only hit overseas sales agents. The official online reservation site held its old prices, and the end date for that ""will be announced once decided."" So there's no deadline to plan around, just an open-ended window that could close. If you buy, buy direct.
+
+## Does it pay off for your trip?
+
+No, and not close. Here's the actual arithmetic for Tokyo → Kyoto → Osaka:
+
+- Tokyo→Kyoto, Hikari reserved: **¥13,850** (¥13,320 unreserved; ¥14,250 in super-peak season)
+- Kyoto→Osaka: ~¥580
+- Kyoto→Nara: ~¥720
+- Osaka→Kansai Airport on the Haruka: ~¥2,400
+- Tokyo local JR lines across four days: maybe ¥1,500
+
+That's roughly **¥19,000–25,000** of JR-eligible travel. The pass is ¥50,000. You'd be paying double for the privilege.
+
+Two things make it worse for this route specifically. The pass doesn't cover the Nozomi — the fast Tokyo–Kyoto service — without a surcharge, so you're on the slower Hikari. And the good Nikko route is Tobu, a private railway the pass doesn't touch at all.
+
+To break even you'd need to bolt on something like a Tokyo–Hiroshima round trip, which is a different, more rushed vacation than the one I'd recommend for a first visit.
+
+So: point-to-point tickets, IC card for everything local, and put the ¥25,000 you save toward the ryokan night.
+
+Sources:
+- [Price Increases are Coming to the Nationwide Japan Rail Pass (2026) — JNTO](https://www.japan.travel/en/ca/news/price-increases-are-coming-to-the-nationwide-japan-rail-pass-2026/)
+- [JR Pass Price Increase 2026: Buy Online to Pay the Old Price — Get Around Japan](https://www.getaroundjapan.jp/archives/10991)
+- [Tokyo to Kyoto Shinkansen: 2026 Prices, Times & Tickets — Japan Train](https://japantrain.net/guide/tokyo-kyoto-shinkansen-price)",13540.331,13541.331,message,assistant,,,,claude-opus-5,1469,79ffd5af-c217-4985-af99-a5cd0bd92c4a,text

@@ -5,6 +5,7 @@
 		ActivityBar,
 		CanvasFrame,
 		ContextMenu,
+		FPSMonitor,
 		Sketch,
 		SidePanel,
 		SplitPane,
@@ -1317,6 +1318,9 @@
 										Timeline controls to navigate.
 									</p>
 									<Sketch {sketch} bind:instance={p5Instance} />
+									{#if $VizStore.showFpsMonitor}
+										<FPSMonitor instance={p5Instance} position="top-right" />
+									{/if}
 									<CanvasTooltip />
 									<VisualizationLegend />
 									{#if $VizStore.dashboardToggle}

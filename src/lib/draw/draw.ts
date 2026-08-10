@@ -1,3 +1,4 @@
+import { get } from 'svelte/store';
 import type p5 from 'p5';
 import { DataPoint } from '../../models/dataPoint';
 import { TurnChart } from './turn-chart';
@@ -93,7 +94,10 @@ export class Draw {
 			}
 		}
 
-		HoverStore.set({
+		// Publishing a fresh object every frame wakes every subscriber sixty
+		// times a second even when the pointer has not moved. Hover state is
+		// shallow, so a field comparison is enough to skip the write.
+		const next = {
 			hoveredDataPoint: r.hover,
 			hoveredSpeaker: r.hoveredSpeaker,
 			arrayOfFirstWords: r.arrayOfFirstWords,
@@ -101,7 +105,17 @@ export class Draw {
 			dashboardHighlightSpeaker: highlightSpeaker,
 			dashboardHighlightTurn: highlightTurn,
 			dashboardHighlightAllTurns: highlightTurns
-		});
+		};
+		const prev = get(HoverStore);
+		const unchanged =
+			prev.hoveredDataPoint === next.hoveredDataPoint &&
+			prev.hoveredSpeaker === next.hoveredSpeaker &&
+			prev.arrayOfFirstWords === next.arrayOfFirstWords &&
+			prev.overflowBounds === next.overflowBounds &&
+			prev.dashboardHighlightSpeaker === next.dashboardHighlightSpeaker &&
+			prev.dashboardHighlightTurn === next.dashboardHighlightTurn &&
+			prev.dashboardHighlightAllTurns === next.dashboardHighlightAllTurns;
+		if (!unchanged) HoverStore.set(next);
 	}
 
 	updatePanel(key: string, bounds: Bounds, ctx: DrawContext): DrawResult {

@@ -1,0 +1,165 @@
+[
+  {
+    "id": "example-1",
+    "rows": 35,
+    "turns": 35,
+    "hasTimestamps": true,
+    "timingMode": "startOnly",
+    "totalNumOfWords": 286,
+    "totalConversationTurns": 35,
+    "totalTimeInSeconds": 120,
+    "largestTurnLength": 33,
+    "largestNumOfWordsByASpeaker": 189,
+    "largestNumOfTurnsByASpeaker": 15,
+    "maxCountOfMostRepeatedWord": 9,
+    "mostFrequentWord": "you",
+    "wordArrayLength": 286,
+    "userCount": 10,
+    "userNames": [
+      "TEACHER",
+      "ALL",
+      "STUDENT1",
+      "STUDENT2",
+      "STUDENT3",
+      "STUDENT4",
+      "STUDENT5",
+      "STUDENT6",
+      "STUDENT7",
+      "STUDENT8"
+    ],
+    "userColors": [
+      "#E69F00",
+      "#56B4E9",
+      "#009E73",
+      "#F0E442",
+      "#0072B2",
+      "#D55E00",
+      "#CC79A7",
+      "#E69F00",
+      "#56B4E9",
+      "#009E73"
+    ]
+  },
+  {
+    "id": "example-2",
+    "rows": 193,
+    "turns": 193,
+    "hasTimestamps": true,
+    "timingMode": "startOnly",
+    "totalNumOfWords": 1328,
+    "totalConversationTurns": 193,
+    "totalTimeInSeconds": 492,
+    "largestTurnLength": 35,
+    "largestNumOfWordsByASpeaker": 372,
+    "largestNumOfTurnsByASpeaker": 55,
+    "maxCountOfMostRepeatedWord": 36,
+    "mostFrequentWord": "it",
+    "wordArrayLength": 1328,
+    "userCount": 5,
+    "userNames": [
+      "MAE",
+      "ADHIR",
+      "JEANS",
+      "BLAKE",
+      "LILY"
+    ],
+    "userColors": [
+      "#E69F00",
+      "#56B4E9",
+      "#009E73",
+      "#F0E442",
+      "#0072B2"
+    ]
+  },
+  {
+    "id": "example-3",
+    "rows": 57,
+    "turns": 57,
+    "hasTimestamps": true,
+    "timingMode": "startOnly",
+    "totalNumOfWords": 936,
+    "totalConversationTurns": 57,
+    "totalTimeInSeconds": 427,
+    "largestTurnLength": 67,
+    "largestNumOfWordsByASpeaker": 293,
+    "largestNumOfTurnsByASpeaker": 21,
+    "maxCountOfMostRepeatedWord": 35,
+    "mostFrequentWord": "odd",
+    "wordArrayLength": 936,
+    "userCount": 5,
+    "userNames": [
+      "TEACHER",
+      "SEAN",
+      "CASSANDRA",
+      "NATHAN",
+      "MEI"
+    ],
+    "userColors": [
+      "#E69F00",
+      "#56B4E9",
+      "#009E73",
+      "#F0E442",
+      "#0072B2"
+    ]
+  },
+  {
+    "id": "example-4",
+    "rows": 958,
+    "turns": 958,
+    "hasTimestamps": true,
+    "timingMode": "startOnly",
+    "totalNumOfWords": 8369,
+    "totalConversationTurns": 958,
+    "totalTimeInSeconds": 3354,
+    "largestTurnLength": 29,
+    "largestNumOfWordsByASpeaker": 6096,
+    "largestNumOfTurnsByASpeaker": 518,
+    "maxCountOfMostRepeatedWord": 357,
+    "mostFrequentWord": "the",
+    "wordArrayLength": 8369,
+    "userCount": 6,
+    "userNames": [
+      "TEACHER",
+      "NEW STUDENT",
+      "SINGLE STUDENT",
+      "TWO OR MORE STUDENTS",
+      "ENTIRE CLASS",
+      "OTHER"
+    ],
+    "userColors": [
+      "#E69F00",
+      "#56B4E9",
+      "#009E73",
+      "#F0E442",
+      "#0072B2",
+      "#D55E00"
+    ]
+  },
+  {
+    "id": "example-5",
+    "rows": 791,
+    "turns": 791,
+    "hasTimestamps": true,
+    "timingMode": "startOnly",
+    "totalNumOfWords": 18536,
+    "totalConversationTurns": 791,
+    "totalTimeInSeconds": 5810,
+    "largestTurnLength": 199,
+    "largestNumOfWordsByASpeaker": 7242,
+    "largestNumOfTurnsByASpeaker": 315,
+    "maxCountOfMostRepeatedWord": 806,
+    "mostFrequentWord": "the",
+    "wordArrayLength": 18536,
+    "userCount": 3,
+    "userNames": [
+      "WALLACE",
+      "TRUMP",
+      "BIDEN"
+    ],
+    "userColors": [
+      "#E69F00",
+      "#56B4E9",
+      "#009E73"
+    ]
+  }
+]

@@ -340,6 +340,23 @@ export class TurnChart {
 		return ranges.sort((a, b) => a.startTime - b.startTime);
 	}
 
+	/**
+	 * Wording for temporal relations between turns.
+	 *
+	 * In conversation these are interactional events: two people talking at once
+	 * is an overlap, a gap is silence. In an agentic session they are execution
+	 * facts — sub-agents run in parallel by design, and a gap is the model
+	 * working. Naming them as interruption and silence there reports a
+	 * scheduling artefact as conversational conduct.
+	 */
+	private get overlapLabel(): string {
+		return this.ctx.transcript.sourceKind === 'ai' ? 'Concurrent' : 'Overlap';
+	}
+
+	private get gapLabel(): string {
+		return this.ctx.transcript.sourceKind === 'ai' ? 'Model latency' : 'Silence';
+	}
+
 	private buildOverlapMarkers(turns: TurnRange[], rowY: number): AnnotationMarker[] {
 		const markers: AnnotationMarker[] = [];
 		for (let i = 0; i < turns.length; i++) {
@@ -359,7 +376,7 @@ export class TurnChart {
 					h: MARKER_HEIGHT,
 					color: this.ctx.theme.danger,
 					firstDataPoint: turns[j].firstDataPoint,
-					tooltipContent: `<b>Overlap · ${formatDuration(duration)}</b>\n<span style="font-size: 0.85em; opacity: 0.7"><span style="color: ${this.userMap.get(turns[i].speaker)?.user.color ?? '#fff'}">${turns[i].speaker}</span> & <span style="color: ${this.userMap.get(turns[j].speaker)?.user.color ?? '#fff'}">${turns[j].speaker}</span>\n${formatTimeCompact(start)} - ${formatTimeCompact(end)}</span>`
+					tooltipContent: `<b>${this.overlapLabel} · ${formatDuration(duration)}</b>\n<span style="font-size: 0.85em; opacity: 0.7"><span style="color: ${this.userMap.get(turns[i].speaker)?.user.color ?? '#fff'}">${turns[i].speaker}</span> & <span style="color: ${this.userMap.get(turns[j].speaker)?.user.color ?? '#fff'}">${turns[j].speaker}</span>\n${formatTimeCompact(start)} - ${formatTimeCompact(end)}</span>`
 				});
 			}
 		}
@@ -380,7 +397,7 @@ export class TurnChart {
 				h: MARKER_HEIGHT,
 				color: GAP_COLOR,
 				firstDataPoint: turns[i].firstDataPoint,
-				tooltipContent: `<b>Silence · ${formatDuration(gapDuration)}</b>\n<span style="font-size: 0.85em; opacity: 0.7"><span style="color: ${this.userMap.get(turns[i].speaker)?.user.color ?? '#fff'}">${turns[i].speaker}</span> → <span style="color: ${this.userMap.get(turns[i + 1].speaker)?.user.color ?? '#fff'}">${turns[i + 1].speaker}</span>\n${formatTimeCompact(turns[i].endTime)} - ${formatTimeCompact(turns[i + 1].startTime)}</span>`
+				tooltipContent: `<b>${this.gapLabel} · ${formatDuration(gapDuration)}</b>\n<span style="font-size: 0.85em; opacity: 0.7"><span style="color: ${this.userMap.get(turns[i].speaker)?.user.color ?? '#fff'}">${turns[i].speaker}</span> → <span style="color: ${this.userMap.get(turns[i + 1].speaker)?.user.color ?? '#fff'}">${turns[i + 1].speaker}</span>\n${formatTimeCompact(turns[i].endTime)} - ${formatTimeCompact(turns[i + 1].startTime)}</span>`
 			});
 		}
 		return markers;

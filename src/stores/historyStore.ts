@@ -1,7 +1,12 @@
 import { writable, get } from 'svelte/store';
 import type { DataPoint } from '../models/dataPoint';
 
-const MAX_HISTORY = 50;
+/**
+ * Each entry is a full copy of the word array, so depth is paid in memory
+ * proportional to transcript size. Fifty levels ran to gigabytes on a large
+ * transcript; thirty keeps a generous undo history at a bounded cost.
+ */
+const MAX_HISTORY = 30;
 
 interface HistoryState {
 	past: DataPoint[][];

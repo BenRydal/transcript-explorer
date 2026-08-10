@@ -14,7 +14,7 @@ import { get } from 'svelte/store';
 import CodeStore from '../../stores/codeStore';
 import { showTooltip } from '../../stores/tooltipStore';
 import { formatTimeCompact } from '../core/time-utils';
-import { normalizeWord, stripPunctuation } from '../core/string-utils';
+import { normalizeWord, stripPunctuation, stripForDisplay } from '../core/string-utils';
 import type { DataPoint } from '../../models/dataPoint';
 import type { User } from '../../models/user';
 import type { Bounds } from './types/bounds';
@@ -182,7 +182,7 @@ export class ContributionCloud {
 				// in layout (same behavior as before; just theme-aware).
 				buffer.fill(this.ctx.theme.bg);
 			}
-			buffer.text(stripPunctuation(pos.word.word), pos.x, pos.y);
+			buffer.text(stripForDisplay(pos.word.word), pos.x, pos.y);
 		}
 
 		bufferCache.buffer = buffer;
@@ -275,7 +275,7 @@ export class ContributionCloud {
 				this.ctx.sk.textSize(pos.textSize);
 				this.ctx.sk.noStroke();
 				this.ctx.sk.fill(color);
-				this.ctx.sk.text(stripPunctuation(pos.word.word), screenX, screenY);
+				this.ctx.sk.text(stripForDisplay(pos.word.word), screenX, screenY);
 
 				this.ctx.sk.noFill();
 				this.ctx.sk.stroke(color);

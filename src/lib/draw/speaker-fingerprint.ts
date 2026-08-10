@@ -631,7 +631,10 @@ export class SpeakerFingerprint {
 		content += `<b>Questions:</b> ${fp.questionTurns} turns with ? or question words (${pct(fp.rawQuestionRate)})`;
 
 		if (this.hasTiming) {
-			content += `\n<b>Interruptions:</b> ${fp.interruptionTurns} overlapping previous speaker (${pct(fp.rawInterruptionRate)})`;
+			content +=
+				this.ctx.transcript.sourceKind === 'ai'
+					? `\n<b>Concurrent:</b> ${fp.interruptionTurns} running alongside the previous turn (${pct(fp.rawInterruptionRate)})`
+					: `\n<b>Interruptions:</b> ${fp.interruptionTurns} overlapping previous speaker (${pct(fp.rawInterruptionRate)})`;
 		}
 
 		content += `</span>`;

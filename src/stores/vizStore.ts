@@ -35,6 +35,13 @@ export interface VizStoreType {
 	turnNetworkWeightByWords: boolean;
 	turnNetworkHideSelfLoops: boolean;
 	turnNetworkMinTransitions: number;
+	/**
+	 * Temporary review aid: shorten node labels to a fixed prefix so a crowded
+	 * network stays readable. The full name remains available on hover.
+	 */
+	turnNetworkShortLabels: boolean;
+	/** Diagnostic overlay showing the current frame rate. */
+	showFpsMonitor: boolean;
 	// when true, edges use lag-sequential adjusted residuals (z-scores) instead of raw counts
 	turnNetworkStatisticalMode: boolean;
 	// Speaker Heatmap settings
@@ -81,6 +88,8 @@ export const initialViz: VizStoreType = {
 	turnNetworkWeightByWords: false,
 	turnNetworkHideSelfLoops: true,
 	turnNetworkMinTransitions: 1,
+	turnNetworkShortLabels: false,
+	showFpsMonitor: false,
 	turnNetworkStatisticalMode: false,
 	heatmapBinCount: 0,
 	turnLengthBinCount: 0,
