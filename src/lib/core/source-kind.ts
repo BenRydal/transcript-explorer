@@ -63,11 +63,23 @@ export function detectSourceKind(rows: Record<string, unknown>[]): SourceKind {
 }
 
 /**
+ * Order that settles a speaker whose rows carry more than one role.
+ *
+ * A delegated sub-agent is recorded as `user` on the row holding the prompt it
+ * was handed, then as `assistant` and `tool` on the rows it produces. Keeping
+ * whichever role appeared first therefore labels sub-agents as people: in the
+ * bundled multi-agent session that made eight speakers `user` when only one is
+ * human. Highest precedence wins instead, and `user` sits last so it survives
+ * only for a speaker who never acts in any other capacity — the actual person.
+ */
+const ROLE_PRECEDENCE: SpeakerRole[] = ['agent', 'assistant', 'tool', 'system', 'user'];
+
+/**
  * Role for each speaker, taken from the `role` column.
  *
  * Only meaningful once the transcript is known to be AI; callers should not
- * invoke this for human transcripts. A speaker whose rows disagree keeps the
- * first role seen, which matches how the converter emits them.
+ * invoke this for human transcripts. Callers may treat `user` as identifying
+ * the human participant, which holds because of the precedence above.
  */
 export function collectSpeakerRoles(
 	rows: Record<string, unknown>[]
@@ -77,7 +89,10 @@ export function collectSpeakerRoles(
 		const speaker = String(row['speaker'] ?? '').trim().toUpperCase();
 		const role = String(row[ROLE_COLUMN] ?? '').trim().toLowerCase();
 		if (!speaker || !KNOWN_ROLES.has(role)) continue;
-		if (!roles.has(speaker)) roles.set(speaker, role as SpeakerRole);
+		const current = roles.get(speaker);
+		if (current === undefined || ROLE_PRECEDENCE.indexOf(role as SpeakerRole) < ROLE_PRECEDENCE.indexOf(current)) {
+			roles.set(speaker, role as SpeakerRole);
+		}
 	}
 	return roles;
 }

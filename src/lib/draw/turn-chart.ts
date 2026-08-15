@@ -22,13 +22,17 @@ const VERTICAL_PADDING = 12;
 const STRIP_HEIGHT_RATIO = 0.1;
 const MIN_STRIP_HEIGHT = 20;
 const MAX_STRIP_HEIGHT = 32;
-// Silence (gap) bars  -  muted cool grey that reads on both themes.
+// Gap bars. Cool grey is the default, and in an AI session marks machine time;
+// warm tan marks the human's own gaps. Kept close in saturation so the two read
+// as variants of one category rather than unrelated events. Both on both themes.
 const GAP_COLOR = '#94a3b8';
+const USER_GAP_COLOR = '#c08b5c';
 const MARKER_HEIGHT = 8;
 const ROW_GAP = 2;
 const MIN_MARKER_WIDTH = 2;
 const LEGEND_DOT_RADIUS = 5;
 const LEGEND_DOT_LEFT_OFFSET = 8;
+const LEGEND_DOT_SPACING = 8;
 
 interface SelectedTurn {
 	turn: DataPoint[] | '';
@@ -302,14 +306,18 @@ export class TurnChart {
 		const turns = this.getTurnRanges(turnData);
 		const markers = [...this.buildOverlapMarkers(turns, topRowY), ...this.buildGapMarkers(turns, bottomRowY)];
 
-		// Legend dots
+		// Legend dots. An AI session splits the gap row into human and machine time,
+		// so its key carries both colours rather than leaving one unexplained.
 		const overlapColor = this.ctx.theme.danger;
 		const dotX = strip.x + LEGEND_DOT_LEFT_OFFSET;
 		this.ctx.sk.noStroke();
 		this.ctx.sk.fill(overlapColor);
 		this.ctx.sk.ellipse(dotX, topRowY + MARKER_HEIGHT / 2, LEGEND_DOT_RADIUS, LEGEND_DOT_RADIUS);
-		this.ctx.sk.fill(GAP_COLOR);
-		this.ctx.sk.ellipse(dotX, bottomRowY + MARKER_HEIGHT / 2, LEGEND_DOT_RADIUS, LEGEND_DOT_RADIUS);
+		const gapKey = this.ctx.transcript.sourceKind === 'ai' ? [USER_GAP_COLOR, GAP_COLOR] : [GAP_COLOR];
+		gapKey.forEach((c, i) => {
+			this.ctx.sk.fill(c);
+			this.ctx.sk.ellipse(dotX + i * LEGEND_DOT_SPACING, bottomRowY + MARKER_HEIGHT / 2, LEGEND_DOT_RADIUS, LEGEND_DOT_RADIUS);
+		});
 
 		// Draw markers
 		this.ctx.sk.noStroke();
@@ -366,8 +374,43 @@ export class TurnChart {
 		return this.ctx.transcript.sourceKind === 'ai' ? 'Concurrent' : 'Overlap';
 	}
 
-	private get gapLabel(): string {
-		return this.ctx.transcript.sourceKind === 'ai' ? 'Model latency' : 'Silence';
+	/**
+	 * Whether a speaker is the human participant.
+	 *
+	 * Relies on the role precedence in source-kind.ts: a delegated sub-agent also
+	 * carries a `user` row, for the prompt it was handed, so first-role-seen would
+	 * report sub-agents as people. Undefined for human transcripts, where every
+	 * speaker is a person and the distinction is meaningless.
+	 */
+	private isHumanSpeaker(speaker: string): boolean {
+		return this.userMap.get(speaker)?.user.role === 'user';
+	}
+
+	/**
+	 * A gap belongs to whoever speaks next — they are the party preparing during
+	 * it.
+	 *
+	 * For an AI session that split is the point: the pause before a prompt is the
+	 * person reading and composing, the pause before a model turn is inference.
+	 * Reporting both as the model's latency attributes the researcher's own
+	 * thinking time to the machine. In the bundled sessions the human's share of
+	 * gap time is a clear minority but never negligible, which is what makes the
+	 * second colour worth its cost.
+	 *
+	 * Tool execution is deliberately not a third case, but that call is provisional.
+	 * A gap before a `tool_call` is the model deciding what to call rather than the
+	 * tool running, and gaps before an actual `tool_result` are currently a small
+	 * enough share not to earn their own colour. That share is an artefact of how
+	 * the converter times rows: it stretches every event to meet the next one, so
+	 * the only gaps that survive are the long ones it leaves deliberately, and a
+	 * tool's real execution time stays hidden inside its own bar. Once the converter
+	 * emits measured durations, tool time will surface as gaps and this should be
+	 * measured again — see tools/claude-code-converter.
+	 */
+	private gapAttribution(nextSpeaker: string): { label: string; color: string } {
+		if (this.ctx.transcript.sourceKind !== 'ai') return { label: 'Silence', color: GAP_COLOR };
+		if (this.isHumanSpeaker(nextSpeaker)) return { label: 'User thinking', color: USER_GAP_COLOR };
+		return { label: 'Model working', color: GAP_COLOR };
 	}
 
 	private buildOverlapMarkers(turns: TurnRange[], rowY: number): AnnotationMarker[] {
@@ -403,14 +446,15 @@ export class TurnChart {
 			if (gapDuration <= 0) continue;
 			const x = this.getPixelValueFromTime(turns[i].endTime);
 			const xEnd = this.getPixelValueFromTime(turns[i + 1].startTime);
+			const { label, color } = this.gapAttribution(turns[i + 1].speaker);
 			markers.push({
 				x,
 				w: Math.max(MIN_MARKER_WIDTH, xEnd - x),
 				y: rowY,
 				h: MARKER_HEIGHT,
-				color: GAP_COLOR,
+				color,
 				firstDataPoint: turns[i].firstDataPoint,
-				tooltipContent: `<b>${this.gapLabel} · ${formatDuration(gapDuration)}</b>\n<span style="font-size: 0.85em; opacity: 0.7"><span style="color: ${this.userMap.get(turns[i].speaker)?.user.color ?? '#fff'}">${turns[i].speaker}</span> → <span style="color: ${this.userMap.get(turns[i + 1].speaker)?.user.color ?? '#fff'}">${turns[i + 1].speaker}</span>\n${formatTimeCompact(turns[i].endTime)} - ${formatTimeCompact(turns[i + 1].startTime)}</span>`
+				tooltipContent: `<b>${label} · ${formatDuration(gapDuration)}</b>\n<span style="font-size: 0.85em; opacity: 0.7"><span style="color: ${this.userMap.get(turns[i].speaker)?.user.color ?? '#fff'}">${turns[i].speaker}</span> → <span style="color: ${this.userMap.get(turns[i + 1].speaker)?.user.color ?? '#fff'}">${turns[i + 1].speaker}</span>\n${formatTimeCompact(turns[i].endTime)} - ${formatTimeCompact(turns[i + 1].startTime)}</span>`
 			});
 		}
 		return markers;

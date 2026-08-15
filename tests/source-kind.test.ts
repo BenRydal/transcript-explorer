@@ -97,4 +97,29 @@ describe('collectSpeakerRoles', () => {
 		const rows = parseCsv('speaker,content,role\nMs Diaz,hello,teacher\n');
 		expect(collectSpeakerRoles(rows).size).toBe(0);
 	});
+
+	/**
+	 * A delegated sub-agent carries a `user` row for the prompt it was handed,
+	 * then `assistant` and `tool` rows for what it produces. Taking the first
+	 * role seen made every sub-agent a person, and callers use `user` to mean
+	 * the human — so this is what keeps "who is the human" answerable.
+	 */
+	it('resolves a multi-role speaker by precedence, not by first row', () => {
+		const rows = parseCsv(
+			'speaker,content,role\n' +
+				'Agent:Explore,do the thing,user\n' + // the prompt it received
+				'Agent:Explore,working on it,assistant\n' +
+				'Agent:Explore,output,tool\n'
+		);
+		expect(collectSpeakerRoles(rows).get('AGENT:EXPLORE')).toBe('assistant');
+	});
+
+	it('leaves exactly one human in the bundled multi-agent session', () => {
+		const roles = collectSpeakerRoles(load('web-design-multi-agent'));
+		const humans = [...roles].filter(([, role]) => role === 'user').map(([speaker]) => speaker);
+		expect(humans).toEqual(['BEN']);
+		// Sanity: the session really does contain sub-agents that would otherwise
+		// have qualified, so this is not passing for want of a counterexample.
+		expect([...roles].filter(([s]) => s.startsWith('AGENT:')).length).toBeGreaterThan(0);
+	});
 });
