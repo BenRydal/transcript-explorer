@@ -13,6 +13,8 @@
 
 import { toSeconds } from './time-utils';
 import { normalizeSpeakerName } from './string-utils';
+import type { SourceKind } from '../../models/transcript';
+import type { SpeakerRole } from '../../models/user';
 import type { TimingMode } from '../../models/transcript';
 
 // ============ Types ============
@@ -34,6 +36,10 @@ export interface ParseResult {
 	continuationLineCount: number;
 	totalLineCount: number;
 	detectedTimingMode?: TimingMode;
+	/** Set by the CSV path only; every other input path is human. */
+	sourceKind?: SourceKind;
+	/** Speaker name (normalised) to role. Populated only for AI sources. */
+	speakerRoles?: Map<string, SpeakerRole>;
 }
 
 // ============ Helpers ============

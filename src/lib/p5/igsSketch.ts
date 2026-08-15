@@ -14,7 +14,7 @@ import { Draw } from '../draw/draw';
 import { DynamicData } from '../core/dynamic-data';
 import { getP5ContainerRect } from '../core/layout-utils';
 import { getDrawTheme, refreshDrawTheme } from '../draw/draw-theme';
-import { hitTest } from 'svelte-p5';
+import { hitTest, disableFES } from 'svelte-p5';
 
 let users: any[] = [];
 let timeline, transcript, currConfig, editorState;
@@ -61,12 +61,21 @@ EditorStore.subscribe((data) => {
 	editorState = data;
 });
 
+/** Must match the @font-face family registered in app.css. */
+const CANVAS_FONT_FAMILY = 'Plus Jakarta Sans';
+
+// p5's Friendly Error System validates arguments on every API call, including
+// typo detection. This sketch makes thousands of calls per frame, so the check
+// is pure overhead once the code is known-good.
+disableFES();
+
 export const igsSketch = (p5: any) => {
 	P5Store.set(p5);
 
-	p5.preload = () => {
-		p5.font = p5.loadFont('/fonts/PlusJakartaSans/VariableFont_wght.ttf');
-	};
+	// Deliberately no loadFont: the family is registered via @font-face in
+	// app.css and addressed below by name, so text goes through the browser's
+	// native canvas renderer rather than being traced glyph by glyph.
+	p5.preload = () => {};
 
 	p5.setup = () => {
 		const { width, height } = p5.getContainerSize();
@@ -74,7 +83,7 @@ export const igsSketch = (p5: any) => {
 		p5.dynamicData = new DynamicData();
 		p5.renderer = new Draw(p5);
 		p5.toolTipTextSize = 30;
-		p5.textFont(p5.font);
+		p5.textFont(CANVAS_FONT_FAMILY);
 		p5.animationCounter = 0; // controls animation of data
 
 		// Track whether the mouse is over the canvas (not blocked by UI). Remove

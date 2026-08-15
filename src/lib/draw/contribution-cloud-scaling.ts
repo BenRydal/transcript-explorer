@@ -46,9 +46,26 @@ registerVizCacheReset(() => {
 	wordWidthCache.clear();
 });
 
+/**
+ * Resolution of the word-count component of the cache key.
+ *
+ * An exact count missed on every frame during playback, re-running a layout
+ * pass over the whole word list. Bucketing avoids that, but the bucket has to
+ * scale with the transcript: a fixed width large enough to help a
+ * half-million-word session would swallow a short transcript whole and pin it
+ * to a single scaling result for its entire playback.
+ *
+ * Dividing by a step count keeps roughly this many recomputations across a full
+ * playthrough regardless of size, and yields a bucket of 1 — exact, as before —
+ * for anything under that many words.
+ */
+const SCALING_STEPS = 500;
+
 function getCacheKey(bounds: Bounds, wordCount: number, maxCount: number, config: ConfigStoreType): string {
 	const timeline = get(TimelineStore);
-	return `${bounds.x},${bounds.y},${bounds.width},${bounds.height}|${wordCount}|${maxCount}|${config.separateToggle}|${config.repeatedWordsToggle}|${config.repeatWordSliderValue}|${config.dashboardToggle}|${config.scaleToVisibleData}|${timeline.leftMarker},${timeline.rightMarker}`;
+	const bucket = Math.max(1, Math.floor(wordCount / SCALING_STEPS));
+	const bucketedCount = Math.floor(wordCount / bucket);
+	return `${bounds.x},${bounds.y},${bounds.width},${bounds.height}|${bucketedCount}|${maxCount}|${config.separateToggle}|${config.repeatedWordsToggle}|${config.repeatWordSliderValue}|${config.dashboardToggle}|${config.scaleToVisibleData}|${timeline.leftMarker},${timeline.rightMarker}`;
 }
 
 /**

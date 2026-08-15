@@ -5,6 +5,7 @@
 
 import { toSeconds } from './time-utils';
 import { estimateDuration } from './timing-utils';
+import { detectSourceKind, collectSpeakerRoles } from './source-kind';
 import { normalizeSpeakerName, splitIntoWords } from './string-utils';
 import { hasSpeakerNameAndContent, HEADERS_TRANSCRIPT_WITH_TIME } from './core-utils';
 import type { ParseResult, ParsedTurn, DetectedFormat } from './text-parser';
@@ -86,6 +87,11 @@ function getRowStartTime(row: Record<string, unknown>): number | null {
  * Handles timing inference when end times are missing.
  */
 export function parseCSVRows(rows: Record<string, unknown>[], speechRateWordsPerSecond: number = 3): ParseResult {
+	// Read out-of-band from the raw rows rather than through the column mapper:
+	// adding these to the expected-column set would let the fuzzy matcher claim
+	// a human CSV's column before it reaches speaker/content/start/end.
+	const sourceKind = detectSourceKind(rows);
+	const speakerRoles = sourceKind === 'ai' ? collectSpeakerRoles(rows) : undefined;
 	const state: CSVParseState = {
 		turns: [],
 		speakerSet: new Set(),
@@ -176,6 +182,8 @@ export function parseCSVRows(rows: Record<string, unknown>[], speechRateWordsPer
 		speakers: [...state.speakerSet],
 		continuationLineCount: 0,
 		totalLineCount: rows.length,
-		detectedTimingMode
+		detectedTimingMode,
+		sourceKind,
+		speakerRoles
 	};
 }

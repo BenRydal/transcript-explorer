@@ -5,7 +5,7 @@ import type { User } from '../../models/user';
 import type { Bounds } from './types/bounds';
 import { DEFAULT_SPEAKER_COLOR } from '../constants/ui';
 import { withDimming, getCrossHighlight, getDominantCodeColor, type CrossHighlight } from './draw-utils';
-import { normalizeWord, toTitleCase } from '../core/string-utils';
+import { normalizeWord, toTitleCase, stripForDisplay } from '../core/string-utils';
 import { DrawContext } from './draw-context';
 
 const MAX_SAMPLE_TURNS = 4;
@@ -519,7 +519,7 @@ export class WordRain {
 			withDimming(this.ctx.sk.drawingContext, this.shouldDimWord(xhl, pw), () => {
 				this.ctx.sk.textSize(pw.textSize);
 				this.ctx.sk.fill(pw.color);
-				this.ctx.sk.text(pw.agg.word, pw.x, pw.y);
+				this.ctx.sk.text(stripForDisplay(pw.agg.word), pw.x, pw.y);
 			});
 		}
 	}
@@ -596,7 +596,7 @@ export class WordRain {
 		this.ctx.sk.textSize(hovered.textSize);
 		this.ctx.sk.fill(hovered.color);
 		this.ctx.sk.textAlign(this.ctx.sk.LEFT, this.ctx.sk.BASELINE);
-		this.ctx.sk.text(hovered.agg.word, hovered.x, hovered.y);
+		this.ctx.sk.text(stripForDisplay(hovered.agg.word), hovered.x, hovered.y);
 
 		// Outline box
 		this.ctx.sk.noFill();

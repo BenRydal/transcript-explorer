@@ -1,0 +1,1626 @@
+te_source_kind,speaker,content,start,end,event_type,role,tool_name,agent_type,agent_id,model,tokens_out,event_id,content_type
+ai,Edwin,"I'm teaching an undergraduate intro to computer science course next semester and
+I need a simple website for it. What should be on it and how should I put it
+together?",0.0,24.92,message,user,,,,,,aadf27b1-40aa-4772-a804-9dc2d6577a49,text
+ai,Claude,"## What belongs on it
+
+An intro CS course site has one job: answer the questions students would otherwise email you. In rough priority order:
+
+**Must have**
+- **Header block** — course number/title, term, meeting times + room, your name, office hours (with location/Zoom link), TA names and hours.
+- **Schedule table** — the single most-visited page. One row per class meeting: date, topic, readings, what's due. Keep assignment due dates *here* and nowhere else, so there's one source of truth.
+- **Assignments** — link to specs/handouts, due dates, late policy, submission instructions.
+- **Syllabus** — grading breakdown, collaboration/academic-integrity policy (spell out the AI-tool policy explicitly; in intro CS this is now the #1 source of disputes), accessibility statement, required software.
+- **Getting started / setup** — how to install the language/toolchain on Mac, Windows, and Linux, plus a ""it's broken"" fallback (a browser-based option like Replit or a lab machine). Intro students lose the first two weeks to environment problems.
+
+**Worth having**
+- **Resources** — cheat sheets, recommended tutorials, past exams, tutoring center hours.
+- **Getting help** — a decision tree: office hours vs. course forum vs. email, with expected response times. Saves you a lot of email.
+- **FAQ** — grows each semester from actual student questions.
+
+**Deliberately leave off**
+Grades, anything FERPA-sensitive, and solutions — those go in the LMS (Canvas/Blackboard). Don't duplicate content between the site and the LMS; pick one home per item and link to it.
+
+## How to build it
+
+My recommendation: **Markdown files → a static site generator → GitHub Pages.** Free, no server to maintain, version-controlled (so next semester you branch last year's site and edit dates), and the schedule lives in a plain text file you can edit on your phone.
+
+Concretely:
+
+| Option | Good if |
+|---|---|
+| **GitHub Pages + Jekyll** (recommended) | You want zero setup — push Markdown, GitHub builds it. Theme like `just-the-docs` or `minima` gives you nav + search for free. |
+| **Hugo or Quarto + GitHub Pages** | You want faster builds or to embed executable code/notebooks (Quarto is great for CS teaching material). |
+| **A single hand-written `index.html`** | Genuinely fine if the site is one page. Don't over-engineer. |
+| **Your university's CMS** | Only if IT requires it. |
+
+Practical notes:
+- **Put it under your own domain or a personal GitHub org**, not a per-semester repo buried in a department account — you'll reuse it.
+- **Mobile-first.** Most students check the schedule on a phone between classes. Make sure the schedule table doesn't require horizontal scrolling.
+- **Make it editable in under 60 seconds.** If updating a due date takes a build pipeline and a PR review, you'll stop doing it and the site will go stale — which is worse than no site.
+- **Accessibility isn't optional** for a university site: real heading hierarchy, alt text, sufficient contrast, keyboard-navigable. Most default themes handle this; check with WAVE or Lighthouse.
+
+## Want me to build it?
+
+I can scaffold a working Jekyll site here — schedule table, assignments, syllabus, setup guide, all as Markdown with placeholder content you fill in — plus the GitHub Actions workflow to deploy it. Tell me the course name/number, the language you're teaching (Python? Java?), and the term, and I'll set it up.",24.92,38.364,message,assistant,,,,claude-opus-5,1521,d5b3be22-b433-4db2-9050-b61c7db16ddd,text
+ai,Edwin,Yes please try building it for me please,38.364,52.752,message,user,,,,,,2be695d7-55e1-4063-8159-4f1f3d24d49f,text
+ai,Claude,"Tool access is restricted in this session, so I can't write the files to disk — but here's the complete site, ready to paste. It's a Jekyll site (GitHub Pages builds it for you; no Ruby needed on your machine), defaulting to **Python**, **Fall 2026**, minimal styling. Swap those anywhere you see them.
+
+## File tree
+
+```
+cs101-site/
+├── _config.yml
+├── _data/
+│   ├── schedule.yml
+│   └── assignments.yml
+├── _layouts/
+│   └── default.html
+├── assets/css/style.css
+├── .github/workflows/deploy.yml
+├── index.md
+├── schedule.md
+├── assignments.md
+├── syllabus.md
+├── setup.md
+├── help.md
+└── README.md
+```
+
+---
+
+### `_config.yml`
+
+```yaml
+title: ""CS 101: Introduction to Computer Science""
+course_number: ""CS 101""
+term: ""Fall 2026""
+description: ""Course website for CS 101, Fall 2026.""
+
+# --- Edit these ---
+meeting_times: ""Mon/Wed/Fri 10:00–10:50 AM""
+meeting_room: ""Science Hall 210""
+instructor: ""Dr. [Your Name]""
+instructor_email: ""you@university.edu""
+office_hours: ""Tue 2–4 PM, Science Hall 415 (or by appointment)""
+forum_url: ""https://edstem.org/...""      # Ed / Piazza / Discord
+lms_url: ""https://canvas.university.edu/courses/...""
+tas:
+  - name: ""[TA Name]""
+    hours: ""Thu 1–3 PM, Lab 120""
+  - name: ""[TA Name]""
+    hours: ""Fri 11 AM–1 PM, Lab 120""
+
+nav:
+  - { title: ""Home"",        url: ""/"" }
+  - { title: ""Schedule"",    url: ""/schedule/"" }
+  - { title: ""Assignments"", url: ""/assignments/"" }
+  - { title: ""Setup"",       url: ""/setup/"" }
+  - { title: ""Getting Help"", url: ""/help/"" }
+  - { title: ""Syllabus"",    url: ""/syllabus/"" }
+
+# If deploying to https://USER.github.io/REPO, set baseurl: ""/REPO""
+baseurl: """"
+url: """"
+
+permalink: pretty
+exclude: [README.md, Gemfile, Gemfile.lock]
+```
+
+---
+
+### `_data/assignments.yml`
+
+This is the **only** place due dates live. Everything else links here.
+
+```yaml
+- id: hw1
+  title: ""Homework 1: Hello, Python""
+  out: ""2026-08-26""
+  due: ""2026-09-04""
+  link: ""/handouts/hw1.pdf""
+  points: 50
+
+- id: hw2
+  title: ""Homework 2: Conditionals & Loops""
+  out: ""2026-09-09""
+  due: ""2026-09-18""
+  link: ""/handouts/hw2.pdf""
+  points: 50
+
+- id: proj1
+  title: ""Project 1: Text Adventure""
+  out: ""2026-09-23""
+  due: ""2026-10-09""
+  link: ""/handouts/project1.pdf""
+  points: 100
+
+- id: midterm
+  title: ""Midterm Exam""
+  due: ""2026-10-14""
+  link: """"
+  points: 150
+```
+
+---
+
+### `_data/schedule.yml`
+
+```yaml
+- week: 1
+  meetings:
+    - date: ""2026-08-24""
+      topic: ""What is computing? Course logistics""
+      reading: ""Syllabus; Ch. 1""
+      note: """"
+    - date: ""2026-08-26""
+      topic: ""Values, variables, types""
+      reading: ""Ch. 2.1–2.3""
+      note: ""HW1 out""
+    - date: ""2026-08-28""
+      topic: ""Expressions and input/output""
+      reading: ""Ch. 2.4""
+      note: """"
+
+- week: 2
+  meetings:
+    - date: ""2026-08-31""
+      topic: ""Conditionals""
+      reading: ""Ch. 3.1–3.2""
+      note: """"
+    - date: ""2026-09-02""
+      topic: ""Boolean logic""
+      reading: ""Ch. 3.3""
+      note: """"
+    - date: ""2026-09-04""
+      topic: ""Lab: debugging basics""
+      reading: ""—""
+      note: ""HW1 due 11:59 PM""
+
+# ... continue for all ~15 weeks
+```
+
+---
+
+### `_layouts/default.html`
+
+```html
+<!doctype html>
+<html lang=""en"">
+<head>
+  <meta charset=""utf-8"">
+  <meta name=""viewport"" content=""width=device-width, initial-scale=1"">
+  <title>{% if page.title %}{{ page.title }} · {% endif %}{{ site.course_number }}</title>
+  <meta name=""description"" content=""{{ site.description }}"">
+  <link rel=""stylesheet"" href=""{{ '/assets/css/style.css' | relative_url }}"">
+</head>
+<body>
+  <a class=""skip"" href=""#main"">Skip to content</a>
+
+  <header class=""site-header"">
+    <p class=""course""><a href=""{{ '/' | relative_url }}"">{{ site.course_number }}</a></p>
+    <p class=""term"">{{ site.term }}</p>
+    <nav aria-label=""Main"">
+      <ul>
+        {% for item in site.nav %}
+        <li><a href=""{{ item.url | relative_url }}""
+               {% if page.url == item.url %}aria-current=""page""{% endif %}>{{ item.title }}</a></li>
+        {% endfor %}
+      </ul>
+    </nav>
+  </header>
+
+  <main id=""main"">
+    {% if page.title %}<h1>{{ page.title }}</h1>{% endif %}
+    {{ content }}
+  </main>
+
+  <footer class=""site-footer"">
+    <p>{{ site.title }} · {{ site.term }} · {{ site.instructor }}</p>
+    <p>Grades and submissions are on <a href=""{{ site.lms_url }}"">Canvas</a>.</p>
+  </footer>
+</body>
+</html>
+```
+
+---
+
+### `assets/css/style.css`
+
+Mobile-first, respects dark mode, tables scroll instead of breaking the page.
+
+```css
+:root {
+  --bg: #ffffff;
+  --fg: #1a1a1a;
+  --muted: #5c5c5c;
+  --accent: #14532d;
+  --border: #e0e0e0;
+  --surface: #f7f7f5;
+}
+@media (prefers-color-scheme: dark) {
+  :root {
+    --bg: #16181a;
+    --fg: #e8e8e6;
+    --muted: #a0a0a0;
+    --accent: #7dd3a0;
+    --border: #2e3134;
+    --surface: #1e2124;
+  }
+}
+
+* { box-sizing: border-box; }
+body {
+  margin: 0;
+  background: var(--bg);
+  color: var(--fg);
+  font: 17px/1.6 system-ui, -apple-system, ""Segoe UI"", Roboto, sans-serif;
+  -webkit-text-size-adjust: 100%;
+}
+main { max-width: 46rem; margin: 0 auto; padding: 1.5rem 1.25rem 4rem; }
+
+a { color: var(--accent); }
+a:focus-visible, .skip:focus { outline: 3px solid var(--accent); outline-offset: 2px; }
+.skip { position: absolute; left: -9999px; }
+.skip:focus { left: 1rem; top: 1rem; background: var(--bg); padding: .5rem 1rem; z-index: 10; }
+
+.site-header {
+  border-bottom: 1px solid var(--border);
+  padding: 1rem 1.25rem;
+  max-width: 46rem; margin: 0 auto;
+}
+.site-header .course { font-weight: 700; font-size: 1.2rem; margin: 0; }
+.site-header .course a { color: var(--fg); text-decoration: none; }
+.site-header .term { color: var(--muted); margin: .15rem 0 .75rem; font-size: .9rem; }
+.site-header nav ul { list-style: none; display: flex; flex-wrap: wrap; gap: .25rem 1rem; padding: 0; margin: 0; }
+.site-header nav a { text-decoration: none; font-size: .95rem; padding: .25rem 0; }
+.site-header nav a[aria-current=""page""] { font-weight: 700; border-bottom: 2px solid var(--accent); }
+
+h1 { font-size: 1.9rem; line-height: 1.2; margin: 1.5rem 0 1rem; }
+h2 { font-size: 1.3rem; margin: 2.25rem 0 .5rem; }
+h3 { font-size: 1.05rem; margin: 1.5rem 0 .35rem; }
+
+.table-wrap { overflow-x: auto; margin: 1rem 0; }
+table { border-collapse: collapse; width: 100%; font-size: .95rem; }
+th, td { text-align: left; padding: .55rem .7rem; border-bottom: 1px solid var(--border); vertical-align: top; }
+th { background: var(--surface); font-size: .85rem; text-transform: uppercase; letter-spacing: .03em; }
+td.date { white-space: nowrap; color: var(--muted); }
+tr.week-head td { background: var(--surface); font-weight: 700; }
+.due { color: var(--accent); font-weight: 600; }
+
+.callout {
+  border-left: 4px solid var(--accent);
+  background: var(--surface);
+  padding: .85rem 1rem; margin: 1.25rem 0; border-radius: 0 4px 4px 0;
+}
+.facts { list-style: none; padding: 0; }
+.facts li { padding: .35rem 0; border-bottom: 1px solid var(--border); }
+
+.site-footer {
+  max-width: 46rem; margin: 0 auto; padding: 1.5rem 1.25rem 3rem;
+  border-top: 1px solid var(--border); color: var(--muted); font-size: .9rem;
+}
+code { background: var(--surface); padding: .1em .35em; border-radius: 3px; font-size: .9em; }
+pre { background: var(--surface); padding: 1rem; overflow-x: auto; border-radius: 4px; }
+pre code { background: none; padding: 0; }
+```
+
+---
+
+### `index.md`
+
+```markdown
+---
+layout: default
+title: CS 101 — Introduction to Computer Science
+---
+
+<div class=""callout"" markdown=""1"">
+**Start here:** read the [syllabus](/syllabus/), then follow the
+[setup guide](/setup/) before the first lab. Bring a laptop if you have one.
+</div>
+
+## Course facts
+
+<ul class=""facts"">
+  <li><strong>Meets:</strong> {{ site.meeting_times }} · {{ site.meeting_room }}</li>
+  <li><strong>Instructor:</strong> {{ site.instructor }} —
+      <a href=""mailto:{{ site.instructor_email }}"">{{ site.instructor_email }}</a></li>
+  <li><strong>Office hours:</strong> {{ site.office_hours }}</li>
+  {% for ta in site.tas %}
+  <li><strong>TA — {{ ta.name }}:</strong> {{ ta.hours }}</li>
+  {% endfor %}
+  <li><strong>Course forum:</strong> <a href=""{{ site.forum_url }}"">Ask questions here</a></li>
+  <li><strong>Grades &amp; submissions:</strong> <a href=""{{ site.lms_url }}"">Canvas</a></li>
+</ul>
+
+## Announcements
+
+*Edit this section as the term goes on — newest first.*
+
+- **Aug 24** — Welcome! First class meets in {{ site.meeting_room }}.
+
+## Upcoming work
+
+<div class=""table-wrap"" markdown=""0"">
+<table>
+  <thead><tr><th>Assignment</th><th>Due</th></tr></thead>
+  <tbody>
+  {% for a in site.data.assignments %}
+    <tr>
+      <td>{% if a.link != """" %}<a href=""{{ a.link | relative_url }}"">{{ a.title }}</a>{% else %}{{ a.title }}{% endif %}</td>
+      <td class=""date"">{{ a.due | date: ""%a, %b %-d"" }}</td>
+    </tr>
+  {% endfor %}
+  </tbody>
+</table>
+</div>
+```
+
+---
+
+### `schedule.md`
+
+```markdown
+---
+layout: default
+title: Schedule
+permalink: /schedule/
+---
+
+Readings refer to the course textbook. The schedule may shift; changes are
+announced in class and on this page.
+
+<div class=""table-wrap"" markdown=""0"">
+<table>
+  <thead>
+    <tr><th>Date</th><th>Topic</th><th>Reading</th><th>Notes</th></tr>
+  </thead>
+  <tbody>
+  {% for w in site.data.schedule %}
+    <tr class=""week-head""><td colspan=""4"">Week {{ w.week }}</td></tr>
+    {% for m in w.meetings %}
+    <tr>
+      <td class=""date"">{{ m.date | date: ""%a %b %-d"" }}</td>
+      <td>{{ m.topic }}</td>
+      <td>{{ m.reading }}</td>
+      <td>{% if m.note contains ""due"" %}<span class=""due"">{{ m.note }}</span>{% else %}{{ m.note }}{% endif %}</td>
+    </tr>
+    {% endfor %}
+  {% endfor %}
+  </tbody>
+</table>
+</div>
+```
+
+---
+
+### `assignments.md`
+
+```markdown
+---
+layout: default
+title: Assignments
+permalink: /assignments/
+---
+
+Submit everything on [Canvas]({{ site.lms_url }}) unless a handout says otherwise.
+All deadlines are **11:59 PM** on the date shown, in local time.
+
+<div class=""table-wrap"" markdown=""0"">
+<table>
+  <thead><tr><th>Assignment</th><th>Out</th><th>Due</th><th>Points</th></tr></thead>
+  <tbody>
+  {% for a in site.data.assignments %}
+    <tr>
+      <td>{% if a.link != """" %}<a href=""{{ a.link | relative_url }}"">{{ a.title }}</a>{% else %}{{ a.title }}{% endif %}</td>
+      <td class=""date"">{% if a.out %}{{ a.out | date: ""%b %-d"" }}{% else %}—{% endif %}</td>
+      <td class=""date""><span class=""due"">{{ a.due | date: ""%b %-d"" }}</span></td>
+      <td>{{ a.points }}</td>
+    </tr>
+  {% endfor %}
+  </tbody>
+</table>
+</div>
+
+## Late policy
+
+You have **3 late days** for the semester, usable in whole-day increments on
+homework (not projects or exams). Beyond that, late work loses 20% per day and
+is not accepted more than 3 days late. Extensions for illness or emergency:
+email me before the deadline when possible.
+
+## Collaboration
+
+See the [syllabus](/syllabus/#academic-integrity) for the full policy, including
+the rules on AI coding assistants. When in doubt, ask before you submit — asking
+is always free, and a retroactive explanation is not.
+```
+
+---
+
+### `setup.md`
+
+```markdown
+---
+layout: default
+title: Setting Up Your Computer
+permalink: /setup/
+---
+
+Do this **before the first lab**. Budget 30 minutes. If you get stuck, don't
+burn an evening on it — bring your laptop to office hours or use the browser
+fallback below.
+
+<div class=""callout"" markdown=""1"">
+**No laptop, or nothing works?** Use [Replit](https://replit.com) in a browser,
+or the lab machines in Science Hall 120. You will not fall behind.
+</div>
+
+## 1. Install Python
+
+We use **Python 3.12 or newer**.
+
+**Windows** — install from the [Microsoft Store](https://apps.microsoft.com/search?query=python+3.12)
+(easiest — it sets up your PATH correctly), or from [python.org](https://www.python.org/downloads/).
+If you use the python.org installer, **check ""Add python.exe to PATH""** on the
+first screen. This is the single most common setup problem.
+
+**macOS** — the Python that ships with macOS is too old. Install from
+[python.org](https://www.python.org/downloads/), or with Homebrew:
+
+    brew install python@3.12
+
+**Linux** — most distributions include it:
+
+    sudo apt install python3 python3-pip    # Debian/Ubuntu
+
+## 2. Verify it worked
+
+Open a terminal (Windows: **Terminal**; macOS: **Terminal.app**) and run:
+
+    python3 --version
+
+You should see `Python 3.12.x` or higher. On Windows you may need `python`
+instead of `python3`.
+
+## 3. Install VS Code
+
+Download [Visual Studio Code](https://code.visualstudio.com/), then install the
+**Python** extension by Microsoft (open the Extensions panel with
+`Ctrl+Shift+X` / `Cmd+Shift+X` and search for ""Python"").
+
+## 4. Test drive
+
+Make a file called `hello.py` containing:
+
+    print(""Hello, CS 101!"")
+
+Run it from the terminal:
+
+    python3 hello.py
+
+If you see `Hello, CS 101!`, you're done.
+
+## Common problems
+
+**`python3: command not found` (Windows)** — PATH wasn't set. Re-run the
+installer, choose ""Modify"", and enable ""Add python.exe to PATH"". Then close and
+reopen your terminal.
+
+**`pip: command not found`** — use `python3 -m pip` instead of `pip`.
+
+**VS Code runs the wrong Python** — press `Ctrl+Shift+P` / `Cmd+Shift+P`, run
+""Python: Select Interpreter"", and pick 3.12.
+
+**Permission denied on macOS/Linux** — you're probably in a folder you can't
+write to. `cd` to your Documents folder and try again.
+
+Still stuck? Post on [the course forum]({{ site.forum_url }}) with your OS, the
+exact command you ran, and the **full error text** (paste it, don't screenshot it).
+```
+
+---
+
+### `help.md`
+
+```markdown
+---
+layout: default
+title: Getting Help
+permalink: /help/
+---
+
+Asking for help early is what successful students do. Here's where to go.
+
+## Where to ask
+
+**Course forum** — [{{ site.forum_url }}]({{ site.forum_url }})
+First stop for anything about assignments, concepts, or setup. Someone else
+probably has the same question. Expect a reply within **24 hours on weekdays**
+(slower on weekends — don't start homework the night before).
+
+**Office hours** — best for anything that takes more than a paragraph: debugging
+together, working through a concept, talking about how the course is going.
+No appointment needed, and you don't need a ""good enough"" question.
+
+- {{ site.instructor }} — {{ site.office_hours }}
+{% for ta in site.tas %}- {{ ta.name }} — {{ ta.hours }}
+{% endfor %}
+
+**Email** — [{{ site.instructor_email }}](mailto:{{ site.instructor_email }})
+Use for private matters only: grades, accommodations, illness, extensions.
+Technical questions get better answers on the forum.
+
+## How to ask a good question
+
+Include these three things and you'll usually get an answer in one round trip:
+
+1. **What you're trying to do** — one sentence.
+2. **What you tried** — the actual code, as text.
+3. **What happened** — the full error message, copied and pasted.
+
+Please paste text rather than posting screenshots: text is searchable, readable
+on a phone, and works with screen readers.
+
+## Other support
+
+- **CS Tutoring Center** — Science Hall 118, Mon–Thu 6–9 PM. Free, drop-in.
+- **Accessibility Services** — [link]. Contact them early; accommodations aren't retroactive.
+- **Counseling & Wellness** — [link]. If life is getting in the way of the
+  course, tell me. I can be flexible; I can't be flexible retroactively.
+```
+
+---
+
+### `syllabus.md`
+
+```markdown
+---
+layout: default
+title: Syllabus
+permalink: /syllabus/
+---
+
+## Description
+
+An introduction to computer science and programming. No prior experience
+assumed. By the end of the course you will be able to read, write, test, and
+debug programs of a few hundred lines, and explain how a computer executes them.
+
+## Learning outcomes
+
+By the end of the semester you will be able to:
+
+1. Write correct programs using variables, conditionals, loops, and functions.
+2. Decompose a problem into functions with clear inputs and outputs.
+3. Read an error message and systematically locate the cause.
+4. Choose an appropriate data structure (list, dictionary, set) for a task.
+5. Test your own code and explain why you believe it is correct.
+
+## Grading
+
+| Component | Weight |
+|---|---|
+| Homework (6) | 30% |
+| Projects (2) | 25% |
+| Midterm exam | 15% |
+| Final exam | 25% |
+| Participation | 5% |
+
+Grades are posted on [Canvas]({{ site.lms_url }}) and nowhere else.
+
+## Academic integrity
+
+You may discuss concepts and approaches with classmates. **You may not** share,
+copy, or view another student's code for a graded assignment. Write everything
+you submit yourself, and cite anyone you worked with at the top of your file.
+
+### AI tools
+
+Generative AI assistants (ChatGPT, Claude, Copilot, etc.) are **[permitted /
+permitted with citation / not permitted]** on homework in this course.
+
+*Choose one and delete the rest:*
+
+- **Not permitted:** the skill this course builds is the ability to produce and
+  debug code yourself. Submitting AI-generated code is an integrity violation,
+  handled like any other.
+- **Permitted with citation:** you may use them, but you must (a) note at the top
+  of each file which tool you used and for what, and (b) be able to explain every
+  line you submit. Exams are closed-book and closed-AI, so leaning on a tool now
+  is borrowing against your exam grade.
+
+Whatever the policy, it applies to the whole file. If you're unsure whether
+something crosses the line, ask first — asking is never penalized.
+
+## Accessibility
+
+I want this course to work for you. If you have a documented accommodation,
+send me your letter in the first two weeks so I can plan ahead. If something
+about the course format is making it hard to learn — pacing, materials, room,
+anything — tell me, with or without documentation.
+
+## Required materials
+
+- A computer capable of running Python 3.12 (see [Setup](/setup/)), or use the
+  lab machines.
+- Textbook: *[Title]*, [Author]. A free online edition is at [link].
+
+## Attendance
+
+Attendance is not graded directly, but participation is, and the material is
+cumulative — falling two weeks behind in an intro programming course is very
+hard to recover from. If you have to miss class, check the
+[schedule](/schedule/) and come to office hours.
+```
+
+---
+
+### `.github/workflows/deploy.yml`
+
+```yaml
+name: Deploy site
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+concurrency:
+  group: pages
+  cancel-in-progress: false
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/configure-pages@v5
+      - uses: ruby/setup-ruby@v1
+        with:
+          ruby-version: ""3.3""
+          bundler-cache: true
+      - run: bundle exec jekyll build --baseurl ""${{ steps.pages.outputs.base_path }}""
+        env:
+          JEKYLL_ENV: production
+      - uses: actions/upload-pages-artifact@v3
+
+  deploy:
+    needs: build
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - id: deployment
+        uses: actions/deploy-pages@v4
+```
+
+### `Gemfile`
+
+```ruby
+source ""https://rubygems.org""
+gem ""jekyll"", ""~> 4.3""
+```
+
+---
+
+### `README.md`
+
+````markdown
+# CS 101 course website
+
+## Deploying
+
+1. Create a GitHub repo and push these files to `main`.
+2. Repo **Settings → Pages → Build and deployment → Source: GitHub Actions**.
+3. Push. The site builds in ~1 minute.
+
+If your URL is `https://USER.github.io/REPO`, set `baseurl: ""/REPO""` in `_config.yml`.
+
+## Editing during the term
+
+Almost everything lives in two data files:
+
+- `_data/schedule.yml` — class meetings, topics, readings
+- `_data/assignments.yml` — assignment titles and due dates (**the only place
+  due dates live**)
+
+Edit them on github.com directly and commit — the site rebuilds itself. No local
+setup needed.
+
+## Local preview (optional)
+
+```bash
+bundle install
+bundle exec jekyll serve
+# http://localhost:4000
+```
+
+## Reusing next semester
+
+Copy the repo, update `term` / `meeting_times` / `instructor` in `_config.yml`,
+and shift the dates in the two data files. That's the whole migration.
+````
+
+---
+
+## Before you publish
+
+A few things I left as placeholders that only you can fill in:
+
+- **Pick one AI policy** in `syllabus.md` — I wrote two options and left both in. This is the section students will actually litigate, so make it unambiguous.
+- **Real dates.** I stubbed weeks 1–2 of the schedule against a Aug 24 start; extend to your actual academic calendar and drop in holidays/breaks as rows.
+- **Handout PDFs.** Assignment links point at `/handouts/hw1.pdf` etc. — make that folder or repoint them at Canvas.
+- **The `[link]` placeholders** for textbook, accessibility services, and counseling.
+
+One thing worth knowing up front: the GitHub Actions workflow references `steps.pages.outputs.base_path`, which comes from the `configure-pages` step — if you rename or remove that step, give it `id: pages` or the baseurl will come out empty. Everything else is self-contained.
+
+Want me to extend the schedule data out to a full 15 weeks against your real academic calendar? Give me your start date and holiday dates and I'll generate it.",179.606,239.606,message,assistant,,,,claude-opus-5,10287,6e3b8e95-7df5-4179-b1ab-c19cad3c18c7,text
+ai,Edwin,yes please try doing that,378.13,379.13,message,user,,,,,,f16d5ce3-9071-4d90-8f8f-dee597515f77,text
+ai,Claude,"I don't have your academic calendar, so I built this against an explicitly assumed **Fall 2026 MWF calendar** — tell me where it differs and I'll shift it:
+
+| Assumption | Date |
+|---|---|
+| First day of class | Mon **Aug 24** |
+| Labor Day (no class) | Mon **Sep 7** |
+| Fall break (no class) | Mon–Tue **Oct 12–13** |
+| Thanksgiving break (no class) | Wed–Fri **Nov 25–27** |
+| Last day of class | Fri **Dec 4** |
+| Finals week | **Dec 7–11** |
+
+That's 15 weeks, 45 MWF slots, **41 actual meetings** after the four cancellations. Dates below are real 2026 weekdays (I checked the day-of-week for each).
+
+---
+
+### `_data/schedule.yml` — complete
+
+```yaml
+- week: 1
+  meetings:
+    - date: ""2026-08-24""
+      topic: ""What is computing? Course logistics""
+      reading: ""Syllabus; Ch. 1""
+      note: """"
+    - date: ""2026-08-26""
+      topic: ""Values, variables, and types""
+      reading: ""Ch. 2.1–2.3""
+      note: ""HW1 out""
+    - date: ""2026-08-28""
+      topic: ""Expressions, input and output""
+      reading: ""Ch. 2.4–2.5""
+      note: """"
+
+- week: 2
+  meetings:
+    - date: ""2026-08-31""
+      topic: ""Conditionals: if / elif / else""
+      reading: ""Ch. 3.1–3.2""
+      note: """"
+    - date: ""2026-09-02""
+      topic: ""Boolean logic and comparison""
+      reading: ""Ch. 3.3–3.4""
+      note: """"
+    - date: ""2026-09-04""
+      topic: ""Lab: reading error messages, debugging basics""
+      reading: ""—""
+      note: ""HW1 due 11:59 PM""
+
+- week: 3
+  meetings:
+    - date: ""2026-09-07""
+      topic: ""No class — Labor Day""
+      reading: ""—""
+      note: """"
+    - date: ""2026-09-09""
+      topic: ""while loops""
+      reading: ""Ch. 4.1–4.2""
+      note: ""HW2 out""
+    - date: ""2026-09-11""
+      topic: ""for loops and range()""
+      reading: ""Ch. 4.3""
+      note: """"
+
+- week: 4
+  meetings:
+    - date: ""2026-09-14""
+      topic: ""Loop patterns: accumulators and counters""
+      reading: ""Ch. 4.4""
+      note: """"
+    - date: ""2026-09-16""
+      topic: ""Nested loops""
+      reading: ""Ch. 4.5""
+      note: """"
+    - date: ""2026-09-18""
+      topic: ""Lab: loop practice and tracing""
+      reading: ""—""
+      note: ""HW2 due 11:59 PM""
+
+- week: 5
+  meetings:
+    - date: ""2026-09-21""
+      topic: ""Functions I: definition, parameters, return""
+      reading: ""Ch. 5.1–5.3""
+      note: ""HW3 out""
+    - date: ""2026-09-23""
+      topic: ""Functions II: scope and local variables""
+      reading: ""Ch. 5.4–5.5""
+      note: """"
+    - date: ""2026-09-25""
+      topic: ""Lab: decomposing a problem into functions""
+      reading: ""—""
+      note: """"
+
+- week: 6
+  meetings:
+    - date: ""2026-09-28""
+      topic: ""Strings I: indexing and slicing""
+      reading: ""Ch. 6.1–6.3""
+      note: """"
+    - date: ""2026-09-30""
+      topic: ""Strings II: methods and formatting""
+      reading: ""Ch. 6.4–6.6""
+      note: """"
+    - date: ""2026-10-02""
+      topic: ""Lab: string processing""
+      reading: ""—""
+      note: ""HW3 due 11:59 PM""
+
+- week: 7
+  meetings:
+    - date: ""2026-10-05""
+      topic: ""Lists I: creating, indexing, iterating""
+      reading: ""Ch. 7.1–7.3""
+      note: ""HW4 out""
+    - date: ""2026-10-07""
+      topic: ""Lists II: mutation, aliasing, copying""
+      reading: ""Ch. 7.4–7.6""
+      note: """"
+    - date: ""2026-10-09""
+      topic: ""Lab: list algorithms""
+      reading: ""—""
+      note: """"
+
+- week: 8
+  meetings:
+    - date: ""2026-10-12""
+      topic: ""No class — Fall break""
+      reading: ""—""
+      note: """"
+    - date: ""2026-10-14""
+      topic: ""Midterm review""
+      reading: ""Ch. 1–7""
+      note: ""HW4 due 11:59 PM""
+    - date: ""2026-10-16""
+      topic: ""MIDTERM EXAM (in class)""
+      reading: ""—""
+      note: ""Midterm""
+
+- week: 9
+  meetings:
+    - date: ""2026-10-19""
+      topic: ""Dictionaries I: keys, values, lookup""
+      reading: ""Ch. 8.1–8.3""
+      note: ""Project 1 out""
+    - date: ""2026-10-21""
+      topic: ""Dictionaries II: counting and grouping patterns""
+      reading: ""Ch. 8.4""
+      note: """"
+    - date: ""2026-10-23""
+      topic: ""Sets and when to use them""
+      reading: ""Ch. 8.5""
+      note: """"
+
+- week: 10
+  meetings:
+    - date: ""2026-10-26""
+      topic: ""Reading and writing files""
+      reading: ""Ch. 9.1–9.3""
+      note: """"
+    - date: ""2026-10-28""
+      topic: ""Exceptions and error handling""
+      reading: ""Ch. 9.4–9.5""
+      note: """"
+    - date: ""2026-10-30""
+      topic: ""Lab: working with real data files""
+      reading: ""—""
+      note: """"
+
+- week: 11
+  meetings:
+    - date: ""2026-11-02""
+      topic: ""Nested data structures (lists of dicts)""
+      reading: ""Ch. 10.1–10.2""
+      note: ""HW5 out""
+    - date: ""2026-11-04""
+      topic: ""Searching and sorting""
+      reading: ""Ch. 10.3–10.4""
+      note: """"
+    - date: ""2026-11-06""
+      topic: ""How fast is my program? Intro to efficiency""
+      reading: ""Ch. 10.5""
+      note: """"
+
+- week: 12
+  meetings:
+    - date: ""2026-11-09""
+      topic: ""Recursion I: base cases and recursive cases""
+      reading: ""Ch. 11.1–11.2""
+      note: """"
+    - date: ""2026-11-11""
+      topic: ""Recursion II: recursion on lists and strings""
+      reading: ""Ch. 11.3""
+      note: """"
+    - date: ""2026-11-13""
+      topic: ""Lab: recursive thinking""
+      reading: ""—""
+      note: ""HW5 due 11:59 PM; HW6 out""
+
+- week: 13
+  meetings:
+    - date: ""2026-11-16""
+      topic: ""Objects and classes I: attributes and methods""
+      reading: ""Ch. 12.1–12.3""
+      note: ""Project 2 out""
+    - date: ""2026-11-18""
+      topic: ""Objects and classes II: designing a class""
+      reading: ""Ch. 12.4–12.5""
+      note: """"
+    - date: ""2026-11-20""
+      topic: ""Lab: building a small class""
+      reading: ""—""
+      note: ""HW6 due 11:59 PM""
+
+- week: 14
+  meetings:
+    - date: ""2026-11-23""
+      topic: ""Under the hood: binary, memory, and machine code""
+      reading: ""Ch. 13""
+      note: ""Project 2 work session""
+    - date: ""2026-11-25""
+      topic: ""No class — Thanksgiving break""
+      reading: ""—""
+      note: """"
+    - date: ""2026-11-27""
+      topic: ""No class — Thanksgiving break""
+      reading: ""—""
+      note: """"
+
+- week: 15
+  meetings:
+    - date: ""2026-11-30""
+      topic: ""Computing and society: bias, privacy, responsibility""
+      reading: ""Ch. 14""
+      note: """"
+    - date: ""2026-12-02""
+      topic: ""Where to go next: the CS curriculum and beyond""
+      reading: ""—""
+      note: """"
+    - date: ""2026-12-04""
+      topic: ""Final exam review — last day of class""
+      reading: ""Ch. 1–14""
+      note: ""Project 2 due 11:59 PM""
+
+- week: 16
+  meetings:
+    - date: ""2026-12-07""
+      topic: ""Finals week — final exam date/time TBD by registrar""
+      reading: ""—""
+      note: ""Final exam""
+```
+
+---
+
+### `_data/assignments.yml` — updated to match
+
+```yaml
+- id: hw1
+  title: ""Homework 1: Hello, Python""
+  out: ""2026-08-26""
+  due: ""2026-09-04""
+  link: ""/handouts/hw1.pdf""
+  points: 40
+
+- id: hw2
+  title: ""Homework 2: Conditionals and Loops""
+  out: ""2026-09-09""
+  due: ""2026-09-18""
+  link: ""/handouts/hw2.pdf""
+  points: 40
+
+- id: hw3
+  title: ""Homework 3: Functions""
+  out: ""2026-09-21""
+  due: ""2026-10-02""
+  link: ""/handouts/hw3.pdf""
+  points: 40
+
+- id: hw4
+  title: ""Homework 4: Strings and Lists""
+  out: ""2026-10-05""
+  due: ""2026-10-14""
+  link: ""/handouts/hw4.pdf""
+  points: 40
+
+- id: midterm
+  title: ""Midterm Exam (in class)""
+  out: """"
+  due: ""2026-10-16""
+  link: """"
+  points: 150
+
+- id: proj1
+  title: ""Project 1: Text Adventure""
+  out: ""2026-10-19""
+  due: ""2026-11-06""
+  link: ""/handouts/project1.pdf""
+  points: 125
+
+- id: hw5
+  title: ""Homework 5: Files and Exceptions""
+  out: ""2026-11-02""
+  due: ""2026-11-13""
+  link: ""/handouts/hw5.pdf""
+  points: 40
+
+- id: hw6
+  title: ""Homework 6: Recursion""
+  out: ""2026-11-13""
+  due: ""2026-11-20""
+  link: ""/handouts/hw6.pdf""
+  points: 40
+
+- id: proj2
+  title: ""Project 2: Gradebook Analyzer""
+  out: ""2026-11-16""
+  due: ""2026-12-04""
+  link: ""/handouts/project2.pdf""
+  points: 125
+
+- id: final
+  title: ""Final Exam""
+  out: """"
+  due: ""2026-12-07""
+  link: """"
+  points: 250
+```
+
+---
+
+## Two small edits this requires elsewhere
+
+**1. `assignments.md`** — the ""Out"" column now needs to handle empty strings (exams have no out-date). Change that cell to:
+
+```liquid
+<td class=""date"">{% if a.out and a.out != """" %}{{ a.out | date: ""%b %-d"" }}{% else %}—{% endif %}</td>
+```
+
+**2. `schedule.md`** — the note highlighting only triggers on the word ""due"". To also highlight exams and week-16 rows, widen the condition:
+
+```liquid
+<td>{% if m.note contains ""due"" or m.note contains ""Midterm"" or m.note contains ""Final"" %}<span class=""due"">{{ m.note }}</span>{% else %}{{ m.note }}{% endif %}</td>
+```
+
+Also note the syllabus grading table now has 6 homeworks at 40 pts, 2 projects at 125, midterm 150, final 250 — 890 total. That happens to land close to the stated weights (HW 27%, projects 28%, midterm 17%, final 28%), but if you want the percentages to be exact, grade by weighted category rather than raw points and leave the point values as-is.
+
+---
+
+## Pacing notes worth a look
+
+Three places I'd expect friction, flagging them rather than silently smoothing them over:
+
+- **Week 3 loses Labor Day**, so `while` and `for` loops land in two meetings instead of three. Loops are the #1 place intro students stall. If you can spare it, push the Week 4 lab a day and give loops an extra session.
+- **HW6 goes out the same day HW5 is due** (Nov 13). Deliberate — it keeps recursion adjacent to when it's taught — but it means students carry HW6 and Project 2 concurrently from Nov 16–20. Keep HW6 genuinely small.
+- **Classes and objects get one week** (W13) and then immediately anchor Project 2. If your course treats OOP as a real outcome rather than a preview, this is the section to expand; the natural donor is the Week 11 efficiency material.
+
+Give me your real first day, break dates, and last day and I'll regenerate both files against them.",461.454,521.454,message,assistant,,,,claude-opus-5,7923,5927c175-3101-468f-ab1c-d10c5c13689a,text
+ai,Edwin,"First day is January 12, spring break March 9–13, last day April 24.",2335.28,2337.88,message,user,,,,,,0fe76a9f-ee15-48c7-aa16-65ad1632ec9b,text
+ai,Claude,"Before the files — a flag worth 20 seconds of your time.
+
+Those three dates don't land on the weekdays you'd expect for 2027: **Jan 12, 2027 is a Tuesday**, **Mar 9–13, 2027 is Tue–Sat**, and **Apr 24, 2027 is a Saturday**. They *do* all line up perfectly for **2026** (Mon start, Mon–Fri break, Fri last day) — which suggests you may be reading off the Spring 2026 calendar rather than Spring 2027. Worth double-checking against your registrar before you publish dates students will hold you to.
+
+I built it for **Spring 2027** using your dates, interpreted the way a term calendar normally works:
+
+- Term opens Tue Jan 12 → **first MWF class is Wed Jan 13**
+- **Spring break cancels the whole week of Mar 8–12** (Mon/Wed/Fri), not just the Tue–Sat span literally
+- Term closes Sat Apr 24 → **last MWF class is Fri Apr 23**
+- Assumed **MLK Day, Mon Jan 18 = no class**; assumed classes *do* meet Presidents' Day (Mon Feb 15) — flip either if wrong
+
+That gives **40 meetings** across 15 weeks, one fewer than the fall version.
+
+---
+
+### `_data/schedule.yml`
+
+```yaml
+- week: 1
+  meetings:
+    - date: ""2027-01-13""
+      topic: ""What is computing? Course logistics""
+      reading: ""Syllabus; Ch. 1""
+      note: ""Term begins Tue Jan 12; first class meeting is Wed""
+    - date: ""2027-01-15""
+      topic: ""Values, variables, and types""
+      reading: ""Ch. 2.1–2.3""
+      note: """"
+
+- week: 2
+  meetings:
+    - date: ""2027-01-18""
+      topic: ""No class — Martin Luther King Jr. Day""
+      reading: ""—""
+      note: """"
+    - date: ""2027-01-20""
+      topic: ""Expressions, input and output""
+      reading: ""Ch. 2.4–2.5""
+      note: ""HW1 out""
+    - date: ""2027-01-22""
+      topic: ""Conditionals: if / elif / else""
+      reading: ""Ch. 3.1–3.2""
+      note: """"
+
+- week: 3
+  meetings:
+    - date: ""2027-01-25""
+      topic: ""Boolean logic and comparison""
+      reading: ""Ch. 3.3–3.4""
+      note: """"
+    - date: ""2027-01-27""
+      topic: ""Lab: reading error messages, debugging basics""
+      reading: ""—""
+      note: """"
+    - date: ""2027-01-29""
+      topic: ""while loops""
+      reading: ""Ch. 4.1–4.2""
+      note: ""HW1 due 11:59 PM""
+
+- week: 4
+  meetings:
+    - date: ""2027-02-01""
+      topic: ""for loops and range()""
+      reading: ""Ch. 4.3""
+      note: ""HW2 out""
+    - date: ""2027-02-03""
+      topic: ""Loop patterns: accumulators and counters""
+      reading: ""Ch. 4.4""
+      note: """"
+    - date: ""2027-02-05""
+      topic: ""Nested loops""
+      reading: ""Ch. 4.5""
+      note: """"
+
+- week: 5
+  meetings:
+    - date: ""2027-02-08""
+      topic: ""Lab: loop practice and tracing""
+      reading: ""—""
+      note: """"
+    - date: ""2027-02-10""
+      topic: ""Functions I: definition, parameters, return""
+      reading: ""Ch. 5.1–5.3""
+      note: """"
+    - date: ""2027-02-12""
+      topic: ""Functions II: scope and local variables""
+      reading: ""Ch. 5.4–5.5""
+      note: ""HW2 due 11:59 PM""
+
+- week: 6
+  meetings:
+    - date: ""2027-02-15""
+      topic: ""Lab: decomposing a problem into functions""
+      reading: ""—""
+      note: ""HW3 out""
+    - date: ""2027-02-17""
+      topic: ""Strings I: indexing and slicing""
+      reading: ""Ch. 6.1–6.3""
+      note: """"
+    - date: ""2027-02-19""
+      topic: ""Strings II: methods and formatting""
+      reading: ""Ch. 6.4–6.6""
+      note: """"
+
+- week: 7
+  meetings:
+    - date: ""2027-02-22""
+      topic: ""Lab: string processing""
+      reading: ""—""
+      note: ""HW4 out""
+    - date: ""2027-02-24""
+      topic: ""Lists I: creating, indexing, iterating""
+      reading: ""Ch. 7.1–7.3""
+      note: """"
+    - date: ""2027-02-26""
+      topic: ""Lists II: mutation, aliasing, copying""
+      reading: ""Ch. 7.4–7.6""
+      note: ""HW3 due 11:59 PM""
+
+- week: 8
+  meetings:
+    - date: ""2027-03-01""
+      topic: ""Lab: list algorithms""
+      reading: ""—""
+      note: """"
+    - date: ""2027-03-03""
+      topic: ""Midterm review""
+      reading: ""Ch. 1–7""
+      note: ""HW4 due 11:59 PM""
+    - date: ""2027-03-05""
+      topic: ""MIDTERM EXAM (in class)""
+      reading: ""—""
+      note: ""Midterm""
+
+- week: 9
+  meetings:
+    - date: ""2027-03-08""
+      topic: ""No class — Spring break""
+      reading: ""—""
+      note: """"
+    - date: ""2027-03-10""
+      topic: ""No class — Spring break""
+      reading: ""—""
+      note: """"
+    - date: ""2027-03-12""
+      topic: ""No class — Spring break""
+      reading: ""—""
+      note: """"
+
+- week: 10
+  meetings:
+    - date: ""2027-03-15""
+      topic: ""Dictionaries I: keys, values, lookup""
+      reading: ""Ch. 8.1–8.3""
+      note: ""Project 1 out""
+    - date: ""2027-03-17""
+      topic: ""Dictionaries II: counting and grouping patterns""
+      reading: ""Ch. 8.4""
+      note: """"
+    - date: ""2027-03-19""
+      topic: ""Sets and when to use them""
+      reading: ""Ch. 8.5""
+      note: """"
+
+- week: 11
+  meetings:
+    - date: ""2027-03-22""
+      topic: ""Reading and writing files""
+      reading: ""Ch. 9.1–9.3""
+      note: """"
+    - date: ""2027-03-24""
+      topic: ""Exceptions and error handling""
+      reading: ""Ch. 9.4–9.5""
+      note: """"
+    - date: ""2027-03-26""
+      topic: ""Lab: working with real data files""
+      reading: ""—""
+      note: """"
+
+- week: 12
+  meetings:
+    - date: ""2027-03-29""
+      topic: ""Nested data structures (lists of dicts)""
+      reading: ""Ch. 10.1–10.2""
+      note: """"
+    - date: ""2027-03-31""
+      topic: ""Searching and sorting""
+      reading: ""Ch. 10.3–10.4""
+      note: """"
+    - date: ""2027-04-02""
+      topic: ""How fast is my program? Intro to efficiency""
+      reading: ""Ch. 10.5""
+      note: ""Project 1 due 11:59 PM""
+
+- week: 13
+  meetings:
+    - date: ""2027-04-05""
+      topic: ""Objects and classes I: attributes and methods""
+      reading: ""Ch. 12.1–12.3""
+      note: ""Project 2 out""
+    - date: ""2027-04-07""
+      topic: ""Objects and classes II: designing a class""
+      reading: ""Ch. 12.4–12.5""
+      note: """"
+    - date: ""2027-04-09""
+      topic: ""Lab: building a small class""
+      reading: ""—""
+      note: """"
+
+- week: 14
+  meetings:
+    - date: ""2027-04-12""
+      topic: ""Recursion I: base cases and recursive cases""
+      reading: ""Ch. 11.1–11.2""
+      note: """"
+    - date: ""2027-04-14""
+      topic: ""Recursion II: recursion on lists and strings""
+      reading: ""Ch. 11.3""
+      note: ""HW5 out""
+    - date: ""2027-04-16""
+      topic: ""Lab: recursive thinking""
+      reading: ""—""
+      note: """"
+
+- week: 15
+  meetings:
+    - date: ""2027-04-19""
+      topic: ""Under the hood: binary, memory, and machine code""
+      reading: ""Ch. 13""
+      note: """"
+    - date: ""2027-04-21""
+      topic: ""Computing and society: bias, privacy, responsibility""
+      reading: ""Ch. 14""
+      note: ""HW5 due 11:59 PM""
+    - date: ""2027-04-23""
+      topic: ""Final exam review; where to go next in CS — last day of class""
+      reading: ""Ch. 1–14""
+      note: ""Project 2 due 11:59 PM""
+
+- week: 16
+  meetings:
+    - date: ""2027-04-26""
+      topic: ""Finals week — final exam date/time TBD by registrar""
+      reading: ""—""
+      note: ""Final exam""
+```
+
+---
+
+### `_data/assignments.yml`
+
+```yaml
+- id: hw1
+  title: ""Homework 1: Hello, Python""
+  out: ""2027-01-20""
+  due: ""2027-01-29""
+  link: ""/handouts/hw1.pdf""
+  points: 40
+
+- id: hw2
+  title: ""Homework 2: Conditionals and Loops""
+  out: ""2027-02-01""
+  due: ""2027-02-12""
+  link: ""/handouts/hw2.pdf""
+  points: 40
+
+- id: hw3
+  title: ""Homework 3: Functions""
+  out: ""2027-02-15""
+  due: ""2027-02-26""
+  link: ""/handouts/hw3.pdf""
+  points: 40
+
+- id: hw4
+  title: ""Homework 4: Strings and Lists""
+  out: ""2027-02-22""
+  due: ""2027-03-03""
+  link: ""/handouts/hw4.pdf""
+  points: 40
+
+- id: midterm
+  title: ""Midterm Exam (in class)""
+  out: """"
+  due: ""2027-03-05""
+  link: """"
+  points: 150
+
+- id: proj1
+  title: ""Project 1: Text Adventure""
+  out: ""2027-03-15""
+  due: ""2027-04-02""
+  link: ""/handouts/project1.pdf""
+  points: 125
+
+- id: hw5
+  title: ""Homework 5: Recursion""
+  out: ""2027-04-14""
+  due: ""2027-04-21""
+  link: ""/handouts/hw5.pdf""
+  points: 40
+
+- id: proj2
+  title: ""Project 2: Gradebook Analyzer""
+  out: ""2027-04-05""
+  due: ""2027-04-23""
+  link: ""/handouts/project2.pdf""
+  points: 125
+
+- id: final
+  title: ""Final Exam""
+  out: """"
+  due: ""2027-04-26""
+  link: """"
+  points: 250
+```
+
+---
+
+## Changes this forces elsewhere
+
+**`_config.yml`** — `term: ""Spring 2027""`.
+
+**`syllabus.md`** — the grading table says **Homework (6)**; this calendar supports **5**. Spring break costs a full week versus the fall layout, and 5 homeworks plus 2 projects is the honest load for 40 meetings. Update the row, and note the totals are now 850 points (HW 200, projects 250, midterm 150, final 250 — 24% / 29% / 18% / 29%, close to your stated weights but not identical; grade by weighted category if you want the percentages exact).
+
+**`assignments.md`** and **`schedule.md`** — same two Liquid fixes from last round still apply (empty-`out` handling, and widening the note highlighting to catch ""Midterm""/""Final"").
+
+---
+
+## Pacing notes
+
+- **Weeks 1–2 give you only 4 meetings** before you're a fortnight in — Jan 12 is a Tuesday and MLK takes the following Monday. The first real content week is effectively Week 3. Don't schedule anything load-bearing before Jan 25.
+- **Spring break lands one week after the midterm**, which is good luck: students get the exam back, then a breather, then the second half opens cleanly on dictionaries.
+- **The last three weeks are dense.** Project 2 (out Apr 5) runs concurrently with all of recursion, and HW5 is due two days before Project 2. Keep HW5 to two or three small recursive functions, or drop it and fold recursion into the final's coverage.
+- **Recursion sits after classes** here, reversing the fall order. That's deliberate — it puts the classes material adjacent to Project 2, which depends on it. If you'd rather teach recursion first, swap weeks 13 and 14 and move Project 2's out-date to Apr 12 (which shortens it to 11 days).
+
+If the registrar confirms different dates, send them over and I'll regenerate. If it turns out you meant Spring 2026, say so and I'll rebuild against that calendar instead — every date shifts, since the weekdays differ.",2439.099,2478.937,message,assistant,,,,claude-opus-5,9903,1068c82a-e676-4bd5-a49c-65080424b988,text
+ai,Edwin,"Different question — a lot of my students have never programmed before. How
+should the first two weeks handle that?",2518.775,2522.775,message,user,,,,,,ce381b90-db3f-4965-a412-004ab6f57c11,text
+ai,Claude,"The single biggest risk in the first two weeks isn't the material — it's that your beginners conclude they're ""not a computer person"" before they've written anything. Almost every design decision below serves that one goal.
+
+You have exactly **four meetings** in that window (Jan 13, 15, 20, 22), which is tight. Here's how I'd spend them.
+
+## The core problem: a bimodal room
+
+Some fraction of your students taught themselves Python in high school. They will answer questions fast, out loud, and correctly. Your beginners will read that as evidence about themselves rather than about prior exposure. This is the best-documented attrition mechanism in intro CS, and it operates in week one.
+
+Practical countermeasures:
+
+- **Name it on day one, explicitly.** ""Some of you have programmed before. That's a head start, not a talent gap, and it disappears by midterm — that's not encouragement, it's what the grade distributions actually show."" Beginners need to hear that the gap is expected and temporary.
+- **Don't take hands for the first few classes.** Use think-pair-share or a polling tool instead. Cold-open hand-raising hands the floor to the experienced students and makes the gap the most visible thing in the room.
+- **Give the experienced students somewhere to go.** An optional ""extensions"" section on each assignment absorbs their energy so it doesn't get spent dominating class.
+
+## Separate ""learning to program"" from ""fighting your laptop""
+
+Setup failure is the most common way week one goes wrong, and it hits beginners hardest because they can't distinguish ""Python isn't on my PATH"" from ""I don't understand programming.""
+
+**Do not require a local install before the first assignment.** Run weeks 1–2 entirely in a browser environment — Replit, or a Jupyter/Colab notebook — where every student is in an identical, working setup within 30 seconds. Then make **local installation its own scheduled lab** in week 3, with you and the TAs in the room, treated as a real topic rather than homework. Students who still can't get it working keep using the browser and lose nothing.
+
+This alone is worth more to your beginners than any single lecture.
+
+## Teach reading before writing
+
+Beginners are usually pushed to author code before they can predict what code does, which means they're debugging a program and their own mental model simultaneously. Invert it for the first two weeks:
+
+- **Trace, don't write.** Put five lines on the board, have them predict the output line by line, *then* run it. Every wrong prediction is a mental-model bug surfaced cheaply.
+- **Use Python Tutor** (pythontutor.com) — it visualizes variables stepping forward. For ""what is a variable, actually,"" it does in 90 seconds what a lecture does in 20 minutes.
+- **Modify before authoring.** First exercises should be ""here's working code, change it so it does X,"" not ""write a program that does X."" A blank editor is paralyzing; a working program with one thing to change is not.
+
+## Make errors an explicit topic, not an interruption
+
+Your beginners believe an error message means they broke something. Reframe it in week one: an error is the interpreter telling you where it got confused, and reading it is a skill with a procedure.
+
+Teach the procedure: read the **last** line first, find the line number, look at *that* line and the one above it. Then deliberately break code in front of them — misspell a variable, drop a colon, mismatch a quote — and walk through each traceback. Making mistakes publicly and recovering calmly is the modeling that matters here.
+
+## A concrete four-meeting plan
+
+| Meeting | Focus |
+|---|---|
+| **Wed Jan 13** | Logistics, the bimodal-room talk, and a *live demo of something worth building*. End with everyone running `print(""hello"")` in the browser and seeing output. Everyone leaves having successfully executed code. |
+| **Fri Jan 15** | Variables and types, taught by tracing. Python Tutor. Exercises are modify-this-code, not write-from-scratch. Emphasize: a variable is a labeled box, and `=` is not equality. |
+| **Wed Jan 20** | Errors as a topic. Break code deliberately, read tracebacks together. Then expressions and `input()`/`print()`. **HW1 out.** |
+| **Fri Jan 22** | Conditionals. Heavy pair work in class — you and TAs circulating. |
+
+This shifts your current schedule slightly: conditionals still land Jan 22, but you've spent a half-meeting on errors and framing that the original plan gave to content. Worth it.
+
+## Make HW1 nearly impossible to fail
+
+HW1 (out Jan 20, due Jan 29) is where beginners form their self-assessment. Design it accordingly:
+
+- **Very short** — 45 minutes for a beginner, 10 for someone experienced.
+- **Mostly modify-and-extend**, one small write-from-scratch piece at the end.
+- **Graded generously**, or credit/no-credit. Its job is proving ""I can do this,"" not discriminating between students.
+- **Include a required non-code question**: ""What was the most confusing moment, and what did you do about it?"" This surfaces where they're stuck and normalizes being stuck.
+- **Due before the add/drop deadline** so their decision to stay is based on a real, successful experience.
+
+## Two things to set up before day one
+
+- **A day-one survey** (ungraded, not a pretest): prior experience, whether they have a working laptop, why they're taking the course. It tells you your actual bimodality and flags the students who'll need lab machines — before it becomes a problem.
+- **A ""help is normal"" norm.** Tell them explicitly you expect them at office hours in the first two weeks, and that showing up without a specific question is fine. Beginners disproportionately believe office hours are for people who are already doing well.
+
+---
+
+One thing to be honest with yourself about: **four meetings is very little runway**, and Jan 12 being a Tuesday plus MLK Day is why. If you have any flexibility, the highest-value change is moving the local-install lab earlier and pushing conditionals to Jan 25 — that buys your beginners a full extra meeting before the first conceptual cliff, at the cost of one meeting's slack later in the term.
+
+Want me to regenerate the schedule YAML with this structure — the browser-first opening, the errors session, and the install lab as its own week-3 slot?",2562.532,2622.532,message,assistant,,,,claude-opus-5,2482,4c633adf-da7f-42dd-9106-43c5fcfc0f78,text
+ai,Edwin,Yes please try doing that,2733.114,2734.114,message,user,,,,,,065de5d9-6cf1-41b0-bd65-459c06f66873,text
+ai,Claude,"Here's the revision. The change is **contained to weeks 1–3** — by merging boolean logic into the conditionals meeting, the install lab fits without pushing anything downstream. Weeks 4–16 of `_data/schedule.yml` are byte-identical to the last version, and `_data/assignments.yml` needs no change at all.
+
+### `_data/schedule.yml` — replace weeks 1–3 with this
+
+```yaml
+- week: 1
+  meetings:
+    - date: ""2027-01-13""
+      topic: ""What is computing? Course logistics; your first program""
+      reading: ""Syllabus""
+      note: ""Bring a laptop if you have one — no install needed, we use the browser""
+    - date: ""2027-01-15""
+      topic: ""Variables and types — by tracing, not writing""
+      reading: ""Ch. 1; Ch. 2.1–2.3""
+      note: ""We use Python Tutor in class""
+
+- week: 2
+  meetings:
+    - date: ""2027-01-18""
+      topic: ""No class — Martin Luther King Jr. Day""
+      reading: ""—""
+      note: """"
+    - date: ""2027-01-20""
+      topic: ""Reading error messages; expressions, input and output""
+      reading: ""Ch. 2.4–2.5""
+      note: ""HW1 out — browser only, no setup required""
+    - date: ""2027-01-22""
+      topic: ""Lab: modify-this-code (pair work)""
+      reading: ""—""
+      note: ""Bring HW1 questions""
+
+- week: 3
+  meetings:
+    - date: ""2027-01-25""
+      topic: ""Conditionals and boolean logic""
+      reading: ""Ch. 3.1–3.4""
+      note: """"
+    - date: ""2027-01-27""
+      topic: ""Lab: installing Python on your own machine""
+      reading: ""Setup guide""
+      note: ""Bring your laptop. TAs in the room.""
+    - date: ""2027-01-29""
+      topic: ""while loops""
+      reading: ""Ch. 4.1–4.2""
+      note: ""HW1 due 11:59 PM""
+```
+
+**What moved:** error messages got promoted from a week-3 lab footnote to its own topic on Jan 20, before students meet their first assignment. The install lab became a real class meeting on Jan 27, after HW1 is already underway in the browser — so nobody's grade depends on a working local Python. Conditionals slid from Jan 22 to Jan 25, giving beginners one more meeting of runway.
+
+**The cost:** conditionals and boolean logic now share one meeting (Jan 25). That's a normal single lecture in most intro courses, but it *is* denser than the original split, and it's the one place this revision trades away slack. If it lands badly, the Jan 27 install lab is your release valve — most students finish installing in 20 minutes, so you can spend the back half on boolean practice.
+
+---
+
+### `_config.yml` — add one key
+
+```yaml
+browser_ide_url: ""https://replit.com/@yourname/cs101""   # or a Colab notebook
+```
+
+### `index.md` — replace the opening callout
+
+```markdown
+<div class=""callout"" markdown=""1"">
+**Start here:** read the [syllabus](/syllabus/). **You do not need to install
+anything for the first two weeks** — we work in the browser at
+[{{ site.browser_ide_url }}]({{ site.browser_ide_url }}). We install Python
+together in class on **Wed, Jan 27**. Bring a laptop if you have one.
+</div>
+```
+
+### `setup.md` — replace the intro paragraph
+
+```markdown
+We install Python together **in class on Wednesday, January 27**. You do not
+need to do this beforehand, and nothing before that date requires it — bring
+your laptop and we'll do it as a group with TAs in the room.
+
+This page is here if you want to try it early, or to refer back to when
+something breaks later. If you get stuck, stop and bring it to the lab. Don't
+lose an evening to it.
+
+<div class=""callout"" markdown=""1"">
+**Weeks 1–2, and any time your setup breaks:** use
+[{{ site.browser_ide_url }}]({{ site.browser_ide_url }}) in a browser, or the
+lab machines in Science Hall 120. You will not fall behind.
+</div>
+```
+
+The rest of `setup.md` — the per-OS instructions and the common-problems section — stays as written. It's now lab material rather than pre-work, which is a better fit for it anyway.
+
+---
+
+## Two notes
+
+**The alternative that costs you nothing.** If losing a class meeting to installation bothers you, the common substitute is an **optional evening setup session** in week 2, staffed by TAs, with the browser environment as the standing fallback for anyone who doesn't come. That keeps all 40 meetings for content. I built the in-class version because you asked for it and because attendance at optional sessions skews toward students who need them least — but it's a real tradeoff, and the evening version is defensible.
+
+**HW1's handout needs to match this.** The schedule now promises a browser-only, no-setup HW1. Make sure the spec doesn't assume a local file system, `python3` on the command line, or reading/writing files — keep it to `print`, variables, `input`, and arithmetic, all of which run fine in a browser REPL.",2779.416,2780.416,message,assistant,,,,claude-opus-5,3301,b4694f8f-c340-42a7-ad62-ccffa42b4cd1,text

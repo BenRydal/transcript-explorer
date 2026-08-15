@@ -99,9 +99,25 @@ export function buildFinalMapping(matches: ColumnMatch[], overrides: Record<stri
 	return mapping;
 }
 
+/**
+ * Rewrites each row so the mapped columns sit under their expected names.
+ *
+ * Columns that were not mapped are carried through unchanged rather than
+ * dropped. Without this, an uploaded CSV loses every column beyond the four
+ * core ones, while the same file loaded as a built-in example keeps them —
+ * so anything reading extra columns would work for bundled data and silently
+ * fail for a user's own file.
+ *
+ * A mapped column always wins if its expected name collides with a passthrough
+ * key, so this cannot change how the four core columns resolve.
+ */
 export function remapData(data: Record<string, unknown>[], mapping: Record<string, string>): Record<string, unknown>[] {
+	const claimed = new Set(Object.values(mapping));
 	return data.map((row) => {
 		const newRow: Record<string, unknown> = {};
+		for (const [key, value] of Object.entries(row)) {
+			if (!claimed.has(key)) newRow[key] = value;
+		}
 		for (const [expected, original] of Object.entries(mapping)) {
 			newRow[expected] = row[original];
 		}

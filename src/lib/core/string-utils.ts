@@ -23,6 +23,24 @@ export function stripPunctuation(word: string): string {
 }
 
 /**
+ * Strips characters that carry no lexical meaning before a word is drawn.
+ *
+ * Separate from `stripPunctuation`, which feeds `normalizeWord` and therefore
+ * governs counting, matching and stopword filtering — widening that would
+ * silently change every word statistic. This one is display-only.
+ *
+ * Beyond ordinary punctuation it removes markup and code syntax: transcripts
+ * containing tool output carry markdown headings, tags, brackets, backticks and
+ * operators, which render as visual noise in the word visualizations while
+ * meaning nothing as vocabulary.
+ */
+export function stripForDisplay(word: string): string {
+	return word
+		.replace(/^[<>#*`~_\-=+|/\\[\]{}()"'“”‘’,?.!:;]+/, '')
+		.replace(/[<>#*`~_\-=+|/\\[\]{}()"'“”‘’,?.!:;]+$/, '');
+}
+
+/**
  * Normalizes a word for case-insensitive grouping, counting, and comparison.
  * Strips punctuation and lowercases.
  */

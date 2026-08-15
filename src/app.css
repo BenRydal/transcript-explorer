@@ -9,6 +9,17 @@
  * browser / no upload" stance  -  no runtime Google Fonts request.
  * Latin subset; weights 500 + 700 cover the wordmark.
  * ============================================================ */
+/* Canvas body font. Registered here so p5 can address it by family name and
+ * use the browser's native text rendering; passing a loaded p5.Font instead
+ * makes every glyph a traced path, which is ruinous for views that draw
+ * thousands of words per frame. */
+@font-face {
+	font-family: 'Plus Jakarta Sans';
+	font-style: normal;
+	font-weight: 100 900;
+	font-display: swap;
+	src: url('/fonts/PlusJakartaSans/VariableFont_wght.ttf') format('truetype-variations');
+}
 @font-face {
 	font-family: 'Space Grotesk';
 	font-style: normal;

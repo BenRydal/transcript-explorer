@@ -1,0 +1,1085 @@
+te_source_kind,speaker,content,start,end,event_type,role,tool_name,agent_type,agent_id,model,tokens_out,event_id,content_type
+ai,Edwin,"Plan dinners for the next week for two people. One of us doesn't eat pork, and I have about 30 minutes on weeknights. I want the actual recipes, a consolidated shopping list organised by supermarket section, a note of what I can prep ahead, and a rough cost. Work through all of it and don't come back until it's done There are several distinct parts here worth working on in parallel — break it apart however makes sense and work the pieces separately before pulling it together.",0.0,14.577,message,user,,,,,,41c323a0-978b-429f-bce9-96a3b543cf27,text
+ai,Claude,"I'll split this into three recipe blocks running in parallel, then build the shopping list, prep-ahead plan, and costing on top of the results.",14.577,26.531,message,assistant,,,,claude-opus-5,3218,8a696b2a-3395-4750-bc5e-7eb0149391d4,text
+ai,Tool:Agent,"[Agent spawned: general-purpose] Weeknight recipes Mon-Wed
+
+Prompt: Write 3 dinner recipes for exactly 2 people. Context: a home cook with ~30 minutes on a weeknight, standard home kitchen (oven, hob, one large skillet, one saucepan, sheet pan). STRICT CONSTRAINT: no pork of any kind — no bacon, pancetta, ham, prosciutto, chorizo (Spanish), lard, or pork-based sausage. Turkey bacon / beef sausage / chicken sausage substitutes are fine if named explicitly.
+
+Assigned slots (do not deviate from the protein, so the week has variety):
+- MONDAY: boneless skinless chicken thighs
+- TUESDAY: shrimp or white fish (pick one and commit)
+- WEDNESDAY: vegetarian, built on chickpeas or paneer or white beans (pick one)
+
+Bias toward ingredients that recur across a week so a shopping list consolidates well: onions, garlic, lemons, olive oil, plain yogurt, canned tomatoes, rice, spinach, cherry tomatoes, parsley/cilantro, chili flakes, cumin, smoked paprika.
+
+For EACH recipe give:
+1. Title and a one-line description.
+2. Total active time — must be ≤30 min, and say honestly if it's 30 not 20.
+3. Ingredients as a precise list with quantities for 2 people, in both metric and US units (e.g. ""400 g / 14 oz canned chopped tomatoes"", ""2 tbsp olive oil""). Separate a ""pantry staples"" sublist from things that must be bought fresh.
+4. Numbered method, 5–9 steps, written for someone cooking on a weeknight — say what to do while something else cooks.
+5. One line: ""Prep ahead:"" — what can be done the night before or on the weekend, and how long it keeps.
+6. One line: ""Serve with:"" — the starch/side, including its quantity, since that goes on the shopping list too.
+
+Be concrete and correct on quantities and cook times. Return the three recipes as clean markdown. Your response IS the deliverable — no preamble, no commentary about the task.",26.531,26.542,agent_spawn,agent,Agent,general-purpose,toolu_017JdE,claude-opus-5,,b82ce4bb-81b1-4780-a45e-f4ac2114015f,text
+ai,Agent:general-purpose:a9ea7877,"Write 3 dinner recipes for exactly 2 people. Context: a home cook with ~30 minutes on a weeknight, standard home kitchen (oven, hob, one large skillet, one saucepan, sheet pan). STRICT CONSTRAINT: no pork of any kind — no bacon, pancetta, ham, prosciutto, chorizo (Spanish), lard, or pork-based sausage. Turkey bacon / beef sausage / chicken sausage substitutes are fine if named explicitly.
+
+Assigned slots (do not deviate from the protein, so the week has variety):
+- MONDAY: boneless skinless chicken thighs
+- TUESDAY: shrimp or white fish (pick one and commit)
+- WEDNESDAY: vegetarian, built on chickpeas or paneer or white beans (pick one)
+
+Bias toward ingredients that recur across a week so a shopping list consolidates well: onions, garlic, lemons, olive oil, plain yogurt, canned tomatoes, rice, spinach, cherry tomatoes, parsley/cilantro, chili flakes, cumin, smoked paprika.
+
+For EACH recipe give:
+1. Title and a one-line description.
+2. Total active time — must be ≤30 min, and say honestly if it's 30 not 20.
+3. Ingredients as a precise list with quantities for 2 people, in both metric and US units (e.g. ""400 g / 14 oz canned chopped tomatoes"", ""2 tbsp olive oil""). Separate a ""pantry staples"" sublist from things that must be bought fresh.
+4. Numbered method, 5–9 steps, written for someone cooking on a weeknight — say what to do while something else cooks.
+5. One line: ""Prep ahead:"" — what can be done the night before or on the weekend, and how long it keeps.
+6. One line: ""Serve with:"" — the starch/side, including its quantity, since that goes on the shopping list too.
+
+Be concrete and correct on quantities and cook times. Return the three recipes as clean markdown. Your response IS the deliverable — no preamble, no commentary about the task.",26.542,32.189,message,user,,,,,,62f17945-3998-4f5d-ac9a-c8cab62b664b,text
+ai,Tool:Agent,"[Agent spawned: general-purpose] Weeknight recipes Thu-Fri
+
+Prompt: Write 2 dinner recipes for exactly 2 people. Context: a home cook with ~30 minutes on a weeknight, standard home kitchen (oven, hob, one large skillet, one saucepan, sheet pan). STRICT CONSTRAINT: no pork of any kind — no bacon, pancetta, ham, prosciutto, chorizo (Spanish), lard, or pork-based sausage. Turkey/beef/chicken sausage substitutes are fine if named explicitly.
+
+Assigned slots (do not deviate from the protein):
+- THURSDAY: ground beef or ground turkey (pick one and commit)
+- FRIDAY: salmon fillets
+
+Bias toward ingredients that recur across a week so a shopping list consolidates well: onions, garlic, lemons, olive oil, plain yogurt, canned tomatoes, rice, spinach, cherry tomatoes, parsley/cilantro, chili flakes, cumin, smoked paprika. Friday should feel a bit like a treat but still ≤30 min.
+
+For EACH recipe give:
+1. Title and a one-line description.
+2. Total active time — must be ≤30 min, and say honestly if it's 30 not 20.
+3. Ingredients as a precise list with quantities for 2 people, in both metric and US units. Separate a ""pantry staples"" sublist from things that must be bought fresh.
+4. Numbered method, 5–9 steps, written for a weeknight — say what to do while something else cooks.
+5. One line: ""Prep ahead:"" — what can be done earlier and how long it keeps.
+6. One line: ""Serve with:"" — the starch/side including its quantity.
+
+Be concrete and correct on quantities and cook times. Return the recipes as clean markdown. Your response IS the deliverable — no preamble.",32.189,32.196,agent_spawn,agent,Agent,general-purpose,toolu_01SUVm,claude-opus-5,,b9d01332-b88f-40da-b21d-f700448a8eb1,text
+ai,Agent:general-purpose:a7df0aaa,"Write 2 dinner recipes for exactly 2 people. Context: a home cook with ~30 minutes on a weeknight, standard home kitchen (oven, hob, one large skillet, one saucepan, sheet pan). STRICT CONSTRAINT: no pork of any kind — no bacon, pancetta, ham, prosciutto, chorizo (Spanish), lard, or pork-based sausage. Turkey/beef/chicken sausage substitutes are fine if named explicitly.
+
+Assigned slots (do not deviate from the protein):
+- THURSDAY: ground beef or ground turkey (pick one and commit)
+- FRIDAY: salmon fillets
+
+Bias toward ingredients that recur across a week so a shopping list consolidates well: onions, garlic, lemons, olive oil, plain yogurt, canned tomatoes, rice, spinach, cherry tomatoes, parsley/cilantro, chili flakes, cumin, smoked paprika. Friday should feel a bit like a treat but still ≤30 min.
+
+For EACH recipe give:
+1. Title and a one-line description.
+2. Total active time — must be ≤30 min, and say honestly if it's 30 not 20.
+3. Ingredients as a precise list with quantities for 2 people, in both metric and US units. Separate a ""pantry staples"" sublist from things that must be bought fresh.
+4. Numbered method, 5–9 steps, written for a weeknight — say what to do while something else cooks.
+5. One line: ""Prep ahead:"" — what can be done earlier and how long it keeps.
+6. One line: ""Serve with:"" — the starch/side including its quantity.
+
+Be concrete and correct on quantities and cook times. Return the recipes as clean markdown. Your response IS the deliverable — no preamble.",32.196,40.074,message,user,,,,,,83d9a285-b38b-4fb1-996e-2ec7738476e2,text
+ai,Tool:Agent,"[Agent spawned: general-purpose] Weekend recipes Sat-Sun
+
+Prompt: Write 2 weekend dinner recipes for exactly 2 people. Context: home cook, weekend so time is relaxed (45–90 min is fine, some of it hands-off). Standard home kitchen. STRICT CONSTRAINT: no pork of any kind — no bacon, pancetta, ham, prosciutto, chorizo (Spanish), lard, or pork sausage. Turkey/beef/chicken sausage substitutes fine if named explicitly.
+
+Assigned slots (do not deviate):
+- SATURDAY: a braise or stew — beef, lamb, or bone-in chicken (pick one and commit). Mostly hands-off oven or stovetop time.
+- SUNDAY: roast chicken (whole small bird or bone-in thighs) with vegetables roasted alongside, deliberately scaled so there are leftovers for lunch.
+
+Bias toward ingredients that recur across a week so a shopping list consolidates well: onions, garlic, lemons, olive oil, carrots, canned tomatoes, potatoes, stock, thyme/rosemary, parsley.
+
+For EACH recipe give:
+1. Title and a one-line description.
+2. Total time split into active vs hands-off.
+3. Ingredients as a precise list with quantities for 2 people (Sunday scaled for leftovers — say how many extra portions), metric and US units. Separate ""pantry staples"" from fresh purchases.
+4. Numbered method, 6–10 steps.
+5. One line: ""Prep ahead:"" — what can be done the day before and how long it keeps. Note if the braise is BETTER made a day ahead.
+6. One line: ""Serve with:"" — the starch/side including quantity.
+7. For Sunday only, one line: ""Leftovers:"" — what to do with the extra chicken.
+
+Be concrete and correct on quantities, oven temps, and cook times. Return as clean markdown. Your response IS the deliverable — no preamble.",40.074,40.085,agent_spawn,agent,Agent,general-purpose,toolu_01UNJi,claude-opus-5,,b2f41daa-16b6-4905-bbc1-03c5075f5b48,text
+ai,Agent:general-purpose:a012c6de,"Write 2 weekend dinner recipes for exactly 2 people. Context: home cook, weekend so time is relaxed (45–90 min is fine, some of it hands-off). Standard home kitchen. STRICT CONSTRAINT: no pork of any kind — no bacon, pancetta, ham, prosciutto, chorizo (Spanish), lard, or pork sausage. Turkey/beef/chicken sausage substitutes fine if named explicitly.
+
+Assigned slots (do not deviate):
+- SATURDAY: a braise or stew — beef, lamb, or bone-in chicken (pick one and commit). Mostly hands-off oven or stovetop time.
+- SUNDAY: roast chicken (whole small bird or bone-in thighs) with vegetables roasted alongside, deliberately scaled so there are leftovers for lunch.
+
+Bias toward ingredients that recur across a week so a shopping list consolidates well: onions, garlic, lemons, olive oil, carrots, canned tomatoes, potatoes, stock, thyme/rosemary, parsley.
+
+For EACH recipe give:
+1. Title and a one-line description.
+2. Total time split into active vs hands-off.
+3. Ingredients as a precise list with quantities for 2 people (Sunday scaled for leftovers — say how many extra portions), metric and US units. Separate ""pantry staples"" from fresh purchases.
+4. Numbered method, 6–10 steps.
+5. One line: ""Prep ahead:"" — what can be done the day before and how long it keeps. Note if the braise is BETTER made a day ahead.
+6. One line: ""Serve with:"" — the starch/side including quantity.
+7. For Sunday only, one line: ""Leftovers:"" — what to do with the extra chicken.
+
+Be concrete and correct on quantities, oven temps, and cook times. Return as clean markdown. Your response IS the deliverable — no preamble.",40.085,67.906,message,user,,,,,,67eaa03c-12db-4e96-beff-a8fc21bc355f,text
+ai,Agent:general-purpose:a7df0aaa,"# Thursday — Ground Beef
+
+## Smoky Cumin Beef & Rice Skillet with Yogurt-Lemon Drizzle
+One-skillet spiced beef, tomatoes and spinach folded through rice, cooled by a garlicky lemon yogurt.
+
+**Total active time: 25 minutes** — honestly closer to 25 than 20, because the beef needs a real hard sear before the tomatoes go in.
+
+### Ingredients (serves 2)
+
+**Buy fresh**
+- Ground beef, 85/15 — 340 g (12 oz)
+- Yellow onion — 1 medium, ~150 g (5 oz), finely diced
+- Garlic — 4 cloves (3 for the skillet, 1 for the yogurt)
+- Baby spinach — 100 g (3 oz, about 4 packed cups)
+- Cherry tomatoes — 150 g (1 cup), halved
+- Plain whole-milk yogurt — 120 g (1/2 cup)
+- Lemon — 1
+- Fresh parsley or cilantro — 15 g (1/2 cup loosely packed, chopped)
+
+**Pantry staples**
+- Long-grain white rice — 150 g (3/4 cup dry)
+- Canned crushed tomatoes — 200 g (3/4 cup, about half a 400 g / 14.5 oz can)
+- Olive oil — 2 tbsp (30 ml)
+- Ground cumin — 2 tsp
+- Smoked paprika — 1 1/2 tsp
+- Chili flakes — 1/2 tsp
+- Fine salt — 1 1/4 tsp total, plus more to taste
+- Black pepper — 1/2 tsp
+- Water — 300 ml (1 1/4 cups) for the rice
+
+### Method
+
+1. Put the rice on first: rinse 150 g rice, combine with 300 ml water and 1/2 tsp salt in the saucepan, bring to a boil, then cover and drop to the lowest heat for 15 minutes. Do not lift the lid. Everything below happens while it cooks.
+2. Heat 1 tbsp olive oil in the large skillet over medium-high. Add the beef in one slab, press flat, and leave it undisturbed for 4 minutes to brown. While it sears, dice the onion and smash/mince 3 garlic cloves.
+3. Break the beef up with a spoon, push it to one side, add the onion to the clear space with a pinch of salt, and cook 3 minutes until softening. Stir in the garlic, 2 tsp cumin, 1 1/2 tsp smoked paprika, 1/2 tsp chili flakes, 3/4 tsp salt and the pepper; stir constantly for 45 seconds — the spices should smell toasty, not scorched.
+4. Add 200 g crushed tomatoes and the halved cherry tomatoes. Simmer 5 minutes, stirring occasionally, until it thickens to a loose ragù that holds a trail behind the spoon.
+5. While that simmers, make the drizzle: stir 120 g yogurt with the remaining grated garlic clove, 1 tbsp lemon juice, the remaining 1 tbsp olive oil and a pinch of salt. Chop the parsley. Cut the rest of the lemon into wedges.
+6. Add the spinach to the skillet in two handfuls, folding until just wilted — about 1 minute. Taste and correct salt and lemon.
+7. When the rice timer goes, take it off the heat and let it stand 5 minutes covered, then fluff with a fork. Fold about half the rice directly into the skillet, or leave it alongside if you prefer it separate.
+8. Serve straight from the skillet: spoon over the yogurt drizzle, scatter the herbs, and add a lemon wedge each.
+
+**Prep ahead:** Dice the onion, mince the garlic and mix the yogurt drizzle up to 3 days ahead, stored covered in the fridge; the spice mix can be premeasured indefinitely.
+
+**Serve with:** The 150 g (3/4 cup dry) rice cooked in step 1 — about 2 cups cooked, split between two bowls.
+
+---
+
+# Friday — Salmon
+
+## Sheet-Pan Harissa-Paprika Salmon with Blistered Tomatoes and Lemon-Garlic Yogurt
+Salmon roasted hot and fast under a smoky paprika-lemon butter, with cherry tomatoes bursting in the same pan.
+
+**Total active time: 20 minutes** — genuinely 20; the oven does the work in 12 of those.
+
+### Ingredients (serves 2)
+
+**Buy fresh**
+- Skin-on salmon fillets — 2 × 170 g (2 × 6 oz), about 2.5 cm / 1 inch thick
+- Cherry tomatoes — 300 g (2 cups)
+- Lemon — 1
+- Garlic — 3 cloves
+- Plain whole-milk yogurt — 120 g (1/2 cup)
+- Fresh parsley or cilantro — 15 g (1/2 cup loosely packed, chopped)
+- Baby spinach — 100 g (3 oz) *(for the side, see below)*
+
+**Pantry staples**
+- Olive oil — 3 tbsp (45 ml)
+- Smoked paprika — 1 1/2 tsp
+- Ground cumin — 1/2 tsp
+- Chili flakes — 1/2 tsp
+- Honey — 1 tsp (optional, helps the edges caramelize)
+- Fine salt — 1 tsp total
+- Black pepper — 1/2 tsp
+- Couscous — 120 g (2/3 cup dry)
+
+### Method
+
+1. Heat the oven to 220°C / 425°F and put the sheet pan in to preheat — a hot pan is what blisters the tomatoes in the same time the salmon needs. Pat the salmon very dry with paper towels and season both sides with 1/2 tsp salt.
+2. In a small bowl mix 2 tbsp olive oil, 1 1/2 tsp smoked paprika, 1/2 tsp cumin, 1/2 tsp chili flakes, 1 tsp honey, 1 grated garlic clove, the zest of the lemon and the pepper. Rub about two-thirds of it over the flesh side of the fillets.
+3. Toss the 300 g cherry tomatoes with the remaining 1 tbsp oil and 1/4 tsp salt. Pull the hot pan out, tip the tomatoes onto one half, set the salmon skin-side down on the other, and roast 11–13 minutes — until the thickest part flakes and reads 50–52°C / 122–125°F for medium.
+4. The moment the pan goes in, put the couscous on: bring 180 ml (3/4 cup) water with a pinch of salt to a boil in the saucepan, stir in 120 g couscous, cover, kill the heat and leave it 5 minutes.
+5. While both cook, stir 120 g yogurt with the remaining 2 grated garlic cloves, 1 tbsp lemon juice, 1/4 tsp salt. Chop the herbs, cut the remaining lemon into wedges.
+6. Fluff the couscous with a fork, fold in the spinach while it is still steaming — the residual heat wilts it in about a minute — plus half the herbs and a squeeze of lemon.
+7. Spread the yogurt across two warm plates, set the salmon on top, spoon over the blistered tomatoes with all their pan juices, and finish with the last of the spiced oil, the remaining herbs and a lemon wedge.
+
+**Prep ahead:** The spiced oil and the yogurt sauce both keep 3 days covered in the fridge; make the spiced oil in a double batch on Thursday and Friday collapses to a 12-minute job.
+
+**Serve with:** The 120 g (2/3 cup dry) couscous from step 4, folded with the 100 g spinach — about 1 1/2 cups cooked per person.
+
+---
+
+**Shopping consolidation note:** both nights share onions/garlic, lemons, olive oil, plain yogurt (250 g / 1 cup total covers both), cherry tomatoes (450 g / 3 cups total), baby spinach (200 g / 6 oz total), one herb bunch, and the same smoked paprika / cumin / chili flakes trio. No pork in either recipe.",67.906,67.928,message,assistant,,,,claude-opus-5,2817,00bffab3-5f80-47cc-bded-7f7ec8f33ffc,text
+ai,Tool:Agent,"# Thursday — Ground Beef
+
+## Smoky Cumin Beef & Rice Skillet with Yogurt-Lemon Drizzle
+One-skillet spiced beef, tomatoes and spinach folded through rice, cooled by a garlicky lemon yogurt.
+
+**Total active time: 25 minutes** — honestly closer to 25 than 20, because the beef needs a real hard sear before the tomatoes go in.
+
+### Ingredients (serves 2)
+
+**Buy fresh**
+- Ground beef, 85/15 — 340 g (12 oz)
+- Yellow onion — 1 medium, ~150 g (5 oz), finely diced
+- Garlic — 4 cloves (3 for the skillet, 1 for the yogurt)
+- Baby spinach — 100 g (3 oz, about 4 packed cups)
+- Cherry tomatoes — 150 g (1 cup), halved
+- Plain whole-milk yogurt — 120 g (1/2 cup)
+- Lemon — 1
+- Fresh parsley or cilantro — 15 g (1/2 cup loosely packed, chopped)
+
+**Pantry staples**
+- Long-grain white rice — 150 g (3/4 cup dry)
+- Canned crushed tomatoes — 200 g (3/4 cup, about half a 400 g / 14.5 oz can)
+- Olive oil — 2 tbsp (30 ml)
+- Ground cumin — 2 tsp
+- Smoked paprika — 1 1/2 tsp
+- Chili flakes — 1/2 tsp
+- Fine salt — 1 1/4 tsp total, plus more to taste
+- Black pepper — 1/2 tsp
+- Water — 300 ml (1 1/4 cups) for the rice
+
+### Method
+
+1. Put the rice on first: rinse 150 g rice, combine with 300 ml water and 1/2 tsp salt in the saucepan, bring to a boil, then cover and drop to the lowest heat for 15 minutes. Do not lift the lid. Everything below happens while it cooks.
+2. Heat 1 tbsp olive oil in the large skillet over medium-high. Add the beef in one slab, press flat, and leave it undisturbed for 4 minutes to brown. While it sears, dice the onion and smash/mince 3 garlic cloves.
+3. Break the beef up with a spoon, push it to one side, add the onion to the clear space with a pinch of salt, and cook 3 minutes until softening. Stir in the garlic, 2 tsp cumin, 1 1/2 tsp smoked paprika, 1/2 tsp chili flakes, 3/4 tsp salt and the pepper; stir constantly for 45 seconds — the spices should smell toasty, not scorched.
+4. Add 200 g crushed tomatoes and the halved cherry tomatoes. Simmer 5 minutes, stirring occasionally, until it thickens to a loose ragù that holds a trail behind the spoon.
+5. While that simmers, make the drizzle: stir 120 g yogurt with the remaining grated garlic clove, 1 tbsp lemon juice, the remaining 1 tbsp olive oil and a pinch of salt. Chop the parsley. Cut the rest of the lemon into wedges.
+6. Add the spinach to the skillet in two handfuls, folding until just wilted — about 1 minute. Taste and correct salt and lemon.
+7. When the rice timer goes, take it off the heat and let it stand 5 minutes covered, then fluff with a fork. Fold about half the rice directly into the skillet, or leave it alongside if you prefer it separate.
+8. Serve straight from the skillet: spoon over the yogurt drizzle, scatter the herbs, and add a lemon wedge each.
+
+**Prep ahead:** Dice the onion, mince the garlic and mix the yogurt drizzle up to 3 days ahead, stored covered in the fridge; the spice mix can be premeasured indefinitely.
+
+**Serve with:** The 150 g (3/4 cup dry) rice cooked in step 1 — about 2 cups cooked, split between two bowls.
+
+---
+
+# Friday — Salmon
+
+## Sheet-Pan Harissa-Paprika Salmon with Blistered Tomatoes and Lemon-Garlic Yogurt
+Salmon roasted hot and fast under a smoky paprika-lemon butter, with cherry tomatoes bursting in the same pan.
+
+**Total active time: 20 minutes** — genuinely 20; the oven does the work in 12 of those.
+
+### Ingredients (serves 2)
+
+**Buy fresh**
+- Skin-on salmon fillets — 2 × 170 g (2 × 6 oz), about 2.5 cm / 1 inch thick
+- Cherry tomatoes — 300 g (2 cups)
+- Lemon — 1
+- Garlic — 3 cloves
+- Plain whole-milk yogurt — 120 g (1/2 cup)
+- Fresh parsley or cilantro — 15 g (1/2 cup loosely packed, chopped)
+- Baby spinach — 100 g (3 oz) *(for the side, see below)*
+
+**Pantry staples**
+- Olive oil — 3 tbsp (45 ml)
+- Smoked paprika — 1 1/2 tsp
+- Ground cumin — 1/2 tsp
+- Chili flakes — 1/2 tsp
+- Honey — 1 tsp (optional, helps the edges caramelize)
+- Fine salt — 1 tsp total
+- Black pepper — 1/2 tsp
+- Couscous — 120 g (2/3 cup dry)
+
+### Method
+
+1. Heat the oven to 220°C / 425°F and put the sheet pan in to preheat — a hot pan is what blisters the tomatoes in the same time the salmon needs. Pat the salmon very dry with paper towels and season both sides with 1/2 tsp salt.
+2. In a small bowl mix 2 tbsp olive oil, 1 1/2 tsp smoked paprika, 1/2 tsp cumin, 1/2 tsp chili flakes, 1 tsp honey, 1 grated garlic clove, the zest of the lemon and the pepper. Rub about two-thirds of it over the flesh side of the fillets.
+3. Toss the 300 g cherry tomatoes with the remaining 1 tbsp oil and 1/4 tsp salt. Pull the hot pan out, tip the tomatoes onto one half, set the salmon skin-side down on the other, and roast 11–13 minutes — until the thickest part flakes and reads 50–52°C / 122–125°F for medium.
+4. The moment the pan goes in, put the couscous on: bring 180 ml (3/4 cup) water with a pinch of salt to a boil in the saucepan, stir in 120 g couscous, cover, kill the heat and leave it 5 minutes.
+5. While both cook, stir 120 g yogurt with the remaining 2 grated garlic cloves, 1 tbsp lemon juice, 1/4 tsp salt. Chop the herbs, cut the remaining lemon into wedges.
+6. Fluff the couscous with a fork, fold in the spinach while it is still steaming — the residual heat wilts it in about a minute — plus half the herbs and a squeeze of lemon.
+7. Spread the yogurt across two warm plates, set the salmon on top, spoon over the blistered tomatoes with all their pan juices, and finish with the last of the spiced oil, the remaining herbs and a lemon wedge.
+
+**Prep ahead:** The spiced oil and the yogurt sauce both keep 3 days covered in the fridge; make the spiced oil in a double batch on Thursday and Friday collapses to a 12-minute job.
+
+**Serve with:** The 120 g (2/3 cup dry) couscous from step 4, folded with the 100 g spinach — about 1 1/2 cups cooked per person.
+
+---
+
+**Shopping consolidation note:** both nights share onions/garlic, lemons, olive oil, plain yogurt (250 g / 1 cup total covers both), cherry tomatoes (450 g / 3 cups total), baby spinach (200 g / 6 oz total), one herb bunch, and the same smoked paprika / cumin / chili flakes trio. No pork in either recipe.
+agentId: a7df0aaa88390580b (use SendMessage with to: 'a7df0aaa88390580b', summary: '<5-10 word recap>' to continue this agent)
+<usage>subagent_tokens: 17186
+tool_uses: 0
+duration_ms: 35731</usage>",67.928,73.298,agent_result,agent,Agent,general-purpose,toolu_01SUVm,,,aec0b7f2-48a4-4741-ae94-33618cb91760,text
+ai,Agent:general-purpose:a9ea7877,"# Weeknight Dinners for Two
+
+---
+
+## MONDAY — Smoky Paprika Chicken Thighs with Blistered Cherry Tomatoes & Lemon Yogurt
+
+One-pan skillet chicken thighs in cumin and smoked paprika, finished with burst cherry tomatoes and a garlicky lemon yogurt.
+
+**Total active time: 25 minutes** (about 10 min hands-on, 15 min tending the pan)
+
+### Ingredients
+
+**Buy fresh**
+- 400 g / 14 oz boneless skinless chicken thighs (4 small or 3 large)
+- 250 g / 9 oz cherry tomatoes
+- 1 lemon
+- 3 cloves garlic
+- 1 small red onion (about 100 g / 3.5 oz)
+- 100 g / scant 1/2 cup plain whole-milk yogurt
+- 15 g / 1/2 cup loosely packed fresh parsley or cilantro, leaves and fine stems
+
+**Pantry staples**
+- 2 tbsp olive oil, plus 1 tsp for the yogurt
+- 1 1/2 tsp smoked paprika
+- 1 tsp ground cumin
+- 1/4 tsp chili flakes (more to taste)
+- 3/4 tsp fine salt, plus more for seasoning
+- Black pepper
+
+### Method
+
+1. Pat the chicken thighs dry — this is the difference between browning and steaming. Toss in a bowl with 1 tbsp olive oil, the smoked paprika, cumin, chili flakes, 1/2 tsp salt, and several grinds of pepper. Leave to sit while the pan heats.
+2. Heat the large skillet over medium-high with the remaining 1 tbsp oil until it shimmers, about 2 minutes. Lay the thighs in smooth-side down, spaced apart. Do not move them. Cook 6–7 minutes.
+3. While the chicken browns, halve the red onion and slice it thin, grate 1 garlic clove into a small bowl with the yogurt, add 1 tsp olive oil, a squeeze of lemon (about 2 tsp), and a pinch of salt. Stir and set aside. Thinly slice the remaining 2 garlic cloves. Roughly chop the herbs. Cut the rest of the lemon into wedges.
+4. Flip the chicken. Cook 5–6 minutes more, until the thickest part reads 74°C / 165°F. Move to a plate — it will keep cooking as it rests.
+5. Turn the heat to medium. Add the sliced onion to the pan drippings and cook 2 minutes, scraping up the browned bits. Add the sliced garlic and cook 30 seconds until fragrant, no longer.
+6. Add the cherry tomatoes whole and 1/4 tsp salt. Cook 3–4 minutes, pressing about half of them with a spoon so they burst and make a loose pan sauce. Squeeze in 1 tbsp lemon juice.
+7. Slice the chicken thickly, return it and any resting juices to the pan, and turn once to coat. Off the heat, scatter over the herbs. Serve with the lemon yogurt spooned alongside and lemon wedges.
+
+**Prep ahead:** Rub the chicken with oil and spices and refrigerate up to 24 hours (it improves overnight); the lemon yogurt keeps 3 days covered in the fridge.
+
+**Serve with:** 150 g / 3/4 cup long-grain white rice cooked in 300 ml / 1 1/4 cups water — or 2 flatbreads, warmed 30 seconds a side in the empty skillet.
+
+---
+
+## TUESDAY — Shrimp in Garlicky Tomato Sauce with Spinach
+
+Committing to shrimp: a fast saucepan-to-skillet tomato sauce with cumin and chili, spinach wilted in at the end, shrimp poached for only 3 minutes so they stay snappy.
+
+**Total active time: 20 minutes** — genuinely 20, because the shrimp cook in 3.
+
+### Ingredients
+
+**Buy fresh**
+- 350 g / 12 oz raw peeled shrimp, large (21–25 count), deveined, thawed if frozen
+- 1 medium yellow onion (about 150 g / 5 oz)
+- 4 cloves garlic
+- 100 g / 3.5 oz baby spinach (a large handful and a half)
+- 1 lemon
+- 15 g / 1/2 cup loosely packed fresh parsley
+
+**Pantry staples**
+- 400 g / 14 oz canned chopped tomatoes
+- 3 tbsp olive oil
+- 1 tsp ground cumin
+- 1 tsp smoked paprika
+- 1/2 tsp chili flakes
+- 3/4 tsp fine salt, plus more to taste
+- Black pepper
+- 1 tsp sugar (optional, if the tomatoes are sharp)
+
+### Method
+
+1. If the shrimp are frozen, put them in a bowl of cold water now — they thaw in 10 minutes while you cook the sauce. Drain and pat very dry before they go in the pan.
+2. Dice the onion and thinly slice the garlic. Heat 2 tbsp olive oil in the large skillet over medium. Add the onion and 1/4 tsp salt and cook 5 minutes, stirring occasionally, until soft and translucent.
+3. While the onion softens, chop the parsley, halve the lemon, and season the dry shrimp with a pinch of salt and pepper.
+4. Add the garlic, cumin, smoked paprika, and chili flakes to the onion. Stir constantly for 45 seconds — the spices need the heat to bloom but burn fast.
+5. Pour in the canned tomatoes and 1/2 tsp salt. Raise the heat to medium-high and simmer 6–8 minutes, stirring now and then, until the sauce thickens enough that a spoon dragged through leaves a brief trail. Taste, and add the sugar only if it tastes sharp. (If you are making rice, this is when it should be on the hob.)
+6. Stir in the spinach a handful at a time; it collapses in about 1 minute.
+7. Nestle the shrimp into the sauce in a single layer. Cover, reduce to medium-low, and cook 3 minutes, turning them once halfway. They are done the moment they turn opaque and curl into a loose C — a tight O means overcooked.
+8. Off the heat, add the remaining 1 tbsp olive oil and a good squeeze of lemon (about 1 tbsp). Scatter with parsley and serve with the remaining lemon in wedges.
+
+**Prep ahead:** Make the tomato sauce through step 5 and refrigerate up to 4 days or freeze 3 months; reheat, add spinach and shrimp, and dinner is 6 minutes.
+
+**Serve with:** 150 g / 3/4 cup white rice cooked in 300 ml / 1 1/4 cups water, or 200 g / 7 oz crusty bread for mopping.
+
+---
+
+## WEDNESDAY — Sheet-Pan Crispy Chickpeas with Roasted Cherry Tomatoes & Herbed Yogurt
+
+Chickpeas roasted hard until the edges crackle, tomatoes collapsing into sweetness beside them, over a pool of lemony yogurt with spinach folded through.
+
+**Total active time: 15 minutes active, 30 minutes start to finish** — the oven does 22 of those minutes unattended.
+
+### Ingredients
+
+**Buy fresh**
+- 250 g / 9 oz cherry tomatoes
+- 1 lemon
+- 3 cloves garlic
+- 1 small red onion (about 100 g / 3.5 oz)
+- 150 g / 2/3 cup plain whole-milk yogurt
+- 100 g / 3.5 oz baby spinach
+- 20 g / 3/4 cup loosely packed fresh cilantro or parsley
+
+**Pantry staples**
+- 2 × 400 g / 14 oz cans chickpeas (480 g / 17 oz drained weight total)
+- 4 tbsp olive oil
+- 1 1/2 tsp ground cumin
+- 1 1/2 tsp smoked paprika
+- 1/2 tsp chili flakes
+- 1 tsp fine salt
+- Black pepper
+
+### Method
+
+1. Heat the oven to 220°C / 425°F. Drain and rinse the chickpeas, then tip them onto a clean tea towel and roll them around to dry — wet chickpeas steam instead of crisping, so give this a full minute.
+2. Spread the dry chickpeas on the sheet pan with 3 tbsp olive oil, the cumin, smoked paprika, chili flakes, 3/4 tsp salt, and pepper. Toss directly on the pan until evenly coated and spread into a single layer. Roast 15 minutes.
+3. While they roast, quarter the red onion and cut into thin wedges, grate 1 garlic clove into a bowl with the yogurt, add 1 tbsp lemon juice, 1 tbsp water, and 1/4 tsp salt; stir to a spoonable consistency. Thinly slice the remaining 2 garlic cloves and chop the herbs.
+4. At 15 minutes, pull the pan out. Add the cherry tomatoes and onion wedges, toss everything together, and return to the oven for 12 minutes, until the tomatoes have split and slumped and the chickpeas are audibly crisp when shaken.
+5. In the last 3 minutes, warm the remaining 1 tbsp olive oil in the skillet over medium. Add the sliced garlic, cook 30 seconds, then add the spinach and a pinch of salt and toss 1 minute until just wilted. Squeeze over 1 tsp lemon juice.
+6. Spread the yogurt across the base of two shallow bowls. Pile on the wilted spinach, then the hot chickpeas and tomatoes, scraping the pan juices over the top.
+7. Finish with the chopped herbs, a grind of pepper, and lemon wedges. Eat straight away — the chickpeas soften as they sit.
+
+**Prep ahead:** Drain, rinse, and thoroughly dry the chickpeas and refrigerate in a covered container up to 3 days; mix the herbed yogurt up to 3 days ahead.
+
+**Serve with:** 2 flatbreads or pita (warmed in the oven for the last 2 minutes), or 150 g / 3/4 cup white rice cooked in 300 ml / 1 1/4 cups water.
+
+---
+
+### Shopping consolidation notes
+- **Lemons: 3 total.** Cherry tomatoes: 500 g / 18 oz across Monday and Wednesday. Garlic: 1 head. Plain yogurt: 250 g / 9 oz tub covers Monday and Wednesday. Baby spinach: 200 g / 7 oz across Tuesday and Wednesday. Herbs: 1 large bunch parsley plus 1 cilantro, or 2 bunches of either.
+- **Pantry across all three:** olive oil, cumin, smoked paprika, chili flakes, salt, pepper, canned chopped tomatoes, canned chickpeas, white rice.
+- **No pork anywhere** — the smokiness comes from smoked paprika, not bacon or chorizo.",73.298,73.324,message,assistant,,,,claude-opus-5,3834,5cc7ea7c-91f7-40fe-a871-fa90958490cd,text
+ai,Tool:Agent,"# Weeknight Dinners for Two
+
+---
+
+## MONDAY — Smoky Paprika Chicken Thighs with Blistered Cherry Tomatoes & Lemon Yogurt
+
+One-pan skillet chicken thighs in cumin and smoked paprika, finished with burst cherry tomatoes and a garlicky lemon yogurt.
+
+**Total active time: 25 minutes** (about 10 min hands-on, 15 min tending the pan)
+
+### Ingredients
+
+**Buy fresh**
+- 400 g / 14 oz boneless skinless chicken thighs (4 small or 3 large)
+- 250 g / 9 oz cherry tomatoes
+- 1 lemon
+- 3 cloves garlic
+- 1 small red onion (about 100 g / 3.5 oz)
+- 100 g / scant 1/2 cup plain whole-milk yogurt
+- 15 g / 1/2 cup loosely packed fresh parsley or cilantro, leaves and fine stems
+
+**Pantry staples**
+- 2 tbsp olive oil, plus 1 tsp for the yogurt
+- 1 1/2 tsp smoked paprika
+- 1 tsp ground cumin
+- 1/4 tsp chili flakes (more to taste)
+- 3/4 tsp fine salt, plus more for seasoning
+- Black pepper
+
+### Method
+
+1. Pat the chicken thighs dry — this is the difference between browning and steaming. Toss in a bowl with 1 tbsp olive oil, the smoked paprika, cumin, chili flakes, 1/2 tsp salt, and several grinds of pepper. Leave to sit while the pan heats.
+2. Heat the large skillet over medium-high with the remaining 1 tbsp oil until it shimmers, about 2 minutes. Lay the thighs in smooth-side down, spaced apart. Do not move them. Cook 6–7 minutes.
+3. While the chicken browns, halve the red onion and slice it thin, grate 1 garlic clove into a small bowl with the yogurt, add 1 tsp olive oil, a squeeze of lemon (about 2 tsp), and a pinch of salt. Stir and set aside. Thinly slice the remaining 2 garlic cloves. Roughly chop the herbs. Cut the rest of the lemon into wedges.
+4. Flip the chicken. Cook 5–6 minutes more, until the thickest part reads 74°C / 165°F. Move to a plate — it will keep cooking as it rests.
+5. Turn the heat to medium. Add the sliced onion to the pan drippings and cook 2 minutes, scraping up the browned bits. Add the sliced garlic and cook 30 seconds until fragrant, no longer.
+6. Add the cherry tomatoes whole and 1/4 tsp salt. Cook 3–4 minutes, pressing about half of them with a spoon so they burst and make a loose pan sauce. Squeeze in 1 tbsp lemon juice.
+7. Slice the chicken thickly, return it and any resting juices to the pan, and turn once to coat. Off the heat, scatter over the herbs. Serve with the lemon yogurt spooned alongside and lemon wedges.
+
+**Prep ahead:** Rub the chicken with oil and spices and refrigerate up to 24 hours (it improves overnight); the lemon yogurt keeps 3 days covered in the fridge.
+
+**Serve with:** 150 g / 3/4 cup long-grain white rice cooked in 300 ml / 1 1/4 cups water — or 2 flatbreads, warmed 30 seconds a side in the empty skillet.
+
+---
+
+## TUESDAY — Shrimp in Garlicky Tomato Sauce with Spinach
+
+Committing to shrimp: a fast saucepan-to-skillet tomato sauce with cumin and chili, spinach wilted in at the end, shrimp poached for only 3 minutes so they stay snappy.
+
+**Total active time: 20 minutes** — genuinely 20, because the shrimp cook in 3.
+
+### Ingredients
+
+**Buy fresh**
+- 350 g / 12 oz raw peeled shrimp, large (21–25 count), deveined, thawed if frozen
+- 1 medium yellow onion (about 150 g / 5 oz)
+- 4 cloves garlic
+- 100 g / 3.5 oz baby spinach (a large handful and a half)
+- 1 lemon
+- 15 g / 1/2 cup loosely packed fresh parsley
+
+**Pantry staples**
+- 400 g / 14 oz canned chopped tomatoes
+- 3 tbsp olive oil
+- 1 tsp ground cumin
+- 1 tsp smoked paprika
+- 1/2 tsp chili flakes
+- 3/4 tsp fine salt, plus more to taste
+- Black pepper
+- 1 tsp sugar (optional, if the tomatoes are sharp)
+
+### Method
+
+1. If the shrimp are frozen, put them in a bowl of cold water now — they thaw in 10 minutes while you cook the sauce. Drain and pat very dry before they go in the pan.
+2. Dice the onion and thinly slice the garlic. Heat 2 tbsp olive oil in the large skillet over medium. Add the onion and 1/4 tsp salt and cook 5 minutes, stirring occasionally, until soft and translucent.
+3. While the onion softens, chop the parsley, halve the lemon, and season the dry shrimp with a pinch of salt and pepper.
+4. Add the garlic, cumin, smoked paprika, and chili flakes to the onion. Stir constantly for 45 seconds — the spices need the heat to bloom but burn fast.
+5. Pour in the canned tomatoes and 1/2 tsp salt. Raise the heat to medium-high and simmer 6–8 minutes, stirring now and then, until the sauce thickens enough that a spoon dragged through leaves a brief trail. Taste, and add the sugar only if it tastes sharp. (If you are making rice, this is when it should be on the hob.)
+6. Stir in the spinach a handful at a time; it collapses in about 1 minute.
+7. Nestle the shrimp into the sauce in a single layer. Cover, reduce to medium-low, and cook 3 minutes, turning them once halfway. They are done the moment they turn opaque and curl into a loose C — a tight O means overcooked.
+8. Off the heat, add the remaining 1 tbsp olive oil and a good squeeze of lemon (about 1 tbsp). Scatter with parsley and serve with the remaining lemon in wedges.
+
+**Prep ahead:** Make the tomato sauce through step 5 and refrigerate up to 4 days or freeze 3 months; reheat, add spinach and shrimp, and dinner is 6 minutes.
+
+**Serve with:** 150 g / 3/4 cup white rice cooked in 300 ml / 1 1/4 cups water, or 200 g / 7 oz crusty bread for mopping.
+
+---
+
+## WEDNESDAY — Sheet-Pan Crispy Chickpeas with Roasted Cherry Tomatoes & Herbed Yogurt
+
+Chickpeas roasted hard until the edges crackle, tomatoes collapsing into sweetness beside them, over a pool of lemony yogurt with spinach folded through.
+
+**Total active time: 15 minutes active, 30 minutes start to finish** — the oven does 22 of those minutes unattended.
+
+### Ingredients
+
+**Buy fresh**
+- 250 g / 9 oz cherry tomatoes
+- 1 lemon
+- 3 cloves garlic
+- 1 small red onion (about 100 g / 3.5 oz)
+- 150 g / 2/3 cup plain whole-milk yogurt
+- 100 g / 3.5 oz baby spinach
+- 20 g / 3/4 cup loosely packed fresh cilantro or parsley
+
+**Pantry staples**
+- 2 × 400 g / 14 oz cans chickpeas (480 g / 17 oz drained weight total)
+- 4 tbsp olive oil
+- 1 1/2 tsp ground cumin
+- 1 1/2 tsp smoked paprika
+- 1/2 tsp chili flakes
+- 1 tsp fine salt
+- Black pepper
+
+### Method
+
+1. Heat the oven to 220°C / 425°F. Drain and rinse the chickpeas, then tip them onto a clean tea towel and roll them around to dry — wet chickpeas steam instead of crisping, so give this a full minute.
+2. Spread the dry chickpeas on the sheet pan with 3 tbsp olive oil, the cumin, smoked paprika, chili flakes, 3/4 tsp salt, and pepper. Toss directly on the pan until evenly coated and spread into a single layer. Roast 15 minutes.
+3. While they roast, quarter the red onion and cut into thin wedges, grate 1 garlic clove into a bowl with the yogurt, add 1 tbsp lemon juice, 1 tbsp water, and 1/4 tsp salt; stir to a spoonable consistency. Thinly slice the remaining 2 garlic cloves and chop the herbs.
+4. At 15 minutes, pull the pan out. Add the cherry tomatoes and onion wedges, toss everything together, and return to the oven for 12 minutes, until the tomatoes have split and slumped and the chickpeas are audibly crisp when shaken.
+5. In the last 3 minutes, warm the remaining 1 tbsp olive oil in the skillet over medium. Add the sliced garlic, cook 30 seconds, then add the spinach and a pinch of salt and toss 1 minute until just wilted. Squeeze over 1 tsp lemon juice.
+6. Spread the yogurt across the base of two shallow bowls. Pile on the wilted spinach, then the hot chickpeas and tomatoes, scraping the pan juices over the top.
+7. Finish with the chopped herbs, a grind of pepper, and lemon wedges. Eat straight away — the chickpeas soften as they sit.
+
+**Prep ahead:** Drain, rinse, and thoroughly dry the chickpeas and refrigerate in a covered container up to 3 days; mix the herbed yogurt up to 3 days ahead.
+
+**Serve with:** 2 flatbreads or pita (warmed in the oven for the last 2 minutes), or 150 g / 3/4 cup white rice cooked in 300 ml / 1 1/4 cups water.
+
+---
+
+### Shopping consolidation notes
+- **Lemons: 3 total.** Cherry tomatoes: 500 g / 18 oz across Monday and Wednesday. Garlic: 1 head. Plain yogurt: 250 g / 9 oz tub covers Monday and Wednesday. Baby spinach: 200 g / 7 oz across Tuesday and Wednesday. Herbs: 1 large bunch parsley plus 1 cilantro, or 2 bunches of either.
+- **Pantry across all three:** olive oil, cumin, smoked paprika, chili flakes, salt, pepper, canned chopped tomatoes, canned chickpeas, white rice.
+- **No pork anywhere** — the smokiness comes from smoked paprika, not bacon or chorizo.
+agentId: a9ea7877dcb2f9012 (use SendMessage with to: 'a9ea7877dcb2f9012', summary: '<5-10 word recap>' to continue this agent)
+<usage>subagent_tokens: 18307
+tool_uses: 0
+duration_ms: 46782</usage>",73.324,89.681,agent_result,agent,Agent,general-purpose,toolu_017JdE,,,d1530f3c-8457-44c0-9ec4-24f3bb1d05c7,text
+ai,Agent:general-purpose:a012c6de,"# Weekend Dinners for Two
+
+---
+
+## SATURDAY — Braised Beef Short Ribs with Tomato, Thyme & Carrots
+
+Bone-in beef short ribs braised low and slow in red wine and canned tomatoes until the meat slides off the bone.
+
+**Total time: 3 hr 20 min** — active 30 min | hands-off 2 hr 50 min
+*(Yes, it's long, but only 30 minutes of it needs you. Cut to ~2 hr total by using 700 g boneless beef chuck cut into 5 cm chunks instead — braise 1 hr 45 min.)*
+
+### Ingredients — 2 people
+
+**Fresh purchases**
+- 900 g (2 lb) bone-in beef short ribs, cut into 4 pieces (English-cut, ~4 cm / 1.5 in thick)
+- 1 large yellow onion (200 g / 7 oz), diced
+- 3 medium carrots (250 g / 9 oz), cut into 4 cm / 1.5 in batons
+- 4 garlic cloves, smashed
+- 4–5 sprigs fresh thyme
+- 2 sprigs fresh rosemary
+- Small bunch flat-leaf parsley (for finishing)
+- 1 lemon (zest only, for finishing)
+- 175 ml (3/4 cup) dry red wine — Cabernet, Merlot, or Chianti
+
+**Pantry staples**
+- 1 × 400 g (14 oz) can whole peeled tomatoes, crushed by hand
+- 300 ml (1 1/4 cups) beef or chicken stock, low-sodium
+- 2 tbsp olive oil
+- 2 tbsp tomato paste
+- 2 tbsp plain flour (for dusting)
+- 1 bay leaf
+- Kosher salt and black pepper
+
+### Method
+
+1. **Salt early.** Pat the short ribs very dry and season all over with 2 tsp kosher salt and 1 tsp black pepper. Leave at room temperature 45 minutes if you have time (this is hands-off — start the rest of your prep). Preheat oven to **160°C / 325°F**.
+2. **Sear.** Dust the ribs lightly with the flour, tapping off excess. Heat the olive oil in a Dutch oven over medium-high until shimmering. Sear the ribs in two batches, 3–4 minutes per side, until deeply browned on all sides — about 12 minutes total. Transfer to a plate. Don't crowd the pot; browning is where the flavor comes from.
+3. **Build the base.** Pour off all but 2 tbsp of fat. Lower heat to medium, add the onion and a pinch of salt, and cook 6–7 minutes until softened and golden at the edges. Add the garlic and tomato paste and cook 2 minutes, stirring, until the paste darkens to brick red.
+4. **Deglaze.** Pour in the red wine, scraping up every browned bit from the bottom with a wooden spoon. Simmer 3–4 minutes until reduced by about half.
+5. **Assemble.** Add the crushed tomatoes with their juice, the stock, bay leaf, thyme, and rosemary. Return the ribs and any accumulated juices to the pot — the liquid should come about two-thirds up the meat, not cover it. Add water if short. Bring to a bare simmer.
+6. **Braise, covered.** Lid on, transfer to the oven. Cook **2 hours**. Now go do something else.
+7. **Add carrots.** Remove the lid, tuck in the carrot batons around the meat, and return to the oven **uncovered** for a final **45–60 minutes**, until the carrots are tender and the meat pulls away from the bone with no resistance. Total oven time: 2 hr 45 min–3 hr.
+8. **Rest and skim.** Let the pot sit 15 minutes off the heat. Tilt it and spoon off the fat that rises — there will be a lot, and removing it is what separates a good braise from a greasy one. Fish out the herb stems and bay leaf.
+9. **Finish.** Taste the sauce and adjust with salt. If it's thinner than you'd like, lift the meat out and boil the sauce 5 minutes to concentrate. Shower with chopped parsley (about 3 tbsp) and the zest of half a lemon right before serving — the brightness cuts the richness.
+
+**Prep ahead:** This braise is genuinely BETTER made a day ahead — the flavors deepen and the chilled fat lifts off the surface in a solid sheet, so skimming becomes effortless. Cool, refrigerate up to 4 days, then reheat covered at 160°C / 325°F for 30–35 minutes. Freezes 3 months.
+
+**Serve with:** Creamy mashed potatoes — 600 g (1 1/4 lb) Yukon Gold potatoes, 60 ml (1/4 cup) warm milk, 40 g (3 tbsp) butter. Or crusty bread if you'd rather not stand at the stove.
+
+---
+
+## SUNDAY — Roast Chicken Thighs with Potatoes, Carrots & Lemon
+
+Bone-in thighs roasted over a bed of potatoes and carrots so the vegetables catch every drop of schmaltz — scaled up for two lunches.
+
+**Total time: 1 hr 15 min** — active 20 min | hands-off 55 min
+
+### Ingredients — 2 dinner servings + 2 leftover lunch portions
+
+**Fresh purchases**
+- 6 bone-in, skin-on chicken thighs (1.3 kg / 3 lb total) — 2 per person at dinner, 2 held back for lunches
+- 800 g (1 3/4 lb) small waxy potatoes (Yukon Gold or new potatoes), halved, or quartered if larger than a golf ball
+- 4 medium carrots (350 g / 12 oz), cut into 5 cm / 2 in batons
+- 1 large yellow onion (200 g / 7 oz), cut into 8 wedges through the root
+- 6 garlic cloves, unpeeled, lightly smashed
+- 1 lemon — half sliced into rounds, half saved for juicing
+- 6 sprigs fresh thyme
+- 2 sprigs fresh rosemary
+- Small bunch flat-leaf parsley
+
+**Pantry staples**
+- 4 tbsp (60 ml) olive oil, divided
+- Kosher salt and black pepper
+- Optional: 60 ml (1/4 cup) chicken stock, to loosen the pan juices
+
+### Method
+
+1. **Dry-brine the chicken.** Pat the thighs bone-dry with paper towels — dry skin is crisp skin. Season all over with 2 1/2 tsp kosher salt and 1 tsp black pepper, then set skin-side up on a plate and leave uncovered in the fridge for 45 minutes (or up to overnight). Meanwhile, preheat the oven to **220°C / 425°F**.
+2. **Dress the vegetables.** In a large bowl, toss the potatoes, carrots, onion wedges, and unpeeled garlic with 3 tbsp olive oil, 1 tsp salt, several grinds of pepper, and the leaves stripped from 3 thyme sprigs.
+3. **Spread the bed.** Tip the vegetables into a large rimmed sheet pan or roasting tin (at least 33 × 45 cm / 13 × 18 in) in a single layer. Crowding steams them — use two pans if it looks tight. Roast **20 minutes** while the chicken finishes its brine.
+4. **Top with chicken.** Pull out the pan. Rub the thighs with the remaining 1 tbsp olive oil. Nestle them skin-side up directly on top of the vegetables, spaced apart. Tuck the lemon rounds, remaining thyme sprigs, and rosemary into the gaps.
+5. **Roast.** Return to the oven for **35–40 minutes**, until the skin is deep golden and crisp and a thermometer in the thickest part of a thigh (not touching bone) reads **just above 75°C / 170°F**. Thighs are forgiving — a few degrees over only makes them more tender.
+6. **Check the vegetables.** They should be browned and easily pierced. If the chicken is done first, lift the thighs to a plate to rest and give the pan another 8–10 minutes on its own.
+7. **Rest.** Let the chicken rest 10 minutes on the pan. Squeeze the juice of the remaining half lemon over everything — chicken and vegetables both.
+8. **Serve.** Stir the vegetables through the pan juices, scraping up the browned bits (splash in the stock here if the pan looks dry). Plate 2 thighs per person with a generous pile of vegetables. Scatter with 3 tbsp chopped parsley. Squeeze the roasted garlic out of its skins and mash it into your potatoes.
+
+**Prep ahead:** Season the thighs and refrigerate uncovered up to 24 hours — an overnight dry-brine gives noticeably crisper skin. Potatoes and carrots can be cut a day ahead; hold the potatoes submerged in cold water in the fridge, then drain and dry thoroughly before oiling.
+
+**Serve with:** The potatoes roast in the pan, so nothing else is needed — but a simple green salad (100 g / 3 1/2 oz mixed leaves) with lemon juice and olive oil is a welcome fresh note against the richness.
+
+**Leftovers:** Refrigerate the 2 reserved thighs plus any spare vegetables within 2 hours; they keep 3–4 days. Pull the meat off the bone and use it cold in a grain bowl with the leftover roasted vegetables, parsley, olive oil, and lemon. Or warm it into a quick soup — simmer the shredded meat with stock, sliced carrot, and the last of the thyme. Don't throw out the bones: simmered with an onion half, a carrot, and a bay leaf for 2 hours, they make about 1 liter of stock for next week.
+
+---
+
+## Consolidated Shopping List
+
+**Meat**
+- 900 g (2 lb) bone-in beef short ribs
+- 6 bone-in, skin-on chicken thighs (1.3 kg / 3 lb)
+
+**Produce**
+- 3 large yellow onions
+- 7 medium carrots (600 g / 1 lb 5 oz)
+- 1.4 kg (3 lb) waxy potatoes — 800 g roasting, 600 g mashing
+- 2 heads garlic
+- 2 lemons
+- 1 bunch fresh thyme
+- 1 bunch fresh rosemary
+- 1 large bunch flat-leaf parsley
+- Optional: 100 g mixed salad leaves
+
+**Pantry / other**
+- 1 × 400 g can whole peeled tomatoes
+- Tomato paste
+- 400 ml chicken or beef stock (plus extra if not making your own)
+- 175 ml dry red wine
+- Olive oil, plain flour, bay leaves, kosher salt, black pepper
+- Butter and milk (for the mash)
+
+**Two notes on cost and sequencing:** onions, carrots, potatoes, garlic, lemons, thyme, rosemary, and parsley all appear in both recipes, so buy them once at the larger quantity. And if you braise the short ribs on Friday night, Saturday's dinner is a 30-minute reheat — which is the whole argument for making a braise a day ahead.",89.681,90.225,message,assistant,,,,claude-opus-5,1,0eba43ef-dade-4ed8-aeaa-c7b961f1ee47,text
+ai,Tool:Agent,"# Weekend Dinners for Two
+
+---
+
+## SATURDAY — Braised Beef Short Ribs with Tomato, Thyme & Carrots
+
+Bone-in beef short ribs braised low and slow in red wine and canned tomatoes until the meat slides off the bone.
+
+**Total time: 3 hr 20 min** — active 30 min | hands-off 2 hr 50 min
+*(Yes, it's long, but only 30 minutes of it needs you. Cut to ~2 hr total by using 700 g boneless beef chuck cut into 5 cm chunks instead — braise 1 hr 45 min.)*
+
+### Ingredients — 2 people
+
+**Fresh purchases**
+- 900 g (2 lb) bone-in beef short ribs, cut into 4 pieces (English-cut, ~4 cm / 1.5 in thick)
+- 1 large yellow onion (200 g / 7 oz), diced
+- 3 medium carrots (250 g / 9 oz), cut into 4 cm / 1.5 in batons
+- 4 garlic cloves, smashed
+- 4–5 sprigs fresh thyme
+- 2 sprigs fresh rosemary
+- Small bunch flat-leaf parsley (for finishing)
+- 1 lemon (zest only, for finishing)
+- 175 ml (3/4 cup) dry red wine — Cabernet, Merlot, or Chianti
+
+**Pantry staples**
+- 1 × 400 g (14 oz) can whole peeled tomatoes, crushed by hand
+- 300 ml (1 1/4 cups) beef or chicken stock, low-sodium
+- 2 tbsp olive oil
+- 2 tbsp tomato paste
+- 2 tbsp plain flour (for dusting)
+- 1 bay leaf
+- Kosher salt and black pepper
+
+### Method
+
+1. **Salt early.** Pat the short ribs very dry and season all over with 2 tsp kosher salt and 1 tsp black pepper. Leave at room temperature 45 minutes if you have time (this is hands-off — start the rest of your prep). Preheat oven to **160°C / 325°F**.
+2. **Sear.** Dust the ribs lightly with the flour, tapping off excess. Heat the olive oil in a Dutch oven over medium-high until shimmering. Sear the ribs in two batches, 3–4 minutes per side, until deeply browned on all sides — about 12 minutes total. Transfer to a plate. Don't crowd the pot; browning is where the flavor comes from.
+3. **Build the base.** Pour off all but 2 tbsp of fat. Lower heat to medium, add the onion and a pinch of salt, and cook 6–7 minutes until softened and golden at the edges. Add the garlic and tomato paste and cook 2 minutes, stirring, until the paste darkens to brick red.
+4. **Deglaze.** Pour in the red wine, scraping up every browned bit from the bottom with a wooden spoon. Simmer 3–4 minutes until reduced by about half.
+5. **Assemble.** Add the crushed tomatoes with their juice, the stock, bay leaf, thyme, and rosemary. Return the ribs and any accumulated juices to the pot — the liquid should come about two-thirds up the meat, not cover it. Add water if short. Bring to a bare simmer.
+6. **Braise, covered.** Lid on, transfer to the oven. Cook **2 hours**. Now go do something else.
+7. **Add carrots.** Remove the lid, tuck in the carrot batons around the meat, and return to the oven **uncovered** for a final **45–60 minutes**, until the carrots are tender and the meat pulls away from the bone with no resistance. Total oven time: 2 hr 45 min–3 hr.
+8. **Rest and skim.** Let the pot sit 15 minutes off the heat. Tilt it and spoon off the fat that rises — there will be a lot, and removing it is what separates a good braise from a greasy one. Fish out the herb stems and bay leaf.
+9. **Finish.** Taste the sauce and adjust with salt. If it's thinner than you'd like, lift the meat out and boil the sauce 5 minutes to concentrate. Shower with chopped parsley (about 3 tbsp) and the zest of half a lemon right before serving — the brightness cuts the richness.
+
+**Prep ahead:** This braise is genuinely BETTER made a day ahead — the flavors deepen and the chilled fat lifts off the surface in a solid sheet, so skimming becomes effortless. Cool, refrigerate up to 4 days, then reheat covered at 160°C / 325°F for 30–35 minutes. Freezes 3 months.
+
+**Serve with:** Creamy mashed potatoes — 600 g (1 1/4 lb) Yukon Gold potatoes, 60 ml (1/4 cup) warm milk, 40 g (3 tbsp) butter. Or crusty bread if you'd rather not stand at the stove.
+
+---
+
+## SUNDAY — Roast Chicken Thighs with Potatoes, Carrots & Lemon
+
+Bone-in thighs roasted over a bed of potatoes and carrots so the vegetables catch every drop of schmaltz — scaled up for two lunches.
+
+**Total time: 1 hr 15 min** — active 20 min | hands-off 55 min
+
+### Ingredients — 2 dinner servings + 2 leftover lunch portions
+
+**Fresh purchases**
+- 6 bone-in, skin-on chicken thighs (1.3 kg / 3 lb total) — 2 per person at dinner, 2 held back for lunches
+- 800 g (1 3/4 lb) small waxy potatoes (Yukon Gold or new potatoes), halved, or quartered if larger than a golf ball
+- 4 medium carrots (350 g / 12 oz), cut into 5 cm / 2 in batons
+- 1 large yellow onion (200 g / 7 oz), cut into 8 wedges through the root
+- 6 garlic cloves, unpeeled, lightly smashed
+- 1 lemon — half sliced into rounds, half saved for juicing
+- 6 sprigs fresh thyme
+- 2 sprigs fresh rosemary
+- Small bunch flat-leaf parsley
+
+**Pantry staples**
+- 4 tbsp (60 ml) olive oil, divided
+- Kosher salt and black pepper
+- Optional: 60 ml (1/4 cup) chicken stock, to loosen the pan juices
+
+### Method
+
+1. **Dry-brine the chicken.** Pat the thighs bone-dry with paper towels — dry skin is crisp skin. Season all over with 2 1/2 tsp kosher salt and 1 tsp black pepper, then set skin-side up on a plate and leave uncovered in the fridge for 45 minutes (or up to overnight). Meanwhile, preheat the oven to **220°C / 425°F**.
+2. **Dress the vegetables.** In a large bowl, toss the potatoes, carrots, onion wedges, and unpeeled garlic with 3 tbsp olive oil, 1 tsp salt, several grinds of pepper, and the leaves stripped from 3 thyme sprigs.
+3. **Spread the bed.** Tip the vegetables into a large rimmed sheet pan or roasting tin (at least 33 × 45 cm / 13 × 18 in) in a single layer. Crowding steams them — use two pans if it looks tight. Roast **20 minutes** while the chicken finishes its brine.
+4. **Top with chicken.** Pull out the pan. Rub the thighs with the remaining 1 tbsp olive oil. Nestle them skin-side up directly on top of the vegetables, spaced apart. Tuck the lemon rounds, remaining thyme sprigs, and rosemary into the gaps.
+5. **Roast.** Return to the oven for **35–40 minutes**, until the skin is deep golden and crisp and a thermometer in the thickest part of a thigh (not touching bone) reads **just above 75°C / 170°F**. Thighs are forgiving — a few degrees over only makes them more tender.
+6. **Check the vegetables.** They should be browned and easily pierced. If the chicken is done first, lift the thighs to a plate to rest and give the pan another 8–10 minutes on its own.
+7. **Rest.** Let the chicken rest 10 minutes on the pan. Squeeze the juice of the remaining half lemon over everything — chicken and vegetables both.
+8. **Serve.** Stir the vegetables through the pan juices, scraping up the browned bits (splash in the stock here if the pan looks dry). Plate 2 thighs per person with a generous pile of vegetables. Scatter with 3 tbsp chopped parsley. Squeeze the roasted garlic out of its skins and mash it into your potatoes.
+
+**Prep ahead:** Season the thighs and refrigerate uncovered up to 24 hours — an overnight dry-brine gives noticeably crisper skin. Potatoes and carrots can be cut a day ahead; hold the potatoes submerged in cold water in the fridge, then drain and dry thoroughly before oiling.
+
+**Serve with:** The potatoes roast in the pan, so nothing else is needed — but a simple green salad (100 g / 3 1/2 oz mixed leaves) with lemon juice and olive oil is a welcome fresh note against the richness.
+
+**Leftovers:** Refrigerate the 2 reserved thighs plus any spare vegetables within 2 hours; they keep 3–4 days. Pull the meat off the bone and use it cold in a grain bowl with the leftover roasted vegetables, parsley, olive oil, and lemon. Or warm it into a quick soup — simmer the shredded meat with stock, sliced carrot, and the last of the thyme. Don't throw out the bones: simmered with an onion half, a carrot, and a bay leaf for 2 hours, they make about 1 liter of stock for next week.
+
+---
+
+## Consolidated Shopping List
+
+**Meat**
+- 900 g (2 lb) bone-in beef short ribs
+- 6 bone-in, skin-on chicken thighs (1.3 kg / 3 lb)
+
+**Produce**
+- 3 large yellow onions
+- 7 medium carrots (600 g / 1 lb 5 oz)
+- 1.4 kg (3 lb) waxy potatoes — 800 g roasting, 600 g mashing
+- 2 heads garlic
+- 2 lemons
+- 1 bunch fresh thyme
+- 1 bunch fresh rosemary
+- 1 large bunch flat-leaf parsley
+- Optional: 100 g mixed salad leaves
+
+**Pantry / other**
+- 1 × 400 g can whole peeled tomatoes
+- Tomato paste
+- 400 ml chicken or beef stock (plus extra if not making your own)
+- 175 ml dry red wine
+- Olive oil, plain flour, bay leaves, kosher salt, black pepper
+- Butter and milk (for the mash)
+
+**Two notes on cost and sequencing:** onions, carrots, potatoes, garlic, lemons, thyme, rosemary, and parsley all appear in both recipes, so buy them once at the larger quantity. And if you braise the short ribs on Friday night, Saturday's dinner is a 30-minute reheat — which is the whole argument for making a braise a day ahead.
+agentId: a012c6ded51c85a3c (use SendMessage with to: 'a012c6ded51c85a3c', summary: '<5-10 word recap>' to continue this agent)
+<usage>subagent_tokens: 18287
+tool_uses: 0
+duration_ms: 50140</usage>",90.225,95.225,agent_result,agent,Agent,general-purpose,toolu_01UNJi,,,b2ac5037-0c26-4c91-bbc9-ec00a2784f91,text
+ai,Claude,All three recipe blocks are back. Now consolidating.,120.819,120.826,message,assistant,,,,claude-opus-5,2369,c6f93c7a-80c1-4560-a680-c00e7b9654f0,text
+ai,Tool:Skill,"[Skill] {""skill"": ""artifact-design""}",120.826,120.843,tool_call,tool,Skill,,,claude-opus-5,,9bc39f0e-c1da-40a0-b674-fd0176fe4002,text
+ai,Tool:Skill,Tool 'Skill' is not available in this condition.,120.843,122.843,tool_result,tool,Skill,,,,,a2f0c697-ac83-4b32-8790-9b3649a6edfa,error
+ai,Claude,"Done — here's the whole week. Assumption flagged up front: costs are US supermarket, USD, mid-2026, mid-range chain (not Whole Foods, not discount). Swap in your own prices if you're elsewhere.
+
+---
+
+# The week
+
+| | Dish | Active time |
+|---|---|---|
+| **Mon** | Smoky paprika chicken thighs, blistered cherry tomatoes, lemon yogurt | 25 min |
+| **Tue** | Shrimp in garlicky tomato sauce with spinach | 20 min |
+| **Wed** | Sheet-pan crispy chickpeas, roast tomatoes, herbed yogurt | 15 min active / 30 total |
+| **Thu** | Smoky cumin beef & rice skillet, yogurt-lemon drizzle | 25 min |
+| **Fri** | Sheet-pan paprika salmon, blistered tomatoes, couscous | 20 min |
+| **Sat** | Braised beef short ribs with tomato, thyme & carrots | 30 min active / 3 hr total |
+| **Sun** | Roast chicken thighs over potatoes & carrots (+2 lunches) | 20 min active / 1 hr 15 total |
+
+No pork anywhere — the smoke comes from smoked paprika, not bacon or chorizo. The week is deliberately built on a repeating core (garlic, lemon, yogurt, cherry tomatoes, spinach, cumin/paprika/chili) so nothing is bought for a single night and half-used.
+
+---
+
+## MONDAY — Smoky paprika chicken thighs with blistered cherry tomatoes & lemon yogurt
+
+**25 minutes** (10 hands-on, 15 tending the pan)
+
+**Buy fresh:** 400 g / 14 oz boneless skinless chicken thighs · 250 g / 9 oz cherry tomatoes · 1 lemon · 3 cloves garlic · 1 small red onion (100 g) · 100 g plain whole-milk yogurt · 15 g parsley or cilantro
+**Pantry:** 2 tbsp olive oil + 1 tsp · 1½ tsp smoked paprika · 1 tsp cumin · ¼ tsp chili flakes · ¾ tsp salt · black pepper
+
+1. Pat the thighs dry — this is the difference between browning and steaming. Toss with 1 tbsp oil, paprika, cumin, chili flakes, ½ tsp salt, pepper. Let sit while the pan heats.
+2. Heat the skillet over medium-high with 1 tbsp oil, ~2 min until shimmering. Lay the thighs in smooth-side down, spaced. Don't move them. 6–7 min.
+3. While they brown: slice the red onion thin; grate 1 garlic clove into the yogurt with 1 tsp oil, 2 tsp lemon juice, a pinch of salt; thinly slice the other 2 cloves; chop the herbs; wedge the rest of the lemon.
+4. Flip. 5–6 min more, until 74°C / 165°F at the thickest point. Move to a plate to rest.
+5. Heat to medium. Onion into the drippings, 2 min, scraping up the browned bits. Sliced garlic, 30 seconds — no longer.
+6. Cherry tomatoes whole + ¼ tsp salt. 3–4 min, pressing about half so they burst into a loose pan sauce. Squeeze in 1 tbsp lemon.
+7. Slice the chicken thick, return it with its resting juices, turn once to coat. Off heat, scatter herbs. Lemon yogurt alongside.
+
+**Prep ahead:** Rub the chicken with oil and spices up to 24 hours ahead — it improves overnight. Lemon yogurt keeps 3 days.
+**Serve with:** 150 g / ¾ cup white rice in 300 ml water, or 2 flatbreads warmed in the empty skillet.
+
+---
+
+## TUESDAY — Shrimp in garlicky tomato sauce with spinach
+
+**20 minutes**, genuinely — the shrimp cook in 3.
+
+**Buy fresh:** 350 g / 12 oz raw peeled shrimp, 21–25 count · 1 medium yellow onion · 4 cloves garlic · 100 g baby spinach · 1 lemon · 15 g parsley
+**Pantry:** 400 g can chopped tomatoes · 3 tbsp olive oil · 1 tsp cumin · 1 tsp smoked paprika · ½ tsp chili flakes · ¾ tsp salt · pepper · 1 tsp sugar (only if needed)
+
+1. If the shrimp are frozen, into a bowl of cold water now — they thaw in 10 minutes while the sauce cooks. Drain and pat very dry.
+2. Dice the onion, slice the garlic. 2 tbsp oil in the skillet over medium; onion + ¼ tsp salt, 5 min until translucent.
+3. Meanwhile chop the parsley, halve the lemon, season the dry shrimp.
+4. Garlic, cumin, paprika, chili flakes into the onion. Stir constantly 45 seconds — spices bloom fast and burn faster.
+5. Tomatoes + ½ tsp salt. Medium-high, simmer 6–8 min until a spoon dragged through leaves a brief trail. Taste; sugar only if sharp. *(Rice goes on now if you're making it.)*
+6. Spinach a handful at a time — collapses in about a minute.
+7. Nestle the shrimp in a single layer. Cover, medium-low, 3 min, turning once. Done the moment they're opaque and curled into a loose C — a tight O is overcooked.
+8. Off heat: last 1 tbsp oil, a squeeze of lemon, parsley, wedges.
+
+**Prep ahead:** Make the sauce through step 5 and refrigerate 4 days or freeze 3 months — then it's a 6-minute dinner.
+**Serve with:** 150 g / ¾ cup rice, or 200 g crusty bread.
+
+---
+
+## WEDNESDAY — Sheet-pan crispy chickpeas with roasted cherry tomatoes & herbed yogurt
+
+**15 min active, 30 min start to finish** — the oven does 27 of them.
+
+**Buy fresh:** 250 g cherry tomatoes · 1 lemon · 3 cloves garlic · 1 small red onion · 150 g plain yogurt · 100 g baby spinach · 20 g cilantro or parsley
+**Pantry:** 2 × 400 g cans chickpeas · 4 tbsp olive oil · 1½ tsp cumin · 1½ tsp smoked paprika · ½ tsp chili flakes · 1 tsp salt · pepper
+
+1. Oven to 220°C / 425°F. Drain and rinse the chickpeas, tip onto a tea towel and roll them dry for a full minute — wet chickpeas steam instead of crisping.
+2. On the sheet pan: chickpeas, 3 tbsp oil, cumin, paprika, chili flakes, ¾ tsp salt, pepper. Toss on the pan, spread to a single layer. Roast 15 min.
+3. While they roast: cut the onion into thin wedges; grate 1 garlic clove into the yogurt with 1 tbsp lemon juice, 1 tbsp water, ¼ tsp salt; slice the other 2 cloves; chop herbs.
+4. At 15 min, add tomatoes and onion wedges, toss, back in for 12 min — until the tomatoes have split and the chickpeas rattle audibly.
+5. Last 3 minutes: 1 tbsp oil in the skillet, sliced garlic 30 sec, spinach + pinch salt, toss 1 min, 1 tsp lemon.
+6. Yogurt across the base of two shallow bowls, spinach, then the hot chickpeas and tomatoes with all the pan juices scraped over.
+7. Herbs, pepper, lemon wedges. Eat straight away — they soften as they sit.
+
+**Prep ahead:** Chickpeas can be drained, rinsed and dried up to 3 days ahead. Herbed yogurt, 3 days.
+**Serve with:** 2 flatbreads/pita, warmed in the oven for the last 2 minutes.
+
+---
+
+## THURSDAY — Smoky cumin beef & rice skillet with yogurt-lemon drizzle
+
+**25 minutes** — honestly 25, not 20, because the beef needs a real hard sear.
+
+**Buy fresh:** 340 g / 12 oz ground beef (85/15) · 1 medium yellow onion · 4 cloves garlic · 100 g baby spinach · 150 g cherry tomatoes · 120 g plain yogurt · 1 lemon · 15 g parsley or cilantro
+**Pantry:** 150 g / ¾ cup rice · 200 g crushed tomatoes (half a can) · 2 tbsp olive oil · 2 tsp cumin · 1½ tsp smoked paprika · ½ tsp chili flakes · 1¼ tsp salt · ½ tsp pepper
+
+1. Rice first: rinse, then 150 g rice + 300 ml water + ½ tsp salt, boil, cover, lowest heat 15 min. Don't lift the lid. Everything below happens while it cooks.
+2. 1 tbsp oil in the skillet over medium-high. Beef in one slab, pressed flat, undisturbed 4 min. Dice the onion and mince 3 garlic cloves while it sears.
+3. Break the beef up, push to one side, onion into the clear space with a pinch of salt, 3 min. Then garlic, cumin, paprika, chili flakes, ¾ tsp salt, pepper — stir constantly 45 seconds, toasty not scorched.
+4. Crushed tomatoes + halved cherry tomatoes. Simmer 5 min to a loose ragù that holds a trail.
+5. While it simmers: yogurt + remaining grated garlic clove + 1 tbsp lemon juice + 1 tbsp oil + pinch salt. Chop herbs, wedge the lemon.
+6. Spinach in two handfuls, fold 1 min until just wilted. Correct salt and lemon.
+7. Rice off the heat, 5 min covered, fluff. Fold half into the skillet or leave it alongside.
+8. Yogurt drizzle, herbs, lemon wedge each.
+
+**Prep ahead:** Onion, garlic and the yogurt drizzle up to 3 days ahead. Premeasure the spice mix any time.
+**Serve with:** the rice from step 1 — about 2 cups cooked.
+
+---
+
+## FRIDAY — Sheet-pan paprika salmon with blistered tomatoes & lemon-garlic yogurt
+
+**20 minutes**, 12 of them oven.
+
+**Buy fresh:** 2 × 170 g / 6 oz skin-on salmon fillets, ~2.5 cm thick · 300 g cherry tomatoes · 1 lemon · 3 cloves garlic · 120 g plain yogurt · 15 g parsley or cilantro · 100 g baby spinach
+**Pantry:** 3 tbsp olive oil · 1½ tsp smoked paprika · ½ tsp cumin · ½ tsp chili flakes · 1 tsp honey (optional) · 1 tsp salt · ½ tsp pepper · 120 g / ⅔ cup couscous
+
+1. Oven to 220°C / 425°F **with the sheet pan inside** — a hot pan is what blisters the tomatoes in the time the salmon needs. Pat the salmon very dry, season both sides with ½ tsp salt.
+2. Mix 2 tbsp oil, paprika, cumin, chili flakes, honey, 1 grated garlic clove, the lemon zest, pepper. Rub two-thirds over the flesh side.
+3. Toss the tomatoes with 1 tbsp oil and ¼ tsp salt. Pull the hot pan, tomatoes on one half, salmon skin-side down on the other. Roast 11–13 min, to 50–52°C / 122–125°F for medium.
+4. The moment it goes in: 180 ml water + pinch salt to a boil, stir in the couscous, cover, kill the heat, 5 min.
+5. Meanwhile: yogurt + 2 grated garlic cloves + 1 tbsp lemon juice + ¼ tsp salt. Chop herbs, wedge the lemon.
+6. Fluff the couscous and fold the spinach in while it's still steaming — residual heat wilts it in a minute — plus half the herbs and a squeeze of lemon.
+7. Yogurt across two warm plates, salmon on top, tomatoes and all their pan juices spooned over, the last of the spiced oil, herbs, lemon.
+
+**Prep ahead:** Spiced oil and yogurt sauce both keep 3 days — make the spiced oil as a double batch on Thursday and Friday collapses to 12 minutes.
+**Serve with:** the couscous, folded with the spinach.
+
+---
+
+## SATURDAY — Braised beef short ribs with tomato, thyme & carrots
+
+**30 min active, ~3 hr total.** Cheaper, faster swap: 700 g boneless beef chuck in 5 cm chunks, braised 1 hr 45 — about $12 less and just as good.
+
+**Buy fresh:** 900 g / 2 lb bone-in beef short ribs, English-cut in 4 pieces · 1 large yellow onion · 3 carrots (250 g) · 4 cloves garlic · 4–5 sprigs thyme · 2 sprigs rosemary · parsley · 1 lemon (zest) · 175 ml dry red wine
+**Pantry:** 400 g can whole peeled tomatoes · 300 ml stock · 2 tbsp olive oil · 2 tbsp tomato paste · 2 tbsp flour · 1 bay leaf · salt, pepper
+
+1. Pat the ribs very dry, season with 2 tsp salt and 1 tsp pepper. Rest at room temp 45 min if you can. Oven to 160°C / 325°F.
+2. Dust lightly with flour, tap off excess. Oil in a Dutch oven over medium-high. Sear in **two batches**, 3–4 min a side, ~12 min total. Crowding costs you the browning, which is the whole flavour base. Ribs to a plate.
+3. Pour off all but 2 tbsp fat. Medium heat, onion + pinch salt, 6–7 min. Garlic and tomato paste, 2 min, until the paste darkens to brick red.
+4. Wine in, scraping up every browned bit. Reduce by half, 3–4 min.
+5. Crushed tomatoes with juice, stock, bay, thyme, rosemary. Ribs back in with their juices — liquid should come **two-thirds up the meat, not cover it**. Bare simmer.
+6. Lid on, oven, **2 hours**. Go do something else.
+7. Lid off, tuck the carrot batons around the meat, back in **uncovered 45–60 min**, until the carrots are tender and the meat gives with no resistance.
+8. Rest 15 min off the heat. Tilt the pot and spoon off the fat — there will be a lot, and skimming it is what separates a good braise from a greasy one. Remove herb stems and bay.
+9. Taste and salt. If thin, lift the meat out and boil the sauce 5 min. Chopped parsley and the zest of half a lemon at the very end — the brightness is what cuts the richness.
+
+**Prep ahead — do this one:** it is genuinely *better* made a day ahead. The flavour deepens and the chilled fat lifts off in a solid sheet, so skimming is effortless. Keeps 4 days, freezes 3 months. Reheat covered at 160°C / 325°F for 30–35 min. **Braise it Friday night and Saturday is a reheat.**
+**Serve with:** mash — 600 g Yukon Gold, 60 ml warm milk, 40 g butter.
+
+---
+
+## SUNDAY — Roast chicken thighs over potatoes, carrots & lemon
+
+**20 min active, 1 hr 15 total.** Scaled to 2 dinners **+ 2 lunches**.
+
+**Buy fresh:** 6 bone-in skin-on chicken thighs (1.3 kg / 3 lb) · 800 g small waxy potatoes, halved · 4 carrots (350 g) in 5 cm batons · 1 large yellow onion in 8 wedges · 6 garlic cloves, unpeeled and smashed · 1 lemon · 6 sprigs thyme · 2 sprigs rosemary · parsley
+**Pantry:** 4 tbsp olive oil · salt, pepper · 60 ml stock (optional)
+
+1. Pat the thighs bone-dry — dry skin is crisp skin. Season with 2½ tsp salt and 1 tsp pepper, sit skin-up on a plate **uncovered** in the fridge 45 min (or overnight). Oven to 220°C / 425°F.
+2. Toss potatoes, carrots, onion wedges and unpeeled garlic with 3 tbsp oil, 1 tsp salt, pepper, and the leaves from 3 thyme sprigs.
+3. Spread on a large rimmed sheet pan in a single layer — crowding steams them, use two pans if it looks tight. Roast **20 min** while the chicken finishes brining.
+4. Rub the thighs with the last 1 tbsp oil, nestle skin-up on top of the vegetables, spaced. Tuck lemon rounds, remaining thyme and the rosemary into the gaps.
+5. **35–40 min**, until the skin is deep golden and a thigh reads just over 75°C / 170°F. Thighs are forgiving — a few degrees over only makes them more tender.
+6. If the chicken is done before the vegetables, lift it off to rest and give the pan another 8–10 min alone.
+7. Rest 10 min on the pan. Squeeze the remaining half lemon over everything.
+8. Stir the vegetables through the pan juices (splash the stock in if it looks dry). 2 thighs per person, parsley, and squeeze the roasted garlic out of its skins into the potatoes.
+
+**Prep ahead:** Season the thighs up to 24 hours ahead, uncovered in the fridge — overnight gives noticeably crisper skin. Cut potatoes and carrots a day ahead; hold the potatoes submerged in cold water, then drain and dry thoroughly.
+**Leftovers:** 2 reserved thighs + spare vegetables, refrigerated within 2 hours, keep 3–4 days. Pull the meat and use it cold in a grain bowl with the roast vegetables, parsley, oil and lemon. Keep the bones — simmered 2 hours with an onion half, a carrot and a bay leaf they make about a litre of stock.
+
+---
+
+# Consolidated shopping list
+
+### Meat & fish
+- Boneless skinless chicken thighs — **400 g / 14 oz** (Mon)
+- Bone-in skin-on chicken thighs — **6, about 1.3 kg / 3 lb** (Sun)
+- Ground beef 85/15 — **340 g / 12 oz** (Thu)
+- Bone-in beef short ribs, English-cut — **900 g / 2 lb** (Sat) *(or 700 g boneless chuck)*
+- Raw peeled shrimp, 21–25 ct — **350 g / 12 oz** (Tue)
+- Skin-on salmon fillets — **2 × 170 g / 6 oz** (Fri)
+
+### Produce
+- Cherry tomatoes — **1 kg / 2¼ lb** (Mon 250, Wed 250, Thu 150, Fri 300)
+- Baby spinach — **400 g / 14 oz** (Tue, Wed, Thu, Fri — 100 g each)
+- Lemons — **6**
+- Garlic — **3 heads** (~27 cloves)
+- Yellow onions — **4** (1 each Tue, Thu; 1 large each Sat, Sun)
+- Red onions, small — **2** (Mon, Wed)
+- Carrots — **1 kg bag** (Sat 250 g, Sun 350 g; rest for stock/lunches)
+- Waxy potatoes, Yukon Gold or new — **1.4 kg / 3 lb** (800 g roast Sun, 600 g mash Sat)
+- Flat-leaf parsley — **2 large bunches**
+- Cilantro — **1 bunch**
+- Fresh thyme — **1 bunch**
+- Fresh rosemary — **1 bunch**
+- Mixed salad leaves — **100 g** *(optional, Sun)*
+
+### Dairy
+- Plain whole-milk yogurt — **500 g tub** (Mon 100, Wed 150, Thu 120, Fri 120 = 490 g — buy the 500 g, not a small one)
+- Butter — **40 g / 3 tbsp** (Sat mash)
+- Milk — **60 ml / ¼ cup** (Sat mash)
+
+### Canned & jarred
+- Chopped tomatoes — **1 × 400 g** (Tue)
+- Crushed tomatoes — **1 × 400 g** (Thu uses half — the other half goes in Saturday's braise if you like)
+- Whole peeled tomatoes — **1 × 400 g** (Sat)
+- Chickpeas — **2 × 400 g** (Wed)
+- Tomato paste — small tube or can
+- Stock, chicken or beef, low-sodium — **1 litre carton** (Sat 300 ml, Sun 60 ml)
+
+### Dry goods & bakery
+- Long-grain white rice — **500 g** (Mon, Tue, Thu use 150 g each)
+- Couscous — **120 g / ⅔ cup** (Fri)
+- Flatbread or pita — **1 pack of 4–6** (Wed, optionally Mon)
+- Crusty bread — **1 loaf** *(optional, Tue)*
+- Plain flour — 2 tbsp (Sat, likely have it)
+
+### Wine
+- Dry red — **175 ml** for the braise. Cabernet, Merlot or Chianti. Buy a bottle you'd drink.
+
+### Check before you buy — spice rack & oil
+Olive oil (you'll use ~250 ml across the week), smoked paprika (~7 tsp — check you have a decent amount), ground cumin (~7 tsp), chili flakes, kosher/fine salt, black pepper, bay leaves, honey (optional).
+
+---
+
+# Prep-ahead plan
+
+**Sunday or Monday morning, ~25 minutes of work that pays off all week**
+- Mix a **double batch of garlic-lemon yogurt sauce** (~400 g yogurt, 3 grated garlic cloves, 2 tbsp lemon juice, salt). It covers Monday, Wednesday, Thursday and Friday with minor tweaks. Keeps 3–4 days — split it and make the second half midweek if you want it fresher.
+- **Spice-rub the Monday chicken** and leave it in the fridge; it's better for the wait.
+- **Drain, rinse and thoroughly dry the chickpeas**, store covered — Wednesday's only fiddly step, done.
+- **Premeasure the cumin / smoked paprika / chili flakes trio** into four small jars. It recurs almost every night.
+- Dice **2 yellow onions** and mince a batch of garlic; store airtight for Tuesday and Thursday.
+
+**Any evening you have a spare 20 minutes**
+- **Tuesday's tomato sauce** through step 5. Then Tuesday night is 6 minutes: reheat, spinach, shrimp.
+- **Thursday's spiced oil, doubled** — half for Thursday, half for Friday's salmon.
+
+**Friday night (the big one)**
+- **Braise the short ribs.** They're better a day ahead, the fat lifts off cold in a solid sheet, and Saturday becomes a 35-minute reheat. If you'd rather not, Saturday works fine cooked on the day.
+
+**Saturday**
+- **Dry-brine Sunday's chicken thighs** overnight, uncovered in the fridge — this is the single biggest lever on crisp skin.
+- Cut Sunday's potatoes and carrots; hold the potatoes in cold water, drain and dry hard before oiling.
+
+---
+
+# Rough cost
+
+US supermarket, mid-range chain, USD. Rounded generously.
+
+| Section | Cost |
+|---|---|
+| Meat & fish | **$58** |
+| Produce | **$46** |
+| Dairy | **$7** |
+| Canned & jarred | **$13** |
+| Dry goods & bakery | **$11** |
+| Wine (bottle) | **$10** |
+| **Total** | **≈ $145** |
+
+**≈ $9 per serving** across 14 dinner servings plus 2 leftover lunches.
+
+Where the money is, and how to move it:
+- **Short ribs are ~$22 of the total** — the single biggest line. Boneless chuck brings that to about $10 with no real loss.
+- **Shrimp and salmon together are ~$18.** Both fine frozen; frozen salmon in particular is often half the price of the fish counter and roasts identically.
+- The **rice, couscous, stock, canned goods, spices and wine (~$30)** mostly outlast the week — real weekly burn is closer to **$115–120** once you've stocked those.
+- Excluding the wine bottle and the optional salad and crusty bread: **≈ $128**.
+
+Two things I'd flag: the Saturday braise at 3 hours is the one dish that doesn't fit a ""quick"" brief anywhere but a weekend, so the Friday-night-ahead route is worth taking. And the yogurt is deliberately load-bearing — one 500 g tub carries four nights, so don't substitute it down to a small pot.",219.793,220.793,message,assistant,,,,claude-opus-5,9226,a25c8504-4bd9-4420-a80c-dd8d353b7977,text

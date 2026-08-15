@@ -16,6 +16,29 @@ import type { Timeline } from '../../models/timeline';
 import { createUserMap, buildCodeColorMap } from './draw-utils';
 import { getDrawTheme, type DrawTheme } from './draw-theme';
 
+/**
+ * Memo for the two per-frame derived maps.
+ *
+ * Both are pure functions of a store value, and Svelte stores hand back the
+ * same reference until something writes to them, so identity comparison is a
+ * sufficient and exact invalidation check.
+ */
+let userMapCache: { source: User[]; value: Map<string, User> } | null = null;
+function cachedUserMap(users: User[]): Map<string, User> {
+	if (userMapCache?.source === users) return userMapCache.value;
+	const value = createUserMap(users);
+	userMapCache = { source: users, value };
+	return value;
+}
+
+let codeColorMapCache: { source: unknown; value: Map<string, string> } | null = null;
+function cachedCodeColorMap(codes: Parameters<typeof buildCodeColorMap>[0]): Map<string, string> {
+	if (codeColorMapCache?.source === codes) return codeColorMapCache.value;
+	const value = buildCodeColorMap(codes);
+	codeColorMapCache = { source: codes, value };
+	return value;
+}
+
 export class DrawContext {
 	sk: p5;
 	users: User[];
@@ -30,7 +53,10 @@ export class DrawContext {
 	constructor(sk: p5) {
 		this.sk = sk;
 		this.users = get(UserStore);
-		this.userMap = createUserMap(this.users);
+		// The speaker map is derived purely from the user list, which changes
+		// only when a speaker is toggled, renamed or recoloured. Rebuilding it
+		// each frame allocated one Map entry per speaker sixty times a second.
+		this.userMap = cachedUserMap(this.users);
 		// Merge the four cohesive stores into a single snapshot. The viz draw
 		// classes receive this merged object as `ctx.config` and access any
 		// field regardless of which store it lives in.
@@ -40,7 +66,7 @@ export class DrawContext {
 			...get(AppSettingsStore),
 			...get(UIStateStore)
 		};
-		this.codeColorMap = buildCodeColorMap(get(CodeStore));
+		this.codeColorMap = cachedCodeColorMap(get(CodeStore));
 		this.hover = get(HoverStore);
 		this.transcript = get(TranscriptStore);
 		this.timeline = get(TimelineStore);

@@ -100,6 +100,18 @@
 			</label>
 			<p class="settings-panel__hint">When enabled, visualizations scale to the current selection instead of the full transcript.</p>
 
+			<label class="settings-panel__check-row">
+				<input
+					type="checkbox"
+					role="switch"
+					aria-checked={$VizStore.showFpsMonitor}
+					checked={$VizStore.showFpsMonitor}
+					onchange={() => setVizField('showFpsMonitor', !$VizStore.showFpsMonitor)}
+				/>
+				<span>Show frame rate</span>
+			</label>
+			<p class="settings-panel__hint">Diagnostic overlay in the top-right of the canvas.</p>
+
 			<label class="settings-panel__slider-label">
 				<span>Turn preview: {$AppSettingsStore.snippetDurationSeconds}s</span>
 				<p class="settings-panel__hint">When clicking a speaker in the distribution diagram, plays this duration from each turn.</p>

@@ -127,6 +127,12 @@ function computeAdjustedResiduals(
 	return result;
 }
 
+/**
+ * Anything with a scheme or an obvious domain-like head. Query strings are the
+ * dominant source of stray '?' in transcripts that contain tool output.
+ */
+const LOOKS_LIKE_URL = /^(https?:\/\/|www\.)|^[\w.-]+\.[a-z]{2,}\//i;
+
 // Interrogative words for question detection
 const QUESTION_STARTERS = new Set(
 	'what who where when why how is are was were am do does did can could will would should shall may might have has had'.split(' ')
@@ -241,8 +247,60 @@ let fullTranscriptFingerprintMaxCache: {
 	avgTurnLength: number;
 	participation: number;
 } | null = null;
+/**
+ * Memo for `getProcessedWords`.
+ *
+ * Every visualization funnels through that method, and in dashboard mode each
+ * panel calls it independently — so on a large transcript the same several
+ * hundred milliseconds of filtering, copying and counting ran multiple times
+ * per frame, allocating tens of megabytes each pass. The result is a pure
+ * function of the inputs in `key`, so one entry is enough: consecutive frames
+ * of a static scene hit it, and any real change misses and recomputes.
+ */
+/**
+ * Stable per-array identity, so the memo key can reference the source array
+ * without stringifying it. Uses a WeakMap so a replaced transcript is collected.
+ */
+const wordArrayTokens = new WeakMap<object, number>();
+let nextWordArrayToken = 0;
+function wordArrayToken(arr: DataPoint[]): number {
+	let token = wordArrayTokens.get(arr);
+	if (token === undefined) {
+		token = ++nextWordArrayToken;
+		wordArrayTokens.set(arr, token);
+	}
+	return token;
+}
+
+/**
+ * Cache for values derived from a processed word list.
+ *
+ * `getProcessedWords` returns the same array instance while nothing relevant
+ * changes, so keying on that instance gives every derivation a correct
+ * invalidation signal for free: a new word list is a new key, and the old
+ * entries become unreachable. Without this the base computation was cached but
+ * everything built on top of it — turn assembly, speaker grouping, the
+ * transition matrix — still ran on every frame over the full array.
+ */
+const derivedCaches = new WeakMap<object, Map<string, unknown>>();
+
+function derive<T>(words: DataPoint[], key: string, compute: () => T): T {
+	let bucket = derivedCaches.get(words);
+	if (!bucket) {
+		bucket = new Map();
+		derivedCaches.set(words, bucket);
+	}
+	if (bucket.has(key)) return bucket.get(key) as T;
+	const value = compute();
+	bucket.set(key, value);
+	return value;
+}
+
+let processedWordsCache: { key: string; result: DataPoint[] } | null = null;
+
 registerVizCacheReset(() => {
 	fullTranscriptFingerprintMaxCache = null;
+	processedWordsCache = null;
 });
 
 interface TurnData {
@@ -256,6 +314,9 @@ interface TurnData {
 
 export class DynamicData {
 	endIndex: number = 0;
+	/** Memo for the tool-speaker set, invalidated by user-list identity. */
+	private toolSpeakerSource: unknown = null;
+	private toolSpeakerCache: Set<string> | null = null;
 
 	setEndIndex(index: number): void {
 		this.endIndex = index;
@@ -273,6 +334,10 @@ export class DynamicData {
 
 	/** Builds per-turn aggregated data from a words array. */
 	private buildTurnData(words: DataPoint[]): Map<number, TurnData> {
+		return derive(words, 'turnData', () => this.computeTurnData(words));
+	}
+
+	private computeTurnData(words: DataPoint[]): Map<number, TurnData> {
 		const turnData = new Map<number, TurnData>();
 		for (const word of words) {
 			const existing = turnData.get(word.turnNumber);
@@ -294,10 +359,53 @@ export class DynamicData {
 		return turnData;
 	}
 
-	/** Checks if a turn's content is a question (has '?' or starts with interrogative word). */
+	/**
+	 * Checks whether a turn asks a question.
+	 *
+	 * A '?' counts only where it terminates a token, which is where it does the
+	 * work of asking. Searching the whole turn matched every query string, every
+	 * ternary and every optional-chaining operator, so a single link inside a
+	 * long turn marked the entire turn as a question and manufactured an answer
+	 * pairing with whoever spoke next.
+	 *
+	 * Tokens that look like a URL are skipped outright: a trailing '?' in a link
+	 * is punctuation, not an interrogative.
+	 */
+	/**
+	 * Whether a speaker's turns should be scanned for questions at all.
+	 *
+	 * Tool output is not an utterance. A search result carrying a question in
+	 * its title, or a tool payload whose input field happens to be phrased as
+	 * one, registers as the tool asking the human something — which is not what
+	 * happened. Human, assistant and delegated-agent turns are addressed to
+	 * someone and are scanned; tool returns are not.
+	 *
+	 * Human transcripts have no roles, so every speaker qualifies and nothing
+	 * changes for them.
+	 */
+	private speakerCanAsk(speaker: string): boolean {
+		return this.toolSpeakers().has(speaker) === false;
+	}
+
+	/** Speakers whose role marks them as tool output. */
+	private toolSpeakers(): Set<string> {
+		const users = get(UserStore);
+		if (users === this.toolSpeakerSource && this.toolSpeakerCache) return this.toolSpeakerCache;
+		const set = new Set(users.filter((u) => u.role === 'tool').map((u) => u.name));
+		this.toolSpeakerSource = users;
+		this.toolSpeakerCache = set;
+		return set;
+	}
+
 	private isQuestionTurn(turn: TurnData): boolean {
-		if (turn.content.includes('?')) return true;
-		const firstWord = turn.content.split(' ')[0];
+		if (!this.speakerCanAsk(turn.speaker)) return false;
+		const tokens = turn.content.split(/\s+/);
+		for (const token of tokens) {
+			if (!token || LOOKS_LIKE_URL.test(token)) continue;
+			// Allow trailing wrappers such as `really?"` or `(right?)`.
+			if (/\?["')\]]*$/.test(token)) return true;
+		}
+		const firstWord = tokens[0] ?? '';
 		return QUESTION_STARTERS.has(normalizeWord(firstWord));
 	}
 
@@ -322,6 +430,26 @@ export class DynamicData {
 	 */
 	getProcessedWords(filterByTimeRange = false): DataPoint[] {
 		const wordArray = get(TranscriptStore).wordArray || [];
+		const timeline = get(TimelineStore);
+
+		// Everything the computation below reads. `wordArrayToken` identifies the
+		// source array without hashing it: a new transcript produces a new array
+		// instance, and in-place edits go through registerVizCacheReset.
+		const key = [
+			wordArrayToken(wordArray),
+			this.endIndex,
+			filterByTimeRange ? `${timeline.leftMarker}:${timeline.rightMarker}` : 'all',
+			config.stopWordsEnabled ? activeStopWords.size : -1,
+			config.showUncoded,
+			config.lastWordToggle,
+			config.echoWordsToggle,
+			codeEntries.length > 0 ? codeEntries.map((c) => `${c.code}:${c.enabled}`).join(',') : ''
+		].join('|');
+
+		if (processedWordsCache && processedWordsCache.key === key) {
+			return processedWordsCache.result;
+		}
+
 		let slice = wordArray.slice(0, this.endIndex);
 
 		if (filterByTimeRange) {
@@ -366,6 +494,7 @@ export class DynamicData {
 			result.push(copy);
 		}
 
+		processedWordsCache = { key, result };
 		return result;
 	}
 
@@ -401,7 +530,12 @@ export class DynamicData {
 	}
 
 	getDynamicArrayForSpeakerGarden(): Record<string, DataPoint[]> {
-		const categorized = this.groupBy(this.getProcessedWords(true), (w) => w.speaker);
+		const words = this.getProcessedWords(true);
+		return derive(words, 'speakerGarden', () => this.computeSpeakerGarden(words));
+	}
+
+	private computeSpeakerGarden(words: DataPoint[]): Record<string, DataPoint[]> {
+		const categorized = this.groupBy(words, (w) => w.speaker);
 
 		const entries = Object.entries(categorized);
 		this.sortSpeakerEntries(entries, (words) => ({
@@ -413,7 +547,8 @@ export class DynamicData {
 	}
 
 	getDynamicArrayForTurnChart(): Record<number, DataPoint[]> {
-		return this.groupBy(this.getProcessedWords(true), (w) => w.turnNumber);
+		const words = this.getProcessedWords(true);
+		return derive(words, 'turnChart', () => this.groupBy(words, (w) => w.turnNumber));
 	}
 
 	getDynamicArraySortedForContributionCloud(): DataPoint[] {
@@ -521,7 +656,13 @@ export class DynamicData {
 
 	getDynamicArrayForTurnNetwork(): NetworkData {
 		const words = this.getProcessedWords(true);
+		// Search term is the one input not already folded into the word list.
+		return derive(words, `turnNetwork:${config.wordToSearch ?? ''}`, () =>
+			this.computeTurnNetwork(words)
+		);
+	}
 
+	private computeTurnNetwork(words: DataPoint[]): NetworkData {
 		// Compute which turns match the search term (null if no search active)
 		let searchMatchingTurns: Set<number> | null = null;
 		if (config.wordToSearch) {

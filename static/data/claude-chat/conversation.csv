@@ -1,0 +1,449 @@
+te_source_kind,speaker,content,start,end,event_type,role,tool_name,agent_type,agent_id,model,tokens_out,event_id,content_type
+ai,Edwin,"I'm a high school science teacher and a lot of my students struggle to understand our science textbooks. What does the research say about the most effective ways to improve reading comprehension in science, and what should I actually do in my classroom? Give me specific studies with author names and effect sizes where you can.",0.0,11.2,message,user,,,,,,48098599-f34e-4a58-8252-de5225d881e0,text
+ai,Claude,"# Improving Science Reading Comprehension: What the Research Says
+
+Here's a synthesis of what the evidence supports, organized from strongest to weakest.
+
+---
+
+## The single most important finding: comprehension in science is not a generic skill
+
+The dominant instinct is to teach ""reading strategies."" The research complicates that. **Willingham and Lovette (2014)** and the broader knowledge-effects literature argue that once students have learned a strategy (which happens fast — often in a handful of sessions), additional practice yields little. The classic demonstration is **Recht and Leslie (1988)**: poor readers with high baseball knowledge outperformed good readers with low baseball knowledge on a passage about a baseball game. Domain knowledge dominated general reading skill.
+
+**Practical implication:** if a student can't read your textbook chapter on cellular respiration, the bottleneck is usually not ""they lack a comprehension strategy"" — it's that they don't have enough biology and vocabulary knowledge for the text to cohere. This reframes a lot of intervention time.
+
+That said, strategy instruction isn't worthless — it's front-loaded. A modest amount goes a long way; extended strategy curricula have poor returns.
+
+---
+
+## Interventions with solid evidence
+
+### 1. Text-based argumentation and reading-writing integration
+
+The strongest science-specific results come from programs integrating reading, writing, and argument with content instruction.
+
+- **Seeing Writing / Reading Apprenticeship** work by **Greenleaf, Litman, Hanson, and colleagues (2011)**, a cluster-randomized trial in high school biology, found significant effects on both reading comprehension and biology content knowledge. Effect sizes were modest but real — roughly d ≈ 0.20–0.30 range on standardized reading measures, somewhat larger on content.
+- **Goldman, Britt, et al.** and the Project READI work developed evidence-based frameworks around evidence-based argumentation from multiple science texts.
+- **Cervetti, Barber, Dorph, Pearson, and Goldschmidt (2012)** — the Seeds of Science/Roots of Reading trial — integrated science inquiry with reading and writing, showing gains in science vocabulary and content with more equivocal effects on general comprehension.
+
+The pattern: **integrated approaches beat bolt-on reading instruction.**
+
+### 2. Vocabulary instruction (specifically, morphology and academic language)
+
+Science texts are lexically dense. **Nagy and Townsend (2012)** on academic vocabulary as the ""language of school"" is a key theoretical piece. Effects on taught words are large (d > 0.7 typically); transfer to general comprehension is much weaker (d ≈ 0.10–0.15). Teach the words you need, but don't expect vocabulary work to fix comprehension broadly.
+
+Morphological instruction — Greek/Latin roots, which science is saturated with — has meta-analytic support from **Bowers, Kirby, and Deacon (2010)**, with effects around d ≈ 0.30–0.40 for morphological outcomes, weaker for comprehension.
+
+### 3. Self-explanation and elaborative interrogation
+
+**Chi, de Leeuw, Chiu, and LaVancher (1994)** on self-explanation while reading a biology text on the circulatory system: prompted students to explain each sentence to themselves; gains were substantial on deep-comprehension measures. **McNamara's** work on Self-Explanation Reading Training (SERT) extends this.
+
+**Dunlosky, Rawson, Marsh, Nathan, and Willingham (2013)** — the big ""Improving Students' Learning With Effective Learning Techniques"" review in *Psychological Science in the Public Interest* — rated elaborative interrogation and self-explanation as **moderate utility**, and rated practice testing and distributed practice as **high utility**. Notably, they rated **rereading and highlighting as low utility** — which matters, because those are what your students are probably doing.
+
+### 4. Text structure instruction
+
+Science texts use compare/contrast, cause/effect, and problem/solution structures. Teaching students to recognize and use these has decent support — **Hebert, Bohaty, Nelson, and Brown (2016)** meta-analysis of text structure instruction on expository reading found average effects around **g ≈ 0.57** on comprehension, which is on the higher end for reading interventions.
+
+---
+
+## What to actually do in your classroom
+
+**Highest leverage, lowest cost:**
+
+1. **Front-load knowledge before the reading, not after.** A 10-minute concrete overview — video, demo, quick explanation of the key mechanism — before students open the text. This is the knowledge-effects finding operationalized. The text becomes readable because they already have a schema for it.
+
+2. **Stop assigning silent reading of the chapter as homework.** It's the lowest-yield use of the text. Instead, read key passages in class with structured interaction.
+
+3. **Use self-explanation prompts.** After every paragraph or two of a hard passage: ""What does this mean in your own words? How does it connect to what we did yesterday?"" Cheap, and it's the Chi finding directly.
+
+4. **Teach the text structure explicitly.** ""This section is a cause-and-effect chain — find the links."" Give them a graphic organizer matched to the structure. Strongest single effect size in the list.
+
+5. **Replace rereading with retrieval.** Close the book, write what you remember, then reopen and check. Dunlosky's high-utility category.
+
+6. **Do morphology as a five-minute routine.** *hypo/hyper, -tonic, endo/exo, -lysis, photo-, -synthesis*. Science vocabulary is unusually decomposable — this pays off more here than in most subjects.
+
+**Worth doing if you have time:**
+
+7. **Two texts on the same phenomenon, then argue.** The Project READI move: give a textbook passage and a short secondary source, ask which better explains the phenomenon and why. This builds the argumentation skill that transfers.
+
+8. **Model your own reading aloud.** Reading Apprenticeship's core move — think aloud through a hard paragraph, including where you get confused and what you do about it. Students rarely know that expert reading involves confusion.
+
+---
+
+## Two caveats on the numbers above
+
+**On the effect sizes:** I've given ranges from memory and I want to be explicit that several are approximate. The Hebert et al. figure (g ≈ 0.57) and the Dunlosky utility ratings I'm most confident about. The Greenleaf effect sizes and the Bowers et al. morphology figures I'd want you to verify before citing them in, say, a department presentation or grant application — I may be off, and I could be conflating outcome measures within a study (a study often reports quite different effects for researcher-designed vs. standardized tests, and the standardized ones are almost always smaller). Google Scholar will get you the originals quickly.
+
+**On the general state of the literature:** reading intervention effect sizes shrink substantially when measured on standardized rather than researcher-designed tests, and shrink again in effectiveness trials versus efficacy trials. Treat anything above d ≈ 0.4 in this field with mild skepticism unless it's replicated. The interventions above are worth doing, but none of them are transformative on their own — the cumulative knowledge-building effect over a year is likely bigger than any single technique.
+
+---
+
+If it's useful, tell me which units your students struggle with most and I can help design the front-loading and text-structure scaffolds for a specific chapter — that's where this stops being a literature review and starts being lesson planning.",42.223,102.223,message,assistant,,,,claude-opus-5,2509,ce20e9a5-3f1b-4b6c-ba44-6c04aa4c68f7,text
+ai,Edwin,"Are you sure, can you give me more specific citations and then share the actual effect sizes across as well ?",274.322,278.522,message,user,,,,,,9c393429-173a-444f-8557-c64623391579,text
+ai,Claude,"Direct answer to ""are you sure"": for the *existence and general findings* of these studies, mostly yes. For the *specific numbers*, no — and I want to be straight with you that pushing me for more precision from memory will produce numbers that **sound** more authoritative without being more reliable. That's the failure mode to avoid, especially if this is going into anything with your name on it.
+
+So here's everything sorted by what I'd actually stand behind.
+
+---
+
+## Full citations, with confidence flags
+
+### High confidence — citation and finding
+
+| Study | Full citation | What it found |
+|---|---|---|
+| Recht & Leslie (1988) | *Effect of prior knowledge on good and poor readers' memory of text.* Journal of Educational Psychology, 80(1), 16–20. | Baseball knowledge beat reading ability on a baseball passage. Note: they reported group comparisons, **not** a Cohen's d — anyone citing ""the effect size"" here is inventing it. |
+| Chi, de Leeuw, Chiu & LaVancher (1994) | *Eliciting self-explanations improves understanding.* Cognitive Science, 18(3), 439–477. | Prompted self-explanation on a circulatory-system text produced substantially larger gains than unprompted reading. Reported as pre/post gain percentages, not d. |
+| Dunlosky, Rawson, Marsh, Nathan & Willingham (2013) | *Improving students' learning with effective learning techniques.* Psychological Science in the Public Interest, 14(1), 4–58. | Practice testing + distributed practice = high utility. Elaborative interrogation, self-explanation, interleaving = moderate. Rereading, highlighting, summarization = low. These are **utility ratings, not effect sizes** — that distinction is the paper's whole design. |
+| Greenleaf, Litman, Hanson, Rosen, Boscardin, Herman, Schneider, Madden & Jones (2011) | *Integrating literacy and science in biology.* American Educational Research Journal, 48(3), 647–717. | Cluster-randomized, high school biology, Reading Apprenticeship PD. Significant positive effects on reading comprehension and biology content. |
+| Hebert, Bohaty, Nelson & Brown (2016) | *The effects of text structure instruction on expository reading comprehension: A meta-analysis.* Journal of Educational Psychology, 108(5), 609–629. | Text structure instruction improves expository comprehension; effects vary considerably by outcome measure type. |
+| Bowers, Kirby & Deacon (2010) | *The effects of morphological instruction on literacy skills: A systematic review.* Review of Educational Research, 80(2), 144–179. | Morphological instruction helps; larger effects for younger and less-able readers. |
+| Nagy & Townsend (2012) | *Words as tools: Learning academic vocabulary as language acquisition.* Reading Research Quarterly, 47(1), 91–108. | Theoretical//framework piece — **contains no effect sizes at all.** Cite it for the argument, not for numbers. |
+
+### Medium confidence — real work, details I'd verify
+
+- **Cervetti, Barber, Dorph, Pearson & Goldschmidt (2012)**, *The impact of an integrated approach to science and literacy in elementary school classrooms*, Journal of Research in Science Teaching, 49(5), 631–658. **Correction to my earlier answer:** this is an *elementary* study. I listed it in a way that implied it supported your high school context. It doesn't directly.
+- **Graham & Hebert (2011)**, *Writing to read: A meta-analysis of the impact of writing on reading*, Harvard Educational Review, 81(4), 710–744. Relevant and I should have included it the first time — writing about text improves comprehension of that text.
+- **McNamara (2004)**, SERT / self-explanation reading training, Discourse Processes. Confident the program exists and is hers; less sure of the specific article year.
+- **Goldman, Britt, Brown, Cribb, George, Greenleaf, Lee & Shanahan (2016)**, *Disciplinary literacies and learning to read for understanding*, Educational Psychologist, 51(2), 219–246. This is Project READI's framework paper — conceptual, not a trial.
+- **Willingham & Lovette (2014)**, *Can reading comprehension be taught?* — I'm confident about the authors, title, and argument; less sure of the venue (I believe Teachers College Record, as a commentary rather than a research article).
+
+### Low confidence — the numbers themselves
+
+Every effect size I gave you was reconstructed from memory:
+
+| What I said | Status |
+|---|---|
+| Hebert et al., g ≈ 0.57 | Plausible, and the one I'd bet on most — but the paper reports **multiple** effect sizes by measure type, so a single number misrepresents it regardless of whether 0.57 is right. |
+| Greenleaf et al., d ≈ 0.20–0.30 | Genuinely uncertain. My instinct now is that standardized-measure effects were **smaller** than what I quoted. Do not use. |
+| Bowers et al., d ≈ 0.30–0.40 | Right order of magnitude, specific figure unverified. |
+| Vocabulary: taught words d > 0.7, transfer d ≈ 0.10–0.15 | This is my summary of a general pattern in the literature, not a figure from any single study I named. The pattern is real; the numbers are illustrative. |
+
+I'm not going to generate more precise-looking versions of these. If I did, I'd be manufacturing confidence rather than adding information.
+
+---
+
+## How to get the real numbers in about 20 minutes
+
+1. Google Scholar each citation above — all should resolve immediately. If one doesn't, that's a signal I got it wrong; tell me and I'll flag what I think I garbled.
+2. For the two meta-analyses (Hebert, Bowers), go to the results table, not the abstract. Take the effect for **standardized** comprehension measures, which will be lower than the headline.
+3. For Greenleaf, look for the table separating state-test outcomes from researcher-designed outcomes.
+4. Your school or district librarian can likely get you PDFs behind paywalls; ERIC (eric.ed.gov) has free versions of several.
+
+One more correction: in my first answer I wrote ""Seeing Writing / Reading Apprenticeship."" **Reading Apprenticeship** is the actual program name (WestEd's Strategic Literacy Initiative). ""Seeing Writing"" was my error and will send you nowhere.
+
+---
+
+## What doesn't change
+
+The classroom recommendations hold regardless of whether those specific decimals are right, because they rest on the directional consensus rather than any single trial: build knowledge before reading, prompt self-explanation, teach text structure explicitly, use retrieval instead of rereading, exploit science morphology. If Greenleaf's effect turns out to be 0.14 rather than 0.25, you'd still do all five.
+
+Happy to help you build the front-loading and structure scaffolds for a specific unit once you've got the citations you need — and if you tell me which claims you're planning to put in front of colleagues, I'll tell you which ones I think are safe to assert without checking first.",337.622,356.573,message,assistant,,,,claude-opus-5,4422,dd7b7d59-cf62-436e-b326-6069aa606fa1,text
+ai,Edwin,"Why were these reconstructed from memory, if these are NOT accurate then why are you sharing them? can you find more specific information on this / help me build this solution out.",375.525,381.925,message,user,,,,,,c1ae4198-83ab-43ca-b88c-b9c57f9514a6,text
+ai,Claude,"## Why they were there in the first place
+
+Fair question, and the answer isn't flattering. You asked for effect sizes, and I produced text shaped like effect sizes. I know this literature's general contours well enough to generate numbers that sit in the right range and look right — and that fluency is exactly the problem, because it doesn't come with a reliable signal for whether a specific decimal is retrieved or reconstructed. The correct move on your first message was to name the studies and say plainly ""I don't recall the specific figures reliably."" Instead I gave numbers and then walked them back, which put the checking work on you.
+
+I also can't fix it by looking them up — I don't have retrieval in this session. I can't open Google Scholar, fetch a PDF, or confirm a single figure. So I'm not going to keep producing numbers. What I can do is make the verification cheap for you, and build the actual classroom system, which is the part that doesn't depend on the decimals.
+
+---
+
+# Part 1: A verification sheet
+
+Fill this in as you check. I've marked what I think you'll find so you can catch where I'm wrong — but the blank column is the one that counts.
+
+| # | Citation to search | What to look for | My guess (verify) | Actual |
+|---|---|---|---|---|
+| 1 | Hebert, Bohaty, Nelson & Brown (2016), *J. Educational Psychology* 108(5) | Overall g for text structure instruction on comprehension; **separate** figures for researcher-designed vs. standardized measures | ~0.5 overall, notably lower on standardized | |
+| 2 | Graham & Hebert (2011), *Harvard Educational Review* 81(4) | Effect of writing-about-text on reading comprehension | ~0.4 | |
+| 3 | Bowers, Kirby & Deacon (2010), *Review of Educational Research* 80(2) | Morphological instruction: effect on comprehension specifically, not on morphological awareness | ~0.3, weaker for comprehension than for morphology outcomes | |
+| 4 | Greenleaf et al. (2011), *AERJ* 48(3) | Effects on state ELA test vs. biology content; treat these separately | small on standardized reading | |
+| 5 | Dunlosky et al. (2013), *PSPI* 14(1) | Confirm: utility ratings, not pooled effect sizes | high = practice testing, distributed practice | |
+| 6 | Chi et al. (1994), *Cognitive Science* 18(3) | Confirm no Cohen's d is reported | gain scores only | |
+
+**Two rules when you read them:**
+- Take the **standardized-measure** effect, not the headline. Researcher-designed tests are built to be sensitive to the intervention and run substantially higher.
+- Check whether it's an **efficacy** trial (researcher-supported, ideal conditions) or **effectiveness** (normal school conditions). Effectiveness numbers are the ones that predict what happens in your room.
+
+If a citation doesn't resolve, tell me which and I'll say what I most likely garbled.
+
+---
+
+# Part 2: The classroom system
+
+This is built on directional consensus — knowledge before reading, structure made explicit, generation over rereading — which holds regardless of where those decimals land.
+
+## The core protocol: 25 minutes on a hard passage
+
+**Phase 0 — Knowledge front-load (8 min, before the book opens)**
+
+Not a preview of the reading. A concrete encounter with the phenomenon: a demo, a 3-minute video, a diagram you narrate, a quick ""here's what actually happens"" explanation in plain language. The goal is that when they hit the text, it's confirming and elaborating a schema rather than building one from cold prose.
+
+Test for whether you did it right: could a student answer ""what is this section about?"" *before* reading it? If no, front-load more.
+
+**Phase 1 — Name the structure (2 min)**
+
+Tell them outright what shape the text is:
+
+| Structure | Signal words | Organizer |
+|---|---|---|
+| Cause/effect chain | because, results in, leads to, therefore | Boxes with arrows, one link per box |
+| Compare/contrast | whereas, unlike, both, however | Two-column table, rows = dimensions |
+| Process/sequence | first, then, subsequently, finally | Numbered flow, one step per line |
+| Problem/solution | challenge, in order to, solves | Problem → constraint → mechanism |
+| Claim/evidence | suggests, indicates, data show | Claim box + evidence bullets |
+
+Hand them the matching organizer, empty. Most textbook sections are one dominant structure; say which.
+
+**Phase 2 — Chunked read with self-explanation (10 min)**
+
+Read 1–2 paragraphs. Stop. Students answer one prompt in writing — short, 1–2 sentences:
+
+- ""Say that in your own words, no textbook vocabulary.""
+- ""Why does that happen? What's the mechanism?""
+- ""How does this connect to [yesterday's lesson / the demo]?""
+- ""What would break if this step didn't happen?""
+
+Rotate the prompts; don't use the same one twice in a passage. The writing matters — thinking it silently doesn't produce the same effect.
+
+**Phase 3 — Closed-book retrieval and repair (5 min)**
+
+Books shut. ""Write everything you can about how [X] works."" Two minutes. Then reopen and mark in a different color what you missed or got wrong.
+
+The repair step is the whole point. Retrieval without corrective feedback entrenches errors.
+
+## The five-minute morphology routine
+
+Once a week, not daily. Science vocabulary is unusually decomposable, which makes this higher-yield in your subject than in most.
+
+Put up a word from the current unit, break it, then have them predict a word you haven't taught:
+
+> *hypertonic* → hyper (over/above) + ton (tension, from tonos) + ic
+> So what does **hypotonic** mean? What about **isotonic**?
+
+High-value stems for high school science: *photo-, -synthesis, endo-/exo-, -therm/-thermic, -lysis, -tonic, hyper-/hypo-, mono-/di-/poly-, -phile/-phobic, trans-/cis-, cyto-, -ase, an-/a- (without), homeo-, -stasis*.
+
+## The think-aloud (do this ~4 times a year)
+
+Project a genuinely hard paragraph and read it aloud, narrating your own confusion in real time: *""Okay, I don't know what 'electrochemical gradient' means here — I'm going to keep going and see if the next sentence defines it… it doesn't… I'm going back to the diagram.""*
+
+Students overwhelmingly believe expert readers understand on the first pass. Watching you get stuck and recover is doing something no worksheet does.
+
+## Realistic rollout
+
+Don't deploy all of this. It'll collapse by week three.
+
+- **Weeks 1–2:** Phase 0 only. Front-load before every reading. Nothing else changes.
+- **Weeks 3–4:** Add Phase 3 (closed-book retrieval). It's the cheapest and replaces rereading directly.
+- **Month 2:** Add Phase 1–2 on *one* passage per unit — the hardest one. Not every reading.
+- **Month 3:** Add the weekly morphology routine.
+- **Ongoing:** Think-aloud once a quarter.
+
+Front-loading alone, done consistently, will probably outperform the full protocol done sporadically.
+
+## Knowing whether it's working
+
+Cheap and honest: pick a passage from a *future* unit that you haven't taught. Give students 10 minutes to read it cold, then 4 questions — two literal, two inferential. Do this in September, January, and May, with different passages of comparable difficulty.
+
+It's not a controlled study and won't isolate your intervention from ordinary maturation. But it tells you the direction, which is what you actually need. Track the inferential questions separately — that's where change shows up first.
+
+---
+
+## What I need from you to go further
+
+Tell me the unit and I'll build the specific scaffolds — which passages to front-load and how, which structure organizer fits each section, the actual self-explanation prompts keyed to the text. That's where this stops being general and starts being usable Monday.
+
+Also worth saying: for the citations, your school librarian can pull all six PDFs from one email, and they're better at this than I am here. If you want, I'll draft that request.",444.781,504.781,message,assistant,,,,claude-opus-5,4079,b5589221-b616-4100-9cc0-571ad7b9105f,text
+ai,Edwin,"So knowing that you can't verify any of this, I still need something I can use Monday. Go ahead and give me your best recommendations anyway — but mark which specific claims you'd bet on and which you're actually unsure about.",3358.257,3366.457,message,user,,,,,,f32a5bd1-4171-4846-a241-46ce126fa766,text
+ai,Claude,"Good — that's the right call. Most of what I'd recommend doesn't rest on the numbers I couldn't verify, and I can tell you fairly precisely where the load-bearing beams are.
+
+---
+
+# Part 1: The confidence ledger
+
+## Claims I'd bet real money on
+
+These are supported by large, replicated literatures rather than any single study, so my inability to verify one citation doesn't threaten them.
+
+- **Prior knowledge of the topic is one of the largest determinants of whether a student understands a given text.** If they can't read your chapter, insufficient background knowledge is the first hypothesis, not a missing strategy.
+- **Retrieval practice beats rereading for retention.** One of the most replicated findings in cognitive psychology. Not close.
+- **Highlighting and rereading are near-worthless as study methods** relative to the time they consume — and they're what your students default to.
+- **Generating an explanation in your own words beats passively receiving one.** The self-explanation and elaborative-interrogation work is consistent on this.
+- **Writing about a text improves comprehension of that text.** Robust, and cheap to implement.
+- **Feedback matters** — retrieval without checking answers can entrench errors.
+
+## Probably true, and I'd act on it
+
+- **Strategy instruction has steeply diminishing returns.** A little goes a long way; semester-long strategy curricula are poor value. I find the argument persuasive and think the evidence supports it, but it's more contested than the items above.
+- **Making text structure explicit helps** with expository science text. I'm confident of the direction. I'm *not* confident it's as strong as I implied two messages ago, or that it outranks the other moves.
+- **Integrated content-and-literacy instruction beats bolt-on reading instruction** in science. Reasonably confident directionally; the trial evidence I'd want you to check.
+
+## Genuinely unsure — don't build your case on these
+
+- **Any specific effect size I've given you.** All reconstructed. Already covered.
+- **Whether morphology instruction transfers to reading comprehension.** I'd bet it helps students learn and retain *science vocabulary*. I'd bet only weakly that it improves comprehension beyond the words taught. I presented this more favorably than I should have.
+- **Whether a demo or video front-loads better than a plain verbal explanation.** The principle (build knowledge first) I'd bet on. The delivery mechanism is my guess, not a finding.
+- **Whether any of this shifts standardized test scores within one school year.** Honestly, I'm skeptical. Expect effects on your own assessments well before anything shows up on a state test, if it ever does.
+- **Optimal dosage and chunk size** in the protocol below. The timings are reasoned guesses calibrated to a 50-minute period, not research-derived.
+
+## Would bet against
+
+- Generic reading-strategy programs run as a standalone unit divorced from content.
+- Assigning silent chapter reading as homework and expecting comprehension to result.
+- Anything sold as a comprehension ""program"" with a large price tag and no independent evaluation.
+
+---
+
+# Part 2: Monday
+
+Pick the hardest two or three paragraphs in whatever you're teaching this week. Not the whole section — a passage you could read aloud in ninety seconds.
+
+### Before class (15 min prep)
+
+1. Read the passage and write, in one sentence, **the mechanism it explains**. If you can't, pick a different passage.
+2. Identify its structure. Most science passages are cause/effect chains or processes.
+3. Write three self-explanation prompts (templates below).
+4. Decide your front-load: how will you give them the idea *before* they read it?
+
+### In class
+
+**0–8 min — Front-load. Book closed.**
+
+Give them the phenomenon in plain language. Demo, sketch on the board, short video, or just talk. No textbook vocabulary yet — or if you use a term, define it concretely on the spot.
+
+> ""Here's what's going on. Water moves across the membrane toward wherever there's more dissolved stuff. That's it. That's the whole idea. Everything in the reading is a detail on top of that sentence.""
+
+Checkpoint before moving on: cold-call two students with *""What's this about?""* If they can't answer, spend three more minutes. Do not proceed to the text.
+
+**8–10 min — Name the structure.**
+
+> ""This passage is a chain — each thing causes the next. Your job is to find the links. Draw four boxes with arrows.""
+
+**10–22 min — Chunked read with written self-explanation.**
+
+Read one paragraph aloud yourself, or have them read it silently. Stop. One prompt, in writing, 60–90 seconds:
+
+- *""Say that in your own words. No textbook vocabulary allowed.""*
+- *""Why does that happen? What's the actual mechanism?""*
+- *""What would break if that step didn't happen?""*
+- *""How does that connect to the demo?""*
+
+Repeat for each paragraph, rotating prompts. Between chunks, take 30 seconds of answers from two or three students. Don't correct everything — correct the mechanism errors, let the phrasing go.
+
+**22–27 min — Closed-book retrieval + repair.**
+
+> ""Books shut. Two minutes: write everything you can about how this works.""
+
+Then: *""Open up. Different color pen. Mark what you missed and what you got wrong.""*
+
+The repair step is non-negotiable — it's where the feedback lives.
+
+### If it goes badly
+
+- **They can't self-explain at all** → your front-load was too thin. Next time, double it and cut a paragraph from the reading.
+- **They write the textbook sentence back at you** → the ""no textbook vocabulary"" constraint isn't being enforced. Say it every time.
+- **It takes 40 minutes, not 25** → normal on the first attempt. Cut to one paragraph, not three.
+- **Retrieval writing is blank** → don't panic or reteach. That's diagnostic information you didn't have before, and it's the point.
+
+---
+
+# Part 3: The next month
+
+Add one thing at a time. Front-loading alone, done every single time, will likely outperform this full protocol done occasionally.
+
+| When | Add | My confidence in the payoff |
+|---|---|---|
+| Week 1–2 | Front-load before every reading, nothing else | High |
+| Week 3–4 | Closed-book retrieval + repair | High |
+| Month 2 | Full protocol on one hard passage per unit | Moderate |
+| Month 2 | Stop assigning silent chapter reading as homework | High (it's mostly not working now) |
+| Month 3 | Weekly 5-min morphology routine | Moderate for vocabulary, low for comprehension transfer |
+| Quarterly | Think-aloud through a hard paragraph, narrating your own confusion | Moderate, and cheap |
+
+### Checking whether it's working
+
+Cold-read passage from a future unit, four questions — two literal, two inferential. Do it in September, January, May.
+
+This is not a controlled study and won't separate your teaching from ordinary maturation. But watch the **inferential** questions specifically; that's where change surfaces first, and it's the honest signal available to you without a research design you don't have time to run.
+
+---
+
+If you want, tell me the unit and I'll write the actual front-load script, the structure organizer, and the three prompts against your real passage. I can also put the Monday protocol into a one-page printable if a paper version on your desk would be more useful than scrolling this.",3414.724,3474.724,message,assistant,,,,claude-opus-5,3659,568a8f83-2582-4407-b7f8-cf6bfb59b630,text
+ai,Edwin,Yes — put the Monday protocol into a one-page printable for me.,5641.925,5659.687,message,user,,,,,,8cb8aaa3-f93e-40ea-8c7e-2b24cd6f3d89,text
+ai,Claude,I'll build it as a print-ready page.,5659.687,5662.02,message,assistant,,,,claude-opus-5,6668,ae541471-487c-4386-8224-a77404c3d3f9,text
+ai,Claude,"I can't write files in this session, so I can't hand you a rendered HTML page — here's the one-pager as text instead. Paste it into Google Docs or Word, set margins to 0.5"", body text to 10pt, and it lands on a single page.
+
+---
+
+# MONDAY READING PROTOCOL — 27 min
+**One hard passage — 2–3 paragraphs, not a whole section.**
+
+---
+
+### BEFORE CLASS (15 min)
+
+1. Write, in one sentence, **the mechanism the passage explains.** If you can't, pick a different passage.
+2. Name its structure — most science text is a cause/effect chain or a process.
+3. Choose three self-explanation prompts from the list below.
+4. Decide the front-load: how will they get the idea *before* they read it?
+
+---
+
+### 0–8 MIN — FRONT-LOAD THE KNOWLEDGE · *book shut*
+
+Give them the phenomenon in plain language — demo, board sketch, short video, or just talk. No textbook vocabulary; if you must use a term, define it concretely on the spot.
+
+> **Say something like:** ""Here's what's going on. Water moves across the membrane toward wherever there's more dissolved stuff. That's it — that's the whole idea. Everything in the reading is a detail on top of that sentence.""
+
+⚠ **GATE:** Cold-call two students with *""What's this about?""* If they can't answer, spend three more minutes here. **Do not open the book yet.**
+
+---
+
+### 8–10 MIN — NAME THE STRUCTURE OUT LOUD
+
+Tell them the shape of the text and hand them a blank organizer that matches.
+
+> **Say something like:** ""This passage is a chain — each thing causes the next. Your job is to find the links. Draw four boxes with arrows between them.""
+
+**Chain** → boxes + arrows · **Compare** → two columns · **Process** → numbered steps · **Claim/evidence** → claim box + bullets
+
+---
+
+### 10–22 MIN — CHUNKED READ + WRITTEN SELF-EXPLANATION
+
+One paragraph at a time. Stop. One prompt, **in writing**, 60–90 seconds. Rotate prompts — never the same one twice. Take answers from two or three students between chunks. Correct mechanism errors; let awkward phrasing go.
+
+- → *""Say that in your own words. No textbook vocabulary allowed.""*
+- → *""Why does that happen? What's the actual mechanism?""*
+- → *""What would break if that step didn't happen?""*
+- → *""How does that connect to the demo?""*
+
+---
+
+### 22–27 MIN — CLOSED-BOOK RETRIEVAL, THEN REPAIR
+
+> **Say exactly this:** ""Books shut. Two minutes — write everything you can about how this works.""
+> …then: ""Open up. Different color pen. Mark what you missed and what you got wrong.""
+
+⚠ **The repair step is non-negotiable.** Retrieval without checking can entrench errors. Never skip it for time — cut a paragraph instead.
+
+---
+
+### WHEN IT GOES SIDEWAYS
+
+| | |
+|---|---|
+| **They can't self-explain at all** — Front-load was too thin. Next time double it and cut a paragraph. | **They write the textbook sentence back** — The ""no textbook vocabulary"" rule isn't being enforced. Say it every single time. |
+| **It took 40 min, not 25** — Normal on the first run. Cut to one paragraph, not three. Timings tighten fast. | **The retrieval writing is blank** — Don't panic or reteach on the spot. That's diagnostic information you didn't have. That's the point. |
+
+---
+
+**ROLLOUT:** Weeks 1–2, front-load only. Weeks 3–4, add retrieval + repair. Month 2, full protocol on one hard passage per unit. Front-loading done every time beats the full protocol done occasionally.
+
+**NOTE ON CONFIDENCE:** Timings are calibrated to a 50-minute period, not derived from research. The underlying moves — build knowledge first, generate rather than reread, retrieve with feedback — rest on well-replicated findings. The specific dosage does not.
+
+---
+
+Two formatting notes for the paste: the troubleshooting table will look better if you convert it to a 2×2 text box grid, and the ⚠ markers can just be bold if the symbol doesn't render cleanly in your font.
+
+Send me the unit and passage and I'll fill in the real front-load script, the matching organizer, and three prompts written against your actual text.",5733.296,5734.296,message,assistant,,,,claude-opus-5,1731,4e5435b6-30af-41fa-bbd4-baa03eda8f2a,text

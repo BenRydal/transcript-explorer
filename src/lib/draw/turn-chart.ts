@@ -9,6 +9,7 @@ import type { Bounds } from './types/bounds';
 import { CANVAS_SPACING } from '../constants/ui';
 import { drawPlayhead, getWordColor } from './draw-utils';
 import { DrawContext } from './draw-context';
+import { MIN_BUBBLE_SIZE, turnBubbleHeight } from './turn-chart-scaling';
 
 function formatDuration(seconds: number): string {
 	return `${Math.round(seconds)}s`;
@@ -21,13 +22,17 @@ const VERTICAL_PADDING = 12;
 const STRIP_HEIGHT_RATIO = 0.1;
 const MIN_STRIP_HEIGHT = 20;
 const MAX_STRIP_HEIGHT = 32;
-// Silence (gap) bars  -  muted cool grey that reads on both themes.
+// Gap bars. Cool grey is the default, and in an AI session marks machine time;
+// warm tan marks the human's own gaps. Kept close in saturation so the two read
+// as variants of one category rather than unrelated events. Both on both themes.
 const GAP_COLOR = '#94a3b8';
+const USER_GAP_COLOR = '#c08b5c';
 const MARKER_HEIGHT = 8;
 const ROW_GAP = 2;
 const MIN_MARKER_WIDTH = 2;
 const LEGEND_DOT_RADIUS = 5;
 const LEGEND_DOT_LEFT_OFFSET = 8;
+const LEGEND_DOT_SPACING = 8;
 
 interface SelectedTurn {
 	turn: DataPoint[] | '';
@@ -73,7 +78,10 @@ export class TurnChart {
 	cursorPlayheadTime: number | null = null;
 	private stripBounds: Bounds | null;
 	private panelBottom: number;
+	/** Turn length that maps to a full-height bubble. */
 	private maxTurnLength: number;
+	/** AI transcripts size by area; see turn-chart-scaling. */
+	private useAreaScaling: boolean;
 
 	constructor(ctx: DrawContext, pos: Bounds) {
 		this.ctx = ctx;
@@ -99,6 +107,7 @@ export class TurnChart {
 		this.yPosHalfHeight = this.bounds.y + this.bounds.height / 2;
 		this.userSelectedTurn = { turn: '', color: '', xCenter: 0, yCenter: 0, width: 0, height: 0 };
 		this.yPosSeparate = this.getYPosTopSeparate();
+		this.useAreaScaling = this.ctx.transcript.sourceKind === 'ai';
 		// When scaleToVisibleData is enabled, we'll compute this in draw() from visible data
 		this.maxTurnLength = this.ctx.config.scaleToVisibleData ? 0 : this.ctx.transcript.largestTurnLength;
 	}
@@ -227,30 +236,33 @@ export class TurnChart {
 		const turnData = turnArray[0];
 		const xStart = this.getPixelValueFromTime(turnData.startTime);
 		const xEnd = this.getPixelValueFromTime(turnData.endTime);
-		const width = xEnd - xStart;
-		const xCenter = xStart + width / 2;
+		// A brief turn inside a long session is sub-pixel wide however long it is,
+		// so the floor applies on this axis too. Centred on the true midpoint so
+		// widening it doesn't shift the bubble off its own time span.
+		const width = this.useAreaScaling ? Math.max(MIN_BUBBLE_SIZE, xEnd - xStart) : xEnd - xStart;
+		const xCenter = (xStart + xEnd) / 2;
 		const [height, yCenter] = this.getCoordinates(turnArray.length, speakerIndex);
 
 		const color = getWordColor(turnData.codes, user.color, this.ctx.codeColorMap, this.ctx.config.codeColorMode);
 		this.setStrokes(this.ctx.sk.color(color));
 		this.ctx.sk.ellipse(xCenter, yCenter, width, height);
 
-		if (this.ctx.sk.overRect(xStart, yCenter - height / 2, width, height)) {
+		if (this.ctx.sk.overRect(xCenter - width / 2, yCenter - height / 2, width, height)) {
 			this.userSelectedTurn = { turn: turnArray, color, xCenter, yCenter, width, height };
 		}
 	}
 
 	/** Determines the coordinates for turn bubbles */
 	getCoordinates(turnLength: number, speakerIndex: number): [number, number] {
-		let height: number, yCenter: number;
+		let lane: number, yCenter: number;
 		if (this.ctx.config.separateToggle) {
-			height = this.ctx.sk.map(turnLength, 0, this.maxTurnLength, 0, this.verticalLayoutSpacing);
+			lane = this.verticalLayoutSpacing;
 			yCenter = this.yPosSeparate + this.verticalLayoutSpacing * speakerIndex;
 		} else {
-			height = this.ctx.sk.map(turnLength, 0, this.maxTurnLength, 0, this.bounds.height);
+			lane = this.bounds.height;
 			yCenter = this.yPosHalfHeight;
 		}
-		return [height, yCenter];
+		return [turnBubbleHeight(turnLength, this.maxTurnLength, lane, this.useAreaScaling), yCenter];
 	}
 
 	setStrokes(color: p5.Color): void {
@@ -262,7 +274,12 @@ export class TurnChart {
 	drawText(turnArray: DataPoint[], speakerColor: string): void {
 		const speaker = turnArray[0].speaker;
 		const combined = turnArray.map((e) => e.word).join(' ');
-		showTooltip(this.ctx.sk.mouseX, this.ctx.sk.mouseY, `<b>${speaker}</b>\n${combined}`, speakerColor, this.panelBottom);
+		// Under area scaling the bubble is no longer a direct readout of turn
+		// length, so the exact count belongs in the tooltip.
+		const heading = this.useAreaScaling
+			? `<b>${speaker}</b> <span style="font-size: 0.85em; opacity: 0.7">· ${turnArray.length} words</span>`
+			: `<b>${speaker}</b>`;
+		showTooltip(this.ctx.sk.mouseX, this.ctx.sk.mouseY, `${heading}\n${combined}`, speakerColor, this.panelBottom);
 	}
 
 	getVerticalLayoutSpacing(height: number): number {
@@ -289,14 +306,18 @@ export class TurnChart {
 		const turns = this.getTurnRanges(turnData);
 		const markers = [...this.buildOverlapMarkers(turns, topRowY), ...this.buildGapMarkers(turns, bottomRowY)];
 
-		// Legend dots
+		// Legend dots. An AI session splits the gap row into human and machine time,
+		// so its key carries both colours rather than leaving one unexplained.
 		const overlapColor = this.ctx.theme.danger;
 		const dotX = strip.x + LEGEND_DOT_LEFT_OFFSET;
 		this.ctx.sk.noStroke();
 		this.ctx.sk.fill(overlapColor);
 		this.ctx.sk.ellipse(dotX, topRowY + MARKER_HEIGHT / 2, LEGEND_DOT_RADIUS, LEGEND_DOT_RADIUS);
-		this.ctx.sk.fill(GAP_COLOR);
-		this.ctx.sk.ellipse(dotX, bottomRowY + MARKER_HEIGHT / 2, LEGEND_DOT_RADIUS, LEGEND_DOT_RADIUS);
+		const gapKey = this.ctx.transcript.sourceKind === 'ai' ? [USER_GAP_COLOR, GAP_COLOR] : [GAP_COLOR];
+		gapKey.forEach((c, i) => {
+			this.ctx.sk.fill(c);
+			this.ctx.sk.ellipse(dotX + i * LEGEND_DOT_SPACING, bottomRowY + MARKER_HEIGHT / 2, LEGEND_DOT_RADIUS, LEGEND_DOT_RADIUS);
+		});
 
 		// Draw markers
 		this.ctx.sk.noStroke();
@@ -340,6 +361,58 @@ export class TurnChart {
 		return ranges.sort((a, b) => a.startTime - b.startTime);
 	}
 
+	/**
+	 * Wording for temporal relations between turns.
+	 *
+	 * In conversation these are interactional events: two people talking at once
+	 * is an overlap, a gap is silence. In an agentic session they are execution
+	 * facts — sub-agents run in parallel by design, and a gap is the model
+	 * working. Naming them as interruption and silence there reports a
+	 * scheduling artefact as conversational conduct.
+	 */
+	private get overlapLabel(): string {
+		return this.ctx.transcript.sourceKind === 'ai' ? 'Concurrent' : 'Overlap';
+	}
+
+	/**
+	 * Whether a speaker is the human participant.
+	 *
+	 * Relies on the role precedence in source-kind.ts: a delegated sub-agent also
+	 * carries a `user` row, for the prompt it was handed, so first-role-seen would
+	 * report sub-agents as people. Undefined for human transcripts, where every
+	 * speaker is a person and the distinction is meaningless.
+	 */
+	private isHumanSpeaker(speaker: string): boolean {
+		return this.userMap.get(speaker)?.user.role === 'user';
+	}
+
+	/**
+	 * A gap belongs to whoever speaks next — they are the party preparing during
+	 * it.
+	 *
+	 * For an AI session that split is the point: the pause before a prompt is the
+	 * person reading and composing, the pause before a model turn is inference.
+	 * Reporting both as the model's latency attributes the researcher's own
+	 * thinking time to the machine. In the bundled sessions the human's share of
+	 * gap time is a clear minority but never negligible, which is what makes the
+	 * second colour worth its cost.
+	 *
+	 * Tool execution is deliberately not a third case, but that call is provisional.
+	 * A gap before a `tool_call` is the model deciding what to call rather than the
+	 * tool running, and gaps before an actual `tool_result` are currently a small
+	 * enough share not to earn their own colour. That share is an artefact of how
+	 * the converter times rows: it stretches every event to meet the next one, so
+	 * the only gaps that survive are the long ones it leaves deliberately, and a
+	 * tool's real execution time stays hidden inside its own bar. Once the converter
+	 * emits measured durations, tool time will surface as gaps and this should be
+	 * measured again — see tools/claude-code-converter.
+	 */
+	private gapAttribution(nextSpeaker: string): { label: string; color: string } {
+		if (this.ctx.transcript.sourceKind !== 'ai') return { label: 'Silence', color: GAP_COLOR };
+		if (this.isHumanSpeaker(nextSpeaker)) return { label: 'User thinking', color: USER_GAP_COLOR };
+		return { label: 'Model working', color: GAP_COLOR };
+	}
+
 	private buildOverlapMarkers(turns: TurnRange[], rowY: number): AnnotationMarker[] {
 		const markers: AnnotationMarker[] = [];
 		for (let i = 0; i < turns.length; i++) {
@@ -359,7 +432,7 @@ export class TurnChart {
 					h: MARKER_HEIGHT,
 					color: this.ctx.theme.danger,
 					firstDataPoint: turns[j].firstDataPoint,
-					tooltipContent: `<b>Overlap · ${formatDuration(duration)}</b>\n<span style="font-size: 0.85em; opacity: 0.7"><span style="color: ${this.userMap.get(turns[i].speaker)?.user.color ?? '#fff'}">${turns[i].speaker}</span> & <span style="color: ${this.userMap.get(turns[j].speaker)?.user.color ?? '#fff'}">${turns[j].speaker}</span>\n${formatTimeCompact(start)} - ${formatTimeCompact(end)}</span>`
+					tooltipContent: `<b>${this.overlapLabel} · ${formatDuration(duration)}</b>\n<span style="font-size: 0.85em; opacity: 0.7"><span style="color: ${this.userMap.get(turns[i].speaker)?.user.color ?? '#fff'}">${turns[i].speaker}</span> & <span style="color: ${this.userMap.get(turns[j].speaker)?.user.color ?? '#fff'}">${turns[j].speaker}</span>\n${formatTimeCompact(start)} - ${formatTimeCompact(end)}</span>`
 				});
 			}
 		}
@@ -373,14 +446,15 @@ export class TurnChart {
 			if (gapDuration <= 0) continue;
 			const x = this.getPixelValueFromTime(turns[i].endTime);
 			const xEnd = this.getPixelValueFromTime(turns[i + 1].startTime);
+			const { label, color } = this.gapAttribution(turns[i + 1].speaker);
 			markers.push({
 				x,
 				w: Math.max(MIN_MARKER_WIDTH, xEnd - x),
 				y: rowY,
 				h: MARKER_HEIGHT,
-				color: GAP_COLOR,
+				color,
 				firstDataPoint: turns[i].firstDataPoint,
-				tooltipContent: `<b>Silence · ${formatDuration(gapDuration)}</b>\n<span style="font-size: 0.85em; opacity: 0.7"><span style="color: ${this.userMap.get(turns[i].speaker)?.user.color ?? '#fff'}">${turns[i].speaker}</span> → <span style="color: ${this.userMap.get(turns[i + 1].speaker)?.user.color ?? '#fff'}">${turns[i + 1].speaker}</span>\n${formatTimeCompact(turns[i].endTime)} - ${formatTimeCompact(turns[i + 1].startTime)}</span>`
+				tooltipContent: `<b>${label} · ${formatDuration(gapDuration)}</b>\n<span style="font-size: 0.85em; opacity: 0.7"><span style="color: ${this.userMap.get(turns[i].speaker)?.user.color ?? '#fff'}">${turns[i].speaker}</span> → <span style="color: ${this.userMap.get(turns[i + 1].speaker)?.user.color ?? '#fff'}">${turns[i + 1].speaker}</span>\n${formatTimeCompact(turns[i].endTime)} - ${formatTimeCompact(turns[i + 1].startTime)}</span>`
 			});
 		}
 		return markers;

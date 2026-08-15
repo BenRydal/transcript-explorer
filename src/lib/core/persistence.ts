@@ -1,8 +1,8 @@
 import { browser } from '$app/environment';
 import { get } from 'svelte/store';
 import { DataPoint } from '../../models/dataPoint';
-import { Transcript, type TimingMode } from '../../models/transcript';
-import type { User } from '../../models/user';
+import { Transcript, type TimingMode, type SourceKind } from '../../models/transcript';
+import type { User, SpeakerRole } from '../../models/user';
 import TranscriptStore from '../../stores/transcriptStore';
 import UserStore from '../../stores/userStore';
 import CodeStore, { type CodeEntry } from '../../stores/codeStore';
@@ -10,6 +10,20 @@ import FiltersStore from '../../stores/filtersStore';
 import { autosaveStatus } from '../../stores/autosaveStore';
 
 const STORAGE_KEY = 'transcript-explorer-autosave';
+
+/**
+ * Above this many words, autosave is skipped.
+ *
+ * State is serialised one object per word, so a large transcript produces tens
+ * of megabytes — far past the ~5 MB localStorage allows. Every attempt threw,
+ * the failure was swallowed, and the user was left with a permanent error
+ * indicator; the only real effect was a long synchronous stall on the main
+ * thread each time a speaker was toggled, and again on tab close.
+ *
+ * Skipping is honest about what localStorage can hold. Lifting it properly
+ * means a storage backend without the quota, not a bigger string.
+ */
+const MAX_AUTOSAVE_WORDS = 120_000;
 
 interface PersistedDataPoint {
 	speaker: string;
@@ -32,15 +46,24 @@ interface PersistedTranscript {
 	maxCountOfMostRepeatedWord: number;
 	mostFrequentWord: string;
 	timingMode: TimingMode;
+	sourceKind?: SourceKind;
 }
 
 interface PersistedUser {
 	enabled: boolean;
 	name: string;
 	color: string;
+	role?: SpeakerRole;
 }
 
+/**
+ * Bumped when the persisted shape changes incompatibly. State without a version
+ * predates this field and is restored as a human transcript.
+ */
+const STATE_VERSION = 1;
+
 interface PersistedState {
+	version?: number;
 	transcript: PersistedTranscript;
 	users: PersistedUser[];
 	codes?: CodeEntry[];
@@ -55,6 +78,14 @@ export function saveState(): void {
 	if (!browser) return;
 
 	const transcript = get(TranscriptStore);
+	if (transcript.wordArray.length > MAX_AUTOSAVE_WORDS) {
+		// Bail before serialising: the string would be tens of megabytes and the
+		// write is guaranteed to be rejected. This is a deliberate skip rather
+		// than a failure, so leave the indicator idle instead of showing an
+		// error the user can do nothing about.
+		autosaveStatus.reset();
+		return;
+	}
 	const users = get(UserStore);
 	const codes = get(CodeStore);
 	const config = get(FiltersStore);
@@ -87,17 +118,20 @@ export function saveState(): void {
 			largestNumOfTurnsByASpeaker: transcript.largestNumOfTurnsByASpeaker,
 			maxCountOfMostRepeatedWord: transcript.maxCountOfMostRepeatedWord,
 			mostFrequentWord: transcript.mostFrequentWord,
-			timingMode: transcript.timingMode
+			timingMode: transcript.timingMode,
+			sourceKind: transcript.sourceKind
 		},
 		users: users.map((u) => ({
 			enabled: u.enabled,
 			name: u.name,
-			color: u.color
+			color: u.color,
+			role: u.role
 		})),
 		codes: codes.length > 0 ? codes : undefined,
 		codeColorMode: config.codeColorMode || undefined,
 		showUncoded: config.showUncoded === false ? false : undefined,
-		savedAt: Date.now()
+		savedAt: Date.now(),
+		version: STATE_VERSION
 	};
 
 	try {
@@ -133,7 +167,19 @@ export function loadState(): PersistedState | null {
 	try {
 		const stored = localStorage.getItem(STORAGE_KEY);
 		if (!stored) return null;
-		return JSON.parse(stored) as PersistedState;
+		const parsed = JSON.parse(stored) as PersistedState;
+		// Guard against a truncated or hand-edited payload: restoring a partial
+		// state silently produces a transcript with no words and no speakers.
+		if (!parsed || typeof parsed !== 'object') return null;
+		if (!parsed.transcript || !Array.isArray(parsed.transcript.wordArray)) return null;
+		if (!Array.isArray(parsed.users)) return null;
+		if (parsed.version !== undefined && parsed.version > STATE_VERSION) {
+			console.warn(
+				`Saved session is version ${parsed.version}, newer than this build supports (${STATE_VERSION}). Ignoring it.`
+			);
+			return null;
+		}
+		return parsed;
 	} catch (e) {
 		console.error('Failed to load state from localStorage:', e);
 		return null;
@@ -160,8 +206,15 @@ export function restoreState(): boolean {
 	transcript.maxCountOfMostRepeatedWord = state.transcript.maxCountOfMostRepeatedWord;
 	transcript.mostFrequentWord = state.transcript.mostFrequentWord;
 	transcript.timingMode = state.transcript.timingMode;
+	// Absent in sessions saved before source kind existed; those are human.
+	transcript.sourceKind = state.transcript.sourceKind ?? 'human';
 
-	const users: User[] = state.users.map((u) => ({ name: u.name, color: u.color, enabled: u.enabled }));
+	const users: User[] = state.users.map((u) => ({
+		name: u.name,
+		color: u.color,
+		enabled: u.enabled,
+		role: u.role
+	}));
 
 	TranscriptStore.set(transcript);
 	UserStore.set(users);

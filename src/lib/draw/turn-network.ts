@@ -26,6 +26,8 @@ const ARROW_SIZE = 8;
 const SELF_LOOP_RADIUS_RATIO = 0.05;
 const SELF_LOOP_GAP = Math.PI / 3;
 const NODE_LABEL_RATIO = 0.025;
+/** Characters kept when short labels are on. */
+const SHORT_LABEL_CHARS = 5;
 const EDGE_LABEL_RATIO = 0.02;
 const OVERLAY_OPACITY = 180;
 const EDGE_HIT_TOLERANCE = 8;
@@ -215,6 +217,19 @@ export class TurnNetwork {
 			return { nodes: [], nodeMap: new Map(), edges: [], maxWeight: 0, centerX, centerY };
 		}
 
+		// Sizing is linear against the largest speaker, which assumes speakers are
+		// broadly comparable. In an AI session one participant can carry tens of
+		// thousands of tokens of tool output while sub-agents carry hundreds, so
+		// everything but the leader collapses into the bottom few percent of the
+		// range: two speakers differing eightfold in the data end up about two
+		// pixels apart on screen.
+		//
+		// For those transcripts, size by square root so the mapped value tracks
+		// area rather than radius, which is how size is actually read. Human
+		// transcripts keep the existing linear map so their rendering is
+		// untouched.
+		const useAreaScaling = this.ctx.transcript.sourceKind === 'ai';
+
 		let maxWordCount = 0;
 		if (!this.ctx.config.scaleToVisibleData && this.fullTranscriptMaxWordCount > 0) {
 			maxWordCount = this.fullTranscriptMaxWordCount;
@@ -223,6 +238,12 @@ export class TurnNetwork {
 				if (stats.wordCount > maxWordCount) maxWordCount = stats.wordCount;
 			}
 		}
+
+		const scaleNodeRadius = (wordCount: number, max: number, min: number, cap: number) => {
+			if (max <= 0) return min;
+			const t = useAreaScaling ? Math.sqrt(wordCount / max) : wordCount / max;
+			return min + Math.min(1, Math.max(0, t)) * (cap - min);
+		};
 
 		const layoutRadius = this.minDim * LAYOUT_RADIUS_FACTOR;
 		const minNodeRadius = Math.max(15, this.minDim * MIN_NODE_RADIUS_RATIO);
@@ -238,7 +259,7 @@ export class TurnNetwork {
 				speaker,
 				x: speakers.length === 1 ? centerX : centerX + Math.cos(angle) * layoutRadius,
 				y: speakers.length === 1 ? centerY : centerY + Math.sin(angle) * layoutRadius,
-				radius: this.ctx.sk.map(stats.wordCount, 0, maxWordCount, minNodeRadius, maxNodeRadius, true),
+				radius: scaleNodeRadius(stats.wordCount, maxWordCount, minNodeRadius, maxNodeRadius),
 				user: this.ctx.userMap.get(speaker),
 				turnStartPoints: stats.turnStartPoints
 			};
@@ -343,7 +364,13 @@ export class TurnNetwork {
 		this.ctx.sk.fill(pickTextColor(color, this.ctx.theme));
 		this.ctx.sk.textSize(Math.max(8, this.minDim * NODE_LABEL_RATIO));
 		this.ctx.sk.textAlign(this.ctx.sk.CENTER, this.ctx.sk.CENTER);
-		this.ctx.sk.text(this.truncateLabel(node.speaker, node.radius * 1.6), node.x, node.y);
+		// Agent speakers carry long generated identifiers that no node is wide
+		// enough to show. Shortening keeps a crowded network readable; the full
+		// name is still in the tooltip.
+		const label = this.ctx.config.turnNetworkShortLabels
+			? node.speaker.slice(0, SHORT_LABEL_CHARS)
+			: this.truncateLabel(node.speaker, node.radius * 1.6);
+		this.ctx.sk.text(label, node.x, node.y);
 	}
 
 	private drawEdge(edge: EdgeLayout, layout: Layout, highlight: boolean): void {
@@ -549,7 +576,9 @@ export class TurnNetwork {
 			content =
 				`<b>${hovered.speaker}</b>\n` +
 				`<span style="font-size: 0.85em; opacity: 0.7">` +
-				`Initiated ${plural(initiated)}  ·  Received ${plural(received)}</span>`;
+				(this.ctx.transcript.sourceKind === 'ai'
+					? `Called ${plural(initiated)}  ·  Returned ${plural(received)}</span>`
+					: `Initiated ${plural(initiated)}  ·  Received ${plural(received)}</span>`);
 		} else {
 			// Edge tooltip. In statistical mode, lead with the z-score and a
 			// plain-language label of what "significant" means here.

@@ -150,12 +150,15 @@ export function createTranscriptFromParsedText(parseResult: ParseResult, timingM
 	transcript.totalNumOfWords = wordArray.length;
 	transcript.totalConversationTurns = actualTurnIndex;
 	transcript.totalTimeInSeconds = maxTime;
+	// Only the CSV path can declare a source; everything else stays human.
+	transcript.sourceKind = parseResult.sourceKind ?? 'human';
 	Object.assign(transcript, stats);
 
 	const userColors = getUserColors();
 	const users: User[] = parseResult.speakers.map((speaker, index) => ({
 		name: speaker,
 		color: userColors[index % userColors.length],
+		role: parseResult.speakerRoles?.get(speaker),
 		enabled: true
 	}));
 

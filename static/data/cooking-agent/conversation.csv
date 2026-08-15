@@ -1,0 +1,215 @@
+te_source_kind,speaker,content,start,end,event_type,role,tool_name,agent_type,agent_id,model,tokens_out,event_id,content_type
+ai,Edwin,"Plan dinners for the next week for two people. One of us doesn't eat pork, and I have about 30 minutes on weeknights. I want the actual recipes, a consolidated shopping list organised by supermarket section, a note of what I can prep ahead, and a rough cost. Work through all of it and don't come back until it's done.",0.0,12.0,message,user,,,,,,878f539d-2d39-4727-a799-66794c31651d,text
+ai,Claude,"Assumptions I've made, since you said not to come back: **UK supermarket prices in GBP**, week running **Mon 10 – Sun 16 Aug**, two adults, weeknights capped at ~30 min active, Saturday allowed to run long (and it feeds Sunday). No pork anywhere — including bacon, chorizo, pancetta and ham, which are the usual sneaky ones.
+
+One flag: if the no-pork is religious rather than preference, Friday's prawns and the splash of white wine may also be out — swaps are noted under that recipe.
+
+---
+
+# The week
+
+| Night | Dish | Active time |
+|---|---|---|
+| Mon | One-pan lemon & garlic chicken orzo | 25 min |
+| Tue | Miso-glazed salmon, rice & tenderstem | 20 min |
+| Wed | Sweet potato & black bean tacos | 25 min |
+| Thu | Beef & green bean stir-fry with rice noodles | 20 min |
+| Fri | Prawn, tomato & chilli spaghetti | 20 min |
+| Sat | Roast chicken with potatoes, garlic & lemon | 20 min active, 1h30 total |
+| Sun | Leftover chicken panzanella with garlic flatbread | 20 min |
+
+Saturday's bird is deliberately oversized — it carries Sunday, and the carcass makes stock for next week.
+
+---
+
+## Monday — One-pan lemon & garlic chicken orzo
+
+**For 2.** 4 boneless skinless chicken thighs (~400g) · 200g orzo · 1 onion, diced · 3 garlic cloves, sliced · 1 lemon (zest + juice) · 500ml chicken stock · 100g spinach · 30g parmesan, grated · 1 tsp dried oregano · olive oil
+
+1. Season the thighs hard with salt, pepper and the oregano. Sear in a wide deep pan (or shallow casserole) over medium-high heat, 4 min a side, until well browned. Lift out.
+2. Drop heat to medium. Onion in the chicken fat, 4 min. Garlic, 1 min. Orzo, 1 min, stirring to coat.
+3. Pour in the stock and lemon zest, scrape the base, nestle the chicken back in. Simmer uncovered 10–12 min, stirring every couple of minutes so the orzo doesn't catch. It should be creamy, not dry — splash in water if it tightens.
+4. Off the heat: spinach, lemon juice, parmesan. Stir until the spinach collapses. Rest 2 min and serve.
+
+*The stirring is not optional — orzo sticks.*
+
+---
+
+## Tuesday — Miso-glazed salmon, rice & tenderstem
+
+**For 2.** 2 salmon fillets · 2 tbsp white miso · 1 tbsp honey · 1 tbsp mirin (or 2 tsp rice vinegar + pinch sugar) · 1 tsp soy sauce · 1 tsp sesame oil · thumb of ginger, grated · 150g jasmine or basmati rice · 200g tenderstem broccoli · sesame seeds · 2 spring onions
+
+1. Oven to 200°C fan. Rice on: rinse, then 150g rice to 300ml water, lid on, 10 min at a bare simmer, 10 min off the heat undisturbed.
+2. Whisk miso, honey, mirin, soy, sesame oil and ginger. Sit the salmon on a lined tray, spoon the glaze over thickly.
+3. Bake 10–12 min, until the glaze is bubbling and darkening at the edges.
+4. Tenderstem into the rice pan for the last 4 min of its rest, or steam over it. Serve with sesame seeds and sliced spring onion.
+
+*Glaze burns fast under a grill — use the oven.*
+
+---
+
+## Wednesday — Sweet potato & black bean tacos
+
+**For 2 (vegetarian).** 2 sweet potatoes (~500g), 1.5cm dice · 1 tsp cumin · 1 tsp smoked paprika · 1 tin black beans, drained · 8 small tortillas · ¼ red cabbage, shredded · ½ red onion, sliced thin · 2 limes · 150g Greek yoghurt · 1 tsp chipotle paste · 100g feta · coriander · olive oil
+
+1. Oven to 200°C fan. Toss the sweet potato with oil, cumin, paprika and salt; roast 20 min, shaking once.
+2. Meanwhile: cabbage and red onion in a bowl with the juice of half a lime and a good pinch of salt — scrunch it with your hands and leave to sit. Mix the yoghurt with chipotle and another squeeze of lime.
+3. Last 5 min, tip the black beans onto the tray with the potato to warm through. Warm the tortillas in a dry pan.
+4. Build: potato and beans, slaw, crema, crumbled feta, coriander, lime.
+
+---
+
+## Thursday — Beef & green bean stir-fry with rice noodles
+
+**For 2.** 300g rump or frying steak, sliced thin against the grain · 200g green beans, topped and halved · 3 garlic cloves · thumb of ginger · 2 tbsp soy sauce · 1 tbsp oyster sauce · 1 tsp cornflour · 1 tsp sugar · 1 red chilli · 200g flat rice noodles · neutral oil
+
+1. Toss the beef with 1 tbsp of the soy and the cornflour. Mix the remaining soy, oyster sauce, sugar and 3 tbsp water in a cup.
+2. Soak the noodles per packet (usually boiling water off the heat, 5–8 min). Drain and rinse cold so they don't glue.
+3. Screaming hot wok or large frying pan, oil, beef in a single layer. Don't touch it for 1 min, then toss 1 min more. Out onto a plate.
+4. Beans in with a splash of water, 3 min until blistered and just tender. Garlic, ginger, chilli, 30 seconds.
+5. Beef back in, sauce in, noodles in. Toss hard for 1 min until everything is glossy.
+
+*Swap the oyster sauce for hoisin if shellfish is out.*
+
+---
+
+## Friday — Prawn, tomato & chilli spaghetti
+
+**For 2.** 200g spaghetti or linguine · 200g raw king prawns · 250g cherry tomatoes, halved · 3 garlic cloves, sliced · ½ tsp chilli flakes · 100ml white wine · 1 lemon · handful parsley · 3 tbsp olive oil
+
+1. Pasta into heavily salted boiling water. Set a timer for 1 min under the packet time.
+2. Large pan, olive oil, garlic and chilli over medium — 1 min, until fragrant but pale. Tomatoes and a good pinch of salt, 5 min, pressing them so they slump into a sauce.
+3. Wine in, bubble 2 min. Prawns in, 2–3 min until just pink — pull them the moment they curl.
+4. Drain the pasta, keeping a mugful of water. Pasta into the sauce with a splash of the water, toss over the heat 1 min until it clings. Parsley, lemon juice, more olive oil.
+
+*Non-alcoholic version: 100ml chicken or vegetable stock plus a teaspoon of white wine vinegar. No parmesan on this one.*
+
+---
+
+## Saturday — Roast chicken with potatoes, garlic & lemon
+
+**For 2, with leftovers for Sunday.** 1.6kg whole chicken · 800g potatoes, halved · 1 whole garlic bulb, halved across · 1 lemon · few sprigs thyme · 30g butter, softened · olive oil · 300g carrots or a green salad
+
+1. Chicken out of the fridge 30 min ahead. Oven to 190°C fan.
+2. Dry the skin thoroughly with kitchen paper. Rub with butter, salt generously. Halved lemon and a few thyme sprigs into the cavity.
+3. Potatoes, garlic halves and remaining thyme in a roasting tin with olive oil and salt. Sit the chicken on top.
+4. Roast ~1h20 (20 min per 500g plus 20). Baste once at the halfway mark. Done when juices from the thigh run clear and a thermometer reads 74°C at the thickest part.
+5. **Rest 15 minutes** on a board — this is the difference between good and dry. Turn the oven up to 220°C and give the potatoes those 15 min to crisp.
+
+Carve one breast and both legs for tonight. Everything else goes in the fridge for Sunday.
+
+---
+
+## Sunday — Leftover chicken panzanella with garlic flatbread
+
+**For 2.** 250–300g leftover roast chicken, shredded · 400g ripe tomatoes, cut into chunks · ½ cucumber · ½ red onion, sliced thin · 150g slightly stale sourdough or ciabatta, torn · 1 tbsp capers · big handful basil · 2 tbsp red wine vinegar · 5 tbsp olive oil · 1 garlic clove · 2 flatbreads · butter
+
+1. Tomatoes into a bowl with a heavy pinch of salt. Leave 10 min — you want them weeping juice, that's the dressing base.
+2. Torn bread onto a tray with olive oil, 8 min at 200°C fan until crisp at the edges but chewy in the middle. Red onion into the vinegar to soften.
+3. Whisk the olive oil and vinegar into the tomato juices with a crushed garlic clove. Toss through tomatoes, cucumber, onion, capers, chicken and the bread. Rest 10 min so the bread drinks the dressing.
+4. Flatbreads under the grill with garlic butter. Basil torn over at the last second.
+
+**Also do this Sunday:** carcass, an onion, a carrot and a bay leaf into a pan, cover with water, simmer 1–2 hours while you get on with your day. Strain, freeze. That's two free meals' worth of stock.
+
+---
+
+# Shopping list
+
+### Fruit & vegetables
+- Onions × 4 (2 white, 1 red, plus 1 for stock)
+- Garlic — 1 bulb loose + 1 whole bulb for the roast
+- Ginger — 1 large thumb
+- Lemons × 4
+- Limes × 2
+- Red chilli × 1
+- Spinach — 100g bag
+- Tenderstem broccoli — 200g
+- Green beans — 200g
+- Sweet potatoes × 2 (~500g)
+- Red cabbage — ¼ head (or a small bag of pre-shredded)
+- Cherry tomatoes — 250g
+- Ripe vine tomatoes — 400g
+- Cucumber × 1
+- Potatoes — 800g (Maris Piper or similar)
+- Carrots — 400g
+- Spring onions — 1 bunch
+- Fresh coriander, flat-leaf parsley, basil, thyme — 1 pack each
+
+### Meat & fish
+- Boneless skinless chicken thighs — 400g
+- Whole chicken — 1.6kg
+- Rump or frying steak — 300g
+- Salmon fillets × 2
+- Raw king prawns — 200g
+
+### Chilled & dairy
+- Greek yoghurt — 150g pot
+- Feta — 100g
+- Parmesan — small piece
+- Butter — 250g block
+- Small tortillas × 8
+- Flatbreads × 2
+
+### Bakery
+- Sourdough or ciabatta loaf (buy Saturday, use Sunday — stale is better here)
+
+### Store cupboard
+- Orzo — 200g
+- Spaghetti or linguine — 200g
+- Flat rice noodles — 200g
+- Jasmine or basmati rice — 300g
+- Black beans — 1 tin
+- Chicken stock cubes or pots
+- White miso paste
+- Soy sauce
+- Oyster sauce (or hoisin)
+- Mirin or rice vinegar
+- Chipotle paste
+- Capers — small jar
+- Honey
+- Cornflour
+- Sesame seeds
+- Sesame oil
+- Olive oil, neutral oil (sunflower/rapeseed)
+- Red wine vinegar
+- Cumin, smoked paprika, dried oregano, chilli flakes, bay leaves
+- White wine — small bottle (or skip, see Friday)
+
+*Check your cupboard first — the last section is where the cost swings most. If you already own the miso, oyster sauce, chipotle and spices, you're spending roughly £10 less than the total below.*
+
+---
+
+# What to prep ahead
+
+**Sunday 9th, ~40 minutes:**
+- Dice the sweet potato for Wednesday, store in a sealed box in the fridge. It keeps fine for three days.
+- Shred the red cabbage and slice the red onion for Wednesday's slaw — dry, in a bag, no dressing yet.
+- Mix Tuesday's miso glaze in a jar. It keeps a fortnight.
+- Mix Thursday's stir-fry sauce (soy, oyster, sugar, water) in a second jar.
+- Top and tail the green beans.
+- Cook 300g of rice, cool it fast and fridge it. Tuesday and Thursday both draw on it; day-old rice also stir-fries better. *Cool within an hour and eat within two days.*
+
+**Wednesday evening:** slice Thursday's beef and toss it with the soy and cornflour. It sits happily overnight and the texture improves.
+
+**Saturday morning:** rub the chicken with butter and salt and leave it uncovered in the fridge. Dry-brining gives you noticeably crisper skin. Take it out 30 minutes before it goes in the oven.
+
+**Freezer-friendly:** Monday's orzo and Wednesday's spiced sweet potato both freeze well if you scale them up.
+
+---
+
+# Rough cost
+
+| Night | Dish | Cost for 2 |
+|---|---|---|
+| Mon | Chicken orzo | £6.50 |
+| Tue | Miso salmon | £9.50 |
+| Wed | Sweet potato tacos | £6.00 |
+| Thu | Beef stir-fry | £8.50 |
+| Fri | Prawn spaghetti | £8.00 |
+| Sat | Roast chicken | £11.50 |
+| Sun | Chicken panzanella | £6.00 |
+| | **Total** | **£56** |
+
+That's **£4 per person per meal**. Add roughly **£10** if you're buying the miso, oyster sauce, chipotle paste and capers from scratch — but those are one-off purchases that will cover months.
+
+Prices assume a mid-range supermarket (Sainsbury's/Tesco). Aldi or Lidl takes maybe £8–10 off, mostly on the salmon, prawns and steak. The two obvious levers if you want it cheaper: swap the salmon for two large trout fillets (saves ~£3) and the rump steak for chicken thigh in the stir-fry (saves ~£3).",110.693,111.693,message,assistant,,,,claude-opus-5,8676,24b02cd9-6ebf-48a6-a928-b9e6e8086764,text
