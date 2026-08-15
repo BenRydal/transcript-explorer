@@ -9,6 +9,7 @@ import type { Bounds } from './types/bounds';
 import { CANVAS_SPACING } from '../constants/ui';
 import { drawPlayhead, getWordColor } from './draw-utils';
 import { DrawContext } from './draw-context';
+import { MIN_BUBBLE_SIZE, turnBubbleHeight } from './turn-chart-scaling';
 
 function formatDuration(seconds: number): string {
 	return `${Math.round(seconds)}s`;
@@ -73,7 +74,10 @@ export class TurnChart {
 	cursorPlayheadTime: number | null = null;
 	private stripBounds: Bounds | null;
 	private panelBottom: number;
+	/** Turn length that maps to a full-height bubble. */
 	private maxTurnLength: number;
+	/** AI transcripts size by area; see turn-chart-scaling. */
+	private useAreaScaling: boolean;
 
 	constructor(ctx: DrawContext, pos: Bounds) {
 		this.ctx = ctx;
@@ -99,6 +103,7 @@ export class TurnChart {
 		this.yPosHalfHeight = this.bounds.y + this.bounds.height / 2;
 		this.userSelectedTurn = { turn: '', color: '', xCenter: 0, yCenter: 0, width: 0, height: 0 };
 		this.yPosSeparate = this.getYPosTopSeparate();
+		this.useAreaScaling = this.ctx.transcript.sourceKind === 'ai';
 		// When scaleToVisibleData is enabled, we'll compute this in draw() from visible data
 		this.maxTurnLength = this.ctx.config.scaleToVisibleData ? 0 : this.ctx.transcript.largestTurnLength;
 	}
@@ -227,30 +232,33 @@ export class TurnChart {
 		const turnData = turnArray[0];
 		const xStart = this.getPixelValueFromTime(turnData.startTime);
 		const xEnd = this.getPixelValueFromTime(turnData.endTime);
-		const width = xEnd - xStart;
-		const xCenter = xStart + width / 2;
+		// A brief turn inside a long session is sub-pixel wide however long it is,
+		// so the floor applies on this axis too. Centred on the true midpoint so
+		// widening it doesn't shift the bubble off its own time span.
+		const width = this.useAreaScaling ? Math.max(MIN_BUBBLE_SIZE, xEnd - xStart) : xEnd - xStart;
+		const xCenter = (xStart + xEnd) / 2;
 		const [height, yCenter] = this.getCoordinates(turnArray.length, speakerIndex);
 
 		const color = getWordColor(turnData.codes, user.color, this.ctx.codeColorMap, this.ctx.config.codeColorMode);
 		this.setStrokes(this.ctx.sk.color(color));
 		this.ctx.sk.ellipse(xCenter, yCenter, width, height);
 
-		if (this.ctx.sk.overRect(xStart, yCenter - height / 2, width, height)) {
+		if (this.ctx.sk.overRect(xCenter - width / 2, yCenter - height / 2, width, height)) {
 			this.userSelectedTurn = { turn: turnArray, color, xCenter, yCenter, width, height };
 		}
 	}
 
 	/** Determines the coordinates for turn bubbles */
 	getCoordinates(turnLength: number, speakerIndex: number): [number, number] {
-		let height: number, yCenter: number;
+		let lane: number, yCenter: number;
 		if (this.ctx.config.separateToggle) {
-			height = this.ctx.sk.map(turnLength, 0, this.maxTurnLength, 0, this.verticalLayoutSpacing);
+			lane = this.verticalLayoutSpacing;
 			yCenter = this.yPosSeparate + this.verticalLayoutSpacing * speakerIndex;
 		} else {
-			height = this.ctx.sk.map(turnLength, 0, this.maxTurnLength, 0, this.bounds.height);
+			lane = this.bounds.height;
 			yCenter = this.yPosHalfHeight;
 		}
-		return [height, yCenter];
+		return [turnBubbleHeight(turnLength, this.maxTurnLength, lane, this.useAreaScaling), yCenter];
 	}
 
 	setStrokes(color: p5.Color): void {
@@ -262,7 +270,12 @@ export class TurnChart {
 	drawText(turnArray: DataPoint[], speakerColor: string): void {
 		const speaker = turnArray[0].speaker;
 		const combined = turnArray.map((e) => e.word).join(' ');
-		showTooltip(this.ctx.sk.mouseX, this.ctx.sk.mouseY, `<b>${speaker}</b>\n${combined}`, speakerColor, this.panelBottom);
+		// Under area scaling the bubble is no longer a direct readout of turn
+		// length, so the exact count belongs in the tooltip.
+		const heading = this.useAreaScaling
+			? `<b>${speaker}</b> <span style="font-size: 0.85em; opacity: 0.7">· ${turnArray.length} words</span>`
+			: `<b>${speaker}</b>`;
+		showTooltip(this.ctx.sk.mouseX, this.ctx.sk.mouseY, `${heading}\n${combined}`, speakerColor, this.panelBottom);
 	}
 
 	getVerticalLayoutSpacing(height: number): number {
