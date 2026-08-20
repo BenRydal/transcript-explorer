@@ -826,11 +826,35 @@ def events_to_transcript_csv(
     return rows
 
 
+def _agent_identity(event: dict) -> tuple[str, str]:
+    """Agent type and id for a row, falling back to the speaker name.
+
+    Only the spawn and result markers carry `agent_type`/`agent_id` directly.
+    The rows a delegated agent actually produces carry neither, so its own work
+    could not be attributed back to it: 86 rows in the multi-agent session name
+    an agent as speaker while leaving both identity columns empty. The speaker
+    is written as `Agent:<type>:<id>`, so the identity is recoverable from it.
+    """
+    agent_type = event.get("agent_type") or ""
+    agent_id = event.get("agent_id") or ""
+    if agent_type and agent_id:
+        return agent_type, agent_id
+
+    speaker = str(event.get("speaker") or "")
+    if speaker.startswith("Agent:"):
+        parts = speaker.split(":")
+        if len(parts) >= 3:
+            return agent_type or parts[1], agent_id or parts[2]
+    return agent_type, agent_id
+
+
 def _make_csv_row(event: dict, start: float, end: float) -> dict:
     """Build a single CSV row from a canonical event."""
     tokens_out = ""
     if event.get("token_usage") and event["token_usage"].get("output"):
         tokens_out = event["token_usage"]["output"]
+
+    agent_type, agent_id = _agent_identity(event)
 
     return {
         SOURCE_KIND_COLUMN: SOURCE_KIND_VALUE,
@@ -841,8 +865,8 @@ def _make_csv_row(event: dict, start: float, end: float) -> dict:
         "event_type": event["event_type"],
         "role": event["role"],
         "tool_name": event.get("tool_name") or "",
-        "agent_type": event.get("agent_type") or "",
-        "agent_id": event.get("agent_id") or "",
+        "agent_type": agent_type,
+        "agent_id": agent_id,
         "model": event.get("model") or "",
         "tokens_out": tokens_out,
         "event_id": event["event_id"],
@@ -972,7 +996,9 @@ def _emit_outputs(
     print(f"Speakers ({len(speakers)}): {', '.join(speakers)}")
 
     if transcript_rows:
-        duration = transcript_rows[-1]["end"]
+        # Rows are ordered by start and may now overlap, so the last row is not
+        # necessarily the one that ends latest.
+        duration = max(r["end"] for r in transcript_rows)
         print(f"Duration: {duration:.1f}s ({duration/60:.1f}min)")
 
 

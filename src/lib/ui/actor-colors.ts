@@ -94,6 +94,30 @@ function shadeFor(base: string, position: number, size: number): string {
 }
 
 /**
+ * Prefix the converter writes for a delegated agent's own rows, as
+ * `Agent:<type>:<id>`.
+ *
+ * Role alone cannot separate a delegated agent from the primary AI: an agent's
+ * rows are recorded as `assistant`, so all eight speakers in the multi-agent
+ * session resolve to one family and every delegated agent comes out a shade of
+ * the primary AI's blue. Only the spawn and result markers carry the `agent`
+ * role, and those belong to the delegation tool rather than to any agent.
+ *
+ * `source-kind.ts` refuses to read speaker names when *detecting* whether a
+ * transcript is AI, because a human corpus can legitimately hold a speaker
+ * called Agent. That reasoning does not extend here: this runs only once a
+ * transcript has already declared itself AI, where the converter owns the
+ * naming.
+ */
+const DELEGATED_AGENT_PREFIX = 'AGENT:';
+
+/** Family a speaker belongs to, which is its role except for delegated agents. */
+function familyOf(speaker: string, role: SpeakerRole | undefined): string {
+	if (speaker.toUpperCase().startsWith(DELEGATED_AGENT_PREFIX)) return 'agent';
+	return role ?? 'unknown';
+}
+
+/**
  * Colour for every speaker in an AI transcript, keyed by speaker name.
  *
  * `speakers` is expected in transcript order and `roles` keyed the same way,
@@ -107,8 +131,7 @@ export function assignActorColors(
 	// assignment is stable across reloads.
 	const families = new Map<string, string[]>();
 	for (const speaker of speakers) {
-		const role = roles.get(speaker);
-		const key = role ?? 'unknown';
+		const key = familyOf(speaker, roles.get(speaker));
 		const bucket = families.get(key);
 		if (bucket) bucket.push(speaker);
 		else families.set(key, [speaker]);

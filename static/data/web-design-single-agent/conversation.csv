@@ -861,8 +861,8 @@ Review through these lenses and be specific — cite exact files/lines/selectors
 
 5. TRUST & CREDIBILITY — What makes a university page feel official and trustworthy that this lacks?
 
-Deliverable: Return a prioritized report in markdown with three tiers — P0 (must-fix, blocks a real university launch), P1 (high-value improvements), P2 (nice-to-have polish). For each item: a one-line title, the specific problem (with file:line or selector), and the concrete recommended fix. End with a short ""if you only do 5 things"" list. Do NOT edit any files — this is a review only; I will apply changes myself.",487.848,489.848,message,user,,,,,,87ab69b4-2cff-409e-a18f-6edf9ddd59a7,text
-ai,Agent:general-purpose:a3b1d4c8,[Read file: /Users/ben/Desktop/zzz-AI-Transcript-Data/site-agent/site/index.html],490.889,491.389,tool_call,tool,Read,,,claude-opus-4-8,,65436f30-c2ec-494a-8c99-709cd5a203c2,text
+Deliverable: Return a prioritized report in markdown with three tiers — P0 (must-fix, blocks a real university launch), P1 (high-value improvements), P2 (nice-to-have polish). For each item: a one-line title, the specific problem (with file:line or selector), and the concrete recommended fix. End with a short ""if you only do 5 things"" list. Do NOT edit any files — this is a review only; I will apply changes myself.",487.848,489.848,message,user,,general-purpose,a3b1d4c8,,,87ab69b4-2cff-409e-a18f-6edf9ddd59a7,text
+ai,Agent:general-purpose:a3b1d4c8,[Read file: /Users/ben/Desktop/zzz-AI-Transcript-Data/site-agent/site/index.html],490.889,491.389,tool_call,tool,Read,general-purpose,a3b1d4c8,claude-opus-4-8,,65436f30-c2ec-494a-8c99-709cd5a203c2,text
 ai,Tool:Read,"1	<!DOCTYPE html>
 2	<html lang=""en"">
 3	<head>
@@ -1166,7 +1166,7 @@ ai,Tool:Read,"1	<!DOCTYPE html>
 301	</body>
 302	</html>
 303",490.909,491.409,tool_result,tool,Read,,,,,9a45961c-fa2d-4872-9cdd-eb103b355ec3,text
-ai,Agent:general-purpose:a3b1d4c8,[Read file: /Users/ben/Desktop/zzz-AI-Transcript-Data/site-agent/site/styles.css],490.946,491.446,tool_call,tool,Read,,,claude-opus-4-8,,45625bfb-df21-4417-afce-f2e916fada80,text
+ai,Agent:general-purpose:a3b1d4c8,[Read file: /Users/ben/Desktop/zzz-AI-Transcript-Data/site-agent/site/styles.css],490.946,491.446,tool_call,tool,Read,general-purpose,a3b1d4c8,claude-opus-4-8,,45625bfb-df21-4417-afce-f2e916fada80,text
 ai,Tool:Read,"1	/* =====================================================================
 2	   LT 2010 — Computer Skills for the Information Age
 3	   ""The Book & The Machine"" — humanist book serif meets a monospaced
@@ -1478,7 +1478,7 @@ ai,Tool:Read,"1	/* =============================================================
 309	}
 310	html { scroll-behavior: smooth; }
 311",490.955,491.455,tool_result,tool,Read,,,,,fa392f1a-0a2e-4819-ae30-bef2ec100cae,text
-ai,Agent:general-purpose:a3b1d4c8,[Read file: /Users/ben/Desktop/zzz-AI-Transcript-Data/site-agent/site/script.js],491.857,492.357,tool_call,tool,Read,,,claude-opus-4-8,,ed722870-bee9-44e1-8008-8f527641c977,text
+ai,Agent:general-purpose:a3b1d4c8,[Read file: /Users/ben/Desktop/zzz-AI-Transcript-Data/site-agent/site/script.js],491.857,492.357,tool_call,tool,Read,general-purpose,a3b1d4c8,claude-opus-4-8,,ed722870-bee9-44e1-8008-8f527641c977,text
 ai,Tool:Read,"1	/* LT 2010 — theme toggle + scroll reveals */
 2	(function () {
 3	  ""use strict"";
@@ -1529,7 +1529,7 @@ ai,Tool:Read,"1	/* LT 2010 — theme toggle + scroll reveals */
 48	  });
 49	})();
 50",491.88,492.38,tool_result,tool,Read,,,,,d857eafe-dbb4-4328-ba53-021a4a95a898,text
-ai,Agent:general-purpose:a3b1d4c8,[Read file: /Users/ben/Desktop/zzz-AI-Transcript-Data/site-agent/context.md],492.065,492.565,tool_call,tool,Read,,,claude-opus-4-8,,301d3c90-0512-481d-ac9d-6f5e7ba99936,text
+ai,Agent:general-purpose:a3b1d4c8,[Read file: /Users/ben/Desktop/zzz-AI-Transcript-Data/site-agent/context.md],492.065,492.565,tool_call,tool,Read,general-purpose,a3b1d4c8,claude-opus-4-8,,301d3c90-0512-481d-ac9d-6f5e7ba99936,text
 ai,Tool:Read,"1	
 2	Here is some context: LT 2010, Computer Skills for the Information Age
 3	
@@ -1660,7 +1660,7 @@ The page implies online/async (""weekly discussion"", ""live online schedule"") 
 2. **Add the core syllabus block** (P0-2) — instructor/contact/office hours, credit hours, meeting time + modality, Canvas link, and a syllabus-PDF button, with university branding.
 3. **Add grading breakdown + policies, including an AI-use policy** (P0-3) — the AI policy is the credibility centerpiece for *this* course.
 4. **Restore mobile navigation** (P0-4) — the nav currently vanishes below 720px with no replacement.
-5. **Fix the contrast failures** (P0-5) — darken light-theme `--muted` (~4.4:1) and the ochre `--flag` text (~4.1:1) to clear 4.5:1; universities have a legal a11y duty.",685.664,1214.331,message,assistant,,,,claude-opus-4-8,13803,b2eea316-db4c-4f9c-84b3-8e6583aab547,text
+5. **Fix the contrast failures** (P0-5) — darken light-theme `--muted` (~4.4:1) and the ochre `--flag` text (~4.1:1) to clear 4.5:1; universities have a legal a11y duty.",685.664,1214.331,message,assistant,,general-purpose,a3b1d4c8,claude-opus-4-8,13803,b2eea316-db4c-4f9c-84b3-8e6583aab547,text
 ai,Tool:Agent,"I have everything I need — I read all four files and computed contrast ratios by hand for the key token pairs in both themes. Here is the review.
 
 ---
@@ -3175,10 +3175,10 @@ Your task this pass — assess the site's OVERALL DESIGN, STRUCTURE, and ROADMAP
 
 Deliverable: a prioritized markdown report — group as (A) Design & structure assessment, (B) Recommended additions & changes with priority tiers P0/P1/P2, and (C) a short ""top 5 next moves"" list. Cite specific file:line or selector where relevant. Review only — do NOT edit any files.
 
-Address this before completing your current task.",1854.13,1856.13,message,user,,,,,,54318a8e-9004-47ad-ac4e-a656909a3277,text
+Address this before completing your current task.",1854.13,1856.13,message,user,,general-purpose,a3b1d4c8,,,54318a8e-9004-47ad-ac4e-a656909a3277,text
 ai,Tool:SendMessage,"{""success"":true,""message"":""Agent \""a3b1d4c8760bb915d\"" had no active task; resumed from transcript in the background with your message. You'll be notified when it finishes. Output: /private/tmp/claude-502/-Users-ben-Desktop-zzz-AI-Transcript-Data-site-agent/5d0f5497-9375-4756-b8fa-bfbfd846d0d3/tasks/a3b1d4c8760bb915d.output"",""resumedAgentId"":""a3b1d4c8760bb915d"",""pin"":{""id"":""a3b1d4c8760bb915d"",""name"":""a3b1d4c8760bb915d"",""ref"":""3634e9""}}",1854.132,1854.632,tool_result,tool,SendMessage,,,,,bb30a5d0-087c-4155-a5a1-c7c8a1ce2273,text
-ai,Agent:general-purpose:a3b1d4c8,I'll re-read all four files fresh before assessing.,1856.966,1859.633,message,assistant,,,,claude-opus-4-8,1,841d08ad-e6e8-4039-a4f5-4ee74b6086e7,text
-ai,Agent:general-purpose:a3b1d4c8,[Read file: /Users/ben/Desktop/zzz-AI-Transcript-Data/site-agent/site/index.html],1857.712,1858.212,tool_call,tool,Read,,,claude-opus-4-8,,2759f79c-3b02-4279-aa2e-28f0fbfaf97d,text
+ai,Agent:general-purpose:a3b1d4c8,I'll re-read all four files fresh before assessing.,1856.966,1859.633,message,assistant,,general-purpose,a3b1d4c8,claude-opus-4-8,1,841d08ad-e6e8-4039-a4f5-4ee74b6086e7,text
+ai,Agent:general-purpose:a3b1d4c8,[Read file: /Users/ben/Desktop/zzz-AI-Transcript-Data/site-agent/site/index.html],1857.712,1858.212,tool_call,tool,Read,general-purpose,a3b1d4c8,claude-opus-4-8,,2759f79c-3b02-4279-aa2e-28f0fbfaf97d,text
 ai,Tool:Read,"1	<!DOCTYPE html>
 2	<html lang=""en"">
 3	<head>
@@ -3624,8 +3624,8 @@ ai,Tool:Read,"1	<!DOCTYPE html>
 443	</body>
 444	</html>
 445",1857.72,1858.22,tool_result,tool,Read,,,,,5d445cc2-3dab-437b-bcb8-61ee142a184d,text
-ai,Agent:general-purpose:a3b1d4c8,[Read file: /Users/ben/Desktop/zzz-AI-Transcript-Data/site-agent/site/styles.css],1858.464,1858.964,tool_call,tool,Read,,,claude-opus-4-8,,bcb8b2bb-0fd4-45ed-9d39-f326cdd06283,text
-ai,Agent:general-purpose:a3b1d4c8,[Read file: /Users/ben/Desktop/zzz-AI-Transcript-Data/site-agent/site/script.js],1858.466,1858.966,tool_call,tool,Read,,,claude-opus-4-8,,945aa0b0-2e17-4004-8aa4-4586ab1b1f15,text
+ai,Agent:general-purpose:a3b1d4c8,[Read file: /Users/ben/Desktop/zzz-AI-Transcript-Data/site-agent/site/styles.css],1858.464,1858.964,tool_call,tool,Read,general-purpose,a3b1d4c8,claude-opus-4-8,,bcb8b2bb-0fd4-45ed-9d39-f326cdd06283,text
+ai,Agent:general-purpose:a3b1d4c8,[Read file: /Users/ben/Desktop/zzz-AI-Transcript-Data/site-agent/site/script.js],1858.466,1858.966,tool_call,tool,Read,general-purpose,a3b1d4c8,claude-opus-4-8,,945aa0b0-2e17-4004-8aa4-4586ab1b1f15,text
 ai,Tool:Read,"1	/* LT 2010 — theme toggle, mobile nav, scroll reveals.
 2	   The `js` class and saved theme are set by an inline script in <head>
 3	   before first paint (prevents theme flash; keeps content visible if JS is off). */
@@ -4308,7 +4308,7 @@ The P0 defects from pass 1 are genuinely resolved: no-JS content shows (`styles.
 4. **Complete the academic content**: formal learning outcomes, per-week readings (the dropped `context.md` column), grading scale, and technology-requirements/important-dates policies.
 5. **Data-drive the schedule from local JSON** to kill the date duplication between Schedule and Assignments, and unlock an iCal export.
 
-One correctness nit worth fixing in place regardless of roadmap: the hover-fills-every-node behavior (`styles.css:317`) currently undermines the milestone system that's meant to be the timeline's signature.",1988.054,2470.721,message,assistant,,,,claude-opus-4-8,7877,f9059c44-4793-4266-8989-8b352f158088,text
+One correctness nit worth fixing in place regardless of roadmap: the hover-fills-every-node behavior (`styles.css:317`) currently undermines the milestone system that's meant to be the timeline's signature.",1988.054,2470.721,message,assistant,,general-purpose,a3b1d4c8,claude-opus-4-8,7877,f9059c44-4793-4266-8989-8b352f158088,text
 ai,Ben,"<task-notification>
 <task-id>a3b1d4c8760bb915d</task-id>
 <tool-use-id>toolu_01QL9rouRdAzRa3WQ8sZDodB</tool-use-id>

@@ -19,10 +19,12 @@ function multiAgentCast(): { speakers: string[]; roles: Map<string, SpeakerRole>
 		speakers.push(name);
 		roles.set(name, 'tool');
 	}
+	// Delegated agents record their own rows as `assistant`, the same role the
+	// primary AI carries. Only the spawn/result markers are role `agent`.
 	for (let i = 0; i < 7; i++) {
 		const name = `AGENT:GENERAL-PURPOSE:A${i}`;
 		speakers.push(name);
-		roles.set(name, 'agent');
+		roles.set(name, 'assistant');
 	}
 	return { speakers, roles };
 }
@@ -76,5 +78,26 @@ describe('assignActorColors', () => {
 		const colors = assignActorColors(['A', 'B'], new Map());
 		expect(colors.size).toBe(2);
 		expect(new Set(colors.values()).size).toBe(2);
+	});
+
+	it('separates delegated agents from the primary AI despite a shared role', () => {
+		const { speakers, roles } = multiAgentCast();
+		const colors = assignActorColors(speakers, roles);
+		const claude = colors.get('CLAUDE');
+		const agents = speakers.filter((s) => s.startsWith('AGENT:')).map((s) => colors.get(s));
+		expect(agents).toHaveLength(7);
+		for (const c of agents) expect(c).not.toBe(claude);
+	});
+
+	it('does not mistake the delegation tool for a delegated agent', () => {
+		const colors = assignActorColors(
+			['CLAUDE', 'TOOL:AGENT', 'AGENT:GENERAL-PURPOSE:A0'],
+			new Map<string, SpeakerRole>([
+				['CLAUDE', 'assistant'],
+				['TOOL:AGENT', 'agent'],
+				['AGENT:GENERAL-PURPOSE:A0', 'assistant']
+			])
+		);
+		expect(colors.get('TOOL:AGENT')).not.toBe(colors.get('AGENT:GENERAL-PURPOSE:A0'));
 	});
 });
