@@ -803,7 +803,7 @@ Hero thesis, the overview reframed as five ""you'll be able to do"" capabilities
 - **The `**` two-week units:** your source marks these but doesn't say which. Based on the date gaps I flagged **Weeks 10 and 11** (Data Storytelling and Coding). Tell me if it's different weeks.
 - **Term/year:** I labeled it ""Spring Term · Jan–Apr"" without a year, since the course is still in development. Happy to pin a specific year.
 
-Want me to adjust the palette, add an instructor/contact section, wire the nav links to real pages, or swap in a different accent? I can also add a real course logo/wordmark if you have one.",419.466,433.29,message,assistant,,,,claude-opus-4-8,852,27a1b434-b1df-4e55-83eb-d55ad369cacf,text
+Want me to adjust the palette, add an instructor/contact section, wire the nav links to real pages, or swap in a different accent? I can also add a real course logo/wordmark if you have one.",62.48,433.29,message,assistant,,,,claude-opus-4-8,852,27a1b434-b1df-4e55-83eb-d55ad369cacf,text
 ai,Ben,Have you used an agent yet in this conversation to support your work?,435.112,437.112,message,user,,,,,,dd35ee98-c583-4455-a060-e3ee8b7ff3c7,text
 ai,Claude,"No — I haven't used any agent yet in this conversation. I built the entire site directly myself using Read, Bash, Write, Skill (artifact-design), and Artifact. No `Agent` tool calls have been made.
 
@@ -2947,7 +2947,7 @@ Encode the ""2 weeks to complete"" flag *without a second color*: a small cobalt
 4. **Hero thesis** treatment. *(memorability)*
 5. **Self-hosted display face.** *(local-only polish)*
 
-I can implement any subset locally in `site/` — no artifacts. Want me to start with #1–#3 (the disciplined, low-risk wins) and show you the diff, then decide on the hero and the typeface separately? Or would you rather I do all five in one pass?",1424.048,1466.112,message,assistant,,,,claude-opus-4-8,2261,02f81d78-b624-4e7a-8cc7-7fa184ff7a82,text
+I can implement any subset locally in `site/` — no artifacts. Want me to start with #1–#3 (the disciplined, low-risk wins) and show you the diff, then decide on the hero and the typeface separately? Or would you rather I do all five in one pass?",1332.019,1466.112,message,assistant,,,,claude-opus-4-8,2261,02f81d78-b624-4e7a-8cc7-7fa184ff7a82,text
 ai,Ben,Yes implement locally,1480.764,1482.764,message,user,,,,,,b50210bc-ebdd-44de-8962-17d00980deca,text
 ai,Ben,Yes implement locally and do all 5 in one pass. ask any questions you need?,1495.671,1497.671,message,user,,,,,,b0fef4dd-d48a-4175-9ffd-dd4d58bd1441,text
 ai,Claude,"No blocking questions — I have sensible defaults for each. One thing I'll flag rather than ask: for **#5**, ""keep everything local"" rules out a Google Fonts link (that's a runtime external dependency), and I don't have a licensed `.woff2` to embed. So I'll ship a more characterful *system* display stack now (Hoefler Text → Iowan → Palatino, which renders beautifully on your Mac) **and** wire a ready, commented `@font-face` slot so you can drop a self-hosted woff2 into `site/fonts/` later with a one-line change. That's the honest ""local-first"" version of #5.
@@ -4168,7 +4168,7 @@ While it runs, here's what I implemented for the five aesthetic changes (all loc
 
 Verification passed: no orphaned `--flag`/`g-no` refs, CSS braces balanced (192/192), all new hooks present. The site remains `site/index.html` + `styles.css` + `script.js`.
 
-I'll follow up as soon as the design/structure/roadmap review returns.",1859.633,1867.048,message,assistant,,,,claude-opus-4-8,789,f6c7f859-7289-43b1-809a-68886c29efaa,text
+I'll follow up as soon as the design/structure/roadmap review returns.",1497.671,1867.048,message,assistant,,,,claude-opus-4-8,789,f6c7f859-7289-43b1-809a-68886c29efaa,text
 ai,Ben,"Ok while the agent is running, write these changes we've made to a file called summary-changes.md",1932.169,1934.169,message,user,,,,,,01b5c1af-7356-403f-a350-80fe48dcfab2,text
 ai,Tool:Write,"[Write file: /Users/ben/Desktop/zzz-AI-Transcript-Data/site-agent/summary-changes.md]
 # LT 2010 Course Site — Summary of Changes
@@ -4249,7 +4249,7 @@ It captures all three phases of work:
 
 It also records the open assumptions worth confirming (the ""2 weeks"" flag on Weeks 10–11, the placeholder term/year, and the bracketed placeholders) and a short file map.
 
-I'll relay the design/structure/roadmap review as soon as the agent finishes.",1965.27,1971.192,message,assistant,,,,claude-opus-4-8,325,0c330723-cfb2-4c2c-95d2-0f7152c39710,text
+I'll relay the design/structure/roadmap review as soon as the agent finishes.",1934.169,1971.192,message,assistant,,,,claude-opus-4-8,325,0c330723-cfb2-4c2c-95d2-0f7152c39710,text
 ai,Agent:general-purpose:a3b1d4c8,"I have all four files fresh (context.md unchanged from source; schedule still matches it, and the Spring Break label is now correct). The rebuild is a big step up. Here is the forward-looking review.
 
 ---
@@ -4404,7 +4404,7 @@ ai,Claude,"The re-review is back. It confirms the P0 defects and the ochre/contr
 
 ---
 
-Two of these are quick and fix things I just introduced — the **hover/milestone bug** and the **""warm paper"" comment drift** — and the **missing Goals nav link** is a one-liner. Want me to apply those three small fixes now (all local), and optionally self-host a display font (P0 #2)? Or hold and just keep this as the roadmap in a file alongside `summary-changes.md`?",1495.672,2012.506,message,assistant,,,,claude-opus-4-8,1598,0326e19d-6053-43e5-91d8-ded5d907a07d,text
+Two of these are quick and fix things I just introduced — the **hover/milestone bug** and the **""warm paper"" comment drift** — and the **missing Goals nav link** is a one-liner. Want me to apply those three small fixes now (all local), and optionally self-host a display font (P0 #2)? Or hold and just keep this as the roadmap in a file alongside `summary-changes.md`?",1990.072,2012.506,message,assistant,,,,claude-opus-4-8,1598,0326e19d-6053-43e5-91d8-ded5d907a07d,text
 ai,Ben,Ok write these suggestions/additions to a file called next-steps.md,2023.479,2025.479,message,user,,,,,,3cb585fb-26e2-4469-9066-ef3943a1be14,text
 ai,Tool:Write,"[Write file: /Users/ben/Desktop/zzz-AI-Transcript-Data/site-agent/next-steps.md]
 # LT 2010 Course Site — Next Steps
@@ -4481,4 +4481,4 @@ It's organized as:
 - **Recommended additions** in **P0 / P1 / P2** tiers, as checkboxes with specific `file:line` / selector references.
 - **Top 5 next moves** and a short **Quick wins** list (the three small, low-risk fixes — hover bug, missing Goals nav link, comment drift).
 
-The three quick wins there are all things I can knock out locally in a couple of minutes whenever you want — just say the word. Otherwise this stands as your roadmap.",2060.202,2065.558,message,assistant,,,,claude-opus-4-8,258,30d0b5d6-902e-48be-ba05-435a53a54e4e,text
+The three quick wins there are all things I can knock out locally in a couple of minutes whenever you want — just say the word. Otherwise this stands as your roadmap.",2025.479,2065.558,message,assistant,,,,claude-opus-4-8,258,30d0b5d6-902e-48be-ba05-435a53a54e4e,text

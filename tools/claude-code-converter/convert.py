@@ -707,7 +707,9 @@ def events_to_transcript_csv(
     events retain their real timestamps and the silence is derivable from them.
     """
     rows = []
-    prev_end = 0.0
+    # End of the most recent human message. A measured turn begins when the
+    # person submits, so that is what the reach-back is clamped to.
+    last_human_end = 0.0
 
     real_durations = _collect_real_durations(events)
     agent_spans = _collect_agent_spans(events)
@@ -754,15 +756,16 @@ def events_to_transcript_csv(
         # whatever came next.
         turn_measured = real_durations.get(event["event_id"])
         if measured is None and turn_measured is not None:
-            # The turn cannot have begun before the preceding contribution
-            # finished, so the reach-back stops there. Without the clamp a
-            # two-party chat reports the person's submit and the model's work
-            # as concurrent, which is an artefact of the marker width.
-            turn_start = max(start - turn_measured, 0.0, prev_end)
+            # The turn cannot have begun before the person submitted, so the
+            # reach-back stops at the end of the last human message. Clamping
+            # to the previous row instead would destroy the measurement in an
+            # agentic session, where many rows sit inside a single turn: one
+            # 436.8s turn was cut to 28s because the row before it was a tool
+            # call from within the same turn.
+            turn_start = max(start - turn_measured, 0.0, last_human_end)
             if turn_start >= start:
                 turn_start = max(start - turn_measured, 0.0)
             rows.append(_make_csv_row(event, turn_start, start))
-            prev_end = start
             continue
 
         if measured is not None:
@@ -801,7 +804,15 @@ def events_to_transcript_csv(
         if end <= start:
             end = start + 0.1
         rows.append(_make_csv_row(event, start, end))
-        prev_end = max(prev_end, end)
+        # A delegated agent is also recorded as `user` on the row holding the
+        # brief it was handed, so role alone would treat a delegation as a
+        # human submit. The speaker prefix separates them.
+        if (
+            event["event_type"] == "message"
+            and event["role"] == "user"
+            and not str(event.get("speaker") or "").startswith(("Agent:", "Tool:"))
+        ):
+            last_human_end = max(last_human_end, end)
 
         # An idle row fills a long quiet stretch that this row does not cover.
         if emit_idle and gap > idle_threshold_s and end < next_start:
