@@ -916,6 +916,66 @@ def write_events_jsonl(events: list[dict], output_path: str):
 # Main
 # ---------------------------------------------------------------------------
 
+def _emit_outputs(
+    events: list[dict],
+    args: Any,
+    session_id: str | None,
+    project_path: str | None = None,
+    write_events: bool = True,
+) -> None:
+    """Write the CSV, codes and events outputs, then print a summary.
+
+    Shared by both input paths so that rebuilding from a canonical events file
+    produces byte-identical output to converting the original session log.
+    """
+    if not args.include_thinking:
+        events_for_csv = [e for e in events if e["event_type"] != "thinking"]
+    else:
+        events_for_csv = events
+
+    if not args.include_system:
+        # `turn_duration` is system-role but it is timing metadata, not a system
+        # message: it carries the only measured duration in the file and is
+        # consumed rather than emitted as a row. Dropping it here would silently
+        # revert every turn to an estimated width.
+        events_for_csv = [
+            e for e in events_for_csv
+            if e["role"] != "system" or e["event_type"] == "turn_duration"
+        ]
+
+    os.makedirs(args.output_dir, exist_ok=True)
+    sid = session_id[:8] if session_id else "unknown"
+
+    transcript_rows = events_to_transcript_csv(events_for_csv, emit_idle=args.emit_idle)
+    transcript_path = os.path.join(args.output_dir, f"transcript-{sid}.csv")
+    write_csv(transcript_rows, TRANSCRIPT_COLUMNS, transcript_path)
+
+    if not args.no_codes:
+        codes_rows = events_to_codes_csv(transcript_rows)
+        codes_path = os.path.join(args.output_dir, f"codes-{sid}.csv")
+        write_csv(codes_rows, CODES_COLUMNS, codes_path)
+
+    if write_events and not args.no_events:
+        events_path = os.path.join(args.output_dir, f"events-{sid}.jsonl")
+        write_events_jsonl(events, events_path)
+
+    print(f"\nSession: {session_id}")
+    if project_path:
+        print(f"Project: {project_path}")
+
+    role_counts: dict[str, int] = {}
+    for r in transcript_rows:
+        role_counts[r["role"]] = role_counts.get(r["role"], 0) + 1
+    print(f"Events by role: {role_counts}")
+
+    speakers = sorted(set(r["speaker"] for r in transcript_rows))
+    print(f"Speakers ({len(speakers)}): {', '.join(speakers)}")
+
+    if transcript_rows:
+        duration = transcript_rows[-1]["end"]
+        print(f"Duration: {duration:.1f}s ({duration/60:.1f}min)")
+
+
 def main():
     parser = argparse.ArgumentParser(
         description="Convert Claude Code session JSONL to Transcript Explorer CSV",
@@ -928,6 +988,14 @@ def main():
     input_group.add_argument("jsonl_file", nargs="?", help="Path to session JSONL file")
     input_group.add_argument("--session-id", "-s", help="Session UUID to find and convert")
     input_group.add_argument("--list-sessions", "-l", action="store_true", help="List available sessions")
+    input_group.add_argument(
+        "--from-events",
+        metavar="EVENTS_JSONL",
+        help="Rebuild the CSVs from a canonical events JSONL this tool wrote "
+             "earlier, instead of from a raw session log. Lets bundled sample "
+             "data be regenerated after a timing or formatting change without "
+             "needing the original session, which may no longer exist.",
+    )
 
     # Options
     parser.add_argument("--output-dir", "-o", default=".", help="Output directory (default: current)")
@@ -961,6 +1029,19 @@ def main():
             print(f"{s['session_id']:<40} {s['start'][:19]:<22} {s['entries']:>8}  {s['project']}")
         return
 
+    # --- Rebuild from canonical events ---
+    if args.from_events:
+        if not os.path.exists(args.from_events):
+            print(f"Error: File not found: {args.from_events}", file=sys.stderr)
+            sys.exit(1)
+        print(f"Rebuilding from events: {args.from_events}")
+        with open(args.from_events, encoding="utf-8") as f:
+            events = [json.loads(line) for line in f if line.strip()]
+        print(f"  Loaded {len(events)} canonical events")
+        session_id = next((e.get("session_id") for e in events if e.get("session_id")), None)
+        _emit_outputs(events, args, session_id, write_events=False)
+        return
+
     # --- Resolve input file ---
     jsonl_path = None
     if args.jsonl_file:
@@ -986,55 +1067,8 @@ def main():
     events = session_parser.parse()
     print(f"  Extracted {len(events)} canonical events")
 
-    # --- Filter ---
-    if not args.include_thinking:
-        events_for_csv = [e for e in events if e["event_type"] != "thinking"]
-    else:
-        events_for_csv = events
-
-    if not args.include_system:
-        events_for_csv = [e for e in events_for_csv if e["role"] != "system"]
-
-    # --- Output ---
-    os.makedirs(args.output_dir, exist_ok=True)
-
-    # Derive output filenames from session ID
-    sid = session_parser.session_id[:8] if session_parser.session_id else "unknown"
-
-    # Transcript CSV
-    transcript_rows = events_to_transcript_csv(events_for_csv, emit_idle=args.emit_idle)
-    transcript_path = os.path.join(args.output_dir, f"transcript-{sid}.csv")
-    write_csv(transcript_rows, TRANSCRIPT_COLUMNS, transcript_path)
-
-    # Codes CSV
-    if not args.no_codes:
-        codes_rows = events_to_codes_csv(transcript_rows)
-        codes_path = os.path.join(args.output_dir, f"codes-{sid}.csv")
-        write_csv(codes_rows, CODES_COLUMNS, codes_path)
-
-    # Canonical events JSONL
-    if not args.no_events:
-        events_path = os.path.join(args.output_dir, f"events-{sid}.jsonl")
-        write_events_jsonl(events, events_path)
-
-    # --- Summary ---
-    print(f"\nSession: {session_parser.session_id}")
-    print(f"Project: {session_parser.project_path}")
-
-    # Count by role
-    role_counts = {}
-    for r in transcript_rows:
-        role = r["role"]
-        role_counts[role] = role_counts.get(role, 0) + 1
-    print(f"Events by role: {role_counts}")
-
-    # Count unique speakers
-    speakers = sorted(set(r["speaker"] for r in transcript_rows))
-    print(f"Speakers ({len(speakers)}): {', '.join(speakers)}")
-
-    if transcript_rows:
-        duration = transcript_rows[-1]["end"]
-        print(f"Duration: {duration:.1f}s ({duration/60:.1f}min)")
+    _emit_outputs(events, args, session_parser.session_id,
+                  project_path=session_parser.project_path)
 
 
 if __name__ == "__main__":
