@@ -638,6 +638,45 @@ TRANSCRIPT_COLUMNS = [
 CODES_COLUMNS = ["start", "end", "code"]
 
 
+# Shortest span accepted as a delegated agent actually running. Below this an
+# `agent_result` is a launch acknowledgement, not a completion.
+MIN_AGENT_SPAN_S = 1.0
+
+
+def _collect_real_durations(events: list[dict]) -> dict[str, float]:
+    """Map event_id -> measured duration in seconds.
+
+    `turn_duration` events are the only records in a Claude session log that
+    carry a *measured* `duration_ms`. Each one points at the event it timed via
+    `parent_event_id`. They were previously filtered out with session noise,
+    which discarded the only real timing in the file.
+    """
+    durations: dict[str, float] = {}
+    for e in events:
+        if e.get("event_type") != "turn_duration":
+            continue
+        parent = e.get("parent_event_id")
+        ms = e.get("duration_ms")
+        if parent and ms:
+            durations[parent] = ms / 1000.0
+    return durations
+
+
+def _collect_agent_spans(events: list[dict]) -> dict[str, float]:
+    """Map agent_id -> the session-elapsed time its result came back.
+
+    A delegated agent's real span is spawn -> result. Both ends are recorded,
+    so the span is recoverable even though neither event carries a duration.
+    This is where genuine concurrency lives: agents launched before an earlier
+    one returned overlap in wall-clock time.
+    """
+    spans: dict[str, float] = {}
+    for e in events:
+        if e.get("event_type") == "agent_result" and e.get("agent_id"):
+            spans[e["agent_id"]] = e["session_elapsed_s"]
+    return spans
+
+
 def events_to_transcript_csv(
     events: list[dict],
     idle_threshold_s: float = 30.0,
@@ -646,12 +685,20 @@ def events_to_transcript_csv(
     """Convert canonical events to TE-compatible CSV rows.
 
     Timing strategy:
-    - Each event starts at its timestamp
-    - End time = start of next event by the SAME speaker or next event overall,
-      whichever is sooner, UNLESS the gap exceeds idle_threshold_s
-    - Gaps longer than idle_threshold_s are split: the event gets a short end
-      time (based on a content-length heuristic) and, when emit_idle is set, an
-      "Idle" row is inserted to fill the remainder.
+    - Each event starts at its timestamp.
+    - End time is the first of these that is available:
+        1. spawn -> result, for a delegated agent;
+        2. a measured `duration_ms` recorded against this event;
+        3. a duration estimated from the event's type and content length.
+    - Rows are never stretched to meet the next row. A row's width is how long
+      that contribution actually took, so a quiet stretch stays visibly quiet
+      and work that genuinely ran at the same time genuinely overlaps.
+
+    Ending each row at the next row's start (the previous strategy) made every
+    row abut its neighbour. Two things followed: nothing could overlap, so
+    parallel agent work was unrepresentable; and a tool result absorbed the
+    model's thinking time, so "tools vs. model" read wrong. Both are timing the
+    log already carried.
 
     Idle rows are off by default. They are an inferred quantity rather than an
     observed one, and as a separate speaker they add a participant to every
@@ -660,8 +707,13 @@ def events_to_transcript_csv(
     events retain their real timestamps and the silence is derivable from them.
     """
     rows = []
+    prev_end = 0.0
 
-    # Filter to meaningful events (skip session_start/end system noise)
+    real_durations = _collect_real_durations(events)
+    agent_spans = _collect_agent_spans(events)
+
+    # Filter to meaningful events (skip session_start/end system noise).
+    # `turn_duration` is consumed above for its timing, not emitted as a row.
     meaningful = [
         e for e in events
         if e["event_type"] not in ("session_start", "session_end", "turn_duration")
@@ -671,53 +723,95 @@ def events_to_transcript_csv(
     for i, event in enumerate(meaningful):
         start = event["session_elapsed_s"]
 
-        # Determine natural end time from next event
+        # Distance to the next event overall, used only to size an idle row.
         if i + 1 < len(meaningful):
             next_start = meaningful[i + 1]["session_elapsed_s"]
         else:
             next_start = start + 1.0
-
         gap = next_start - start
 
-        # Estimate a reasonable duration for this event based on its type
-        if event["event_type"] in ("tool_call", "tool_result"):
-            # Tool calls/results are near-instant from the log perspective
-            estimated_duration = min(gap, 2.0)
-        elif event["event_type"] in ("agent_spawn",):
-            # Agent spawn is logged at invocation, result comes later
-            estimated_duration = min(gap, 1.0)
-        elif event["event_type"] == "message" and event["role"] == "assistant":
-            # Estimate speaking time from content length (~3 words/sec for reading)
-            word_count = len(event["content"].split())
-            estimated_duration = min(gap, max(word_count / 3.0, 2.0))
-        elif event["event_type"] == "message" and event["role"] == "user":
-            # User message: the timestamp is when they hit Enter
-            # Content was composed before this moment
-            word_count = len(event["content"].split())
-            estimated_duration = min(gap, max(word_count / 5.0, 1.0))
+
+        # 1. A delegated agent runs from spawn until its result returns.
+        #
+        # An asynchronously launched agent returns a few milliseconds later
+        # with "Async agent launched successfully" — a launch acknowledgement
+        # rather than a completion. Its real work is recorded against the
+        # agent's own speaker rows, so treat a sub-second span as a launch and
+        # let the spawn render as the marker it is.
+        measured = None
+        if event["event_type"] == "agent_spawn" and event.get("agent_id"):
+            result_at = agent_spans.get(event["agent_id"])
+            if result_at is not None and result_at - start >= MIN_AGENT_SPAN_S:
+                measured = result_at - start
+
+        # 2. Otherwise, a duration measured against this event. A
+        # `turn_duration` measures *backwards*: an assistant message is stamped
+        # when it finished, and the duration reaches back to the moment the
+        # person submitted. Verified against the chat session, where every
+        # implied start lands on the preceding human message to within 0.1s.
+        # That span is measured model-working time, so the row covers it
+        # instead of starting at the completion and running forward over
+        # whatever came next.
+        turn_measured = real_durations.get(event["event_id"])
+        if measured is None and turn_measured is not None:
+            # The turn cannot have begun before the preceding contribution
+            # finished, so the reach-back stops there. Without the clamp a
+            # two-party chat reports the person's submit and the model's work
+            # as concurrent, which is an artefact of the marker width.
+            turn_start = max(start - turn_measured, 0.0, prev_end)
+            if turn_start >= start:
+                turn_start = max(start - turn_measured, 0.0)
+            rows.append(_make_csv_row(event, turn_start, start))
+            prev_end = start
+            continue
+
+        if measured is not None:
+            # A measured duration is used as recorded. Only measured spans may
+            # overlap: concurrency the log actually witnessed is a finding,
+            # whereas concurrency produced by an estimate is an artefact.
+            duration = measured
         else:
-            estimated_duration = min(gap, 5.0)
+            # 3. Otherwise, estimate from event type and content length, capped
+            # at this speaker's own next contribution.
+            #
+            # These are widths in *time*. How much was said is encoded by bar
+            # height (see turn-chart-scaling.ts), so a long prompt does not
+            # need a long bar. Estimates are not stretched to meet the next
+            # event: that is what flattened the timeline in the first place.
+            if event["event_type"] in ("tool_call", "tool_result"):
+                # Near-instant from the log's perspective. The seconds that
+                # follow a tool result belong to the model composing its next
+                # move, not to the tool.
+                duration = 0.5
+            elif event["event_type"] in ("agent_spawn",):
+                duration = 1.0
+            elif event["event_type"] == "message" and event["role"] == "user":
+                # The timestamp is when they hit Enter, so this is a point
+                # event. Composition happened before it and is not measured;
+                # the preceding gap is what carries it.
+                duration = 2.0
+            elif event["event_type"] == "message" and event["role"] == "assistant":
+                # Reached only when a turn_duration is missing for this turn.
+                word_count = len(event["content"].split())
+                duration = max(word_count / 3.0, 2.0)
+            else:
+                duration = 2.0
 
-        # If the gap is large, use estimated duration and insert idle
-        if gap > idle_threshold_s:
-            # Cap estimated duration so there's always a meaningful idle gap
-            capped_duration = min(estimated_duration, gap * 0.5, 60.0)
-            end = start + capped_duration
-            rows.append(_make_csv_row(event, start, end))
+        end = start + duration
+        if end <= start:
+            end = start + 0.1
+        rows.append(_make_csv_row(event, start, end))
+        prev_end = max(prev_end, end)
 
-            if not emit_idle:
-                continue
-
-            # Insert idle gap
-            idle_start = end
-            idle_end = next_start
-            idle_duration = idle_end - idle_start
+        # An idle row fills a long quiet stretch that this row does not cover.
+        if emit_idle and gap > idle_threshold_s and end < next_start:
+            idle_duration = next_start - end
             rows.append({
                 SOURCE_KIND_COLUMN: SOURCE_KIND_VALUE,
                 "speaker": "Idle",
                 "content": f"[Gap: {idle_duration:.0f}s — user reading/thinking/away]",
-                "start": round(idle_start, 3),
-                "end": round(idle_end, 3),
+                "start": round(end, 3),
+                "end": round(next_start, 3),
                 "event_type": "idle",
                 "role": "system",
                 "tool_name": "",
@@ -728,12 +822,6 @@ def events_to_transcript_csv(
                 "event_id": f"idle_{i}",
                 "content_type": "text",
             })
-        else:
-            # Normal case: event spans until next event
-            end = next_start
-            if end <= start:
-                end = start + 0.1
-            rows.append(_make_csv_row(event, start, end))
 
     return rows
 
