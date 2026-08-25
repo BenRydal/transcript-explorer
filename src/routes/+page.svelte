@@ -94,6 +94,7 @@
 	import RecoveryModal from '$lib/components/RecoveryModal.svelte';
 	import DashboardOverlay from '$lib/components/DashboardOverlay.svelte';
 	import VisualizationLegend from '$lib/components/VisualizationLegend.svelte';
+	import TimingLensControl from '$lib/components/TimingLensControl.svelte';
 	import WelcomeScreen from '$lib/components/WelcomeScreen.svelte';
 	import Toast from '$lib/components/Toast.svelte';
 
@@ -1346,6 +1347,7 @@
 									{/if}
 									<CanvasTooltip />
 									<VisualizationLegend />
+									<TimingLensControl />
 									{#if $VizStore.dashboardToggle}
 										<DashboardOverlay />
 									{/if}
