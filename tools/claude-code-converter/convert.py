@@ -700,6 +700,21 @@ def _collect_agent_spans(events: list[dict]) -> dict[str, float]:
     return spans
 
 
+def _floor_start(floor_mark: float, end: float) -> float:
+    """Where a contribution begins under the floor lens.
+
+    The floor is single-threaded: a contribution holds it from the moment the
+    previous one released it, so the session tiles and participation shares sum
+    to it. Keeping a row's own start where that start preceded the mark left
+    the lens half-tiled and half-overlapping, which is neither readable nor
+    countable.
+
+    Concurrency is flattened here by design. Two agents running at once cannot
+    both hold a single floor, and the work lens is where that overlap is read.
+    """
+    return max(min(floor_mark, end - MIN_ROW_WIDTH_S), 0.0)
+
+
 def _reach_back_floor(end: float) -> tuple[float, float]:
     """Span for a contribution whose reach-back was fully consumed.
 
@@ -818,7 +833,7 @@ def events_to_transcript_csv(
                 turn_start = max(start - turn_measured, 0.0)
             rows.append(_make_csv_row(
                 event, turn_start, start,
-                start_floor=max(min(floor_mark, start), 0.0),
+                start_floor=_floor_start(floor_mark, start),
                 provenance="measured",
             ))
             floor_mark = max(floor_mark, start)
@@ -997,7 +1012,11 @@ def _make_csv_row(
         "model": event.get("model") or "",
         "tokens_out": tokens_out,
         "event_id": event["event_id"],
-        "start_record": round(end, 3),
+        # An instant, carried at the narrowest width a row may have. A row
+        # whose start equals its end reads as zero-width downstream and is
+        # re-expanded from its word count, which would draw a tool result
+        # holding a 3,000-word file as a 1,000-second contribution.
+        "start_record": round(max(end - MIN_ROW_WIDTH_S, 0.0), 3),
         "start_work": round(start, 3),
         "start_floor": round(start_floor if start_floor is not None else start, 3),
         "provenance": provenance,

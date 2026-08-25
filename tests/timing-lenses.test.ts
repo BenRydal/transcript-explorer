@@ -47,10 +47,21 @@ describe('timing lenses', () => {
 		}
 	});
 
-	it('record is a tick: its start equals the end', () => {
+	it('record is a tick, never a duration derived from length', () => {
+		// A row whose start equals its end reads as zero-width downstream and is
+		// re-expanded from its word count, which drew a tool result holding a
+		// 3,000-word file as a 1,000-second contribution.
 		for (const d of SETS) {
-			for (const r of load(d)) expect(Number(r.start_record)).toBeCloseTo(Number(r.end), 3);
+			for (const r of load(d)) {
+				const width = Number(r.end) - Number(r.start_record);
+				expect(width).toBeGreaterThan(0);
+				expect(width).toBeLessThanOrEqual(0.11);
+			}
 		}
+	});
+
+	it('floor leaves no gaps in any session', () => {
+		for (const d of SETS) expect(gapCount(load(d), 'start_floor')).toBe(0);
 	});
 
 	it('floor accounts for the whole session, leaving no gaps', () => {
