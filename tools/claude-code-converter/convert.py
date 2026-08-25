@@ -800,6 +800,7 @@ def events_to_transcript_csv(
             prev_any_end = max(prev_any_end, start)
             continue
 
+        reaches_back = False
         is_human_message = (
             event["event_type"] == "message"
             and event["role"] == "user"
@@ -835,14 +836,25 @@ def events_to_transcript_csv(
                 # the preceding gap is what carries it.
                 duration = 2.0
             elif event["event_type"] == "message" and event["role"] == "assistant":
-                # Reached only when a turn_duration is missing for this turn.
+                # Reached when no turn_duration covers this message. The
+                # message is still stamped when it finished, so it reaches
+                # back like a measured turn does; running it forward would
+                # place the model's work after it had already finished and
+                # leave the time it was actually generating as a gap.
                 word_count = len(event["content"].split())
                 duration = max(word_count / 3.0, 2.0)
+                reaches_back = True
             else:
                 duration = 2.0
 
         human_text = ""
-        if is_human_message:
+        if reaches_back and not is_human_message:
+            # Same reasoning as a human submit: the stamp is the conclusion.
+            end = start
+            start = max(end - duration, prev_any_end)
+            if start >= end:
+                end = start + duration
+        elif is_human_message:
             # A person cannot type faster than HUMAN_WPM_CEILING. Above it the
             # text was brought rather than composed: pasted, or prepared
             # elsewhere. Estimating every human turn from a typing rate is
