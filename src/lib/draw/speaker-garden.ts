@@ -21,8 +21,15 @@ import { DrawContext } from './draw-context';
 import { flowerRadius, stemFraction, MIN_FLOWER_RADIUS } from './garden-scaling';
 import { truncateMiddle } from './lane-layout';
 
-/** Height reserved below the baseline for speaker labels. */
+/**
+ * Height reserved below the baseline for speaker labels, and the share of the
+ * panel it may take. A dashboard tile is a fraction of the canvas, so a fixed
+ * strip would eat a third of a small one.
+ */
 const LABEL_STRIP_HEIGHT = 58;
+const LABEL_STRIP_MAX_SHARE = 0.18;
+/** Below this the strip cannot hold a legible label, so labels are dropped. */
+const MIN_LABEL_STRIP = 24;
 const LABEL_GAP = 6;
 
 interface SpeakerMetrics {
@@ -46,13 +53,16 @@ export class SpeakerGarden {
 	hoveredSpeaker: string | null;
 	private isAi: boolean;
 	private showLabels: boolean;
+	private labelStrip: number;
 	private labelSize: number;
 
 	constructor(ctx: DrawContext, pos: Bounds) {
 		this.ctx = ctx;
 		this.isAi = ctx.transcript.sourceKind === 'ai';
-		this.showLabels = ctx.config.speakerGardenLabels !== false;
-		this.labelSize = Math.max(9, Math.min(12, pos.height * 0.026));
+		const requestedStrip = Math.min(LABEL_STRIP_HEIGHT, pos.height * LABEL_STRIP_MAX_SHARE);
+		this.showLabels = ctx.config.speakerGardenLabels !== false && requestedStrip >= MIN_LABEL_STRIP;
+		this.labelStrip = this.showLabels ? requestedStrip : 0;
+		this.labelSize = Math.max(8, Math.min(12, pos.height * 0.026));
 		// When scaleToVisibleData is enabled, we'll compute these in draw() from visible data
 		if (this.ctx.config.scaleToVisibleData) {
 			this.largestNumOfWordsByASpeaker = 0;
@@ -67,7 +77,7 @@ export class SpeakerGarden {
 		this.maxCircleArea = Math.PI * this.maxCircleRadius * this.maxCircleRadius;
 		this.xPosCurCircle = pos.x + this.maxCircleRadius;
 		this.yPosTop = pos.y;
-		this.yPosBottom = pos.y + pos.height - (this.showLabels ? LABEL_STRIP_HEIGHT : 0);
+		this.yPosBottom = pos.y + pos.height - this.labelStrip;
 		this.maxFlowerRadius = this.calculateMaxFlowerRadius();
 		this.hoveredSpeaker = null;
 	}
@@ -176,7 +186,7 @@ export class SpeakerGarden {
 			sk.rotate(Math.PI / 2);
 			sk.textAlign(sk.LEFT, sk.CENTER);
 			sk.text(
-				truncateMiddle(speaker, LABEL_STRIP_HEIGHT - LABEL_GAP * 2, (t) => sk.textWidth(t)),
+				truncateMiddle(speaker, this.labelStrip - LABEL_GAP * 2, (t) => sk.textWidth(t)),
 				0,
 				0
 			);
