@@ -20,23 +20,27 @@ export interface WorkspacePreset {
 	sidebarTab: SidebarTab | null;
 	editorVisible: boolean;
 	dashboardVisible: boolean;
+	filtersVisible: boolean;
 }
 
 export const WORKSPACE_PRESETS: Record<Workspace, WorkspacePreset> = {
 	edit: {
-		sidebarTab: 'filters',
+		sidebarTab: null,
 		editorVisible: true,
-		dashboardVisible: false
+		dashboardVisible: false,
+		filtersVisible: true
 	},
 	visualize: {
 		sidebarTab: null,
 		editorVisible: false,
-		dashboardVisible: false
+		dashboardVisible: false,
+		filtersVisible: false
 	},
 	transcribe: {
 		sidebarTab: null,
 		editorVisible: false,
-		dashboardVisible: false
+		dashboardVisible: false,
+		filtersVisible: false
 	}
 };
 
@@ -65,7 +69,8 @@ export function applyWorkspace(id: Workspace): void {
 	UIStateStore.update((state) => ({
 		...state,
 		activeSidebarTab: preset.sidebarTab,
-		activeWorkspace: id
+		activeWorkspace: id,
+		filtersDockOpen: preset.filtersVisible
 	}));
 
 	// Editor visibility.

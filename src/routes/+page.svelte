@@ -206,7 +206,6 @@
 	// Sidebar helpers
 	const SIDEBAR_TABS: { id: SidebarTab; label: string }[] = [
 		{ id: 'viz', label: 'Visualizations' },
-		{ id: 'filters', label: 'Filters' },
 		{ id: 'data', label: 'Data' },
 		{ id: 'settings', label: 'Settings' },
 		{ id: 'help', label: 'Help' }
@@ -249,6 +248,17 @@
 	// p5 canvas reflow smoothly (it tracks its container via ResizeObserver)
 	// instead of snapping when the layout changes in one step.
 	const isSidebarOpen = $derived($UIStateStore.activeSidebarTab !== null);
+	const isFiltersDockOpen = $derived($UIStateStore.filtersDockOpen);
+
+	// Mirrors FiltersPanel's own tally so the rail can show what is active
+	// without the dock being open.
+	const activeFilterCount = $derived(
+		($FiltersStore.wordToSearch.length > 0 ? 1 : 0) +
+			($UserStore.some((u) => !u.enabled) ? 1 : 0) +
+			($CodeStore.length > 0 && $CodeStore.some((c) => !c.enabled) ? 1 : 0) +
+			($CodeStore.length > 0 && !$FiltersStore.showUncoded ? 1 : 0) +
+			($FiltersStore.stopWordsEnabled ? 1 : 0)
+	);
 
 	// Keep the p5 canvas continuously tracking its container. The canvas only
 	// resizes on window resize or explicit triggerCanvasResize() calls, so when
@@ -289,6 +299,12 @@
 		// overlay instead. Leave the current sidebar tab untouched.
 		if (id === 'help') {
 			welcomeOpen = true;
+			return;
+		}
+		// Filters own a separate right-hand dock so they can stay open alongside
+		// the visualization settings rather than replacing them.
+		if (id === 'filters') {
+			UIStateStore.update((s) => ({ ...s, filtersDockOpen: !s.filtersDockOpen }));
 			return;
 		}
 		const current = $UIStateStore.activeSidebarTab;
@@ -335,7 +351,6 @@
 	// `label` prop as aria-label  -  stable enough to target).
 	const SIDEBAR_LABEL_FOR_TAB: Record<SidebarTab, string> = {
 		viz: 'Visualizations',
-		filters: 'Filters',
 		data: 'Data',
 		settings: 'Settings',
 		help: 'Help'
@@ -1255,7 +1270,7 @@
 						onSelect={handleActivitySelect}
 						items={[
 							{ id: 'viz', label: 'Visualizations', icon: vizIcon },
-							{ id: 'filters', label: 'Filters', icon: filtersIcon },
+							{ id: 'filters', label: 'Filters', icon: filtersIcon, badge: activeFilterCount || undefined },
 							{ id: 'data', label: 'Data', icon: dataIcon },
 							{ id: 'settings', label: 'Settings', icon: settingsIcon },
 							{ id: 'help', label: 'Help', icon: helpIcon }
@@ -1295,8 +1310,6 @@
 								<div in:fade={{ duration: 140, delay: 60 }} out:fade={{ duration: 80 }}>
 									{#if lastSidebarTab === 'viz'}
 										<VizPanel />
-									{:else if lastSidebarTab === 'filters'}
-										<FiltersPanel />
 									{:else if lastSidebarTab === 'data'}
 										<DataPanel
 											selectedExample={selectedExampleId}
@@ -1313,6 +1326,33 @@
 						</SidePanel>
 					</div>
 				</nav>
+			{/snippet}
+
+			{#snippet rightRail()}
+				<!-- Filters dock. Mirrors the left `.te-sidepanel-shell` pattern:
+				     the library SidePanel is always mounted at a fixed width and
+				     this wrapper animates the OCCUPIED width 0 <-> dock width, so
+				     the canvas container reflows continuously and the p5
+				     ResizeObserver keeps the canvas tracking it. Kept separate
+				     from the sidebar so filtering and shaping the view can happen
+				     together. -->
+				<div
+					id="te-filters-dock"
+					role="region"
+					aria-label="Filters panel"
+					class="te-filters-dock-shell"
+					style:width={`${isFiltersDockOpen ? $UIStateStore.filtersDockWidth : 0}px`}
+				>
+					<SidePanel
+						open={true}
+						title="Filters"
+						width={$UIStateStore.filtersDockWidth}
+						resizable={false}
+						onClose={() => UIStateStore.update((s) => ({ ...s, filtersDockOpen: false }))}
+					>
+						<FiltersPanel />
+					</SidePanel>
+				</div>
 			{/snippet}
 
 			{#snippet canvas()}
@@ -1523,6 +1563,23 @@
 
 	@media (prefers-reduced-motion: reduce) {
 		.te-sidepanel-shell {
+			transition: none;
+		}
+	}
+
+	/* Filters dock, mirroring the left shell. Clips its fixed-width SidePanel
+	   as the occupied width animates, so the canvas reflows continuously. */
+	.te-filters-dock-shell {
+		display: flex;
+		height: 100%;
+		min-height: 0;
+		overflow: hidden;
+		border-left: 1px solid var(--te-border-muted);
+		transition: width 180ms cubic-bezier(0.22, 1, 0.36, 1);
+	}
+
+	@media (prefers-reduced-motion: reduce) {
+		.te-filters-dock-shell {
 			transition: none;
 		}
 	}

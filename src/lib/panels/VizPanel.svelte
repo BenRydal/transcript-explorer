@@ -208,11 +208,15 @@
 		return `${option.label}: ${option.formatValue ? option.formatValue(value) : value}`;
 	}
 
-	function toggleSelection(selection: string, toggleOptions: readonly (keyof VizStoreType)[]) {
+	// These are a single choice, not independent toggles. Inverting the clicked
+	// key let every one end up false, and the canvas silently falls back to the
+	// dashboard when nothing is selected -- reachable by a stray second click,
+	// and with no tile showing it as chosen.
+	function selectVisualization(selection: string, toggleOptions: readonly (keyof VizStoreType)[]) {
 		VizStore.update((store) => {
 			const updates: Record<string, boolean> = {};
 			toggleOptions.forEach((key) => {
-				updates[key] = key === selection ? !store[key] : false;
+				updates[key] = key === selection;
 			});
 			return { ...store, ...updates };
 		});
@@ -247,9 +251,9 @@
 					<button
 						type="button"
 						class="viz-panel__tile {isActive ? 'viz-panel__tile--active' : ''}"
-						aria-pressed={isActive}
+						aria-current={isActive ? 'true' : undefined}
 						title={tile?.label ?? panelKey}
-						onclick={() => toggleSelection(toggle, techniqueToggleOptions)}
+						onclick={() => selectVisualization(toggle, techniqueToggleOptions)}
 					>
 						{#if tile}
 							<tile.icon size={18} strokeWidth={isActive ? 2.2 : 1.5} aria-hidden="true" />
@@ -266,8 +270,8 @@
 			<button
 				type="button"
 				class="viz-panel__tile {$VizStore.dashboardToggle ? 'viz-panel__tile--active' : ''}"
-				aria-pressed={$VizStore.dashboardToggle}
-				onclick={() => toggleSelection('dashboardToggle', techniqueToggleOptions)}
+				aria-current={$VizStore.dashboardToggle ? 'true' : undefined}
+				onclick={() => selectVisualization('dashboardToggle', techniqueToggleOptions)}
 			>
 				<LayoutDashboard size={18} strokeWidth={$VizStore.dashboardToggle ? 2.2 : 1.5} aria-hidden="true" />
 				<span>Dashboard</span>

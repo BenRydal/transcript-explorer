@@ -1,6 +1,6 @@
 import { writable } from 'svelte/store';
 
-export type SidebarTab = 'viz' | 'filters' | 'data' | 'settings' | 'help';
+export type SidebarTab = 'viz' | 'data' | 'settings' | 'help';
 
 export type Workspace = 'edit' | 'visualize' | 'transcribe';
 
@@ -38,6 +38,11 @@ export interface UIStateStoreType {
 	activeSidebarTab: SidebarTab | null;
 	// Sidebar width (px). Mirrors the library SidePanel's bindable width.
 	sidebarWidth: number;
+	// Filters live in their own right-hand dock rather than competing with the
+	// visualization settings for the single sidebar slot: choosing what is in
+	// the view and shaping the view are one task.
+	filtersDockOpen: boolean;
+	filtersDockWidth: number;
 	// Floating selection-contextual action menu (Phase E).
 	contextMenu: ContextMenuState;
 	// Task workspace preset (Phase F). Drives default chrome layout for
@@ -108,6 +113,8 @@ export const initialUIState: UIStateStoreType = {
 	dashboardPanels: ['turnChart', 'contributionCloud', 'speakerGarden'],
 	activeSidebarTab: null,
 	sidebarWidth: 280,
+	filtersDockOpen: false,
+	filtersDockWidth: 288,
 	contextMenu: initialContextMenu,
 	activeWorkspace: readPersistedWorkspace() ?? 'visualize',
 	onboardingState: readPersistedOnboardingState() ?? 'unseen'
