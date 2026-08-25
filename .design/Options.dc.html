@@ -1,0 +1,100 @@
+<!doctype html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+  <style>
+    body { margin:0; font-family: system-ui, -apple-system, 'Segoe UI', sans-serif; background:#0f1419; color:#f3f4f6; }
+    a { color:#60a5fa; } a:hover { color:#93c5fd; }
+    .lbl { font-size:10px; letter-spacing:.08em; text-transform:uppercase; color:#6b7280; }
+    .card { background:#131820; border:1px solid #1f2937; border-radius:8px; padding:14px 15px; display:flex; flex-direction:column; gap:9px; }
+    .cap { font-size:11px; color:#9ca3af; line-height:1.45; }
+    .ttl { font-size:12px; font-weight:700; }
+    .panel { background:#1a1f26; border:1px solid #2d3748; border-radius:6px; padding:10px; }
+    .seg { display:flex; gap:0; border:1px solid #2d3748; border-radius:6px; overflow:hidden; }
+    .seg > div { flex:1; text-align:center; font-size:10px; padding:5px 0; color:#9ca3af; }
+    .on { background:#60a5fa; color:#0f1419; font-weight:700; }
+    .verdict { font-size:10px; letter-spacing:.04em; text-transform:uppercase; }
+  </style>
+</helmet>
+<div style="padding:30px 34px; display:flex; flex-direction:column; gap:18px;">
+  <div style="display:flex; flex-direction:column; gap:5px;">
+    <div class="lbl">Where the control lives</div>
+    <div style="font-size:20px; font-weight:700; letter-spacing:-.01em;">Six placements, with their tradeoffs</div>
+    <div class="cap" style="max-width:78ch;">The lens changes every time-based view at once &mdash; Turn Chart, Heat Map, Question Flow, Turn Length. That single fact rules out half of these.</div>
+  </div>
+
+  <div style="display:grid; grid-template-columns:repeat(3, minmax(0,1fr)); gap:14px;">
+
+    <div class="card">
+      <div class="ttl">A &middot; Global, in Settings</div>
+      <div class="panel">
+        <div class="lbl" style="margin-bottom:7px;">Timing</div>
+        <div class="seg"><div>Record</div><div class="on">Work</div><div>Floor</div></div>
+      </div>
+      <div class="cap">Sits with the other cross-cutting settings. Scope matches reality: one choice, every view.</div>
+      <div class="verdict" style="color:#009e73;">Recommended</div>
+    </div>
+
+    <div class="card">
+      <div class="ttl">B &middot; Per-visualisation select</div>
+      <div class="panel">
+        <div class="lbl" style="margin-bottom:7px;">Turn chart settings</div>
+        <div style="font-size:11px; color:#9ca3af; display:flex; flex-direction:column; gap:5px;">
+          <div>&#10003;&nbsp; Group by Speaker</div>
+          <div>&nbsp;&nbsp;&nbsp; Silence Overlap</div>
+          <div style="color:#60a5fa;">&nbsp;&nbsp;&nbsp; Timing: Work &#9662;</div>
+        </div>
+      </div>
+      <div class="cap">Reuses the existing radio-group pattern exactly. But it implies per-view scope, so two views could disagree about the same second.</div>
+      <div class="verdict" style="color:#f87171;">Misleading scope</div>
+    </div>
+
+    <div class="card">
+      <div class="ttl">C &middot; Header dropdown</div>
+      <div class="panel" style="display:flex; align-items:center; justify-content:space-between;">
+        <div style="font-size:11px; color:#f3f4f6;">Claude-Web-Design-Multi-Agent</div>
+        <div style="font-size:10px; color:#60a5fa; border:1px solid #2d3748; border-radius:999px; padding:3px 8px;">Work &#9662;</div>
+      </div>
+      <div class="cap">Maximum discoverability, always in view. Also permanent chrome for something most sessions set once.</div>
+      <div class="verdict" style="color:#9ca3af;">Too prominent</div>
+    </div>
+
+    <div class="card">
+      <div class="ttl">D &middot; Legend that states the rule</div>
+      <div class="panel">
+        <div style="font-size:10px; color:#9ca3af; line-height:1.5;">Bars show <strong style="color:#f3f4f6;">measured work</strong>. Gaps are idle.<br><span style="color:#60a5fa;">Change &#9662;</span></div>
+      </div>
+      <div class="cap">Teaches the semantics at the point of confusion instead of hiding them behind a word. Weak as the only control, strong beside one.</div>
+      <div class="verdict" style="color:#009e73;">Pair with A</div>
+    </div>
+
+    <div class="card">
+      <div class="ttl">E &middot; Cycle key</div>
+      <div class="panel" style="display:flex; align-items:center; gap:8px;">
+        <div style="border:1px solid #2d3748; border-radius:4px; padding:3px 7px; font-size:10px; color:#9ca3af;">T</div>
+        <div style="font-size:10px; color:#9ca3af;">cycles Record &rarr; Work &rarr; Floor</div>
+      </div>
+      <div class="cap">Fast for comparing, which is exactly what analysis wants. Undiscoverable alone.</div>
+      <div class="verdict" style="color:#009e73;">Pair with A</div>
+    </div>
+
+    <div class="card">
+      <div class="ttl">F &middot; Ghost of the other lens</div>
+      <div class="panel" style="position:relative; height:44px;">
+        <div style="position:absolute; left:6px; top:12px; width:38%; height:14px; background:#0072b2; border-radius:3px;"></div>
+        <div style="position:absolute; left:46%; top:12px; width:30%; height:14px; border:1px dashed #60a5fa; border-radius:3px; opacity:.55;"></div>
+      </div>
+      <div class="cap">Draws the alternative faintly behind the current one, so the choice is visible rather than remembered. Genuinely novel; risks noise at agentic density.</div>
+      <div class="verdict" style="color:#9ca3af;">Worth prototyping</div>
+    </div>
+
+  </div>
+</div>
+</x-dc>
+</body>
+</html>

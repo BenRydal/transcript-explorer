@@ -1,0 +1,52 @@
+<!doctype html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+  <style>
+    body { margin:0; font-family: system-ui, -apple-system, 'Segoe UI', sans-serif; background:#0f1419; color:#f3f4f6; }
+    a { color:#60a5fa; } a:hover { color:#93c5fd; }
+    .lbl { font-size:10px; letter-spacing:.08em; text-transform:uppercase; color:#6b7280; }
+    .caption { font-size:11px; color:#9ca3af; line-height:1.5; }
+    td, th { text-align:left; padding:9px 12px; font-size:12px; border-bottom:1px solid #1f2937; }
+    th { color:#9ca3af; font-weight:600; font-size:10px; letter-spacing:.08em; text-transform:uppercase; }
+  </style>
+</helmet>
+<div style="padding:30px 34px; display:flex; flex-direction:column; gap:18px;">
+  <div style="display:flex; flex-direction:column; gap:5px;">
+    <div class="lbl">Why typing speed cannot be the answer</div>
+    <div style="font-size:20px; font-weight:700; letter-spacing:-.01em;">Most human words were never typed</div>
+    <div class="caption" style="max-width:80ch;">Estimating the person's start from typing speed sounds right and breaks on the data. In the multi-agent session it is arithmetically impossible for <strong style="color:#f3f4f6;">71% of human turns</strong>: the words could not have been typed in the window available. One turn of 1,497 words would need 4.99 million words per minute.</div>
+  </div>
+
+  <div style="background:#131820; border:1px solid #1f2937; border-radius:8px; padding:16px 18px;">
+    <div style="font-size:12px; font-weight:700; margin-bottom:8px;">The explanation is not a bug</div>
+    <div class="caption">People paste. Syllabi, code, error output, URLs. Treating a paste as composition draws a bar reaching backwards through the previous participant's turn. But the ceiling that exposes the problem also turns it into a signal: a contribution the person <em>composed</em> and one they <em>brought</em> are different interactional acts, and the transcript can tell them apart.</div>
+  </div>
+
+  <table style="border-collapse:collapse; width:100%;">
+    <tr><th style="width:180px;">Session</th><th>Turns composed</th><th>Turns brought</th><th>Share of human words that were brought</th></tr>
+    <tr><td>Chat</td><td>11 &middot; 208 words</td><td>5 &middot; 2,455 words</td><td><strong style="color:#f3f4f6;">92%</strong></td></tr>
+    <tr><td>Tool-augmented</td><td>9 &middot; 195 words</td><td>1 &middot; 29 words</td><td>13%</td></tr>
+    <tr><td>Single-agent</td><td>8 &middot; 114 words</td><td>3 &middot; 1,541 words</td><td><strong style="color:#f3f4f6;">93%</strong></td></tr>
+    <tr><td>Multi-agent</td><td>6 &middot; 134 words</td><td>8 &middot; 2,533 words</td><td><strong style="color:#f3f4f6;">95%</strong></td></tr>
+  </table>
+
+  <div style="display:grid; grid-template-columns:repeat(2, minmax(0,1fr)); gap:14px;">
+    <div style="background:#131820; border:1px solid #1f2937; border-radius:8px; padding:14px 16px;">
+      <div style="font-size:12px; font-weight:700; margin-bottom:6px;">What this does to the Speaker Garden</div>
+      <div class="caption">Bloom size encodes words. In the multi-agent session the person's bloom is built from 2,667 words, of which only 134 were composed in the moment. The visualization currently reports brought text and authored text as the same contribution.</div>
+    </div>
+    <div style="background:#131820; border:1px solid #1f2937; border-radius:8px; padding:14px 16px;">
+      <div style="font-size:12px; font-weight:700; margin-bottom:6px;">Tool-augmented is the outlier, and that is the finding</div>
+      <div class="caption">Only 13% brought. Its human turns are short approvals genuinely typed in the moment. The same person, the same week, contributing in a categorically different way once tools absorbed the work.</div>
+    </div>
+  </div>
+</div>
+</x-dc>
+</body>
+</html>

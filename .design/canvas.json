@@ -1,0 +1,13 @@
+{
+  "artboards": [
+    { "file": "Main.dc.html", "x": 0, "y": 0, "w": 1120, "h": 700, "title": "Definitions" },
+    { "file": "Lenses.dc.html", "x": 1220, "y": 0, "w": 1000, "h": 700, "title": "Three lenses on real data" },
+    { "file": "Composed.dc.html", "x": 2320, "y": 0, "w": 1000, "h": 700, "title": "Why typing speed fails" },
+    { "file": "Options.dc.html", "x": 0, "y": 820, "w": 1120, "h": 620, "title": "Six placements" },
+    { "file": "Recommended.dc.html", "x": 1220, "y": 820, "w": 1100, "h": 620, "title": "Recommended" }
+  ],
+  "annotations": [
+    { "id": "brief", "x": 0, "y": -150, "w": 520, "text": "Timing lenses for Transcript Explorer.\n\nFrom the 26.08.20 review: start/end is undefined per participant type, and Ben asked for a toggle.\n\nTop row is the framework and the evidence. Bottom row is where the control goes." }
+  ],
+  "launch": { "view": "canvas" }
+}

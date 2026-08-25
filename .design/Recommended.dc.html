@@ -1,0 +1,74 @@
+<!doctype html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+  <style>
+    body { margin:0; font-family: system-ui, -apple-system, 'Segoe UI', sans-serif; background:#0f1419; color:#f3f4f6; }
+    a { color:#60a5fa; } a:hover { color:#93c5fd; }
+    .lbl { font-size:10px; letter-spacing:.08em; text-transform:uppercase; color:#6b7280; }
+    .cap { font-size:11px; color:#9ca3af; line-height:1.45; }
+    .rail { width:38px; background:#1a1f26; border-right:1px solid #1f2937; display:flex; flex-direction:column; align-items:center; padding-top:10px; gap:14px; }
+    .ico { width:18px; height:18px; border:1.5px solid #6b7280; border-radius:4px; }
+    .ico.act { border-color:#60a5fa; background:rgba(96,165,250,.18); }
+    .seg { display:flex; border:1px solid #2d3748; border-radius:6px; overflow:hidden; }
+    .seg > div { flex:1; text-align:center; font-size:11px; padding:6px 0; color:#9ca3af; cursor:default; }
+    .on { background:#60a5fa; color:#0f1419; font-weight:700; }
+  </style>
+</helmet>
+<div style="display:flex; height:100%;">
+  <div class="rail">
+    <div class="ico"></div><div class="ico"></div><div class="ico"></div><div class="ico act"></div>
+  </div>
+  <div style="width:236px; background:#0f1419; border-right:1px solid #1f2937; padding:16px 14px; display:flex; flex-direction:column; gap:18px;">
+    <div style="font-size:11px; letter-spacing:.08em; text-transform:uppercase; color:#9ca3af; font-weight:600;">Settings</div>
+
+    <div style="display:flex; flex-direction:column; gap:8px;">
+      <div class="lbl">Timing</div>
+      <div class="seg"><div>Record</div><div class="on">Work</div><div>Floor</div></div>
+      <div class="cap" style="font-size:10px;">Bars show measured work. Gaps mean nobody was working.</div>
+    </div>
+
+    <div style="display:flex; flex-direction:column; gap:8px;">
+      <div class="lbl">Provenance</div>
+      <div style="font-size:11px; color:#9ca3af; display:flex; flex-direction:column; gap:6px;">
+        <div><span style="color:#60a5fa;">&#10003;</span>&nbsp; Shade estimated spans</div>
+        <div><span style="color:#60a5fa;">&#10003;</span>&nbsp; Mark brought text</div>
+      </div>
+      <div class="cap" style="font-size:10px;">Solid is measured, hatched is inferred.</div>
+    </div>
+
+    <div style="display:flex; flex-direction:column; gap:8px;">
+      <div class="lbl">Theme</div>
+      <div style="font-size:11px; color:#9ca3af;">Dark</div>
+    </div>
+  </div>
+
+  <div style="flex:1; padding:22px 26px; display:flex; flex-direction:column; gap:16px;">
+    <div style="display:flex; flex-direction:column; gap:5px;">
+      <div class="lbl">Recommended &mdash; A + D + E together</div>
+      <div style="font-size:19px; font-weight:700; letter-spacing:-.01em;">One global control, a legend that states the rule</div>
+      <div class="cap" style="max-width:66ch;">The lens belongs in Settings because it governs every time-based view. The legend under it carries the semantics, so the words Record, Work and Floor never have to be self-explanatory. Provenance shading is what keeps the Work lens honest: it separates the spans the log measured from the ones we inferred, on the chart, without a caption.</div>
+    </div>
+
+    <div style="background:#131820; border:1px solid #1f2937; border-radius:8px; padding:16px 18px; display:flex; flex-direction:column; gap:11px;">
+      <div style="font-size:12px; font-weight:700;">The decision that matters more than the placement</div>
+      <div class="cap">The lens must be applied when the chart is drawn, not when the file is written. Baking a choice into the CSV locks a published transcript to one reading, and the whole argument is that no single reading is sufficient. The converter should emit the facts &mdash; one end column, three candidate starts &mdash; and the tool should pick between them.</div>
+      <div style="display:flex; gap:8px; flex-wrap:wrap; margin-top:2px;">
+        <div style="font-size:10px; font-family:ui-monospace,Menlo,monospace; color:#9ca3af; border:1px solid #2d3748; border-radius:4px; padding:4px 8px;">end</div>
+        <div style="font-size:10px; font-family:ui-monospace,Menlo,monospace; color:#9ca3af; border:1px solid #2d3748; border-radius:4px; padding:4px 8px;">start_record</div>
+        <div style="font-size:10px; font-family:ui-monospace,Menlo,monospace; color:#9ca3af; border:1px solid #2d3748; border-radius:4px; padding:4px 8px;">start_work</div>
+        <div style="font-size:10px; font-family:ui-monospace,Menlo,monospace; color:#9ca3af; border:1px solid #2d3748; border-radius:4px; padding:4px 8px;">start_floor</div>
+        <div style="font-size:10px; font-family:ui-monospace,Menlo,monospace; color:#9ca3af; border:1px solid #2d3748; border-radius:4px; padding:4px 8px;">start_provenance</div>
+      </div>
+      <div class="cap" style="font-size:10px;">Two extra columns against the current fourteen. End never varies, which is why this stays small.</div>
+    </div>
+  </div>
+</div>
+</x-dc>
+</body>
+</html>

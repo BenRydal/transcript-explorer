@@ -632,10 +632,29 @@ TRANSCRIPT_COLUMNS = [
     "tokens_out",       # Extended: output token count
     "event_id",         # Extended: UUID for cross-referencing
     "content_type",     # Extended: text, code, thinking, error
+    # Timing lenses. `end` never varies: a contribution ends when the log says
+    # it concluded. Only the start is contested, and these are the three
+    # answers. `start` above stays the work lens so existing readers, which
+    # take start and end by column position, are unaffected.
+    "start_record",     # what was logged: equals end, a tick
+    "start_work",       # who was busy: measured span, or an estimate
+    "start_floor",      # whose turn it was: from the previous conclusion
+    "provenance",       # measured | estimated | marker
+    "human_text",       # composed | brought, on human messages only
 ]
 
 # Codes CSV columns
 CODES_COLUMNS = ["start", "end", "code"]
+
+
+# Fastest a person is taken to type. Above it the text was brought rather than
+# composed. Set generously: a strong typist sustains about 80wpm, so 120 clears
+# real typing while still catching a paste, which typically implies thousands.
+HUMAN_WPM_CEILING = 120
+
+# Width given to a human turn whose text was brought rather than composed.
+# There is no composition to measure, so this is a visible marker, not a claim.
+HUMAN_MARKER_S = 1.0
 
 
 # Shortest span accepted as a delegated agent actually running. Below this an
@@ -710,6 +729,13 @@ def events_to_transcript_csv(
     # End of the most recent human message. A measured turn begins when the
     # person submits, so that is what the reach-back is clamped to.
     last_human_end = 0.0
+    # Running maximum end across everything emitted so far. The floor lens
+    # starts each contribution where the last one concluded, so the session
+    # tiles with no unaccounted time.
+    floor_mark = 0.0
+    # End of the last thing to conclude, whoever produced it. Used to size the
+    # window a human turn had available, which is what makes a paste detectable.
+    prev_any_end = 0.0
 
     real_durations = _collect_real_durations(events)
     agent_spans = _collect_agent_spans(events)
@@ -765,15 +791,30 @@ def events_to_transcript_csv(
             turn_start = max(start - turn_measured, 0.0, last_human_end)
             if turn_start >= start:
                 turn_start = max(start - turn_measured, 0.0)
-            rows.append(_make_csv_row(event, turn_start, start))
+            rows.append(_make_csv_row(
+                event, turn_start, start,
+                start_floor=max(min(floor_mark, start), 0.0),
+                provenance="measured",
+            ))
+            floor_mark = max(floor_mark, start)
+            prev_any_end = max(prev_any_end, start)
             continue
+
+        is_human_message = (
+            event["event_type"] == "message"
+            and event["role"] == "user"
+            and not str(event.get("speaker") or "").startswith(("Agent:", "Tool:"))
+        )
 
         if measured is not None:
             # A measured duration is used as recorded. Only measured spans may
             # overlap: concurrency the log actually witnessed is a finding,
             # whereas concurrency produced by an estimate is an artefact.
             duration = measured
+            provenance = "measured"
         else:
+            provenance = "estimated" if event["event_type"] == "message" else "marker"
+
             # 3. Otherwise, estimate from event type and content length, capped
             # at this speaker's own next contribution.
             #
@@ -800,10 +841,45 @@ def events_to_transcript_csv(
             else:
                 duration = 2.0
 
-        end = start + duration
-        if end <= start:
-            end = start + 0.1
-        rows.append(_make_csv_row(event, start, end))
+        human_text = ""
+        if is_human_message:
+            # A person cannot type faster than HUMAN_WPM_CEILING. Above it the
+            # text was brought rather than composed: pasted, or prepared
+            # elsewhere. Estimating every human turn from a typing rate is
+            # impossible for 71% of turns in the multi-agent session, and this
+            # is why. The distinction is worth recording in its own right.
+            words = len(event["content"].split())
+            window = start - prev_any_end
+            implied = (words / (window / 60.0)) if window > 0.5 else float("inf")
+            human_text = "composed" if implied <= HUMAN_WPM_CEILING else "brought"
+            # The submit timestamp is when composing finished, so a human turn
+            # reaches back exactly as an AI turn does.
+            end = start
+            if human_text == "composed":
+                start = max(end - (words / (HUMAN_WPM_CEILING / 60.0)), prev_any_end)
+                provenance = "estimated"
+            else:
+                start = max(end - HUMAN_MARKER_S, prev_any_end)
+                provenance = "marker"
+            if start >= end:
+                # Nothing precedes this turn to reach back into, which happens
+                # when the session opens on a submit. Fall forward instead: a
+                # zero-width row is re-expanded downstream from a word count,
+                # which would silently reinstate an estimate we did not make.
+                end = start + HUMAN_MARKER_S
+        else:
+            end = start + duration
+            if end <= start:
+                end = start + 0.1
+
+        rows.append(_make_csv_row(
+            event, start, end,
+            start_floor=min(floor_mark, start) if floor_mark else start,
+            provenance=provenance,
+            human_text=human_text,
+        ))
+        floor_mark = max(floor_mark, end)
+        prev_any_end = max(prev_any_end, end)
         # A delegated agent is also recorded as `user` on the row holding the
         # brief it was handed, so role alone would treat a delegation as a
         # human submit. The speaker prefix separates them.
@@ -859,7 +935,14 @@ def _agent_identity(event: dict) -> tuple[str, str]:
     return agent_type, agent_id
 
 
-def _make_csv_row(event: dict, start: float, end: float) -> dict:
+def _make_csv_row(
+    event: dict,
+    start: float,
+    end: float,
+    start_floor: float | None = None,
+    provenance: str = "",
+    human_text: str = "",
+) -> dict:
     """Build a single CSV row from a canonical event."""
     tokens_out = ""
     if event.get("token_usage") and event["token_usage"].get("output"):
@@ -881,6 +964,11 @@ def _make_csv_row(event: dict, start: float, end: float) -> dict:
         "model": event.get("model") or "",
         "tokens_out": tokens_out,
         "event_id": event["event_id"],
+        "start_record": round(end, 3),
+        "start_work": round(start, 3),
+        "start_floor": round(start_floor if start_floor is not None else start, 3),
+        "provenance": provenance,
+        "human_text": human_text,
         "content_type": event.get("content_type", "text"),
     }
 
