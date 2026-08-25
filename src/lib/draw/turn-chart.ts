@@ -11,9 +11,32 @@ import { drawPlayhead, getWordColor } from './draw-utils';
 import { DrawContext } from './draw-context';
 import { MIN_BUBBLE_SIZE, turnBubbleHeight } from './turn-chart-scaling';
 
+/**
+ * Duration at a precision the value can carry.
+ *
+ * Rounding everything to whole seconds made a tool call and a marker
+ * indistinguishable: both read as 0s or 1s, when the calls themselves run in
+ * milliseconds. Below a second the unit is milliseconds, below ten it keeps one
+ * decimal, and above a minute it splits so a long agent span stays readable.
+ */
 function formatDuration(seconds: number): string {
-	return `${Math.round(seconds)}s`;
+	if (seconds < 1) return `${Math.round(seconds * 1000)}ms`;
+	if (seconds < 10) return `${seconds.toFixed(1)}s`;
+	if (seconds < 60) return `${Math.round(seconds)}s`;
+	const m = Math.floor(seconds / 60);
+	const r = Math.round(seconds % 60);
+	return r === 0 ? `${m}m` : `${m}m ${r}s`;
 }
+
+/**
+ * Words of a turn shown in the tooltip before it is cut.
+ *
+ * A single AI turn runs to several thousand words, and the tooltip was built
+ * from all of them on every frame the cursor rested on a bubble. The cap is a
+ * rendering bound, not a change to the data: word counts, colouring and every
+ * other view still read the whole turn.
+ */
+const TOOLTIP_WORD_LIMIT = 100;
 
 // Vertical padding so bubbles don't touch the top/bottom edges
 const VERTICAL_PADDING = 12;
@@ -273,7 +296,10 @@ export class TurnChart {
 
 	drawText(turnArray: DataPoint[], speakerColor: string): void {
 		const speaker = turnArray[0].speaker;
-		const combined = turnArray.map((e) => e.word).join(' ');
+		const truncated = turnArray.length > TOOLTIP_WORD_LIMIT;
+		const shown = truncated ? turnArray.slice(0, TOOLTIP_WORD_LIMIT) : turnArray;
+		const combined = shown.map((e) => e.word).join(' ')
+			+ (truncated ? ` <span style="opacity: 0.6">... ${turnArray.length - TOOLTIP_WORD_LIMIT} more words</span>` : '');
 		// Under area scaling the bubble is no longer a direct readout of turn
 		// length, so the exact count belongs in the tooltip.
 		const heading = this.useAreaScaling
