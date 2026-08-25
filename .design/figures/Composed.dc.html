@@ -1,0 +1,86 @@
+<!doctype html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400&display=swap">
+  <style>
+    body { margin:0; background:#fff; color:#1a1a1a; font-family:'IBM Plex Sans','Helvetica Neue',Helvetica,sans-serif; }
+    a { color:#0072B2; } a:hover { color:#005b8f; }
+    .ttl { font-size:15px; font-weight:600; }
+    .cap { font-size:12px; color:#555; line-height:1.55; }
+    .rowlab { font-size:11px; color:#333; width:112px; }
+    .stack { display:flex; height:22px; border-radius:2px; overflow:hidden; border:1px solid #e2e2e2; }
+    .n { font-size:9px; font-family:'IBM Plex Mono',monospace; color:#777; }
+    .key { display:flex; gap:18px; font-size:10px; color:#666; align-items:center; }
+    .sw { width:16px; height:9px; display:inline-block; margin-right:5px; vertical-align:middle; border:1px solid #d5d5d5; }
+    table { border-collapse:collapse; width:100%; }
+    th, td { text-align:left; padding:7px 10px; font-size:11px; border-bottom:1px solid #ececec; }
+    th { font-size:9.5px; font-weight:600; color:#555; text-transform:uppercase; letter-spacing:.06em; border-bottom:1px solid #bbb; }
+    td.num { font-family:'IBM Plex Mono',monospace; }
+  </style>
+</helmet>
+<div style="padding:26px 30px; display:flex; flex-direction:column; gap:15px;">
+  <div style="display:flex; flex-direction:column; gap:4px;">
+    <div class="ttl">Figure X. Most of what the person contributes was not written in the moment</div>
+    <div class="cap" style="max-width:98ch;">A contribution can be composed at the keyboard or brought from elsewhere and pasted. The two are different interactional acts, and the record separates them: above roughly 120 words per minute the text cannot have been typed in the window available. In the multi-agent session, 2,632 of the person's 2,667 words arrived already written.</div>
+  </div>
+
+  <div style="display:flex; flex-direction:column; gap:10px;">
+    <div style="display:flex; align-items:center; gap:12px;">
+      <div class="rowlab">Chat</div>
+      <div class="stack" style="flex:1;">
+        <div style="width:7.8%; background:#E69F00;"></div>
+        <div style="width:92.2%; background:#f6dfb4;"></div>
+      </div>
+      <div class="n" style="width:150px; text-align:right;">208 vs 2,455 words</div>
+    </div>
+    <div style="display:flex; align-items:center; gap:12px;">
+      <div class="rowlab">Tool-augmented</div>
+      <div class="stack" style="flex:1;">
+        <div style="width:53.1%; background:#E69F00;"></div>
+        <div style="width:46.9%; background:#f6dfb4;"></div>
+      </div>
+      <div class="n" style="width:150px; text-align:right;">119 vs 105 words</div>
+    </div>
+    <div style="display:flex; align-items:center; gap:12px;">
+      <div class="rowlab">Single-agent</div>
+      <div class="stack" style="flex:1;">
+        <div style="width:5.1%; background:#E69F00;"></div>
+        <div style="width:94.9%; background:#f6dfb4;"></div>
+      </div>
+      <div class="n" style="width:150px; text-align:right;">84 vs 1,571 words</div>
+    </div>
+    <div style="display:flex; align-items:center; gap:12px;">
+      <div class="rowlab">Multi-agent</div>
+      <div class="stack" style="flex:1;">
+        <div style="width:1.3%; background:#E69F00;"></div>
+        <div style="width:98.7%; background:#f6dfb4;"></div>
+      </div>
+      <div class="n" style="width:150px; text-align:right;">35 vs 2,632 words</div>
+    </div>
+  </div>
+
+  <div class="key" style="border-top:1px solid #ececec; padding-top:9px;">
+    <span><span class="sw" style="background:#E69F00;"></span>Composed at the keyboard</span>
+    <span><span class="sw" style="background:#f6dfb4;"></span>Brought and pasted</span>
+    <span style="color:#999; margin-left:auto;">Human words only.</span>
+  </div>
+
+  <table>
+    <tr><th style="width:150px;">Session</th><th>Turns composed</th><th>Turns brought</th><th>Share of human words brought</th></tr>
+    <tr><td>Chat</td><td class="num">11</td><td class="num">5</td><td class="num">92%</td></tr>
+    <tr><td>Tool-augmented</td><td class="num">6</td><td class="num">4</td><td class="num">47%</td></tr>
+    <tr><td>Single-agent</td><td class="num">6</td><td class="num">5</td><td class="num">95%</td></tr>
+    <tr><td>Multi-agent</td><td class="num">3</td><td class="num">11</td><td class="num">99%</td></tr>
+  </table>
+
+  <div class="cap">Two consequences follow. Any view that sizes a participant by word count reports brought text and authored text as one contribution, so the person's apparent share of an agentic session is largely material they carried in. And the tool-augmented session is the outlier in both directions: its human turns are short approvals genuinely typed at the keyboard, which is a different way of participating by the same person in the same week.</div>
+</div>
+</x-dc>
+</body>
+</html>

@@ -119,7 +119,8 @@
 		}
 		const mapping = buildFinalMapping(preview.columnMatches, preview.columnOverrides);
 		const remapped = remapData(preview.rawData, mapping);
-		const parseResult = parseCSVRows(remapped, get(AppSettingsStore).speechRateWordsPerSecond);
+		const settings = get(AppSettingsStore);
+		const parseResult = parseCSVRows(remapped, settings.speechRateWordsPerSecond, settings.timingLens);
 		if (parseResult.turns.length === 0) {
 			return { ...preview, ...emptyStats, error: 'No valid turns found after mapping columns.' };
 		}
@@ -215,6 +216,24 @@
 	// null on close, which would blank the panel body mid-exit  -  so we retain
 	// the last non-null tab and render the body/title off that during the
 	// closing transition. It updates only when a real tab is active.
+	// Rows of the loaded AI transcript, retained so that changing the timing
+	// lens can re-derive turn times without re-reading the file. Word times are
+	// copied from their turn at parse time, so a lens change is a re-parse
+	// rather than a redraw. Null for human transcripts and before any load.
+	let lastParsedRows: Record<string, unknown>[] | null = null;
+	let appliedLens = $state(get(AppSettingsStore).timingLens);
+
+	$effect(() => {
+		const lens = $AppSettingsStore.timingLens;
+		if (!lastParsedRows || lens === appliedLens) return;
+		appliedLens = lens;
+		const settings = get(AppSettingsStore);
+		const parsed = parseCSVRows(lastParsedRows, settings.speechRateWordsPerSecond, lens);
+		if (parsed.turns.length > 0) {
+			applyTranscriptResult(createTranscriptFromParsedText(parsed, parsed.detectedTimingMode));
+		}
+	});
+
 	let lastSidebarTab = $state($UIStateStore.activeSidebarTab);
 	$effect(() => {
 		if ($UIStateStore.activeSidebarTab !== null) {
@@ -921,8 +940,12 @@
 				if (!isValid) {
 					throw new Error('Invalid CSV format. Required columns: "speaker" and "content".');
 				}
-				const speechRate = get(AppSettingsStore).speechRateWordsPerSecond;
-				const parseResult = parseCSVRows(results.data, speechRate);
+				const settings = get(AppSettingsStore);
+				const parseResult = parseCSVRows(results.data, settings.speechRateWordsPerSecond, settings.timingLens);
+				// Kept so a timing-lens change can re-derive turn times without
+				// re-reading the file: the lens picks a different start column,
+				// and word times are copied from the turn at parse time.
+				lastParsedRows = results.data as Record<string, unknown>[];
 				if (parseResult.turns.length === 0) {
 					throw new Error('No valid turns found in CSV. Check that rows have speaker and content values.');
 				}

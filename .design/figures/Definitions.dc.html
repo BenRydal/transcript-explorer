@@ -1,0 +1,79 @@
+<!doctype html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400&display=swap">
+  <style>
+    body { margin:0; background:#fff; color:#1a1a1a; font-family:'IBM Plex Sans','Helvetica Neue',Helvetica,sans-serif; }
+    a { color:#0072B2; } a:hover { color:#005b8f; }
+    .ttl { font-size:15px; font-weight:600; }
+    .cap { font-size:12px; color:#555; line-height:1.55; }
+    table { border-collapse:collapse; width:100%; }
+    th, td { text-align:left; padding:9px 11px; font-size:11.5px; line-height:1.45; vertical-align:top; border-bottom:1px solid #ececec; }
+    th { font-size:10px; font-weight:600; color:#555; text-transform:uppercase; letter-spacing:.06em; border-bottom:1px solid #bbb; }
+    .dot { width:8px; height:8px; border-radius:2px; display:inline-block; margin-right:7px; vertical-align:middle; }
+    tr.foot td { background:#fafafa; color:#444; font-style:italic; border-bottom:none; }
+  </style>
+</helmet>
+<div style="padding:26px 30px; display:flex; flex-direction:column; gap:14px;">
+  <div style="display:flex; flex-direction:column; gap:4px;">
+    <div class="ttl">Table X. What counts as a start and an end, by participant</div>
+    <div class="cap" style="max-width:96ch;">A contribution ends when the log states it concluded, and that is the same under every lens. Only the start is contested. The three columns are not competing estimates of one value: each measures a different mechanism, so each is correct for a different question.</div>
+  </div>
+
+  <table>
+    <tr>
+      <th style="width:120px;">Participant</th>
+      <th style="width:126px;">End</th>
+      <th style="width:23%;">Record</th>
+      <th style="width:26%;">Work</th>
+      <th>Floor</th>
+    </tr>
+    <tr>
+      <td><span class="dot" style="background:#E69F00;"></span>Person</td>
+      <td>Submit</td>
+      <td>Equals the end. An instant.</td>
+      <td>Reaches back over the composition window, where the text was composed rather than brought.</td>
+      <td>From the previous participant's conclusion.</td>
+    </tr>
+    <tr>
+      <td><span class="dot" style="background:#0072B2;"></span>Primary AI</td>
+      <td>Turn completion</td>
+      <td>Equals the end. An instant.</td>
+      <td>Reaches back by the recorded turn duration.</td>
+      <td>From the person's submit.</td>
+    </tr>
+    <tr>
+      <td><span class="dot" style="background:#009E73;"></span>Delegated agent</td>
+      <td>Result returned</td>
+      <td>Two instants: spawn and result.</td>
+      <td>Spawn to result, where the delegation blocked.</td>
+      <td>From spawn.</td>
+    </tr>
+    <tr>
+      <td><span class="dot" style="background:#CC79A7;"></span>Tool</td>
+      <td>Result returned</td>
+      <td>Two instants: call and result.</td>
+      <td>Call to result.</td>
+      <td>From the caller's preceding act.</td>
+    </tr>
+    <tr class="foot">
+      <td colspan="2">A gap means</td>
+      <td>Nearly everything is a gap.</td>
+      <td>Nobody was working. Genuine idle.</td>
+      <td>Nothing. There are no gaps.</td>
+    </tr>
+  </table>
+
+  <div class="cap" style="border-top:1px solid #ececec; padding-top:10px;">
+    Each lens carries a different burden of evidence. Record claims only what was logged and is the conservative baseline. Work answers who was busy, and mixes measurement with inference, so it is reported alongside provenance. Floor answers whose turn it was, and is the reading closest to conversation analysis, being the only one under which the session is fully accounted for.
+  </div>
+</div>
+</x-dc>
+</body>
+</html>

@@ -1,7 +1,7 @@
 <script lang="ts">
 	import { get } from 'svelte/store';
 	import VizStore, { type VizStoreType } from '../../stores/vizStore';
-	import AppSettingsStore, { type AppSettingsStoreType } from '../../stores/appSettingsStore';
+	import AppSettingsStore, { type AppSettingsStoreType, type TimingLens } from '../../stores/appSettingsStore';
 	import TimelineStore from '../../stores/timelineStore';
 	import TranscriptStore from '../../stores/transcriptStore';
 	import { applyTimingModeToWordArray, updateTimelineFromData } from '$lib/core/timing-utils';
@@ -12,6 +12,14 @@
 	import { speakerPalette, selectSpeakerPalette } from '$lib/ui/speaker-palette';
 
 	const SPEAKER_PALETTE_ENTRIES = Object.entries(SPEAKER_PALETTES) as [SpeakerPaletteChoice, (typeof SPEAKER_PALETTES)[SpeakerPaletteChoice]][];
+
+	// One line each, phrased as what a bar and a gap then mean. The words
+	// record, work and floor do not have to carry the meaning on their own.
+	const TIMING_LENS_HINT: Record<TimingLens, string> = {
+		record: 'Every contribution is an instant, exactly as logged. Nothing is inferred.',
+		work: 'Bars are time spent working, measured where the log measured it. A gap means nobody was working.',
+		floor: 'Each contribution runs from the last one, so the session has no gaps. Bars show whose turn it was.'
+	};
 
 	function setVizField<K extends keyof VizStoreType>(key: K, value: VizStoreType[K]) {
 		VizStore.update((store) => ({ ...store, [key]: value }));
@@ -83,6 +91,23 @@
 				{/each}
 			</div>
 			<p class="settings-panel__hint">Sets default colors for new speakers and re-colors existing ones.</p>
+		</section>
+
+		<!-- Timing. Governs every time-based view at once, which is why it sits
+		     here rather than in a single visualization's settings. -->
+		<section class="settings-panel__section">
+			<p class="settings-panel__section-label">Timing</p>
+			<select
+				class="settings-panel__input"
+				aria-label="Timing lens"
+				value={$AppSettingsStore.timingLens}
+				onchange={(e) => setAppSettingsField('timingLens', e.currentTarget.value as TimingLens)}
+			>
+				<option value="record">Record</option>
+				<option value="work">Work</option>
+				<option value="floor">Floor</option>
+			</select>
+			<p class="settings-panel__hint">{TIMING_LENS_HINT[$AppSettingsStore.timingLens]}</p>
 		</section>
 
 		<!-- Display & playback  -  merged: viz scaling + video snippet preview. -->

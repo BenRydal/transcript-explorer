@@ -1,0 +1,92 @@
+<!doctype html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400&display=swap">
+  <style>
+    body { margin:0; background:#ffffff; color:#1a1a1a;
+           font-family:'IBM Plex Sans', 'Helvetica Neue', Helvetica, sans-serif; }
+    a { color:#0072B2; } a:hover { color:#005b8f; }
+    .cap { font-size:12px; color:#555; line-height:1.55; }
+    .ttl { font-size:15px; font-weight:600; }
+    .sub { font-size:11px; color:#777; font-weight:400; }
+    .lane { position:relative; height:30px; border-bottom:1px solid #ececec; }
+    .who { position:absolute; left:0; top:9px; width:78px; font-size:11px; color:#444; }
+    .tr { position:absolute; left:88px; right:8px; top:0; bottom:0; }
+    .bar { position:absolute; top:7px; height:16px; border-radius:2px; }
+    .tick { position:absolute; top:4px; width:2px; height:22px; }
+    .axis { position:relative; height:16px; margin-left:88px; margin-right:8px; }
+    .at { position:absolute; font-size:9px; color:#999; font-family:'IBM Plex Mono', monospace; transform:translateX(-50%); }
+    .key { display:flex; gap:16px; align-items:center; font-size:10px; color:#666; }
+    .sw { width:16px; height:9px; border-radius:2px; display:inline-block; margin-right:5px; vertical-align:middle; }
+  </style>
+</helmet>
+<div style="padding:26px 30px; display:flex; flex-direction:column; gap:16px;">
+  <div style="display:flex; flex-direction:column; gap:4px;">
+    <div class="ttl">Figure X. One exchange, read three ways</div>
+    <div class="cap" style="max-width:96ch;">Rows from the chat session. The person submits at 21.3s. The model's turn is stamped complete at 42.6s, having taken a recorded 21.2s. No value below is invented. The three panels differ only in which mechanism each chooses to represent.</div>
+  </div>
+
+  <div style="display:flex; flex-direction:column; gap:15px;">
+
+    <div>
+      <div style="font-size:12px; font-weight:600; margin-bottom:3px;">a. Record <span class="sub">what the log stated</span></div>
+      <div class="lane"><div class="who">Person</div><div class="tr">
+        <div class="tick" style="left:0%; background:#E69F00;"></div>
+        <div class="tick" style="left:49.5%; background:#E69F00;"></div>
+      </div></div>
+      <div class="lane"><div class="who">Primary AI</div><div class="tr">
+        <div class="tick" style="left:6.3%; background:#0072B2;"></div>
+        <div class="tick" style="left:99%; background:#0072B2;"></div>
+      </div></div>
+      <div class="cap" style="margin-top:5px;">Four instants. Nothing is claimed that the log did not state, and almost nothing is legible.</div>
+    </div>
+
+    <div>
+      <div style="font-size:12px; font-weight:600; margin-bottom:3px;">b. Work <span class="sub">who was busy</span></div>
+      <div class="lane"><div class="who">Person</div><div class="tr">
+        <div class="bar" style="left:0%; width:2.3%; background:#E69F00;"></div>
+        <div class="bar" style="left:47.2%; width:2.3%; background:#E69F00;"></div>
+      </div></div>
+      <div class="lane"><div class="who">Primary AI</div><div class="tr">
+        <div class="bar" style="left:2.3%; width:4%; background:#0072B2;"></div>
+        <div class="bar" style="left:49.5%; width:49.5%; background:#0072B2;"></div>
+      </div></div>
+      <div class="cap" style="margin-top:5px;">The 21 second span after the submit is the model working, and the log measured it. The stretch from 2.7s to 21.3s belongs to nobody: the person was reading.</div>
+    </div>
+
+    <div>
+      <div style="font-size:12px; font-weight:600; margin-bottom:3px;">c. Floor <span class="sub">whose turn it was</span></div>
+      <div class="lane"><div class="who">Person</div><div class="tr">
+        <div class="bar" style="left:0%; width:2.3%; background:#E69F00;"></div>
+        <div class="bar" style="left:6.3%; width:43.2%; background:#E69F00;"></div>
+      </div></div>
+      <div class="lane"><div class="who">Primary AI</div><div class="tr">
+        <div class="bar" style="left:2.3%; width:4%; background:#0072B2;"></div>
+        <div class="bar" style="left:49.5%; width:49.5%; background:#0072B2;"></div>
+      </div></div>
+      <div class="axis">
+        <div class="at" style="left:0%;">0s</div>
+        <div class="at" style="left:6.3%;">2.7</div>
+        <div class="at" style="left:49.5%;">21.3</div>
+        <div class="at" style="left:99%;">42.6</div>
+      </div>
+      <div class="cap" style="margin-top:3px;">Every second is accounted to a participant. The ratio between the two lanes is the division of labour across the exchange.</div>
+    </div>
+
+  </div>
+
+  <div class="key" style="border-top:1px solid #ececec; padding-top:10px;">
+    <span><span class="sw" style="background:#E69F00;"></span>Person</span>
+    <span><span class="sw" style="background:#0072B2;"></span>Primary AI</span>
+    <span style="color:#999;">End is identical in all three panels. Only the start differs.</span>
+  </div>
+</div>
+</x-dc>
+</body>
+</html>

@@ -1,0 +1,79 @@
+<!doctype html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400&display=swap">
+  <style>
+    body { margin:0; background:#fff; color:#1a1a1a; font-family:'IBM Plex Sans','Helvetica Neue',Helvetica,sans-serif; }
+    a { color:#0072B2; } a:hover { color:#005b8f; }
+    .ttl { font-size:15px; font-weight:600; }
+    .cap { font-size:12px; color:#555; line-height:1.55; }
+    .rowlab { font-size:11px; color:#333; width:112px; }
+    .stack { display:flex; height:22px; border-radius:2px; overflow:hidden; border:1px solid #e2e2e2; }
+    .n { font-size:9px; font-family:'IBM Plex Mono',monospace; color:#777; }
+    .key { display:flex; gap:18px; font-size:10px; color:#666; align-items:center; }
+    .sw { width:16px; height:9px; display:inline-block; margin-right:5px; vertical-align:middle; border:1px solid #d5d5d5; }
+  </style>
+</helmet>
+<div style="padding:26px 30px; display:flex; flex-direction:column; gap:16px;">
+  <div style="display:flex; flex-direction:column; gap:4px;">
+    <div class="ttl">Figure X. How much of each session is measured</div>
+    <div class="cap" style="max-width:96ch;">Every contribution's position in time is observed. Its width is another matter. A turn carrying a recorded duration is measured; a message without one is estimated from its length; a tool call is given a fixed marker, because the log records that it happened but not how long it took. The share that is measured falls sharply as the interaction grows more agentic.</div>
+  </div>
+
+  <div style="display:flex; flex-direction:column; gap:11px;">
+    <div style="display:flex; align-items:center; gap:12px;">
+      <div class="rowlab">Chat</div>
+      <div class="stack" style="flex:1;">
+        <div style="width:50.0%; background:#0072B2;"></div>
+        <div style="width:34.4%; background:#9dc9e4;"></div>
+        <div style="width:15.6%; background:#f2f2f2;"></div>
+      </div>
+      <div class="n" style="width:118px; text-align:right;">16 / 11 / 5</div>
+    </div>
+    <div style="display:flex; align-items:center; gap:12px;">
+      <div class="rowlab">Tool-augmented</div>
+      <div class="stack" style="flex:1;">
+        <div style="width:6.3%; background:#0072B2;"></div>
+        <div style="width:26.1%; background:#9dc9e4;"></div>
+        <div style="width:67.6%; background:#f2f2f2;"></div>
+      </div>
+      <div class="n" style="width:118px; text-align:right;">7 / 29 / 75</div>
+    </div>
+    <div style="display:flex; align-items:center; gap:12px;">
+      <div class="rowlab">Single-agent</div>
+      <div class="stack" style="flex:1;">
+        <div style="width:5.2%; background:#0072B2;"></div>
+        <div style="width:24.1%; background:#9dc9e4;"></div>
+        <div style="width:70.7%; background:#f2f2f2;"></div>
+      </div>
+      <div class="n" style="width:118px; text-align:right;">9 / 42 / 123</div>
+    </div>
+    <div style="display:flex; align-items:center; gap:12px;">
+      <div class="rowlab">Multi-agent</div>
+      <div class="stack" style="flex:1;">
+        <div style="width:4.4%; background:#0072B2;"></div>
+        <div style="width:26.8%; background:#9dc9e4;"></div>
+        <div style="width:68.8%; background:#f2f2f2;"></div>
+      </div>
+      <div class="n" style="width:118px; text-align:right;">15 / 91 / 233</div>
+    </div>
+  </div>
+
+  <div class="key" style="border-top:1px solid #ececec; padding-top:10px;">
+    <span><span class="sw" style="background:#0072B2;"></span>Measured</span>
+    <span><span class="sw" style="background:#9dc9e4;"></span>Estimated from length</span>
+    <span><span class="sw" style="background:#f2f2f2;"></span>Marker, duration unrecorded</span>
+    <span style="color:#999; margin-left:auto;">Counts are rows, given in the same order.</span>
+  </div>
+
+  <div class="cap">The chat session is half measured because the log emits one duration per human turn, and in a chat a human turn produces exactly one AI reply. In an agentic session a single turn produces a burst of messages and tool calls, and one duration still covers the lot. This is a property of the record rather than of the tool, and it is why a gap in the work lens is reported as unmeasured rather than as nothing having happened.</div>
+</div>
+</x-dc>
+</body>
+</html>
