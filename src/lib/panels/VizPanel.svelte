@@ -118,6 +118,24 @@
 				hint: 'Trim node labels to five characters. Full name still shows on hover.'
 			}
 		],
+		wordJourney: [
+			{
+				type: 'toggle',
+				key: 'wordJourneyHideAbsent',
+				label: 'Hide Actors Without the Word',
+				hint: 'Lanes that never carry the searched word are collapsed to a single count.'
+			},
+			{
+				type: 'select',
+				key: 'wordJourneyLaneOrder',
+				label: 'Lane Order',
+				options: [
+					{ value: 'uptake', label: 'Uptake (most occurrences first)' },
+					{ value: 'default', label: 'Transcript order' },
+					{ value: 'alpha', label: 'Alphabetical' }
+				]
+			} as PanelSelect<'wordJourneyLaneOrder'>
+		],
 		speakerHeatmap: [{ type: 'slider', key: 'heatmapBinCount', label: 'Bin Count', min: 0, max: 60, formatValue: formatBinCount }],
 		turnLength: [{ type: 'slider', key: 'turnLengthBinCount', label: 'Bin Count', min: 0, max: 60, formatValue: formatBinCount }],
 		speakerFingerprint: [

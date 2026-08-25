@@ -5,6 +5,7 @@ export type SpeakerSortOrder = 'default' | 'words' | 'turns' | 'alpha';
 export type FingerprintOverlayMode = 'auto' | 'overlay' | 'small-multiples';
 export type FingerprintChartMode = 'radar' | 'parallel';
 export type ContributionCloudWeighting = 'frequency' | 'tfidf';
+export type WordJourneyLaneOrder = 'uptake' | 'default' | 'alpha';
 
 export interface VizStoreType {
 	speakerGardenToggle: boolean;
@@ -44,6 +45,11 @@ export interface VizStoreType {
 	showFpsMonitor: boolean;
 	// when true, edges use lag-sequential adjusted residuals (z-scores) instead of raw counts
 	turnNetworkStatisticalMode: boolean;
+	// Word Journey settings
+	// A lane that never carries the searched token is padding, not data; at 25
+	// actors those lanes hold a third of the vertical space.
+	wordJourneyHideAbsent: boolean;
+	wordJourneyLaneOrder: WordJourneyLaneOrder;
 	// Speaker Heatmap settings
 	heatmapBinCount: number;
 	// Turn Length settings
@@ -91,6 +97,8 @@ export const initialViz: VizStoreType = {
 	turnNetworkShortLabels: false,
 	showFpsMonitor: false,
 	turnNetworkStatisticalMode: false,
+	wordJourneyHideAbsent: true,
+	wordJourneyLaneOrder: 'uptake',
 	heatmapBinCount: 0,
 	turnLengthBinCount: 0,
 	fingerprintOverlayMode: 'auto',
