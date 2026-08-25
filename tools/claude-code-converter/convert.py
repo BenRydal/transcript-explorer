@@ -656,6 +656,10 @@ HUMAN_WPM_CEILING = 120
 # There is no composition to measure, so this is a visible marker, not a claim.
 HUMAN_MARKER_S = 1.0
 
+# Narrowest a row may be. Below this the row is treated as zero-width
+# downstream and re-expanded from a word count.
+MIN_ROW_WIDTH_S = 0.1
+
 
 # Shortest span accepted as a delegated agent actually running. Below this an
 # `agent_result` is a launch acknowledgement, not a completion.
@@ -694,6 +698,27 @@ def _collect_agent_spans(events: list[dict]) -> dict[str, float]:
         if e.get("event_type") == "agent_result" and e.get("agent_id"):
             spans[e["agent_id"]] = e["session_elapsed_s"]
     return spans
+
+
+def _reach_back_floor(end: float) -> tuple[float, float]:
+    """Span for a contribution whose reach-back was fully consumed.
+
+    Two failures to avoid. A zero-width row is re-expanded downstream from a
+    word count, which would reinstate an estimate the converter deliberately
+    did not make. And pushing `end` forward cascades: the inflated end becomes
+    the next row's floor, and a session that ran 2,607s reports 3,616s once
+    enough rows have shifted.
+
+    So `end` stays pinned to the timestamp and the row keeps a sliver of width
+    by reaching back into its predecessor. The resulting overlap is a
+    millisecond artefact of two contributions abutting, which is a far smaller
+    lie than a session a thousand seconds too long. The one exception is a
+    session that opens on a submit, where there is nothing behind it to reach
+    into: that row alone falls forward, and being first it cannot cascade.
+    """
+    if end <= MIN_ROW_WIDTH_S:
+        return 0.0, max(end, HUMAN_MARKER_S)
+    return max(end - MIN_ROW_WIDTH_S, 0.0), end
 
 
 def events_to_transcript_csv(
@@ -853,7 +878,7 @@ def events_to_transcript_csv(
             end = start
             start = max(end - duration, prev_any_end)
             if start >= end:
-                end = start + duration
+                start, end = _reach_back_floor(end)
         elif is_human_message:
             # A person cannot type faster than HUMAN_WPM_CEILING. Above it the
             # text was brought rather than composed: pasted, or prepared
@@ -874,11 +899,7 @@ def events_to_transcript_csv(
                 start = max(end - HUMAN_MARKER_S, prev_any_end)
                 provenance = "marker"
             if start >= end:
-                # Nothing precedes this turn to reach back into, which happens
-                # when the session opens on a submit. Fall forward instead: a
-                # zero-width row is re-expanded downstream from a word count,
-                # which would silently reinstate an estimate we did not make.
-                end = start + HUMAN_MARKER_S
+                start, end = _reach_back_floor(end)
         else:
             end = start + duration
             if end <= start:

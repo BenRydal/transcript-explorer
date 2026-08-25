@@ -81,4 +81,34 @@ describe('timing lenses', () => {
 		expect(multi.filter((r) => r.human_text === 'brought').length)
 			.toBeGreaterThan(multi.filter((r) => r.human_text === 'composed').length);
 	});
+
+	it('never extends a session past its last recorded event', () => {
+		// A row whose reach-back was consumed used to push its end forward. The
+		// inflated end became the next row's floor, and the multi-agent session
+		// reported 3,616s against a source that ran 2,607s.
+		const SOURCE_END: Record<string, number> = {
+			'web-design-chat': 1990.0,
+			'web-design-tools': 2495.5,
+			'web-design-single-agent': 2065.6,
+			'web-design-multi-agent': 2607.3
+		};
+		for (const d of SETS) {
+			const maxEnd = Math.max(...load(d).map((r) => Number(r.end)));
+			expect(maxEnd).toBeLessThanOrEqual(SOURCE_END[d] + 1);
+		}
+	});
+
+	it('keeps the floor lens summing to the session, so shares are meaningful', () => {
+		for (const d of SETS) {
+			const rows = load(d);
+			const spans = rows.map((r) => [Number(r.start_floor), Number(r.end)] as const).sort((a, b) => a[0] - b[0]);
+			let covered = 0, mark = 0;
+			for (const [s, e] of spans) {
+				const from = Math.max(s, mark);
+				if (e > from) { covered += e - from; mark = e; }
+			}
+			const maxEnd = Math.max(...rows.map((r) => Number(r.end)));
+			expect(covered / maxEnd).toBeGreaterThan(0.99);
+		}
+	});
 });
