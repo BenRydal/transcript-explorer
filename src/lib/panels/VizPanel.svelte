@@ -72,7 +72,15 @@
 	const formatBinCount = (v: number) => (v === 0 ? 'Auto' : String(v));
 
 	const panelOptionsMap: Record<string, PanelOption[]> = {
-		speakerGarden: [{ type: 'speakerSort' }],
+		speakerGarden: [
+			{ type: 'speakerSort' },
+			{
+				type: 'toggle',
+				key: 'speakerGardenLabels',
+				label: 'Speaker Labels',
+				hint: 'Name each flower at the baseline. Rotated when columns are narrow.'
+			}
+		],
 		turnChart: [
 			{ type: 'toggle', key: 'separateToggle', label: 'Group by Speaker' },
 			{ type: 'toggle', key: 'silenceOverlapToggle', label: 'Silence Overlap' }

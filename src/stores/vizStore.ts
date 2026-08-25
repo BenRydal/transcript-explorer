@@ -45,6 +45,10 @@ export interface VizStoreType {
 	showFpsMonitor: boolean;
 	// when true, edges use lag-sequential adjusted residuals (z-scores) instead of raw counts
 	turnNetworkStatisticalMode: boolean;
+	// Speaker Garden settings
+	// Identity was only ever available on hover, which leaves a printed figure
+	// unreadable.
+	speakerGardenLabels: boolean;
 	// Question Flow settings
 	// Tools never raise questions, so at agentic scale roughly half the lanes
 	// are empty by definition; the count is stated instead of drawn as gaps.
@@ -104,6 +108,7 @@ export const initialViz: VizStoreType = {
 	turnNetworkShortLabels: false,
 	showFpsMonitor: false,
 	turnNetworkStatisticalMode: false,
+	speakerGardenLabels: true,
 	questionFlowHideAbsent: true,
 	questionFlowTypeMarks: true,
 	wordJourneyHideAbsent: true,
