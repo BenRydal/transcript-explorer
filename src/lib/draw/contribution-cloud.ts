@@ -157,7 +157,9 @@ export class ContributionCloud {
 			buffer.clear();
 		} else {
 			if (existing) disposeBuffer(existing); // free only a buffer we still own
-			buffer = sk.createGraphics(this.bounds.width, this.bounds.height);
+			// A degenerate panel would ask for a zero or negative buffer, which
+			// throws out of the frame and ends p5's animation loop.
+			buffer = sk.createGraphics(Math.max(1, Math.floor(this.bounds.width)), Math.max(1, Math.floor(this.bounds.height)));
 			bufferCache.owner = sk;
 		}
 		buffer.textFont(sk.font);

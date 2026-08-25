@@ -25,6 +25,8 @@ let mouseEventLocked = false;
 let themeObserver: MutationObserver | null = null;
 let contextMenuHandler: ((e: MouseEvent) => void) | null = null;
 let contextMenuCanvasEl: HTMLCanvasElement | null = null;
+// Last exception thrown out of a view's draw, surfaced on the canvas.
+let lastDrawError: { message: string; frame: string } | null = null;
 let pointerMoveHandler: ((e: PointerEvent) => void) | null = null;
 
 TimelineStore.subscribe((data) => {
@@ -181,11 +183,55 @@ export const igsSketch = (p5: any) => {
 		const theme = getDrawTheme();
 		p5.background(theme.bg);
 		if (p5.arrayIsLoaded(transcript.wordArray) && p5.arrayIsLoaded(users)) {
-			p5.renderer.drawViz();
+			p5.drawGuarded(() => p5.renderer.drawViz());
 		}
 		if (timeline.isAnimating) p5.updateAnimation();
 		p5.updateCursor();
+		if (lastDrawError) p5.drawErrorBanner();
 		if (currConfig?.showFpsMonitor) p5.drawSizeProbe();
+	};
+
+	/**
+	 * Runs one frame's drawing so a throw cannot end the animation.
+	 *
+	 * p5's `_draw` calls `redraw()` before requesting the next frame, so an
+	 * exception escaping a view leaves the loop with no pending
+	 * requestAnimationFrame -- the canvas freezes on its last good frame for the
+	 * rest of the session, and only `resizeCanvas` (which redraws once) revives
+	 * it. A view that cannot draw should report itself, not stop the tool.
+	 */
+	p5.drawGuarded = (body: () => void) => {
+		const depth = p5._styles?.length ?? 0;
+		try {
+			body();
+			if (lastDrawError) lastDrawError = null;
+		} catch (err) {
+			const message = err instanceof Error ? `${err.name}: ${err.message}` : String(err);
+			const frame = err instanceof Error && err.stack ? (err.stack.split('\n')[1] ?? '').trim() : '';
+			if (lastDrawError?.message !== message) {
+				console.error('[transcript-explorer] visualization draw failed', err);
+			}
+			lastDrawError = { message, frame };
+		} finally {
+			// A throw mid-push leaves the style stack unbalanced, which would
+			// corrupt every later frame. Drain back to where this frame started.
+			while ((p5._styles?.length ?? 0) > depth) p5.pop();
+		}
+	};
+
+	p5.drawErrorBanner = () => {
+		if (!lastDrawError) return;
+		const lines = ['This visualization failed to draw.', lastDrawError.message, lastDrawError.frame].filter(Boolean);
+
+		p5.push();
+		p5.noStroke();
+		p5.fill(180, 30, 40, 235);
+		p5.rect(0, 0, p5.width, 22 + lines.length * 16);
+		p5.fill(255);
+		p5.textAlign(p5.LEFT, p5.TOP);
+		p5.textSize(12);
+		lines.forEach((line, i) => p5.text(line, 12, 10 + i * 16));
+		p5.pop();
 	};
 
 	// Temporary diagnostic behind the existing FPS toggle: reports whether the

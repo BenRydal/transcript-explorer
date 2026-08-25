@@ -16,6 +16,7 @@ import { resetTooltipFrame, finalizeTooltipFrame } from '../../stores/tooltipSto
 import type { Bounds } from './types/bounds';
 import { CANVAS_SPACING } from '../constants/ui';
 import { DrawContext } from './draw-context';
+import { dashboardLayout } from './dashboard-layout';
 import type { VizStoreType } from '../../stores/vizStore';
 
 interface DrawResult {
@@ -296,32 +297,6 @@ export class Draw {
 	 * 4 panels: 2x2 grid
 	 */
 	getDashboardLayout(count: number): Bounds[] {
-		const padding = CANVAS_SPACING / 2;
-		const gap = CANVAS_SPACING;
-		const totalWidth = this.sk.width - padding * 2;
-		const totalHeight = this.sk.height - padding * 2;
-		const halfWidth = (totalWidth - gap) / 2;
-		const halfHeight = (totalHeight - gap) / 2;
-
-		if (count === 2) {
-			return [
-				{ x: padding, y: padding, width: halfWidth, height: totalHeight },
-				{ x: padding + halfWidth + gap, y: padding, width: halfWidth, height: totalHeight }
-			];
-		} else if (count === 4) {
-			return [
-				{ x: padding, y: padding, width: halfWidth, height: halfHeight },
-				{ x: padding + halfWidth + gap, y: padding, width: halfWidth, height: halfHeight },
-				{ x: padding, y: padding + halfHeight + gap, width: halfWidth, height: halfHeight },
-				{ x: padding + halfWidth + gap, y: padding + halfHeight + gap, width: halfWidth, height: halfHeight }
-			];
-		} else {
-			// 3 panels (default): top full-width + 2 bottom
-			return [
-				{ x: padding, y: padding, width: totalWidth, height: halfHeight },
-				{ x: padding, y: padding + halfHeight + gap, width: halfWidth, height: halfHeight },
-				{ x: padding + halfWidth + gap, y: padding + halfHeight + gap, width: halfWidth, height: halfHeight }
-			];
-		}
+		return dashboardLayout(this.sk.width, this.sk.height, count);
 	}
 }
