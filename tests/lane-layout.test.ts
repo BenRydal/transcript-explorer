@@ -12,7 +12,7 @@
 import { readFileSync } from 'node:fs';
 import { describe, expect, it } from 'vitest';
 import Papa from 'papaparse';
-import { orderLanes, partitionLanes, truncateMiddle, clusterByLane, clusterRadius } from '../src/lib/draw/word-journey-layout';
+import { orderLanes, partitionLanes, truncateMiddle, clusterByLane, clusterRadius } from '../src/lib/draw/lane-layout';
 import { parseCSVRows } from '../src/lib/core/csv-txt-parser';
 import { createTranscriptFromParsedText } from '../src/lib/core/transcript-factory';
 

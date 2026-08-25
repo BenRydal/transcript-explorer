@@ -5,7 +5,7 @@ import type { Bounds } from './types/bounds';
 import type { WordOccurrence } from '../core/dynamic-data';
 import { withDimming, getCrossHighlight, drawTimeAxis, getWordColor } from './draw-utils';
 import { DrawContext } from './draw-context';
-import { orderLanes, partitionLanes, truncateMiddle, clusterByLane, clusterRadius, type Cluster } from './word-journey-layout';
+import { orderLanes, partitionLanes, truncateMiddle, clusterByLane, clusterRadius, type Cluster } from './lane-layout';
 
 const GUTTER_MIN = 60;
 const GUTTER_MAX = 220;

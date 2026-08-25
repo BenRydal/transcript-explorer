@@ -118,6 +118,20 @@
 				hint: 'Trim node labels to five characters. Full name still shows on hover.'
 			}
 		],
+		questionFlow: [
+			{
+				type: 'toggle',
+				key: 'questionFlowHideAbsent',
+				label: 'Hide Actors Without Questions',
+				hint: 'Actors that neither ask nor answer are collapsed to a single count.'
+			},
+			{
+				type: 'toggle',
+				key: 'questionFlowTypeMarks',
+				label: 'Encode Question Type',
+				hint: 'Circle, square, triangle for conversational, structured elicitation, inter-agent. Answers draw as rings. AI transcripts only.'
+			}
+		],
 		wordJourney: [
 			{
 				type: 'toggle',

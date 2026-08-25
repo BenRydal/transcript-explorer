@@ -45,6 +45,13 @@ export interface VizStoreType {
 	showFpsMonitor: boolean;
 	// when true, edges use lag-sequential adjusted residuals (z-scores) instead of raw counts
 	turnNetworkStatisticalMode: boolean;
+	// Question Flow settings
+	// Tools never raise questions, so at agentic scale roughly half the lanes
+	// are empty by definition; the count is stated instead of drawn as gaps.
+	questionFlowHideAbsent: boolean;
+	// Shape encodes conversational / elicitation / inter-agent, replacing a `?`
+	// glyph that was redundant in a view where every mark is a question.
+	questionFlowTypeMarks: boolean;
 	// Word Journey settings
 	// A lane that never carries the searched token is padding, not data; at 25
 	// actors those lanes hold a third of the vertical space.
@@ -97,6 +104,8 @@ export const initialViz: VizStoreType = {
 	turnNetworkShortLabels: false,
 	showFpsMonitor: false,
 	turnNetworkStatisticalMode: false,
+	questionFlowHideAbsent: true,
+	questionFlowTypeMarks: true,
 	wordJourneyHideAbsent: true,
 	wordJourneyLaneOrder: 'uptake',
 	heatmapBinCount: 0,

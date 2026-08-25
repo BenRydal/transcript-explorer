@@ -1,6 +1,6 @@
 /**
- * Lane and mark layout for the Word Journey. Pure, so it can be exercised
- * without a canvas.
+ * Lane and mark layout shared by the lane-based views. Pure, so it can be
+ * exercised without a canvas.
  */
 
 export type LaneOrder = 'uptake' | 'default' | 'alpha';
