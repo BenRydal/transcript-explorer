@@ -101,6 +101,7 @@
 	// Sidebar panels
 	import VizPanel from '$lib/panels/VizPanel.svelte';
 	import FiltersPanel from '$lib/panels/FiltersPanel.svelte';
+	import ActiveFilterBar from '$lib/components/ActiveFilterBar.svelte';
 	import DataPanel from '$lib/panels/DataPanel.svelte';
 	import SettingsPanel from '$lib/panels/SettingsPanel.svelte';
 
@@ -206,6 +207,7 @@
 	// Sidebar helpers
 	const SIDEBAR_TABS: { id: SidebarTab; label: string }[] = [
 		{ id: 'viz', label: 'Visualizations' },
+		{ id: 'filters', label: 'Filters' },
 		{ id: 'data', label: 'Data' },
 		{ id: 'settings', label: 'Settings' },
 		{ id: 'help', label: 'Help' }
@@ -248,7 +250,6 @@
 	// p5 canvas reflow smoothly (it tracks its container via ResizeObserver)
 	// instead of snapping when the layout changes in one step.
 	const isSidebarOpen = $derived($UIStateStore.activeSidebarTab !== null);
-	const isFiltersDockOpen = $derived($UIStateStore.filtersDockOpen);
 
 	// Mirrors FiltersPanel's own tally so the rail can show what is active
 	// without the dock being open.
@@ -301,12 +302,6 @@
 			welcomeOpen = true;
 			return;
 		}
-		// Filters own a separate right-hand dock so they can stay open alongside
-		// the visualization settings rather than replacing them.
-		if (id === 'filters') {
-			UIStateStore.update((s) => ({ ...s, filtersDockOpen: !s.filtersDockOpen }));
-			return;
-		}
 		const current = $UIStateStore.activeSidebarTab;
 		const next = (current === id ? null : id) as SidebarTab | null;
 		setSidebarTab(next);
@@ -351,6 +346,7 @@
 	// `label` prop as aria-label  -  stable enough to target).
 	const SIDEBAR_LABEL_FOR_TAB: Record<SidebarTab, string> = {
 		viz: 'Visualizations',
+		filters: 'Filters',
 		data: 'Data',
 		settings: 'Settings',
 		help: 'Help'
@@ -1310,6 +1306,8 @@
 								<div in:fade={{ duration: 140, delay: 60 }} out:fade={{ duration: 80 }}>
 									{#if lastSidebarTab === 'viz'}
 										<VizPanel />
+									{:else if lastSidebarTab === 'filters'}
+										<FiltersPanel />
 									{:else if lastSidebarTab === 'data'}
 										<DataPanel
 											selectedExample={selectedExampleId}
@@ -1328,33 +1326,6 @@
 				</nav>
 			{/snippet}
 
-			{#snippet rightRail()}
-				<!-- Filters dock. Mirrors the left `.te-sidepanel-shell` pattern:
-				     the library SidePanel is always mounted at a fixed width and
-				     this wrapper animates the OCCUPIED width 0 <-> dock width, so
-				     the canvas container reflows continuously and the p5
-				     ResizeObserver keeps the canvas tracking it. Kept separate
-				     from the sidebar so filtering and shaping the view can happen
-				     together. -->
-				<div
-					id="te-filters-dock"
-					role="region"
-					aria-label="Filters panel"
-					class="te-filters-dock-shell"
-					style:width={`${isFiltersDockOpen ? $UIStateStore.filtersDockWidth : 0}px`}
-				>
-					<SidePanel
-						open={true}
-						title="Filters"
-						width={$UIStateStore.filtersDockWidth}
-						resizable={false}
-						onClose={() => UIStateStore.update((s) => ({ ...s, filtersDockOpen: false }))}
-					>
-						<FiltersPanel />
-					</SidePanel>
-				</div>
-			{/snippet}
-
 			{#snippet canvas()}
 				<!-- Motion wrapper (B3 + B4): binds opacity to canvasOpacity
 				     so workspace switches fade to 0.5 briefly and first
@@ -1370,8 +1341,9 @@
 						onresize={handlePanelResize}
 					>
 						{#snippet first()}
-							<main class="h-full relative" id="main-content" tabindex="-1" aria-label="Transcript visualization workspace">
-								<div class="h-full relative" id="p5-container" data-tour="visualization">
+							<main class="te-canvas-main" id="main-content" tabindex="-1" aria-label="Transcript visualization workspace">
+								<ActiveFilterBar />
+								<div class="relative te-canvas-stage" id="p5-container" data-tour="visualization">
 									<!-- SR-only description so a screen-reader user knows
 							     a canvas-rendered visualization lives here. Using
 							     a hidden caption avoids role="img" on the outer
@@ -1567,21 +1539,19 @@
 		}
 	}
 
-	/* Filters dock, mirroring the left shell. Clips its fixed-width SidePanel
-	   as the occupied width animates, so the canvas reflows continuously. */
-	.te-filters-dock-shell {
+	/* The canvas column: the active-filter strip takes the height it needs and
+	   the p5 stage takes the rest, so the bar never sits over the canvas. */
+	.te-canvas-main {
 		display: flex;
+		flex-direction: column;
 		height: 100%;
 		min-height: 0;
-		overflow: hidden;
-		border-left: 1px solid var(--te-border-muted);
-		transition: width 180ms cubic-bezier(0.22, 1, 0.36, 1);
+		position: relative;
 	}
 
-	@media (prefers-reduced-motion: reduce) {
-		.te-filters-dock-shell {
-			transition: none;
-		}
+	.te-canvas-stage {
+		flex: 1 1 auto;
+		min-height: 0;
 	}
 
 	/* Timeline region (bottom bar): inset the TimelineScrubber from the

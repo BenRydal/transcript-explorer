@@ -73,3 +73,33 @@ export function capBubbleHeight(height: number, width: number, maxAspect: number
 	const limit = width * maxAspect;
 	return height > limit ? { height: limit, capped: true } : { height, capped: false };
 }
+
+export interface BubbleTick {
+	/** Word count this tick stands for. */
+	words: number;
+	/** Half-height of a bubble of that many words, in pixels. */
+	halfHeight: number;
+}
+
+/**
+ * Reference marks for bubble height, so a mark's size can be read as a
+ * quantity rather than only compared to its neighbours.
+ *
+ * Height is square-rooted for AI transcripts, so evenly spaced pixels do not
+ * mean evenly spaced word counts. Powers of ten make that legible without
+ * laying a grid over the marks: the gaps visibly compress toward the top,
+ * which is the scale telling the truth about itself.
+ */
+export function bubbleScaleTicks(domainMax: number, lane: number, useAreaScaling: boolean, maxTicks = 3): BubbleTick[] {
+	if (!(domainMax > 0) || !(lane > 0)) return [];
+
+	const ticks: BubbleTick[] = [];
+	for (let value = 10; value <= domainMax; value *= 10) {
+		const halfHeight = turnBubbleHeight(value, domainMax, lane, useAreaScaling) / 2;
+		// Below a few pixels the label collides with the axis and reads as noise.
+		if (halfHeight >= 6) ticks.push({ words: value, halfHeight });
+	}
+
+	// Keep the largest, which carry the most separation.
+	return ticks.slice(-maxTicks);
+}

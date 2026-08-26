@@ -14,7 +14,7 @@
 import { readFileSync } from 'node:fs';
 import { describe, expect, it } from 'vitest';
 import Papa from 'papaparse';
-import { MIN_BUBBLE_SIZE, turnBubbleHeight, capBubbleHeight } from '../src/lib/draw/turn-chart-scaling';
+import { MIN_BUBBLE_SIZE, turnBubbleHeight, capBubbleHeight, bubbleScaleTicks } from '../src/lib/draw/turn-chart-scaling';
 import { calculateTranscriptStats } from '../src/lib/core/transcript-stats';
 import { splitIntoWordTokens } from '../src/lib/core/string-utils';
 import { DataPoint } from '../src/models/dataPoint';
@@ -174,5 +174,40 @@ describe('capBubbleHeight', () => {
 		expect(capBubbleHeight(100, 0, 8)).toEqual({ height: 100, capped: false });
 		expect(capBubbleHeight(0, 10, 8)).toEqual({ height: 0, capped: false });
 		expect(capBubbleHeight(100, 10, 0)).toEqual({ height: 100, capped: false });
+	});
+});
+
+describe('bubbleScaleTicks', () => {
+	it('offers reference marks inside the scale', () => {
+		const ticks = bubbleScaleTicks(6465, 800, true);
+		expect(ticks.length).toBeGreaterThan(0);
+		for (const t of ticks) {
+			expect(t.words).toBeLessThanOrEqual(6465);
+			expect(t.halfHeight).toBeGreaterThan(0);
+			expect(t.halfHeight).toBeLessThanOrEqual(400);
+		}
+	});
+
+	it('orders ticks by size, so labels never cross', () => {
+		const ticks = bubbleScaleTicks(50_000, 600, true);
+		for (let i = 1; i < ticks.length; i++) {
+			expect(ticks[i].words).toBeGreaterThan(ticks[i - 1].words);
+			expect(ticks[i].halfHeight).toBeGreaterThan(ticks[i - 1].halfHeight);
+		}
+	});
+
+	it('drops ticks too small to label', () => {
+		for (const t of bubbleScaleTicks(100_000, 400, true)) {
+			expect(t.halfHeight).toBeGreaterThanOrEqual(6);
+		}
+	});
+
+	it('returns nothing for a degenerate scale rather than throwing', () => {
+		expect(bubbleScaleTicks(0, 800, true)).toEqual([]);
+		expect(bubbleScaleTicks(1000, 0, true)).toEqual([]);
+	});
+
+	it('caps how many it returns', () => {
+		expect(bubbleScaleTicks(1_000_000, 900, true, 2).length).toBeLessThanOrEqual(2);
 	});
 });

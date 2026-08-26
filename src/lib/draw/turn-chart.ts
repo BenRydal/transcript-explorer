@@ -9,7 +9,7 @@ import type { Bounds } from './types/bounds';
 import { CANVAS_SPACING } from '../constants/ui';
 import { drawPlayhead, getWordColor } from './draw-utils';
 import { DrawContext } from './draw-context';
-import { MIN_BUBBLE_SIZE, turnBubbleHeight, capBubbleHeight } from './turn-chart-scaling';
+import { MIN_BUBBLE_SIZE, turnBubbleHeight, capBubbleHeight, bubbleScaleTicks } from './turn-chart-scaling';
 
 /**
  * Duration at a precision the value can carry.
@@ -155,6 +155,7 @@ export class TurnChart {
 		}
 
 		this.drawTimeline();
+		if (this.useAreaScaling && !this.ctx.config.separateToggle) this.drawScaleTicks();
 		this.ctx.sk.textSize(this.ctx.sk.toolTipTextSize);
 		for (const key in sortedAnimationWordArray) {
 			const turnArray = sortedAnimationWordArray[key];
@@ -255,6 +256,35 @@ export class TurnChart {
 			this.ctx.sk.noStroke();
 			this.ctx.sk.text(formatTimeCompact(time), x, y + tickLength + 2);
 		}
+	}
+
+	/**
+	 * Hairlines at round word counts, so a bubble's height reads as a quantity.
+	 * Overlay mode only -- in separate mode each lane is short enough that the
+	 * marks would crowd the rows they annotate.
+	 */
+	drawScaleTicks(): void {
+		const ticks = bubbleScaleTicks(this.maxTurnLength, this.bounds.height, true);
+		if (ticks.length === 0) return;
+
+		const sk = this.ctx.sk;
+		const x = this.bounds.x;
+		sk.push();
+		sk.textAlign(sk.LEFT, sk.BOTTOM);
+		sk.textSize(9);
+		for (const tick of ticks) {
+			const y = this.yPosHalfHeight - tick.halfHeight;
+			const rule = sk.color(this.ctx.theme.fgMuted);
+			rule.setAlpha(38);
+			sk.stroke(rule);
+			sk.strokeWeight(1);
+			sk.line(x, y, x + this.bounds.width, y);
+
+			sk.noStroke();
+			sk.fill(this.ctx.theme.fgMuted);
+			sk.text(tick.words >= 1000 ? `${tick.words / 1000}k` : String(tick.words), x + 3, y - 1);
+		}
+		sk.pop();
 	}
 
 	/** Draws turn bubbles */

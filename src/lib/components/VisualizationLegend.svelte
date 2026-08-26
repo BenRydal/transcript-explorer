@@ -56,6 +56,8 @@
 					{ icon: Clock, label: `Horizontal position \u2192 ${isUntimed ? 'word count' : 'time'}` },
 					{ icon: ArrowLeftRight, label: `Bubble width \u2192 ${isUntimed ? 'turn length' : 'turn duration'}` },
 					{ icon: ArrowUpDown, label: 'Bubble height \u2192 words in turn' },
+					{ icon: Minus, label: 'Hairline \u2192 words at that height' },
+					{ icon: Square, label: 'Notched edge \u2192 taller than the scale allows' },
 					{ speakerColors: true, label: 'Color \u2192 speaker' },
 					...v('Click bubble \u2192 play from turn')
 				]
