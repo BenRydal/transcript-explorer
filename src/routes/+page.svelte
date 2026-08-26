@@ -13,7 +13,7 @@
 		type ActivityBarItem,
 		type ContextMenuItem
 	} from 'svelte-p5-components';
-	import { LayoutDashboard, Filter, Upload, Settings as SettingsIcon, CircleHelp } from '@lucide/svelte';
+	import { LayoutDashboard, Upload, Settings as SettingsIcon, CircleHelp } from '@lucide/svelte';
 	import { formatTimeAuto } from '$lib/core/time-utils';
 	import { browser } from '$app/environment';
 	import { onMount } from 'svelte';
@@ -100,7 +100,6 @@
 
 	// Sidebar panels
 	import VizPanel from '$lib/panels/VizPanel.svelte';
-	import FiltersPanel from '$lib/panels/FiltersPanel.svelte';
 	import ActiveFilterBar from '$lib/components/ActiveFilterBar.svelte';
 	import DataPanel from '$lib/panels/DataPanel.svelte';
 	import SettingsPanel from '$lib/panels/SettingsPanel.svelte';
@@ -207,7 +206,6 @@
 	// Sidebar helpers
 	const SIDEBAR_TABS: { id: SidebarTab; label: string }[] = [
 		{ id: 'viz', label: 'Visualizations' },
-		{ id: 'filters', label: 'Filters' },
 		{ id: 'data', label: 'Data' },
 		{ id: 'settings', label: 'Settings' },
 		{ id: 'help', label: 'Help' }
@@ -250,16 +248,6 @@
 	// p5 canvas reflow smoothly (it tracks its container via ResizeObserver)
 	// instead of snapping when the layout changes in one step.
 	const isSidebarOpen = $derived($UIStateStore.activeSidebarTab !== null);
-
-	// Mirrors FiltersPanel's own tally so the rail can show what is active
-	// without the dock being open.
-	const activeFilterCount = $derived(
-		($FiltersStore.wordToSearch.length > 0 ? 1 : 0) +
-			($UserStore.some((u) => !u.enabled) ? 1 : 0) +
-			($CodeStore.length > 0 && $CodeStore.some((c) => !c.enabled) ? 1 : 0) +
-			($CodeStore.length > 0 && !$FiltersStore.showUncoded ? 1 : 0) +
-			($FiltersStore.stopWordsEnabled ? 1 : 0)
-	);
 
 	// Keep the p5 canvas continuously tracking its container. The canvas only
 	// resizes on window resize or explicit triggerCanvasResize() calls, so when
@@ -346,7 +334,6 @@
 	// `label` prop as aria-label  -  stable enough to target).
 	const SIDEBAR_LABEL_FOR_TAB: Record<SidebarTab, string> = {
 		viz: 'Visualizations',
-		filters: 'Filters',
 		data: 'Data',
 		settings: 'Settings',
 		help: 'Help'
@@ -1234,7 +1221,6 @@
 </svelte:head>
 
 {#snippet vizIcon()}<LayoutDashboard size={20} />{/snippet}
-{#snippet filtersIcon()}<Filter size={20} />{/snippet}
 {#snippet dataIcon()}<Upload size={20} />{/snippet}
 {#snippet settingsIcon()}<SettingsIcon size={20} />{/snippet}
 {#snippet helpIcon()}<CircleHelp size={20} />{/snippet}
@@ -1266,7 +1252,6 @@
 						onSelect={handleActivitySelect}
 						items={[
 							{ id: 'viz', label: 'Visualizations', icon: vizIcon },
-							{ id: 'filters', label: 'Filters', icon: filtersIcon, badge: activeFilterCount || undefined },
 							{ id: 'data', label: 'Data', icon: dataIcon },
 							{ id: 'settings', label: 'Settings', icon: settingsIcon },
 							{ id: 'help', label: 'Help', icon: helpIcon }
@@ -1306,8 +1291,6 @@
 								<div in:fade={{ duration: 140, delay: 60 }} out:fade={{ duration: 80 }}>
 									{#if lastSidebarTab === 'viz'}
 										<VizPanel />
-									{:else if lastSidebarTab === 'filters'}
-										<FiltersPanel />
 									{:else if lastSidebarTab === 'data'}
 										<DataPanel
 											selectedExample={selectedExampleId}

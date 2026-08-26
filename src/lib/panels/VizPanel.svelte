@@ -2,6 +2,7 @@
 	import { Check, LayoutDashboard } from '@lucide/svelte';
 	import { PANEL_TILES } from '../ui/panel-icons';
 	import TranscriptStore from '../../stores/transcriptStore';
+	import FiltersPanel from './FiltersPanel.svelte';
 	import { canRenderDashboard, dashboardUnavailableReason } from '../draw/dashboard-capacity';
 	import VizStore, {
 		type VizStoreType,
@@ -281,18 +282,27 @@
 		<hr class="viz-panel__hr" />
 
 		<div class="viz-panel__grid">
+			<!-- aria-disabled rather than disabled: a disabled button suppresses
+			     pointer events, so its tooltip never fires, and it leaves the tab
+			     order, so a keyboard user gets no explanation at all. -->
 			<button
 				type="button"
-				class="viz-panel__tile {$VizStore.dashboardToggle ? 'viz-panel__tile--active' : ''}"
+				class="viz-panel__tile {$VizStore.dashboardToggle ? 'viz-panel__tile--active' : ''} {dashboardAvailable
+					? ''
+					: 'viz-panel__tile--unavailable'}"
 				aria-current={$VizStore.dashboardToggle ? 'true' : undefined}
-				disabled={!dashboardAvailable}
+				aria-disabled={!dashboardAvailable}
+				aria-describedby={dashboardAvailable ? undefined : 'viz-dashboard-reason'}
 				title={dashboardReason ?? 'Dashboard'}
-				onclick={() => selectVisualization('dashboardToggle', techniqueToggleOptions)}
+				onclick={() => dashboardAvailable && selectVisualization('dashboardToggle', techniqueToggleOptions)}
 			>
 				<LayoutDashboard size={18} strokeWidth={$VizStore.dashboardToggle ? 2.2 : 1.5} aria-hidden="true" />
 				<span>Dashboard</span>
 			</button>
 		</div>
+		{#if dashboardReason}
+			<p id="viz-dashboard-reason" class="viz-panel__note">{dashboardReason}</p>
+		{/if}
 	</section>
 
 	{#if hasActiveSettings}
@@ -373,6 +383,15 @@
 			{/each}
 		</section>
 	{/if}
+
+	<!-- Filters last, and kept a distinct section rather than mixed in with the
+	     view settings above: these change WHICH data is in scope, so they move
+	     every view and every count, while the settings above only change how
+	     the current view draws what is already there. -->
+	<section class="viz-panel__section viz-panel__section--filters" aria-label="Filters">
+		<p class="viz-panel__section-label">Filters &mdash; all visualizations</p>
+		<FiltersPanel />
+	</section>
 </div>
 
 <style>
@@ -440,13 +459,29 @@
 		}
 	}
 
-	.viz-panel__tile:hover:not(:disabled) {
+	.viz-panel__tile:hover:not(.viz-panel__tile--unavailable) {
 		background: var(--te-bg-muted);
 	}
 
-	.viz-panel__tile:disabled {
-		opacity: 0.4;
+	.viz-panel__tile--unavailable {
+		opacity: 0.45;
 		cursor: not-allowed;
+	}
+
+	.viz-panel__section--filters {
+		border-top: 1px solid var(--te-border-muted);
+		padding-top: var(--te-sp-2);
+		margin-top: var(--te-sp-2);
+	}
+
+	.viz-panel__note {
+		margin: var(--te-sp-2) 0 0;
+		padding: var(--te-sp-2);
+		border-radius: var(--te-radius-sm);
+		background: var(--te-bg-muted);
+		color: var(--te-fg-muted);
+		font-size: var(--te-font-small);
+		line-height: 1.45;
 	}
 
 	.viz-panel__tile:focus-visible {

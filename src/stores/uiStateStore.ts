@@ -1,6 +1,6 @@
 import { writable } from 'svelte/store';
 
-export type SidebarTab = 'viz' | 'filters' | 'data' | 'settings' | 'help';
+export type SidebarTab = 'viz' | 'data' | 'settings' | 'help';
 
 export type Workspace = 'edit' | 'visualize' | 'transcribe';
 
