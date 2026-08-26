@@ -18,7 +18,7 @@ import { normalizeWord, stripPunctuation, stripForDisplay } from '../core/string
 import type { DataPoint } from '../../models/dataPoint';
 import type { User } from '../../models/user';
 import type { Bounds } from './types/bounds';
-import { calculateScaling, getWordWidth, type Scaling } from './contribution-cloud-scaling';
+import { AI_MIN_SCALE, calculateScaling, getWordWidth, type Scaling } from './contribution-cloud-scaling';
 import { DEFAULT_SPEAKER_COLOR } from '../constants/ui';
 import { getWordColor } from './draw-utils';
 import { DrawContext } from './draw-context';
@@ -95,7 +95,8 @@ export class ContributionCloud {
 
 	draw(words: DataPoint[]): { hoveredWord: DataPoint | null; hasOverflow: boolean; hoveredSpeaker: string | null } {
 		const layoutWords = words.filter((w) => this.isWordVisible(w));
-		const scaling = calculateScaling(this.ctx.sk, layoutWords, this.bounds, this.ctx.config, this.fullTranscriptMaxCount);
+		const minScale = this.ctx.transcript.sourceKind === 'ai' ? AI_MIN_SCALE : undefined;
+		const scaling = calculateScaling(this.ctx.sk, layoutWords, this.bounds, this.ctx.config, this.fullTranscriptMaxCount, minScale);
 		const cacheKey = this.getBufferCacheKey(layoutWords.length);
 
 		// Also re-render if the buffer is owned by a dead p5 instance (workspace

@@ -15,7 +15,7 @@ import { readFileSync } from 'node:fs';
 import { describe, expect, it } from 'vitest';
 import Papa from 'papaparse';
 import { ContributionCloud } from '../src/lib/draw/contribution-cloud';
-import { calculateScaling, clearScalingCache } from '../src/lib/draw/contribution-cloud-scaling';
+import { AI_MIN_SCALE, calculateScaling, clearScalingCache } from '../src/lib/draw/contribution-cloud-scaling';
 import { parseCSVRows } from '../src/lib/core/csv-txt-parser';
 import { createTranscriptFromParsedText } from '../src/lib/core/transcript-factory';
 import type { DrawContext } from '../src/lib/draw/draw-context';
@@ -110,5 +110,45 @@ describe('contribution cloud layout', () => {
 	it('survives a degenerate panel', () => {
 		const { words, maxCount } = loadWords('web-design-tools');
 		expect(() => layout(words, maxCount, { x: 0, y: 0, width: 1, height: 1 })).not.toThrow();
+	});
+});
+
+/**
+ * The cloud shrinks its text until the content fits, floored at MIN_SCALE. On an
+ * agentic transcript it always bottoms out, so it rendered ~3px text and spent a
+ * text() call per word to do it: 68,156 calls at full-screen size, which blocks
+ * the main thread for over a second and shows nothing readable at the end.
+ */
+describe('legibility floor on AI transcripts', () => {
+	const FULL = { x: 0, y: 0, width: 1800, height: 800 };
+
+	it('keeps text large enough to read', () => {
+		const { words, maxCount } = loadWords('web-design-multi-agent');
+		clearScalingCache(true);
+		const scaling = calculateScaling(sk, words, FULL, config, maxCount, AI_MIN_SCALE);
+
+		expect(scaling.minTextSize).toBeGreaterThanOrEqual(9);
+	});
+
+	it('cuts the draw calls that made it stall', () => {
+		const { words, maxCount } = loadWords('web-design-multi-agent');
+
+		clearScalingCache(true);
+		const before = cloudFor(FULL, maxCount).calculateWordPositions(words, calculateScaling(sk, words, FULL, config, maxCount, 0.15));
+		clearScalingCache(true);
+		const after = cloudFor(FULL, maxCount).calculateWordPositions(words, calculateScaling(sk, words, FULL, config, maxCount, AI_MIN_SCALE));
+
+		expect(after.positions.length).toBeLessThan(before.positions.length / 5);
+		expect(after.overflow).toBe(true);
+	});
+
+	it('leaves the human default alone', () => {
+		const { words, maxCount } = loadWords('example-1');
+		clearScalingCache(true);
+		const withFloor = calculateScaling(sk, words, FULL, config, maxCount);
+		clearScalingCache(true);
+		const explicit = calculateScaling(sk, words, FULL, config, maxCount, 0.15);
+
+		expect(withFloor.minTextSize).toBeCloseTo(explicit.minTextSize, 6);
 	});
 });
