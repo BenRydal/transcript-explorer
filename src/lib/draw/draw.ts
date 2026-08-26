@@ -17,6 +17,7 @@ import type { Bounds } from './types/bounds';
 import { CANVAS_SPACING } from '../constants/ui';
 import { DrawContext } from './draw-context';
 import { dashboardLayout } from './dashboard-layout';
+import { canRenderDashboard, dashboardUnavailableReason } from './dashboard-capacity';
 import type { VizStoreType } from '../../stores/vizStore';
 
 interface DrawResult {
@@ -69,8 +70,13 @@ export class Draw {
 
 		if (activePanel) {
 			drawResult = this.updatePanel(activePanel[1], this.getFullScreenBounds(), ctx);
-		} else {
+		} else if (canRenderDashboard(ctx.transcript.wordArray?.length ?? 0)) {
 			drawResult = this.drawDashboard(ctx);
+		} else {
+			// Reachable from a persisted selection or a workspace preset even
+			// though the tile is disabled, so the guard lives here too.
+			this.drawDashboardUnavailable(ctx);
+			drawResult = result({});
 		}
 
 		this.applyDrawResult(drawResult, !activePanel);
@@ -214,6 +220,20 @@ export class Draw {
 		const viz = new WordJourney(ctx, pos);
 		const { hoveredDataPoint, hoveredSpeaker } = viz.draw(this.sk.dynamicData.getWordJourney(ctx.config.wordToSearch));
 		return result({ hover: hoveredDataPoint, hoveredSpeaker });
+	}
+
+	drawDashboardUnavailable(ctx: DrawContext): void {
+		const reason = dashboardUnavailableReason(ctx.transcript.wordArray?.length ?? 0);
+		if (!reason) return;
+
+		const sk = this.sk;
+		sk.push();
+		sk.noStroke();
+		sk.fill(ctx.theme.fgMuted);
+		sk.textAlign(sk.CENTER, sk.CENTER);
+		sk.textSize(14);
+		sk.text(reason, sk.width * 0.5, sk.height * 0.5, sk.width * 0.6);
+		sk.pop();
 	}
 
 	drawDashboard(ctx: DrawContext): DrawResult {

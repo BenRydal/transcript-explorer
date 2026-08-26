@@ -1,6 +1,8 @@
 <script lang="ts">
 	import { Check, LayoutDashboard } from '@lucide/svelte';
 	import { PANEL_TILES } from '../ui/panel-icons';
+	import TranscriptStore from '../../stores/transcriptStore';
+	import { canRenderDashboard, dashboardUnavailableReason } from '../draw/dashboard-capacity';
 	import VizStore, {
 		type VizStoreType,
 		type SpeakerSortOrder,
@@ -183,6 +185,12 @@
 		]
 	};
 
+	// The dashboard draws several views at once; past a point that is more work
+	// per frame than the browser will absorb.
+	const wordCount = $derived($TranscriptStore.wordArray?.length ?? 0);
+	const dashboardAvailable = $derived(canRenderDashboard(wordCount));
+	const dashboardReason = $derived(dashboardUnavailableReason(wordCount));
+
 	let activePanelKey = $derived(techniqueToggleOptions.find((t) => $VizStore[t])?.replace('Toggle', '') ?? '');
 	let activeVisualizationName = $derived(activePanelKey ? (PANEL_LABELS[activePanelKey] ?? 'Dashboard') : 'None');
 
@@ -271,6 +279,8 @@
 				type="button"
 				class="viz-panel__tile {$VizStore.dashboardToggle ? 'viz-panel__tile--active' : ''}"
 				aria-current={$VizStore.dashboardToggle ? 'true' : undefined}
+				disabled={!dashboardAvailable}
+				title={dashboardReason ?? 'Dashboard'}
 				onclick={() => selectVisualization('dashboardToggle', techniqueToggleOptions)}
 			>
 				<LayoutDashboard size={18} strokeWidth={$VizStore.dashboardToggle ? 2.2 : 1.5} aria-hidden="true" />
@@ -424,8 +434,13 @@
 		}
 	}
 
-	.viz-panel__tile:hover {
+	.viz-panel__tile:hover:not(:disabled) {
 		background: var(--te-bg-muted);
+	}
+
+	.viz-panel__tile:disabled {
+		opacity: 0.4;
+		cursor: not-allowed;
 	}
 
 	.viz-panel__tile:focus-visible {
