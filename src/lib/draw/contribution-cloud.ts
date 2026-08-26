@@ -167,9 +167,9 @@ export class ContributionCloud {
 		// and threw -- taking the whole draw loop down with it.
 		buffer.textFont(CANVAS_FONT_FAMILY);
 
-		const positions = this.calculateWordPositions(words, scaling);
+		const { positions, overflow } = this.calculateWordPositions(words, scaling);
 		bufferCache.positions = positions;
-		bufferCache.hasOverflow = positions.length > 0 && positions[positions.length - 1].y > this.bounds.height;
+		bufferCache.hasOverflow = overflow;
 
 		if (this.ctx.config.separateToggle) {
 			this.drawSpeakerBackgrounds(buffer, positions, scaling);
@@ -193,11 +193,20 @@ export class ContributionCloud {
 		bufferCache.buffer = buffer;
 	}
 
-	calculateWordPositions(words: DataPoint[], scaling: Scaling): WordPosition[] {
+	/**
+	 * Lays words out until the buffer is full.
+	 *
+	 * Everything past the bottom edge is drawn where it cannot be seen, so an
+	 * agentic transcript spent a `text()` call per word on ~105,000 invisible
+	 * ones -- seconds of blocked main thread per render, and a hover test over
+	 * all of them every frame after that.
+	 */
+	calculateWordPositions(words: DataPoint[], scaling: Scaling): { positions: WordPosition[]; overflow: boolean } {
 		const positions: WordPosition[] = [];
 		let x = 0;
 		let y = scaling.lineHeight;
 		let prevSpeaker: string | null = null;
+		let overflow = false;
 
 		for (const word of words) {
 			const t = Math.log(word.count) / Math.log(scaling.maxCount);
@@ -212,6 +221,13 @@ export class ContributionCloud {
 			} else if (x + width > this.bounds.width) {
 				x = 0;
 				y += scaling.lineHeight;
+			}
+
+			// The line this word starts is entirely below the buffer, so it and
+			// everything after it would render off the bottom.
+			if (y - scaling.lineHeight > this.bounds.height) {
+				overflow = true;
+				break;
 			}
 
 			if (this.passesSearchFilter(word)) {
@@ -233,7 +249,7 @@ export class ContributionCloud {
 			prevSpeaker = word.speaker;
 		}
 
-		return positions;
+		return { positions, overflow };
 	}
 
 	drawSpeakerBackgrounds(buffer: p5.Graphics, positions: WordPosition[], scaling: Scaling): void {
