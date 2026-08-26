@@ -13,6 +13,7 @@ import { handleVisualizationClick } from '../video/video-interaction';
 import { Draw } from '../draw/draw';
 import { DynamicData } from '../core/dynamic-data';
 import { getP5ContainerRect } from '../core/layout-utils';
+import { CANVAS_FONT_FAMILY } from '../constants/ui';
 import { getDrawTheme, refreshDrawTheme } from '../draw/draw-theme';
 import { hitTest, disableFES } from 'svelte-p5';
 
@@ -62,9 +63,6 @@ VideoStore.subscribe((data) => {
 EditorStore.subscribe((data) => {
 	editorState = data;
 });
-
-/** Must match the @font-face family registered in app.css. */
-const CANVAS_FONT_FAMILY = 'Plus Jakarta Sans';
 
 // p5's Friendly Error System validates arguments on every API call, including
 // typo detection. This sketch makes thousands of calls per frame, so the check
@@ -188,7 +186,6 @@ export const igsSketch = (p5: any) => {
 		if (timeline.isAnimating) p5.updateAnimation();
 		p5.updateCursor();
 		if (lastDrawError) p5.drawErrorBanner();
-		if (currConfig?.showFpsMonitor) p5.drawSizeProbe();
 	};
 
 	/**
@@ -231,51 +228,6 @@ export const igsSketch = (p5: any) => {
 		p5.textAlign(p5.LEFT, p5.TOP);
 		p5.textSize(12);
 		lines.forEach((line, i) => p5.text(line, 12, 10 + i * 16));
-		p5.pop();
-	};
-
-	// Temporary diagnostic behind the existing FPS toggle: reports whether the
-	// draw loop is live, which view it resolved, and whether the canvas agrees
-	// with the element it is meant to fill.
-	p5.drawSizeProbe = () => {
-		const rect = getP5ContainerRect();
-		const active =
-			[
-				['speakerGardenToggle', 'speakerGarden'],
-				['turnChartToggle', 'turnChart'],
-				['contributionCloudToggle', 'contributionCloud'],
-				['turnNetworkToggle', 'turnNetwork'],
-				['wordRainToggle', 'wordRain'],
-				['speakerHeatmapToggle', 'speakerHeatmap'],
-				['turnLengthToggle', 'turnLength'],
-				['speakerFingerprintToggle', 'speakerFingerprint'],
-				['questionFlowToggle', 'questionFlow'],
-				['wordJourneyToggle', 'wordJourney']
-			].find(([t]) => currConfig?.[t])?.[1] ?? (currConfig?.dashboardToggle ? 'DASHBOARD (chosen)' : 'DASHBOARD (fallback)');
-
-		const cw = Math.round(rect?.width ?? -1);
-		const ch = Math.round(rect?.height ?? -1);
-		const mismatch = Math.abs(p5.width - cw) > 2 || Math.abs(p5.height - ch) > 2;
-
-		const lines = [
-			`frame ${p5.frameCount}`,
-			`view  ${active}`,
-			`canvas    ${p5.width} x ${p5.height}`,
-			`container ${cw} x ${ch}`,
-			mismatch ? 'MISMATCH -- canvas != container' : 'sizes agree',
-			`counter ${p5.animationCounter} / ${transcript.wordArray?.length ?? 0}`
-		];
-
-		p5.push();
-		p5.noStroke();
-		p5.fill(0, 0, 0, 200);
-		p5.rect(8, 8, 280, lines.length * 15 + 12, 4);
-		p5.textAlign(p5.LEFT, p5.TOP);
-		p5.textSize(11);
-		lines.forEach((line, i) => {
-			p5.fill(mismatch && i === 4 ? p5.color(255, 120, 120) : p5.color(235, 235, 235));
-			p5.text(line, 16, 14 + i * 15);
-		});
 		p5.pop();
 	};
 

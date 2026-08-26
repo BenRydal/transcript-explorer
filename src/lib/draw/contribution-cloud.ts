@@ -22,6 +22,7 @@ import { calculateScaling, getWordWidth, type Scaling } from './contribution-clo
 import { DEFAULT_SPEAKER_COLOR } from '../constants/ui';
 import { getWordColor } from './draw-utils';
 import { DrawContext } from './draw-context';
+import { CANVAS_FONT_FAMILY } from '../constants/ui';
 import { registerVizCacheReset } from './viz-cache-registry';
 
 export { clearScalingCache } from './contribution-cloud-scaling';
@@ -162,7 +163,9 @@ export class ContributionCloud {
 			buffer = sk.createGraphics(Math.max(1, Math.floor(this.bounds.width)), Math.max(1, Math.floor(this.bounds.height)));
 			bufferCache.owner = sk;
 		}
-		buffer.textFont(sk.font);
+		// `sk.font` was never assigned by this sketch, so this handed p5 undefined
+		// and threw -- taking the whole draw loop down with it.
+		buffer.textFont(CANVAS_FONT_FAMILY);
 
 		const positions = this.calculateWordPositions(words, scaling);
 		bufferCache.positions = positions;
