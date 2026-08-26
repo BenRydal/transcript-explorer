@@ -14,7 +14,7 @@
 import { readFileSync } from 'node:fs';
 import { describe, expect, it } from 'vitest';
 import Papa from 'papaparse';
-import { MIN_BUBBLE_SIZE, turnBubbleHeight } from '../src/lib/draw/turn-chart-scaling';
+import { MIN_BUBBLE_SIZE, turnBubbleHeight, capBubbleHeight } from '../src/lib/draw/turn-chart-scaling';
 import { calculateTranscriptStats } from '../src/lib/core/transcript-stats';
 import { splitIntoWordTokens } from '../src/lib/core/string-utils';
 import { DataPoint } from '../src/models/dataPoint';
@@ -123,5 +123,56 @@ describe('transcript stats', () => {
 			new DataPoint('B', 1, 'c', 1, 2)
 		];
 		expect(calculateTranscriptStats(wordArray).largestTurnLength).toBe(3);
+	});
+});
+
+/**
+ * A turn's height comes from its word count and its width from its duration,
+ * and the two have unrelated ranges. Where the converter had no measured
+ * duration it writes a 0.5s marker, so a tool returning thousands of words
+ * draws a few pixels wide and the full lane tall -- a needle whose most
+ * striking dimension is a fallback constant rather than anything measured.
+ */
+describe('capBubbleHeight', () => {
+	it('leaves a mark already inside the cap alone', () => {
+		expect(capBubbleHeight(40, 20, 8)).toEqual({ height: 40, capped: false });
+	});
+
+	it('clips a needle and says so', () => {
+		// The worst real case: 6,465 words in a 0.5s marker duration.
+		const { height, capped } = capBubbleHeight(800, 5, 8);
+		expect(capped).toBe(true);
+		expect(height).toBe(40);
+	});
+
+	it('never returns more than the cap allows', () => {
+		for (let w = 1; w <= 200; w += 7) {
+			for (let h = 1; h <= 2000; h += 91) {
+				expect(capBubbleHeight(h, w, 8).height).toBeLessThanOrEqual(w * 8 + 1e-9);
+			}
+		}
+	});
+
+	it('never grows a mark', () => {
+		for (let w = 1; w <= 200; w += 13) {
+			for (let h = 1; h <= 900; h += 47) {
+				expect(capBubbleHeight(h, w, 8).height).toBeLessThanOrEqual(h);
+			}
+		}
+	});
+
+	it('is monotonic, so a longer turn is never drawn shorter', () => {
+		let prev = 0;
+		for (let h = 1; h <= 500; h++) {
+			const capped = capBubbleHeight(h, 12, 8).height;
+			expect(capped).toBeGreaterThanOrEqual(prev);
+			prev = capped;
+		}
+	});
+
+	it('leaves degenerate input untouched rather than producing NaN', () => {
+		expect(capBubbleHeight(100, 0, 8)).toEqual({ height: 100, capped: false });
+		expect(capBubbleHeight(0, 10, 8)).toEqual({ height: 0, capped: false });
+		expect(capBubbleHeight(100, 10, 0)).toEqual({ height: 100, capped: false });
 	});
 });

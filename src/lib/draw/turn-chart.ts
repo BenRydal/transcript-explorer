@@ -9,7 +9,7 @@ import type { Bounds } from './types/bounds';
 import { CANVAS_SPACING } from '../constants/ui';
 import { drawPlayhead, getWordColor } from './draw-utils';
 import { DrawContext } from './draw-context';
-import { MIN_BUBBLE_SIZE, turnBubbleHeight } from './turn-chart-scaling';
+import { MIN_BUBBLE_SIZE, turnBubbleHeight, capBubbleHeight } from './turn-chart-scaling';
 
 /**
  * Duration at a precision the value can carry.
@@ -105,6 +105,8 @@ export class TurnChart {
 	private maxTurnLength: number;
 	/** AI transcripts size by area; see turn-chart-scaling. */
 	private useAreaScaling: boolean;
+	/** Clip runaway proportions; see `capBubbleHeight`. */
+	private capAspect: boolean;
 
 	constructor(ctx: DrawContext, pos: Bounds) {
 		this.ctx = ctx;
@@ -131,6 +133,7 @@ export class TurnChart {
 		this.userSelectedTurn = { turn: '', color: '', xCenter: 0, yCenter: 0, width: 0, height: 0 };
 		this.yPosSeparate = this.getYPosTopSeparate();
 		this.useAreaScaling = this.ctx.transcript.sourceKind === 'ai';
+		this.capAspect = this.useAreaScaling && this.ctx.config.turnChartCapAspect !== false;
 		// When scaleToVisibleData is enabled, we'll compute this in draw() from visible data
 		this.maxTurnLength = this.ctx.config.scaleToVisibleData ? 0 : this.ctx.transcript.largestTurnLength;
 	}
@@ -266,13 +269,35 @@ export class TurnChart {
 		const xCenter = (xStart + xEnd) / 2;
 		const [height, yCenter] = this.getCoordinates(turnArray.length, speakerIndex);
 
+		// A turn with far more words than duration draws as a needle whose most
+		// striking dimension came from a fallback constant.
+		const capped = this.capAspect ? capBubbleHeight(height, width) : { height, capped: false };
+		const drawnHeight = capped.height;
+
 		const color = getWordColor(turnData.codes, user.color, this.ctx.codeColorMap, this.ctx.config.codeColorMode);
 		this.setStrokes(this.ctx.sk.color(color));
-		this.ctx.sk.ellipse(xCenter, yCenter, width, height);
+		this.ctx.sk.ellipse(xCenter, yCenter, width, drawnHeight);
+		if (capped.capped) this.drawCapMarks(xCenter, yCenter, width, drawnHeight, color);
 
-		if (this.ctx.sk.overRect(xCenter - width / 2, yCenter - height / 2, width, height)) {
-			this.userSelectedTurn = { turn: turnArray, color, xCenter, yCenter, width, height };
+		if (this.ctx.sk.overRect(xCenter - width / 2, yCenter - drawnHeight / 2, width, drawnHeight)) {
+			this.userSelectedTurn = { turn: turnArray, color, xCenter, yCenter, width, height: drawnHeight };
 		}
+	}
+
+	/**
+	 * Notches a clipped mark top and bottom, so "off the scale" reads as a
+	 * statement rather than as a rendering artifact.
+	 */
+	drawCapMarks(xCenter: number, yCenter: number, width: number, height: number, color: string): void {
+		const sk = this.ctx.sk;
+		const half = Math.max(2, Math.min(width, 10)) / 2;
+		sk.push();
+		sk.stroke(color);
+		sk.strokeWeight(1.5);
+		sk.noFill();
+		sk.line(xCenter - half, yCenter - height / 2, xCenter + half, yCenter - height / 2);
+		sk.line(xCenter - half, yCenter + height / 2, xCenter + half, yCenter + height / 2);
+		sk.pop();
 	}
 
 	/** Determines the coordinates for turn bubbles */
@@ -298,8 +323,9 @@ export class TurnChart {
 		const speaker = turnArray[0].speaker;
 		const truncated = turnArray.length > TOOLTIP_WORD_LIMIT;
 		const shown = truncated ? turnArray.slice(0, TOOLTIP_WORD_LIMIT) : turnArray;
-		const combined = shown.map((e) => e.word).join(' ')
-			+ (truncated ? ` <span style="opacity: 0.6">... ${turnArray.length - TOOLTIP_WORD_LIMIT} more words</span>` : '');
+		const combined =
+			shown.map((e) => e.word).join(' ') +
+			(truncated ? ` <span style="opacity: 0.6">... ${turnArray.length - TOOLTIP_WORD_LIMIT} more words</span>` : '');
 		// Under area scaling the bubble is no longer a direct readout of turn
 		// length, so the exact count belongs in the tooltip.
 		const heading = this.useAreaScaling

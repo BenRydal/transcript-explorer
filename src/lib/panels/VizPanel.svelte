@@ -85,7 +85,13 @@
 		],
 		turnChart: [
 			{ type: 'toggle', key: 'separateToggle', label: 'Group by Speaker' },
-			{ type: 'toggle', key: 'silenceOverlapToggle', label: 'Silence Overlap' }
+			{ type: 'toggle', key: 'silenceOverlapToggle', label: 'Silence Overlap' },
+			{
+				type: 'toggle',
+				key: 'turnChartCapAspect',
+				label: 'Cap Mark Proportions',
+				hint: 'Clip a mark at 8:1 and notch it, so a long turn in a near-zero duration reads as off the scale instead of as a needle.'
+			}
 		],
 		contributionCloud: [
 			{

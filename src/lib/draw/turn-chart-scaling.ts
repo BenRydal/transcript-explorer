@@ -42,3 +42,34 @@ export function turnBubbleHeight(turnLength: number, domainMax: number, lane: nu
 	if (!useAreaScaling) return ratio * lane;
 	return Math.max(MIN_BUBBLE_SIZE, Math.pow(ratio, SIZE_EXPONENT) * lane);
 }
+
+/**
+ * Widest a bubble may be relative to its height.
+ *
+ * A turn's height comes from its word count and its width from its duration,
+ * and the two have unrelated ranges. Where the converter had no measured
+ * duration it writes a 0.5s marker, so a tool returning 6,465 words draws 5px
+ * wide and 800px tall -- a 160:1 needle whose most striking dimension is a
+ * fallback constant. The cap keeps a mark readable as a mark; the flag lets
+ * the caller show that it is off the scale rather than silently shortening it.
+ */
+export const MAX_BUBBLE_ASPECT = 8;
+
+export interface CappedBubble {
+	height: number;
+	/** True when the true height exceeded the cap and was clipped. */
+	capped: boolean;
+}
+
+/**
+ * Clips a bubble's height to `maxAspect` times its width.
+ *
+ * Height is clipped rather than width widened: the width says the event was
+ * brief, which is true even when the duration behind it was estimated, while
+ * an inflated width would assert a duration nothing measured.
+ */
+export function capBubbleHeight(height: number, width: number, maxAspect: number = MAX_BUBBLE_ASPECT): CappedBubble {
+	if (!(width > 0) || !(height > 0) || !(maxAspect > 0)) return { height, capped: false };
+	const limit = width * maxAspect;
+	return height > limit ? { height: limit, capped: true } : { height, capped: false };
+}

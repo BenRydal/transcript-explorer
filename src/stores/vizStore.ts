@@ -45,6 +45,10 @@ export interface VizStoreType {
 	showFpsMonitor: boolean;
 	// when true, edges use lag-sequential adjusted residuals (z-scores) instead of raw counts
 	turnNetworkStatisticalMode: boolean;
+	// Turn Chart settings
+	// Height is word count and width is duration; where the duration was a
+	// fallback constant the mark degenerates into a needle.
+	turnChartCapAspect: boolean;
 	// Speaker Garden settings
 	// Identity was only ever available on hover, which leaves a printed figure
 	// unreadable.
@@ -108,6 +112,7 @@ export const initialViz: VizStoreType = {
 	turnNetworkShortLabels: false,
 	showFpsMonitor: false,
 	turnNetworkStatisticalMode: false,
+	turnChartCapAspect: true,
 	speakerGardenLabels: true,
 	questionFlowHideAbsent: true,
 	questionFlowTypeMarks: true,
