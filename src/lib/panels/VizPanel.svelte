@@ -95,6 +95,12 @@
 			{ type: 'toggle', key: 'silenceOverlapToggle', label: 'Silence Overlap' },
 			{
 				type: 'toggle',
+				key: 'turnChartShowProvenance',
+				label: 'Mark Unmeasured Durations',
+				hint: 'Draw a mark as an outline when its width came from an estimate or a fixed stub rather than the log. AI transcripts only.'
+			},
+			{
+				type: 'toggle',
 				key: 'turnChartGroupByKind',
 				label: 'Group Lanes by Kind',
 				hint: 'Collapse actors onto person, primary AI, agents and tools. AI transcripts only.'

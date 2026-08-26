@@ -50,6 +50,9 @@ export interface VizStoreType {
 	// Collapse per-actor lanes onto participant kind. Nine of the multi-agent
 	// session's 25 lanes cannot render their own content at figure width.
 	turnChartGroupByKind: boolean;
+	// Outline a mark whose width came from an estimate or a fixed stub rather
+	// than the log. In the multi-agent session that is 96% of rows.
+	turnChartShowProvenance: boolean;
 	// Turn Chart settings
 	// Height is word count and width is duration; where the duration was a
 	// fallback constant the mark degenerates into a needle.
@@ -118,6 +121,7 @@ export const initialViz: VizStoreType = {
 	showFpsMonitor: false,
 	turnNetworkStatisticalMode: false,
 	turnChartGroupByKind: false,
+	turnChartShowProvenance: true,
 	turnChartCapAspect: false,
 	speakerGardenLabels: true,
 	questionFlowHideAbsent: true,

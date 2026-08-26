@@ -58,6 +58,7 @@
 					{ icon: ArrowUpDown, label: 'Bubble height \u2192 words in turn' },
 					{ icon: Minus, label: 'Hairline \u2192 words at that height' },
 					{ icon: Square, label: 'Notched edge \u2192 taller than the scale allows' },
+					{ icon: Circle, label: 'Hollow mark \u2192 duration estimated, not measured' },
 					{ speakerColors: true, label: 'Color \u2192 speaker' },
 					...v('Click bubble \u2192 play from turn')
 				]

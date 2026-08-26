@@ -126,7 +126,7 @@ export function createTranscriptFromParsedText(parseResult: ParseResult, timingM
 			const startTime = useTurnTime ? turn.startTime! : wordPosition;
 			// Use turn's endTime if available (CSV with end times), otherwise use startTime as placeholder
 			const endTime = useTurnTime ? (turn.endTime ?? turn.startTime!) : wordPosition + 1;
-			wordArray.push(new DataPoint(turn.speaker, actualTurnIndex, token, startTime, endTime));
+			wordArray.push(new DataPoint(turn.speaker, actualTurnIndex, token, startTime, endTime, turn.provenance));
 			wordPosition++;
 		});
 		actualTurnIndex++;
@@ -160,9 +160,7 @@ export function createTranscriptFromParsedText(parseResult: ParseResult, timingM
 	// is coloured by participant kind rather than by speaker index. See
 	// `actor-colors.ts` for why index cycling fails here.
 	const actorColors =
-		transcript.sourceKind === 'ai' && parseResult.speakerRoles
-			? assignActorColors(parseResult.speakers, parseResult.speakerRoles)
-			: null;
+		transcript.sourceKind === 'ai' && parseResult.speakerRoles ? assignActorColors(parseResult.speakers, parseResult.speakerRoles) : null;
 	const users: User[] = parseResult.speakers.map((speaker, index) => ({
 		name: speaker,
 		color: actorColors?.get(speaker) ?? userColors[index % userColors.length],

@@ -110,6 +110,8 @@ export class TurnChart {
 	private capAspect: boolean;
 	/** Lanes stand for participant kinds rather than individual actors. */
 	private groupByKind: boolean;
+	/** Distinguish a measured width from an estimated or stubbed one. */
+	private showProvenance: boolean;
 	/** Lane index per group, when grouping. */
 	private groupIndex: Map<ActorGroup, number> = new Map();
 	private groupLabels: string[] = [];
@@ -141,6 +143,7 @@ export class TurnChart {
 		this.useAreaScaling = this.ctx.transcript.sourceKind === 'ai';
 		this.capAspect = this.useAreaScaling && this.ctx.config.turnChartCapAspect !== false;
 		this.groupByKind = this.useAreaScaling && this.ctx.config.turnChartGroupByKind === true;
+		this.showProvenance = this.useAreaScaling && this.ctx.config.turnChartShowProvenance !== false;
 		if (this.groupByKind) this.buildGroups();
 		// When scaleToVisibleData is enabled, we'll compute this in draw() from visible data
 		this.maxTurnLength = this.ctx.config.scaleToVisibleData ? 0 : this.ctx.transcript.largestTurnLength;
@@ -383,7 +386,18 @@ export class TurnChart {
 		const color = this.groupByKind
 			? ACTOR_GROUP_COLORS[actorGroupOf(user.name, user.role)]
 			: getWordColor(turnData.codes, user.color, this.ctx.codeColorMap, this.ctx.config.codeColorMode);
-		this.setStrokes(this.ctx.sk.color(color));
+		// A width the converter estimated or stubbed is drawn hollow: the mark
+		// still says how much was said, without asserting how long it took.
+		const unmeasured = this.showProvenance && turnData.provenance !== undefined && turnData.provenance !== 'measured';
+		if (unmeasured) {
+			const outline = this.ctx.sk.color(color);
+			outline.setAlpha(220);
+			this.ctx.sk.noFill();
+			this.ctx.sk.stroke(outline);
+			this.ctx.sk.strokeWeight(1.25);
+		} else {
+			this.setStrokes(this.ctx.sk.color(color));
+		}
 		this.ctx.sk.ellipse(xCenter, yCenter, width, drawnHeight);
 		if (capped.capped) this.drawCapMarks(xCenter, yCenter, width, drawnHeight, color);
 
