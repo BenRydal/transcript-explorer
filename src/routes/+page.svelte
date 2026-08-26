@@ -79,6 +79,7 @@
 		handleSelectionCommit
 	} from '$lib/timeline/scrubber-bridge';
 	import Papa from 'papaparse';
+	import { activityDensity } from '$lib/timeline/activity-density';
 
 	// Components
 	import AppNavbar from '$lib/components/AppNavbar.svelte';
@@ -247,6 +248,12 @@
 	// p5 canvas reflow smoothly (it tracks its container via ResizeObserver)
 	// instead of snapping when the layout changes in one step.
 	const isSidebarOpen = $derived($UIStateStore.activeSidebarTab !== null);
+
+	// Shows WHERE the activity is, so brushing a range is aimed rather than
+	// guessed. The scrubber already drives the range every view reads.
+	// Bands carry their own alpha, so one accent reads on either theme.
+	const DENSITY_ACCENT = '#2563eb';
+	const densityBands = $derived(activityDensity($TranscriptStore.wordArray ?? [], $TranscriptStore.totalTimeInSeconds ?? 0, DENSITY_ACCENT));
 
 	// Keep the p5 canvas continuously tracking its container. The canvas only
 	// resizes on window resize or explicit triggerCanvasResize() calls, so when
@@ -1393,6 +1400,7 @@
 							selectionStart={$TimelineStore.leftMarker - $TimelineStore.startTime}
 							selectionEnd={$TimelineStore.rightMarker - $TimelineStore.startTime}
 							formatTime={scrubberFormatTime}
+							segments={densityBands}
 							onSeek={handleScrubberSeek}
 							onPlayToggle={handleScrubberPlayToggle}
 							onSpeedChange={handleScrubberSpeedChange}
