@@ -13,7 +13,7 @@
 		type ActivityBarItem,
 		type ContextMenuItem
 	} from 'svelte-p5-components';
-	import { LayoutDashboard, Upload, Settings as SettingsIcon, CircleHelp } from '@lucide/svelte';
+	import { LayoutDashboard, Filter, Upload, Settings as SettingsIcon, CircleHelp } from '@lucide/svelte';
 	import { formatTimeAuto } from '$lib/core/time-utils';
 	import { browser } from '$app/environment';
 	import { onMount } from 'svelte';
@@ -100,6 +100,7 @@
 	// Sidebar panels
 	import VizPanel from '$lib/panels/VizPanel.svelte';
 	import ActiveFilterBar from '$lib/components/ActiveFilterBar.svelte';
+	import FiltersPanel from '$lib/panels/FiltersPanel.svelte';
 	import DataPanel from '$lib/panels/DataPanel.svelte';
 	import SettingsPanel from '$lib/panels/SettingsPanel.svelte';
 
@@ -205,6 +206,7 @@
 	// Sidebar helpers
 	const SIDEBAR_TABS: { id: SidebarTab; label: string }[] = [
 		{ id: 'viz', label: 'Visualizations' },
+		{ id: 'filters', label: 'Filters' },
 		{ id: 'data', label: 'Data' },
 		{ id: 'settings', label: 'Settings' },
 		{ id: 'help', label: 'Help' }
@@ -333,6 +335,7 @@
 	// `label` prop as aria-label  -  stable enough to target).
 	const SIDEBAR_LABEL_FOR_TAB: Record<SidebarTab, string> = {
 		viz: 'Visualizations',
+		filters: 'Filters',
 		data: 'Data',
 		settings: 'Settings',
 		help: 'Help'
@@ -1220,6 +1223,7 @@
 </svelte:head>
 
 {#snippet vizIcon()}<LayoutDashboard size={20} />{/snippet}
+{#snippet filtersIcon()}<Filter size={20} />{/snippet}
 {#snippet dataIcon()}<Upload size={20} />{/snippet}
 {#snippet settingsIcon()}<SettingsIcon size={20} />{/snippet}
 {#snippet helpIcon()}<CircleHelp size={20} />{/snippet}
@@ -1251,6 +1255,7 @@
 						onSelect={handleActivitySelect}
 						items={[
 							{ id: 'viz', label: 'Visualizations', icon: vizIcon },
+							{ id: 'filters', label: 'Filters', icon: filtersIcon },
 							{ id: 'data', label: 'Data', icon: dataIcon },
 							{ id: 'settings', label: 'Settings', icon: settingsIcon },
 							{ id: 'help', label: 'Help', icon: helpIcon }
@@ -1290,6 +1295,8 @@
 								<div in:fade={{ duration: 140, delay: 60 }} out:fade={{ duration: 80 }}>
 									{#if lastSidebarTab === 'viz'}
 										<VizPanel />
+									{:else if lastSidebarTab === 'filters'}
+										<FiltersPanel />
 									{:else if lastSidebarTab === 'data'}
 										<DataPanel
 											selectedExample={selectedExampleId}

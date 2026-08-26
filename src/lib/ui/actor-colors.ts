@@ -73,7 +73,11 @@ function hslToHex(h: number, s: number, l: number): string {
 	else if (h < 240) rgb = [0, x, c];
 	else if (h < 300) rgb = [x, 0, c];
 	else rgb = [c, 0, x];
-	const hex = rgb.map((v) => Math.round((v + m) * 255).toString(16).padStart(2, '0'));
+	const hex = rgb.map((v) =>
+		Math.round((v + m) * 255)
+			.toString(16)
+			.padStart(2, '0')
+	);
 	return `#${hex.join('')}`;
 }
 
@@ -111,9 +115,23 @@ function shadeFor(base: string, position: number, size: number): string {
  */
 const DELEGATED_AGENT_PREFIX = 'AGENT:';
 
-/** Family a speaker belongs to, which is its role except for delegated agents. */
+/** Prefix the converter writes for a tool's rows. */
+const TOOL_PREFIX = 'TOOL:';
+
+/**
+ * Family a speaker belongs to. The converter's name prefix decides, and only
+ * then the role.
+ *
+ * Both directions need it. A delegated agent's own rows are recorded as
+ * `assistant`, so role alone would colour every agent as the primary AI. And
+ * `Tool:Agent` -- the tool Claude calls to spawn a sub-agent -- carries the
+ * `agent` role on its spawn and result markers, so role alone coloured the
+ * delegation tool as though it were one of the agents it creates.
+ */
 function familyOf(speaker: string, role: SpeakerRole | undefined): string {
-	if (speaker.toUpperCase().startsWith(DELEGATED_AGENT_PREFIX)) return 'agent';
+	const upper = speaker.toUpperCase();
+	if (upper.startsWith(TOOL_PREFIX)) return 'tool';
+	if (upper.startsWith(DELEGATED_AGENT_PREFIX)) return 'agent';
 	return role ?? 'unknown';
 }
 
@@ -123,10 +141,7 @@ function familyOf(speaker: string, role: SpeakerRole | undefined): string {
  * `speakers` is expected in transcript order and `roles` keyed the same way,
  * both as produced by the CSV parser.
  */
-export function assignActorColors(
-	speakers: readonly string[],
-	roles: ReadonlyMap<string, SpeakerRole>
-): Map<string, string> {
+export function assignActorColors(speakers: readonly string[], roles: ReadonlyMap<string, SpeakerRole>): Map<string, string> {
 	// Group speakers by family, preserving order of first appearance so the
 	// assignment is stable across reloads.
 	const families = new Map<string, string[]>();

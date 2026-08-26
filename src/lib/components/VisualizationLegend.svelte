@@ -94,15 +94,22 @@
 		} catch {
 			/* ignore */
 		}
-		settle();
+		// After paint: on the first run the card has no measured size yet, so
+		// settling now would leave it at the top-left origin instead of the
+		// corner it belongs in -- including when it is re-shown from the dot.
+		const raf = requestAnimationFrame(() => settle());
+		return () => cancelAnimationFrame(raf);
 	});
 
-	// Re-settle when the canvas resizes, so a corner stays a corner.
+	// Re-settle when the canvas or the card itself changes size, so a corner
+	// stays a corner.
 	$effect(() => {
-		const parent = rootEl?.parentElement;
-		if (!parent) return;
+		const card = rootEl;
+		const parent = card?.parentElement;
+		if (!card || !parent) return;
 		const ro = new ResizeObserver(() => settle());
 		ro.observe(parent);
+		ro.observe(card);
 		return () => ro.disconnect();
 	});
 
@@ -152,6 +159,8 @@
 					{ icon: Minus, label: 'Hairline \u2192 words at that height' },
 					{ icon: Square, label: 'Notched edge \u2192 taller than the scale allows' },
 					{ speakerColors: true, label: 'Color \u2192 speaker' },
+					{ icon: Minus, iconColor: '#dc2626', label: 'Top strip \u2192 parallel machine activity' },
+					{ icon: Minus, label: 'Bottom strip \u2192 nobody active' },
 					...v('Click bubble \u2192 play from turn')
 				]
 			},

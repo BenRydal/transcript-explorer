@@ -113,3 +113,28 @@ describe('against the bundled transcripts', () => {
 		expect(groupSizes(speakers, roles).get('person')).toBe(1);
 	});
 });
+
+/**
+ * `Tool:Agent` is the tool Claude calls to spawn a sub-agent, and its spawn and
+ * result markers carry the `agent` role. Reading the role first coloured the
+ * delegation tool as though it were one of the agents it creates -- which,
+ * since it is named "Tool:", looked simply wrong on the canvas.
+ */
+describe('the delegation tool is a tool', () => {
+	it('reads Tool:Agent as a tool despite its agent role', () => {
+		expect(actorGroupOf('Tool:Agent', 'agent')).toBe('tools');
+	});
+
+	it('still reads a delegated agent as an agent despite its assistant role', () => {
+		expect(actorGroupOf('Agent:general-purpose:a2b12912', 'assistant')).toBe('agents');
+	});
+
+	it('groups the delegation tool with the tools in the bundled session', () => {
+		const { speakers, roles } = loadSpeakers('web-design-multi-agent');
+		// The parser normalises speaker names, so match however it stores them.
+		const name = speakers.find((s) => s.toUpperCase() === 'TOOL:AGENT');
+		expect(name, 'the multi-agent session should contain the delegation tool').toBeDefined();
+		expect(roles.get(name!)).toBe('agent');
+		expect(actorGroupOf(name!, roles.get(name!))).toBe('tools');
+	});
+});

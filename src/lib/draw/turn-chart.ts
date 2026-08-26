@@ -10,6 +10,7 @@ import { CANVAS_SPACING } from '../constants/ui';
 import { drawPlayhead, getWordColor } from './draw-utils';
 import { DrawContext } from './draw-context';
 import { MIN_BUBBLE_SIZE, turnBubbleHeight, capBubbleHeight, bubbleScaleTicks } from './turn-chart-scaling';
+import { silentGaps, concurrentSpans, type ActorSpan } from './strip-intervals';
 import { actorGroupOf, groupsPresent, groupSizes, ACTOR_GROUP_LABELS, ACTOR_GROUP_COLORS, type ActorGroup } from './actor-groups';
 
 /**
@@ -54,6 +55,8 @@ const USER_GAP_COLOR = '#c08b5c';
 const MARKER_HEIGHT = 8;
 const ROW_GAP = 2;
 const MIN_MARKER_WIDTH = 2;
+// Below this a "gap" is a rounding seam between two rows, not a pause.
+const MIN_GAP_SECONDS = 0.75;
 const LEGEND_DOT_RADIUS = 5;
 const LEGEND_DOT_LEFT_OFFSET = 8;
 const LEGEND_DOT_SPACING = 8;
@@ -589,48 +592,69 @@ export class TurnChart {
 		return { label: 'Model working', color: GAP_COLOR };
 	}
 
+	/**
+	 * One band per stretch of parallel work, not one per pair of speakers.
+	 *
+	 * Pairwise emission is quadratic in how busy a moment is, so five concurrent
+	 * actors drew ten stacked rectangles that all meant the same thing. And on an
+	 * AI transcript the person is excluded: a human turn overlapping a model turn
+	 * is an artefact of when the log stamps a submit, not two parties working at
+	 * once. What is left is agents and tools running in parallel, which is the
+	 * thing this session actually does.
+	 */
 	private buildOverlapMarkers(turns: TurnRange[], rowY: number): AnnotationMarker[] {
 		const markers: AnnotationMarker[] = [];
-		for (let i = 0; i < turns.length; i++) {
-			for (let j = i + 1; j < turns.length; j++) {
-				if (turns[j].startTime >= turns[i].endTime) break;
-				if (turns[j].speaker === turns[i].speaker) continue;
-				const start = Math.max(turns[i].startTime, turns[j].startTime);
-				const end = Math.min(turns[i].endTime, turns[j].endTime);
-				if (end <= start) continue;
-				const x = this.getPixelValueFromTime(start);
-				const xEnd = this.getPixelValueFromTime(end);
-				const duration = end - start;
-				markers.push({
-					x,
-					w: Math.max(MIN_MARKER_WIDTH, xEnd - x),
-					y: rowY,
-					h: MARKER_HEIGHT,
-					color: this.ctx.theme.danger,
-					firstDataPoint: turns[j].firstDataPoint,
-					tooltipContent: `<b>${this.overlapLabel} · ${formatDuration(duration)}</b>\n<span style="font-size: 0.85em; opacity: 0.7"><span style="color: ${this.userMap.get(turns[i].speaker)?.user.color ?? '#fff'}">${turns[i].speaker}</span> & <span style="color: ${this.userMap.get(turns[j].speaker)?.user.color ?? '#fff'}">${turns[j].speaker}</span>\n${formatTimeCompact(start)} - ${formatTimeCompact(end)}</span>`
-				});
-			}
+		const isAi = this.ctx.transcript.sourceKind === 'ai';
+		const spans: ActorSpan[] = turns
+			.filter((t) => !isAi || !this.isHumanSpeaker(t.speaker))
+			.map((t) => ({ speaker: t.speaker, start: t.startTime, end: t.endTime }));
+
+		for (const span of concurrentSpans(spans, 2, MIN_GAP_SECONDS)) {
+			const x = this.getPixelValueFromTime(span.start);
+			const xEnd = this.getPixelValueFromTime(span.end);
+			const duration = span.end - span.start;
+			markers.push({
+				x,
+				w: Math.max(MIN_MARKER_WIDTH, xEnd - x),
+				y: rowY,
+				h: MARKER_HEIGHT,
+				color: this.ctx.theme.danger,
+				firstDataPoint: turns[0].firstDataPoint,
+				tooltipContent: `<b>${this.overlapLabel} · ${formatDuration(duration)}</b>\n<span style="font-size: 0.85em; opacity: 0.7">${span.peak} at once\n${formatTimeCompact(span.start)} - ${formatTimeCompact(span.end)}</span>`
+			});
 		}
 		return markers;
 	}
 
+	/**
+	 * Silence is where NOTHING is active, which is the complement of the merged
+	 * turns rather than the arithmetic between neighbours. The pairwise version
+	 * went negative wherever turns overlapped and skipped the gap entirely, so
+	 * in a session that runs concurrent a quarter of the time it under-reported
+	 * silence and mis-sited what it did report.
+	 */
 	private buildGapMarkers(turns: TurnRange[], rowY: number): AnnotationMarker[] {
 		const markers: AnnotationMarker[] = [];
-		for (let i = 0; i < turns.length - 1; i++) {
-			const gapDuration = turns[i + 1].startTime - turns[i].endTime;
-			if (gapDuration <= 0) continue;
-			const x = this.getPixelValueFromTime(turns[i].endTime);
-			const xEnd = this.getPixelValueFromTime(turns[i + 1].startTime);
-			const { label, color } = this.gapAttribution(turns[i + 1].speaker);
+		const spans = turns.map((t) => ({ start: t.startTime, end: t.endTime }));
+		const from = this.ctx.timeline.leftMarker;
+		const to = this.ctx.timeline.rightMarker;
+
+		for (const gap of silentGaps(spans, from, to, MIN_GAP_SECONDS)) {
+			const gapDuration = gap.end - gap.start;
+			// Whoever speaks next owns the pause; they are the party preparing.
+			const next = turns.find((t) => t.startTime >= gap.end);
+			const previous = [...turns].reverse().find((t) => t.endTime <= gap.start);
+			const x = this.getPixelValueFromTime(gap.start);
+			const xEnd = this.getPixelValueFromTime(gap.end);
+			const { label, color } = this.gapAttribution(next?.speaker ?? '');
 			markers.push({
 				x,
 				w: Math.max(MIN_MARKER_WIDTH, xEnd - x),
 				y: rowY,
 				h: MARKER_HEIGHT,
 				color,
-				firstDataPoint: turns[i].firstDataPoint,
-				tooltipContent: `<b>${label} · ${formatDuration(gapDuration)}</b>\n<span style="font-size: 0.85em; opacity: 0.7"><span style="color: ${this.userMap.get(turns[i].speaker)?.user.color ?? '#fff'}">${turns[i].speaker}</span> → <span style="color: ${this.userMap.get(turns[i + 1].speaker)?.user.color ?? '#fff'}">${turns[i + 1].speaker}</span>\n${formatTimeCompact(turns[i].endTime)} - ${formatTimeCompact(turns[i + 1].startTime)}</span>`
+				firstDataPoint: (previous ?? next ?? turns[0]).firstDataPoint,
+				tooltipContent: `<b>${label} · ${formatDuration(gapDuration)}</b>\n<span style="font-size: 0.85em; opacity: 0.7">nobody active\n${formatTimeCompact(gap.start)} - ${formatTimeCompact(gap.end)}</span>`
 			});
 		}
 		return markers;

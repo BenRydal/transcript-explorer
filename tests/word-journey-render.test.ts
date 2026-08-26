@@ -39,12 +39,17 @@ function makeStub() {
 		stroke: () => {},
 		strokeWeight: () => {},
 		textAlign: () => {},
+		textStyle: () => {},
+		BOLD: 'bold',
+		NORMAL: 'normal',
 		textSize: () => {},
 		text: (s: string) => rec.texts.push(String(s)),
 		textWidth: (s: string) => String(s).length * 6,
 		line: (x1: number, y1: number, x2: number, y2: number) => rec.lines.push({ x1, y1, x2, y2 }),
 		ellipse: (x: number, y: number, w: number) => rec.ellipses.push({ x, y, w }),
 		rect: () => {},
+		push: () => {},
+		pop: () => {},
 		quad: () => {
 			rec.diamonds++;
 		},
@@ -134,7 +139,7 @@ describe('WordJourney rendering', () => {
 			occurrences: [occ('Ben', 10, 1, { isFirst: true, isFirstBySpeaker: true })]
 		});
 
-		expect(rec.texts.some((t) => t.includes('4 actors never used "ethic"'))).toBe(true);
+		expect(rec.texts.some((t) => t.includes('4 never used "ethic"'))).toBe(true);
 	});
 
 	it('reports carriage in the title', () => {
@@ -183,22 +188,22 @@ describe('WordJourney rendering', () => {
 		expect(rec.texts).not.toContain('3');
 	});
 
-	it('draws a thread leg per consecutive pair, split at the midpoint', () => {
-		// Lane lines and axis ticks are constant between these two renders, so
-		// the difference isolates the thread: 3 marks give 2 legs of 2 halves.
-		const single = makeCtx(['Ben', 'Claude']);
-		new WordJourney(single.ctx, BOUNDS).draw({
+	it('draws one thread leg per consecutive pair', () => {
+		// Both renders show the same two lanes and the same absent count, so the
+		// lane lines and axis ticks cancel and the difference is the thread.
+		const two = makeCtx(['Ben', 'Claude'], { wordJourneyHideAbsent: false });
+		new WordJourney(two.ctx, BOUNDS).draw({
 			word: 'ethic',
-			occurrences: [occ('Ben', 10, 1, { isFirst: true, isFirstBySpeaker: true })]
+			occurrences: [occ('Ben', 10, 1, { isFirst: true, isFirstBySpeaker: true }), occ('Claude', 50, 2, { isFirstBySpeaker: true })]
 		});
 
-		const triple = makeCtx(['Ben', 'Claude']);
-		new WordJourney(triple.ctx, BOUNDS).draw({
+		const three = makeCtx(['Ben', 'Claude'], { wordJourneyHideAbsent: false });
+		new WordJourney(three.ctx, BOUNDS).draw({
 			word: 'ethic',
 			occurrences: [occ('Ben', 10, 1, { isFirst: true, isFirstBySpeaker: true }), occ('Claude', 50, 2, { isFirstBySpeaker: true }), occ('Ben', 90, 3)]
 		});
 
-		expect(triple.rec.lines.length - single.rec.lines.length).toBe(4);
+		expect(three.rec.lines.length - two.rec.lines.length).toBe(1);
 	});
 
 	it('falls back to a message when the word is absent entirely', () => {

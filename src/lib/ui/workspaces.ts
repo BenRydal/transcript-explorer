@@ -24,7 +24,7 @@ export interface WorkspacePreset {
 
 export const WORKSPACE_PRESETS: Record<Workspace, WorkspacePreset> = {
 	edit: {
-		sidebarTab: 'viz',
+		sidebarTab: 'filters',
 		editorVisible: true,
 		dashboardVisible: false
 	},

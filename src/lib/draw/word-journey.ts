@@ -21,10 +21,10 @@ const MAX_CLUSTER_RADIUS = 15;
 const LANE_LINE_WEIGHT = 2;
 const HOVER_OUTLINE_WEIGHT = 2;
 
-// The thread is the argument of this view, so it outranks the lane lines it
-// crosses. It was previously a muted hairline behind everything.
-const THREAD_WEIGHT = 1.9;
-const THREAD_ALPHA = 170;
+// One quiet grey line. Colouring each leg by its endpoints made the trail
+// read as several unrelated marks rather than as one path through the session.
+const THREAD_WEIGHT = 1;
+const THREAD_ALPHA = 90;
 
 interface RenderedOccurrence {
 	occurrence: WordOccurrence;
@@ -84,7 +84,8 @@ export class WordJourney {
 		const lanes = hideAbsent ? present : ordered;
 		const hiddenCount = hideAbsent ? absent.length : 0;
 
-		this.layout(lanes, hiddenCount > 0);
+		const absentLabel = hiddenCount > 0 ? `${hiddenCount} never used "${data.word}"` : null;
+		this.layout(lanes, absentLabel);
 		this.drawTitle(data.word, data.occurrences.length, present.length, ordered.length);
 		this.drawSpeakerLanes(lanes, counts);
 		drawTimeAxis(this.ctx.sk, this.bounds, this, this.timeline, this.ctx.theme);
@@ -106,11 +107,11 @@ export class WordJourney {
 	}
 
 	/** Sizes the label gutter to the labels actually being drawn, then the grid. */
-	private layout(lanes: string[], reserveAbsentRow: boolean): void {
+	private layout(lanes: string[], absentLabel: string | null): void {
 		this.labelSize = Math.max(9, Math.min(11, this.bounds.height * 0.025));
 		this.ctx.sk.textSize(this.labelSize);
 
-		let widest = 0;
+		let widest = absentLabel ? this.ctx.sk.textWidth(absentLabel) : 0;
 		for (const speaker of lanes) widest = Math.max(widest, this.ctx.sk.textWidth(speaker));
 
 		const available = this.bounds.width * 0.28;
@@ -119,7 +120,7 @@ export class WordJourney {
 		this.gx = this.bounds.x + gutter;
 		this.gy = this.bounds.y + TOP_MARGIN;
 		this.gw = this.bounds.width - gutter - RIGHT_MARGIN;
-		this.gh = this.bounds.height - TOP_MARGIN - BOTTOM_MARGIN - (reserveAbsentRow ? ABSENT_ROW_HEIGHT : 0);
+		this.gh = this.bounds.height - TOP_MARGIN - BOTTOM_MARGIN - (absentLabel ? ABSENT_ROW_HEIGHT : 0);
 		this.laneHeight = this.gh / Math.max(1, lanes.length);
 	}
 
@@ -221,11 +222,7 @@ export class WordJourney {
 		return null;
 	}
 
-	/**
-	 * Draws the trail linking consecutive occurrences. Each leg is split at its
-	 * midpoint and coloured from each end, so a handoff between actors reads as
-	 * a colour change rather than as undifferentiated grey.
-	 */
+	/** Draws the trail linking consecutive occurrences. */
 	private drawThread(clusters: RenderedCluster[]): void {
 		const crossHighlight = getCrossHighlight(this.ctx.sk, this.bounds, this.ctx.config.dashboardToggle, this.ctx.hover);
 		this.ctx.sk.strokeWeight(THREAD_WEIGHT);
@@ -238,19 +235,12 @@ export class WordJourney {
 				crossHighlight.active && crossHighlight.speaker != null && prev.speaker !== crossHighlight.speaker && curr.speaker !== crossHighlight.speaker;
 
 			withDimming(this.ctx.sk.drawingContext, shouldDim, () => {
-				const midX = (prev.x + curr.x) / 2;
-				const midY = (prev.y + curr.y) / 2;
-				this.strokeLeg(prev.speaker, prev.x, prev.y, midX, midY);
-				this.strokeLeg(curr.speaker, midX, midY, curr.x, curr.y);
+				const c = this.ctx.sk.color(this.ctx.theme.fgMuted);
+				c.setAlpha(THREAD_ALPHA);
+				this.ctx.sk.stroke(c);
+				this.ctx.sk.line(prev.x, prev.y, curr.x, curr.y);
 			});
 		}
-	}
-
-	private strokeLeg(speaker: string, x1: number, y1: number, x2: number, y2: number): void {
-		const c = this.ctx.sk.color(this.ctx.userMap.get(speaker)?.color || this.ctx.theme.fgMuted);
-		c.setAlpha(THREAD_ALPHA);
-		this.ctx.sk.stroke(c);
-		this.ctx.sk.line(x1, y1, x2, y2);
 	}
 
 	private drawClusters(clusters: RenderedCluster[], hovered: RenderedCluster | null): void {
@@ -297,30 +287,28 @@ export class WordJourney {
 	}
 
 	/**
-	 * Reports the lanes trimmed from the view. The count is a finding about the
-	 * token, so it is stated rather than left as an absence.
+	 * Reports the lanes trimmed from the view, in the label gutter and bold, so
+	 * it reads as one more actor in the list rather than as a note laid over
+	 * the timeline.
 	 */
 	private drawAbsentRow(hiddenCount: number, word: string): void {
 		const y = this.gy + this.gh + ABSENT_ROW_HEIGHT / 2;
+		const sk = this.ctx.sk;
 
-		const rule = this.ctx.sk.color(this.ctx.theme.fgMuted);
-		rule.setAlpha(45);
-		this.ctx.sk.stroke(rule);
-		this.ctx.sk.strokeWeight(1);
-		this.ctx.sk.line(this.gx, y, this.gx + this.gw, y);
-
-		this.ctx.sk.noStroke();
-		this.ctx.sk.fill(this.ctx.theme.fgMuted);
-		this.ctx.sk.textSize(this.labelSize);
-		this.ctx.sk.textAlign(this.ctx.sk.LEFT, this.ctx.sk.CENTER);
-
-		const label = `${hiddenCount} actor${hiddenCount !== 1 ? 's' : ''} never used "${word}"`;
-		const pad = 6;
-		const width = this.ctx.sk.textWidth(label) + pad * 2;
-		this.ctx.sk.fill(this.ctx.theme.bg);
-		this.ctx.sk.rect(this.gx - pad, y - this.labelSize, width, this.labelSize * 2);
-		this.ctx.sk.fill(this.ctx.theme.fgMuted);
-		this.ctx.sk.text(label, this.gx, y);
+		sk.push();
+		sk.noStroke();
+		sk.fill(this.ctx.theme.fg);
+		sk.textStyle(sk.BOLD);
+		sk.textSize(this.labelSize);
+		sk.textAlign(sk.RIGHT, sk.CENTER);
+		const label = `${hiddenCount} never used "${word}"`;
+		sk.text(
+			truncateMiddle(label, this.gx - this.bounds.x - 10, (t) => sk.textWidth(t)),
+			this.gx - 10,
+			y
+		);
+		sk.textStyle(sk.NORMAL);
+		sk.pop();
 	}
 
 	private drawStar(x: number, y: number, radius: number): void {

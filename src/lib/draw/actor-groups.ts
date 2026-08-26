@@ -48,8 +48,13 @@ const AGENT_PREFIX = 'AGENT:';
  */
 export function actorGroupOf(speaker: string, role: SpeakerRole | undefined): ActorGroup {
 	const upper = speaker.toUpperCase();
-	if (upper.startsWith(AGENT_PREFIX) || role === 'agent') return 'agents';
-	if (upper.startsWith(TOOL_PREFIX) || role === 'tool') return 'tools';
+	// Name before role, in both directions. A delegated agent's rows are
+	// recorded as `assistant`, and `Tool:Agent` -- the tool that spawns them --
+	// carries the `agent` role on its markers, so role alone gets both wrong.
+	if (upper.startsWith(TOOL_PREFIX)) return 'tools';
+	if (upper.startsWith(AGENT_PREFIX)) return 'agents';
+	if (role === 'agent') return 'agents';
+	if (role === 'tool') return 'tools';
 	if (role === 'assistant') return 'primary';
 	return 'person';
 }
