@@ -54,9 +54,6 @@ export interface VizStoreType {
 	// about how many rows there are.
 	turnChartColorByKind: boolean;
 	turnChartGroupByKind: boolean;
-	// Outline a mark whose width came from an estimate or a fixed stub rather
-	// than the log. In the multi-agent session that is 96% of rows.
-	turnChartShowProvenance: boolean;
 	// Turn Chart settings
 	// Height is word count and width is duration; where the duration was a
 	// fallback constant the mark degenerates into a needle.
@@ -126,7 +123,6 @@ export const initialViz: VizStoreType = {
 	turnNetworkStatisticalMode: false,
 	turnChartColorByKind: false,
 	turnChartGroupByKind: false,
-	turnChartShowProvenance: true,
 	turnChartCapAspect: false,
 	speakerGardenLabels: true,
 	questionFlowHideAbsent: true,

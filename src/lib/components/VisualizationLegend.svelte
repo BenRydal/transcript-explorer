@@ -110,7 +110,7 @@
 	// exactly when `pos` does.
 	const dragPlugins = $derived([
 		position({ current: pos }),
-		controls({ allow: ControlFrom.selector('.legend-header') }),
+		controls({ block: ControlFrom.selector('.legend-close') }),
 		bounds(BoundsFrom.parent()),
 		events({
 			onDrag: ({ offset }) => {
@@ -151,7 +151,6 @@
 					{ icon: ArrowUpDown, label: 'Bubble height \u2192 words in turn' },
 					{ icon: Minus, label: 'Hairline \u2192 words at that height' },
 					{ icon: Square, label: 'Notched edge \u2192 taller than the scale allows' },
-					{ icon: Circle, label: 'Hollow mark \u2192 duration estimated, not measured' },
 					{ speakerColors: true, label: 'Color \u2192 speaker' },
 					...v('Click bubble \u2192 play from turn')
 				]
@@ -319,6 +318,16 @@
 		border-radius: var(--te-radius-lg);
 		box-shadow: 0 2px 8px rgb(0 0 0 / 0.12);
 		padding: 8px 10px;
+		cursor: grab;
+		touch-action: none;
+	}
+
+	.legend-card:active {
+		cursor: grabbing;
+	}
+
+	.legend-close {
+		cursor: pointer;
 	}
 
 	.legend-header {
@@ -327,12 +336,6 @@
 		justify-content: space-between;
 		gap: var(--te-sp-2);
 		margin-bottom: 6px;
-		cursor: grab;
-		touch-action: none;
-	}
-
-	.legend-header:active {
-		cursor: grabbing;
 	}
 
 	.legend-title {

@@ -96,12 +96,6 @@
 			{ type: 'toggle', key: 'silenceOverlapToggle', label: 'Silence Overlap' },
 			{
 				type: 'toggle',
-				key: 'turnChartShowProvenance',
-				label: 'Mark Unmeasured Durations',
-				hint: 'Draw a mark as an outline when its width came from an estimate or a fixed stub rather than the log. AI transcripts only.'
-			},
-			{
-				type: 'toggle',
 				key: 'turnChartColorByKind',
 				label: 'Colour by Kind',
 				hint: 'One hue per participant kind, keeping every actor its own lane. AI transcripts only.'

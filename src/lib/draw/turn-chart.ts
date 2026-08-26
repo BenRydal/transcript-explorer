@@ -110,10 +110,10 @@ export class TurnChart {
 	private capAspect: boolean;
 	/** Lanes stand for participant kinds rather than individual actors. */
 	private groupByKind: boolean;
-	/** Distinguish a measured width from an estimated or stubbed one. */
-	private showProvenance: boolean;
 	/** Colour by participant kind without collapsing the lanes. */
 	private colorByKind: boolean;
+	/** Lanes are drawn separately, either by request or because we are grouping. */
+	private separated = false;
 	/** Lane index per group, when grouping. */
 	private groupIndex: Map<ActorGroup, number> = new Map();
 	private groupLabels: string[] = [];
@@ -145,7 +145,8 @@ export class TurnChart {
 		this.useAreaScaling = this.ctx.transcript.sourceKind === 'ai';
 		this.capAspect = this.useAreaScaling && this.ctx.config.turnChartCapAspect !== false;
 		this.groupByKind = this.useAreaScaling && this.ctx.config.turnChartGroupByKind === true;
-		this.showProvenance = this.useAreaScaling && this.ctx.config.turnChartShowProvenance !== false;
+		// Grouping IS a statement about lanes, so it draws lanes.
+		this.separated = this.groupByKind || this.ctx.config.separateToggle === true;
 		this.colorByKind = this.useAreaScaling && this.ctx.config.turnChartColorByKind === true;
 		if (this.groupByKind) this.buildGroups();
 		// When scaleToVisibleData is enabled, we'll compute this in draw() from visible data
@@ -194,9 +195,9 @@ export class TurnChart {
 		}
 
 		this.drawTimeline();
-		if (this.ctx.config.separateToggle) this.drawTimeGridlines();
-		if (this.groupByKind && this.ctx.config.separateToggle) this.drawGroupLabels();
-		if (this.useAreaScaling && !this.ctx.config.separateToggle) this.drawScaleTicks();
+		if (this.separated) this.drawTimeGridlines();
+		if (this.groupByKind) this.drawGroupLabels();
+		if (this.useAreaScaling && !this.separated) this.drawScaleTicks();
 		this.ctx.sk.textSize(this.ctx.sk.toolTipTextSize);
 		for (const key in sortedAnimationWordArray) {
 			const turnArray = sortedAnimationWordArray[key];
@@ -390,18 +391,7 @@ export class TurnChart {
 			this.groupByKind || this.colorByKind
 				? ACTOR_GROUP_COLORS[actorGroupOf(user.name, user.role)]
 				: getWordColor(turnData.codes, user.color, this.ctx.codeColorMap, this.ctx.config.codeColorMode);
-		// A width the converter estimated or stubbed is drawn hollow: the mark
-		// still says how much was said, without asserting how long it took.
-		const unmeasured = this.showProvenance && turnData.provenance !== undefined && turnData.provenance !== 'measured';
-		if (unmeasured) {
-			const outline = this.ctx.sk.color(color);
-			outline.setAlpha(220);
-			this.ctx.sk.noFill();
-			this.ctx.sk.stroke(outline);
-			this.ctx.sk.strokeWeight(1.25);
-		} else {
-			this.setStrokes(this.ctx.sk.color(color));
-		}
+		this.setStrokes(this.ctx.sk.color(color));
 		this.ctx.sk.ellipse(xCenter, yCenter, width, drawnHeight);
 		if (capped.capped) this.drawCapMarks(xCenter, yCenter, width, drawnHeight, color);
 
@@ -429,7 +419,7 @@ export class TurnChart {
 	/** Determines the coordinates for turn bubbles */
 	getCoordinates(turnLength: number, speakerIndex: number): [number, number] {
 		let lane: number, yCenter: number;
-		if (this.ctx.config.separateToggle) {
+		if (this.separated) {
 			lane = this.verticalLayoutSpacing;
 			yCenter = this.yPosSeparate + this.verticalLayoutSpacing * speakerIndex;
 		} else {
@@ -458,11 +448,12 @@ export class TurnChart {
 		const heading = this.useAreaScaling
 			? `<b>${speaker}</b> <span style="font-size: 0.85em; opacity: 0.7">· ${turnArray.length} words</span>`
 			: `<b>${speaker}</b>`;
-		// A hollow mark is asking a question the legend answers, and the legend
-		// may be shut. Say it where the reader already is.
+		// Most durations in an agentic transcript were never measured. Saying so
+		// on hover keeps the qualification available without encoding it in the
+		// mark, which read as a rendering fault.
 		const note =
-			this.showProvenance && provenance !== undefined && provenance !== 'measured'
-				? `\n<span style="font-size: 0.85em; opacity: 0.7">Duration ${provenance === 'marker' ? 'not recorded' : 'estimated'} — drawn hollow</span>`
+			provenance !== undefined && provenance !== 'measured'
+				? `\n<span style="font-size: 0.85em; opacity: 0.7">Duration ${provenance === 'marker' ? 'not recorded' : 'estimated'}</span>`
 				: '';
 		showTooltip(this.ctx.sk.mouseX, this.ctx.sk.mouseY, `${heading}\n${combined}${note}`, speakerColor, this.panelBottom);
 	}
