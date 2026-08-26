@@ -1,8 +1,12 @@
 <script lang="ts">
-	import { Check, LayoutDashboard } from '@lucide/svelte';
+	import { fly } from 'svelte/transition';
+	import { Check, LayoutDashboard, ChevronRight, X } from '@lucide/svelte';
 	import { PANEL_TILES } from '../ui/panel-icons';
 	import TranscriptStore from '../../stores/transcriptStore';
 	import FiltersPanel from './FiltersPanel.svelte';
+	import FiltersStore from '../../stores/filtersStore';
+	import UserStore from '../../stores/userStore';
+	import CodeStore from '../../stores/codeStore';
 	import TimingLensControl from '../components/TimingLensControl.svelte';
 	import { isAutoBinCount, BIN_COUNT_MIN, BIN_COUNT_AUTO } from '../draw/heatmap-scaling';
 	import { canRenderDashboard, dashboardUnavailableReason } from '../draw/dashboard-capacity';
@@ -204,6 +208,17 @@
 	const dashboardAvailable = $derived(canRenderDashboard(wordCount));
 	const dashboardReason = $derived(dashboardUnavailableReason(wordCount));
 
+	let filtersOpen = $state(false);
+
+	// Mirrors the panel's own tally so the closed trigger still reports state.
+	const activeFilterCount = $derived(
+		($FiltersStore.wordToSearch.length > 0 ? 1 : 0) +
+			($UserStore.some((u) => !u.enabled) ? 1 : 0) +
+			($CodeStore.length > 0 && $CodeStore.some((c) => !c.enabled) ? 1 : 0) +
+			($CodeStore.length > 0 && !$FiltersStore.showUncoded ? 1 : 0) +
+			($FiltersStore.stopWordsEnabled ? 1 : 0)
+	);
+
 	let activePanelKey = $derived(techniqueToggleOptions.find((t) => $VizStore[t])?.replace('Toggle', '') ?? '');
 	let activeVisualizationName = $derived(activePanelKey ? (PANEL_LABELS[activePanelKey] ?? 'Dashboard') : 'None');
 
@@ -396,18 +411,39 @@
 		<TimingLensControl inline />
 	</section>
 
-	<!-- Filters last, and kept a distinct section rather than mixed in with the
-	     view settings above: these change WHICH data is in scope, so they move
-	     every view and every count, while the settings above only change how
-	     the current view draws what is already there. -->
-	<section class="viz-panel__section viz-panel__section--filters" aria-label="Filters">
-		<p class="viz-panel__section-label">Filters &mdash; all visualizations</p>
-		<FiltersPanel />
+	<!-- Filters open as their own sheet rather than a section here: the speaker
+	     list alone is as long as everything above it, so inline it pushed the
+	     view controls off screen. -->
+	<section class="viz-panel__section viz-panel__section--filters">
+		<button type="button" class="viz-panel__flyout-trigger" onclick={() => (filtersOpen = true)} aria-expanded={filtersOpen}>
+			<span>Filters</span>
+			<span class="viz-panel__flyout-meta">
+				{#if activeFilterCount > 0}<span class="viz-panel__flyout-count">{activeFilterCount}</span>{/if}
+				<ChevronRight size={14} aria-hidden="true" />
+			</span>
+		</button>
 	</section>
+
+	{#if filtersOpen}
+		<div class="viz-panel__sheet" role="dialog" aria-label="Filters" transition:fly={{ x: 16, duration: 140 }}>
+			<div class="viz-panel__sheet-head">
+				<span class="viz-panel__section-label">Filters &mdash; all visualizations</span>
+				<button type="button" class="viz-panel__sheet-close" onclick={() => (filtersOpen = false)} aria-label="Close filters">
+					<X size={14} />
+				</button>
+			</div>
+			<div class="viz-panel__sheet-body">
+				<FiltersPanel />
+			</div>
+		</div>
+	{/if}
 </div>
 
 <style>
 	.viz-panel {
+		/* Anchors the filters sheet, which covers the panel rather than pushing it. */
+		position: relative;
+		min-height: 100%;
 		display: flex;
 		flex-direction: column;
 		padding: var(--te-sp-3);
@@ -484,6 +520,87 @@
 		border-top: 1px solid var(--te-border-muted);
 		padding-top: var(--te-sp-2);
 		margin-top: var(--te-sp-2);
+	}
+
+	.viz-panel__flyout-trigger {
+		display: flex;
+		align-items: center;
+		justify-content: space-between;
+		width: 100%;
+		padding: var(--te-sp-2);
+		border: 1px solid var(--te-border-muted);
+		border-radius: var(--te-radius);
+		background: var(--te-bg);
+		color: var(--te-fg);
+		font: inherit;
+		cursor: pointer;
+	}
+
+	.viz-panel__flyout-trigger:hover {
+		background: var(--te-bg-muted);
+	}
+
+	.viz-panel__flyout-trigger:focus-visible {
+		outline: 2px solid var(--te-focus-ring);
+		outline-offset: 1px;
+	}
+
+	.viz-panel__flyout-meta {
+		display: inline-flex;
+		align-items: center;
+		gap: var(--te-sp-1);
+		color: var(--te-fg-muted);
+	}
+
+	.viz-panel__flyout-count {
+		min-width: 18px;
+		padding: 0 5px;
+		border-radius: var(--te-radius-pill);
+		background: var(--te-accent);
+		color: var(--te-accent-fg);
+		font-size: var(--te-font-label);
+		text-align: center;
+		line-height: 18px;
+	}
+
+	/* Covers the panel rather than pushing it: the sheet is a detour, and the
+	   view controls should be where they were when it closes. */
+	.viz-panel__sheet {
+		position: absolute;
+		inset: 0;
+		z-index: 5;
+		display: flex;
+		flex-direction: column;
+		background: var(--te-bg);
+	}
+
+	.viz-panel__sheet-head {
+		display: flex;
+		align-items: center;
+		justify-content: space-between;
+		gap: var(--te-sp-2);
+		padding: var(--te-sp-2) var(--te-sp-3);
+		border-bottom: 1px solid var(--te-border-muted);
+	}
+
+	.viz-panel__sheet-close {
+		display: inline-flex;
+		padding: 2px;
+		border: none;
+		border-radius: var(--te-radius-sm);
+		background: transparent;
+		color: var(--te-fg-muted);
+		cursor: pointer;
+	}
+
+	.viz-panel__sheet-close:hover {
+		background: var(--te-bg-muted);
+	}
+
+	.viz-panel__sheet-body {
+		flex: 1 1 auto;
+		min-height: 0;
+		overflow-y: auto;
 	}
 
 	.viz-panel__note {

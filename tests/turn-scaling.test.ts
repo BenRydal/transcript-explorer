@@ -21,7 +21,7 @@ import { DataPoint } from '../src/models/dataPoint';
 
 const LANE = 600;
 
-const AI_FIXTURES = ['web-design-chat', 'web-design-tools', 'web-design-single-agent', 'web-design-multi-agent'];
+const AI_FIXTURES = ['web-design-chat', 'web-design-tools', 'web-design-multi-agent'];
 
 function loadTurnLengths(id: string): number[] {
 	const rows = Papa.parse(readFileSync(`static/data/${id}/conversation.csv`, 'utf8'), {

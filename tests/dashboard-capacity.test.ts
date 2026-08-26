@@ -50,7 +50,7 @@ describe('dashboardUnavailableReason', () => {
 
 describe('against the bundled corpus', () => {
 	// Word counts drift as the converter changes, so these read the real data.
-	const AVAILABLE = ['example-1', 'example-5', 'web-design-chat', 'web-design-tools', 'web-design-single-agent', 'claude-agent'];
+	const AVAILABLE = ['example-1', 'example-5', 'web-design-chat', 'web-design-tools', 'claude-agent'];
 	const REFUSED = ['web-design-multi-agent', 'cs-multi-agent', 'claude-multi-agent', 'trip-multi-agent'];
 
 	for (const id of AVAILABLE) {

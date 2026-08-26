@@ -52,7 +52,6 @@ const examples: Record<string, { files: string[]; videoId: string }> = {
 	'trip-multi-agent': { files: ['conversation.csv'], videoId: '' },
 	'web-design-chat': { files: ['conversation.csv'], videoId: '' },
 	'web-design-tools': { files: ['conversation.csv'], videoId: '' },
-	'web-design-single-agent': { files: ['conversation.csv'], videoId: '' },
 	'web-design-multi-agent': { files: ['conversation.csv'], videoId: '' }
 };
 

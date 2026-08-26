@@ -26,7 +26,7 @@ import {
 import { parseCSVRows } from '../src/lib/core/csv-txt-parser';
 import { createTranscriptFromParsedText } from '../src/lib/core/transcript-factory';
 
-const AI_FIXTURES = ['web-design-chat', 'web-design-tools', 'web-design-single-agent', 'web-design-multi-agent'];
+const AI_FIXTURES = ['web-design-chat', 'web-design-tools', 'web-design-multi-agent'];
 
 /**
  * Roughly the number of columns the heatmap lands on at a typical panel width

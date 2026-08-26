@@ -50,7 +50,6 @@ export const EXAMPLES: readonly ExampleOption[] = [
 	{ value: 'trip-multi-agent', label: 'Trip Planning — Multi-Agent', icon: Network },
 	{ value: 'web-design-chat', label: 'Claude-Web-Design-Chat', icon: MessageSquare },
 	{ value: 'web-design-tools', label: 'Claude-Web-Design-Tools', icon: Wrench },
-	{ value: 'web-design-single-agent', label: 'Claude-Web-Design-Single-Agent', icon: Bot },
 	{ value: 'web-design-multi-agent', label: 'Claude-Web-Design-Multi-Agent', icon: Network }
 ] as const;
 
