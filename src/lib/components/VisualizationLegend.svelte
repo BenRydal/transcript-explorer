@@ -1,7 +1,6 @@
 <script lang="ts">
 	import { fly } from 'svelte/transition';
 	import {
-		X,
 		Info,
 		Video,
 		Circle,
@@ -26,57 +25,7 @@
 	import UIStateStore from '../../stores/uiStateStore';
 	import TranscriptStore from '../../stores/transcriptStore';
 	import UserStore from '../../stores/userStore';
-
-	/**
-	 * Which corner the legend sits in. It overlaps whichever part of a view
-	 * happens to be near it, and which part that is changes per visualization,
-	 * so the reader moves it rather than the layout guessing.
-	 */
-	type Corner = 'bottom-left' | 'bottom-right' | 'top-left' | 'top-right';
-	const CORNER_KEY = 'te:legend:corner';
-
-	let corner = $state<Corner>('bottom-left');
-	let dragging = $state(false);
-	let container: HTMLDivElement | null = $state(null);
-
-	$effect(() => {
-		try {
-			const saved = window.localStorage.getItem(CORNER_KEY);
-			if (saved === 'bottom-left' || saved === 'bottom-right' || saved === 'top-left' || saved === 'top-right') corner = saved;
-		} catch {
-			/* private mode or blocked storage: the default corner is fine */
-		}
-	});
-
-	/** Snaps to whichever corner of the canvas the pointer released nearest. */
-	function nearestCorner(clientX: number, clientY: number): Corner {
-		const stage = container?.parentElement?.getBoundingClientRect();
-		if (!stage) return corner;
-		const vertical = clientY - stage.top < stage.height / 2 ? 'top' : 'bottom';
-		const horizontal = clientX - stage.left < stage.width / 2 ? 'left' : 'right';
-		return `${vertical}-${horizontal}` as Corner;
-	}
-
-	function startDrag(event: PointerEvent) {
-		if (event.button !== 0) return;
-		dragging = true;
-		const move = (e: PointerEvent) => {
-			corner = nearestCorner(e.clientX, e.clientY);
-		};
-		const up = (e: PointerEvent) => {
-			corner = nearestCorner(e.clientX, e.clientY);
-			dragging = false;
-			try {
-				window.localStorage.setItem(CORNER_KEY, corner);
-			} catch {
-				/* best effort */
-			}
-			window.removeEventListener('pointermove', move);
-			window.removeEventListener('pointerup', up);
-		};
-		window.addEventListener('pointermove', move);
-		window.addEventListener('pointerup', up);
-	}
+	import { DraggableWindow } from 'svelte-p5-components';
 
 	type LegendItem = { label: string } & ({ icon: Component; iconColor?: string } | { speakerColors: true });
 
@@ -218,8 +167,6 @@
 		return null;
 	});
 
-	let isVisible = $derived($UIStateStore.legendVisible);
-
 	let speakerGradient = $derived.by(() => {
 		const colors = $UserStore.filter((u) => u.enabled).map((u) => u.color);
 		if (colors.length <= 1) return colors[0] ?? '';
@@ -232,143 +179,50 @@
 </script>
 
 {#if legend}
-	<div class="legend-container legend-container--{corner}" class:is-dragging={dragging} bind:this={container}>
-		{#if isVisible}
-			<div class="legend-card" transition:fly={{ y: 8, duration: 150 }}>
-				<div class="legend-header">
-					<button class="legend-grip" title="Drag to another corner" aria-label="Move legend to another corner" onpointerdown={startDrag}>
-						<span></span><span></span><span></span>
-					</button>
-					<span class="legend-title">{legend.title}</span>
-					<button class="legend-close" onclick={() => setLegendVisible(false)} title="Close legend">
-						<X size={16} />
-					</button>
-				</div>
-				<div class="legend-items">
-					{#each legend.items as item}
-						<div class="legend-item">
-							{#if 'speakerColors' in item && speakerGradient}
-								<span class="legend-gradient" style="background: {speakerGradient}"></span>
-							{:else if 'icon' in item}
-								{@const Icon = item.icon}
-								<span class="legend-icon" style={item.iconColor ? `color: ${item.iconColor}` : ''}>
-									<Icon size={14} fill={item.iconColor ? 'currentColor' : 'none'} />
-								</span>
-							{/if}
-							<span class="legend-label">{item.label}</span>
-						</div>
-					{/each}
-				</div>
+	{#if $UIStateStore.legendVisible}
+		<!-- The library window owns the drag (neodrag, constrained to the canvas)
+		     rather than this component hand-rolling it: a hand-rolled snap jumps
+		     between corners instead of following the pointer. -->
+		<DraggableWindow
+			title={legend.title}
+			initialX={12}
+			initialY={12}
+			width={260}
+			height="auto"
+			constrained="parent"
+			onClose={() => setLegendVisible(false)}
+		>
+			<div class="legend-items">
+				{#each legend.items as item}
+					<div class="legend-item">
+						{#if 'speakerColors' in item}
+							<span class="legend-gradient" style="background: {speakerGradient}"></span>
+						{:else}
+							<span class="legend-icon" style={item.iconColor ? `color: ${item.iconColor}` : ''}>
+								<item.icon size={13} />
+							</span>
+						{/if}
+						<span class="legend-label">{item.label}</span>
+					</div>
+				{/each}
 			</div>
-		{:else}
+		</DraggableWindow>
+	{:else}
+		<div class="legend-container">
 			<button class="legend-toggle" onclick={() => setLegendVisible(true)} title="Show legend" transition:fly={{ y: 8, duration: 150 }}>
 				<Info size={18} />
 			</button>
-		{/if}
-	</div>
+		</div>
+	{/if}
 {/if}
 
 <style>
 	.legend-container {
 		position: absolute;
+		bottom: 12px;
+		left: 12px;
 		z-index: 40;
 		pointer-events: none;
-	}
-
-	.legend-container--bottom-left {
-		bottom: 12px;
-		left: 12px;
-	}
-	.legend-container--bottom-right {
-		bottom: 12px;
-		right: 12px;
-	}
-	.legend-container--top-left {
-		top: 12px;
-		left: 12px;
-	}
-	.legend-container--top-right {
-		top: 12px;
-		right: 12px;
-	}
-
-	.legend-container.is-dragging {
-		opacity: 0.75;
-	}
-
-	.legend-grip {
-		display: inline-flex;
-		flex-direction: column;
-		justify-content: center;
-		gap: 2px;
-		width: 14px;
-		padding: 2px 0;
-		margin-right: 2px;
-		border: none;
-		background: transparent;
-		cursor: grab;
-		touch-action: none;
-	}
-
-	.legend-grip:active {
-		cursor: grabbing;
-	}
-
-	.legend-grip span {
-		display: block;
-		height: 1.5px;
-		border-radius: 1px;
-		background: var(--te-fg-muted);
-		opacity: 0.55;
-	}
-
-	.legend-grip:focus-visible {
-		outline: 2px solid var(--te-focus-ring);
-		outline-offset: 1px;
-	}
-
-	.legend-card,
-	.legend-toggle {
-		pointer-events: auto;
-		background: rgba(255, 255, 255, 0.92);
-		border: 1px solid #e5e7eb;
-		border-radius: 8px;
-		box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
-	}
-
-	.legend-card {
-		padding: 8px 12px;
-		max-width: 300px;
-	}
-
-	.legend-header {
-		display: flex;
-		align-items: center;
-		justify-content: space-between;
-		margin-bottom: 4px;
-	}
-
-	.legend-title {
-		font-size: 0.9rem;
-		font-weight: 600;
-		color: #374151;
-	}
-
-	.legend-close {
-		background: none;
-		border: none;
-		cursor: pointer;
-		padding: 2px;
-		border-radius: 4px;
-		color: #6b7280;
-		display: flex;
-		align-items: center;
-		justify-content: center;
-	}
-
-	.legend-close:hover {
-		background: rgba(0, 0, 0, 0.08);
-		color: #374151;
 	}
 
 	.legend-items {
