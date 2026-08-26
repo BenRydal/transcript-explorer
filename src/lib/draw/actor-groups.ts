@@ -1,16 +1,6 @@
 import type { SpeakerRole } from '../../models/user';
 
-/**
- * Collapsing an agentic transcript's speakers onto the kind of participant
- * each one is.
- *
- * A multi-agent session carries 25 actors, and nine of those lanes hold their
- * entire activity inside 100 pixels at figure width -- they cannot render
- * their own content, so a per-actor lane shows the reader less than a grouped
- * one, not more. Grouping also answers a question the per-actor view cannot:
- * how work divides across KINDS of participant, rather than across
- * individuals that are hard to tell apart.
- */
+/** Collapsing an agentic transcript's speakers onto the kind of participant each one is. */
 export type ActorGroup = 'person' | 'primary' | 'agents' | 'tools';
 
 /** Display order, coarsest participant first. */
@@ -37,20 +27,11 @@ export const ACTOR_GROUP_COLORS: Record<ActorGroup, string> = {
 const TOOL_PREFIX = 'TOOL:';
 const AGENT_PREFIX = 'AGENT:';
 
-/**
- * Which group a speaker belongs to.
- *
- * Role alone cannot separate a delegated agent from the primary AI -- an
- * agent's own rows are recorded as `assistant` -- so the converter's name
- * prefix decides, the same reasoning `actor-colors.ts` gives. Anything that
- * declares no role at all is treated as the person, which is what a human
- * transcript's speakers are.
- */
+/** Which group a speaker belongs to. */
 export function actorGroupOf(speaker: string, role: SpeakerRole | undefined): ActorGroup {
 	const upper = speaker.toUpperCase();
-	// Name before role, in both directions. A delegated agent's rows are
-	// recorded as `assistant`, and `Tool:Agent` -- the tool that spawns them --
-	// carries the `agent` role on its markers, so role alone gets both wrong.
+	// Name before role: an agent's rows say `assistant`, and Tool:Agent's
+	// markers say `agent`, so role alone gets both backwards.
 	if (upper.startsWith(TOOL_PREFIX)) return 'tools';
 	if (upper.startsWith(AGENT_PREFIX)) return 'agents';
 	if (role === 'agent') return 'agents';

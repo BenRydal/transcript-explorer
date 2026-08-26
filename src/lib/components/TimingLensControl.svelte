@@ -1,15 +1,5 @@
 <script lang="ts">
-	/**
-	 * Which start time the time-based views read.
-	 *
-	 * The choice governs every time-based view at once, so it belongs with the
-	 * other cross-view controls rather than floating over the canvas -- it was
-	 * parked there while filters and settings could not be open together, and
-	 * that constraint is gone.
-	 *
-	 * Hidden for human transcripts, which carry no lens columns and have one
-	 * defensible start.
-	 */
+	/** Which start time the time-based views read. */
 	interface Props {
 		/** Renders in a panel rather than as a floating card over the canvas. */
 		inline?: boolean;

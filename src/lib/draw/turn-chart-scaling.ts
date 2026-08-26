@@ -43,16 +43,7 @@ export function turnBubbleHeight(turnLength: number, domainMax: number, lane: nu
 	return Math.max(MIN_BUBBLE_SIZE, Math.pow(ratio, SIZE_EXPONENT) * lane);
 }
 
-/**
- * Widest a bubble may be relative to its height.
- *
- * A turn's height comes from its word count and its width from its duration,
- * and the two have unrelated ranges. Where the converter had no measured
- * duration it writes a 0.5s marker, so a tool returning 6,465 words draws 5px
- * wide and 800px tall -- a 160:1 needle whose most striking dimension is a
- * fallback constant. The cap keeps a mark readable as a mark; the flag lets
- * the caller show that it is off the scale rather than silently shortening it.
- */
+/** Widest a bubble may be relative to its height. */
 export const MAX_BUBBLE_ASPECT = 8;
 
 export interface CappedBubble {
@@ -61,13 +52,7 @@ export interface CappedBubble {
 	capped: boolean;
 }
 
-/**
- * Clips a bubble's height to `maxAspect` times its width.
- *
- * Height is clipped rather than width widened: the width says the event was
- * brief, which is true even when the duration behind it was estimated, while
- * an inflated width would assert a duration nothing measured.
- */
+/** Clips a bubble's height to `maxAspect` times its width. */
 export function capBubbleHeight(height: number, width: number, maxAspect: number = MAX_BUBBLE_ASPECT): CappedBubble {
 	if (!(width > 0) || !(height > 0) || !(maxAspect > 0)) return { height, capped: false };
 	const limit = width * maxAspect;
@@ -82,13 +67,7 @@ export interface BubbleTick {
 }
 
 /**
- * Reference marks for bubble height, so a mark's size can be read as a
- * quantity rather than only compared to its neighbours.
- *
- * Height is square-rooted for AI transcripts, so evenly spaced pixels do not
- * mean evenly spaced word counts. Powers of ten make that legible without
- * laying a grid over the marks: the gaps visibly compress toward the top,
- * which is the scale telling the truth about itself.
+ * Reference marks for bubble height, so a mark's size can be read as a quantity rather than only compared to its neighbours.
  */
 export function bubbleScaleTicks(domainMax: number, lane: number, useAreaScaling: boolean, maxTicks = 3): BubbleTick[] {
 	if (!(domainMax > 0) || !(lane > 0)) return [];

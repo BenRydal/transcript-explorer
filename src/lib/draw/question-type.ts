@@ -1,27 +1,13 @@
 import type { SpeakerRole } from '../../models/user';
 
-/**
- * What kind of questioning move a question node represents.
- *
- * The Question Flow drew a `?` inside every node, which carries no information
- * in a view where every mark is already a question. The glyph channel is spent
- * on this distinction instead.
- */
+/** What kind of questioning move a question node represents. */
 export type QuestionKind = 'conversational' | 'elicitation' | 'inter-agent';
 
 /** Prefixes the converter writes for tool and delegated-agent speakers. */
 const TOOL_PREFIX = 'TOOL:';
 const AGENT_PREFIX = 'AGENT:';
 
-/**
- * Classifies a question by who raised it.
- *
- * Human transcripts always come back `conversational`, so their rendering is
- * unchanged: `role` is only ever populated for a transcript that declared
- * itself AI, and a human corpus can legitimately hold a speaker called Agent.
- * Reading names is safe on the AI side for the reason `actor-colors.ts` gives —
- * there the converter owns the naming.
- */
+/** Classifies a question by who raised it. */
 export function classifyQuestion(speaker: string, role: SpeakerRole | undefined, isAiTranscript: boolean): QuestionKind {
 	if (!isAiTranscript) return 'conversational';
 

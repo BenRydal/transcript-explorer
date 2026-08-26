@@ -59,15 +59,7 @@ export function cellOpacity(wordCount: number, domainMax: number, useLogScaling:
 	return MIN_CELL_OPACITY + Math.min(1, t) * (MAX_CELL_OPACITY - MIN_CELL_OPACITY);
 }
 
-/**
- * Slider position that means "let the view choose".
- *
- * The control used to encode Auto as 0, which put the finest setting at the
- * far LEFT and the coarsest one notch to its right: the first step of the
- * slider jumped from roughly eighty bins to one. Auto sits past the fine end
- * instead, so the track reads coarse to fine the whole way and Auto is the
- * natural continuation of "finer".
- */
+/** Slider position that means "let the view choose". */
 export const BIN_COUNT_AUTO = 121;
 export const BIN_COUNT_MIN = 4;
 export const BIN_COUNT_MAX = 120;

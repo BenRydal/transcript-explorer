@@ -189,9 +189,8 @@ export function parseCSVRows(rows: Record<string, unknown>[], speechRateWordsPer
 			content: contentStr,
 			startTime,
 			endTime,
-			// Read straight off the raw row rather than through the column
-			// mapper, for the reason the lens columns are: the fuzzy matcher
-			// must not be able to claim it from a human CSV.
+			// Off the raw row, like the lens columns: the fuzzy matcher must not
+			// claim this from a human CSV.
 			provenance: readProvenance(row)
 		});
 	}

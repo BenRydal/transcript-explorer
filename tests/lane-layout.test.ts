@@ -207,3 +207,12 @@ describe('against the bundled AI transcripts', () => {
 		});
 	}
 });
+
+describe('truncateMiddle on a gutter with no room', () => {
+	it('returns nothing rather than the full label', () => {
+		// A degenerate panel can compute a non-positive budget. Returning the
+		// label there would overflow the gutter it was meant to fit inside.
+		expect(truncateMiddle('Agent:general-purpose:a2b12912', 0, measure)).toBe('');
+		expect(truncateMiddle('Claude', -20, measure)).toBe('');
+	});
+});

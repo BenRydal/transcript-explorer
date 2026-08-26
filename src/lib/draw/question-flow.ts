@@ -199,11 +199,7 @@ export class QuestionFlow {
 		}
 	}
 
-	/**
-	 * Reports the lanes trimmed from the view. Tools never raise questions, so
-	 * the count is a claim about the interaction rather than a rendering
-	 * detail, and is stated instead of left as blank rows.
-	 */
+	/** Reports the lanes trimmed from the view. */
 	private drawAbsentRow(hiddenCount: number): void {
 		const y = this.gy + this.gh + ABSENT_ROW_HEIGHT / 2;
 
@@ -246,11 +242,7 @@ export class QuestionFlow {
 		}
 	}
 
-	/**
-	 * Circle, square, triangle for conversational, elicitation, inter-agent.
-	 * A human transcript only ever produces the circle, so its rendering is
-	 * unchanged.
-	 */
+	/** Circle, square, triangle for conversational, elicitation, inter-agent. */
 	private drawKindShape(kind: QuestionKind, x: number, y: number, r: number): void {
 		if (kind === 'elicitation') this.ctx.sk.rect(x - r, y - r, r * 2, r * 2, 1);
 		else if (kind === 'inter-agent') this.ctx.sk.triangle(x, y - r, x + r, y + r * 0.8, x - r, y + r * 0.8);

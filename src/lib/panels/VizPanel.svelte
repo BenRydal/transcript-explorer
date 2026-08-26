@@ -240,10 +240,8 @@
 		return `${option.label}: ${option.formatValue ? option.formatValue(value) : value}`;
 	}
 
-	// These are a single choice, not independent toggles. Inverting the clicked
-	// key let every one end up false, and the canvas silently falls back to the
-	// dashboard when nothing is selected -- reachable by a stray second click,
-	// and with no tile showing it as chosen.
+	// A single choice, not independent toggles: inverting let every one end up
+	// false, and the canvas falls back to the dashboard when nothing is set.
 	function selectVisualization(selection: string, toggleOptions: readonly (keyof VizStoreType)[]) {
 		VizStore.update((store) => {
 			const updates: Record<string, boolean> = {};

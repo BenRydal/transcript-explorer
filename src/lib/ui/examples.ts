@@ -1,12 +1,4 @@
-import {
-	GraduationCap,
-	Landmark,
-	Mic,
-	Bot,
-	MessageSquare,
-	Wrench,
-	Network
-} from '@lucide/svelte';
+import { GraduationCap, Landmark, Mic, Bot, MessageSquare, Wrench, Network } from '@lucide/svelte';
 import type { Component } from 'svelte';
 
 /**

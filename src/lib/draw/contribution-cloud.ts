@@ -193,14 +193,7 @@ export class ContributionCloud {
 		bufferCache.buffer = buffer;
 	}
 
-	/**
-	 * Lays words out until the buffer is full.
-	 *
-	 * Everything past the bottom edge is drawn where it cannot be seen, so an
-	 * agentic transcript spent a `text()` call per word on ~105,000 invisible
-	 * ones -- seconds of blocked main thread per render, and a hover test over
-	 * all of them every frame after that.
-	 */
+	/** Lays words out until the buffer is full. */
 	calculateWordPositions(words: DataPoint[], scaling: Scaling): { positions: WordPosition[]; overflow: boolean } {
 		const positions: WordPosition[] = [];
 		let x = 0;

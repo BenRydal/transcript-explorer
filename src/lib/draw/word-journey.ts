@@ -287,9 +287,7 @@ export class WordJourney {
 	}
 
 	/**
-	 * Reports the lanes trimmed from the view, in the label gutter and bold, so
-	 * it reads as one more actor in the list rather than as a note laid over
-	 * the timeline.
+	 * Reports the lanes trimmed from the view, in the label gutter and bold, so it reads as one more actor in the list rather than as a note laid over the timeline.
 	 */
 	private drawAbsentRow(hiddenCount: number, word: string): void {
 		const y = this.gy + this.gh + ABSENT_ROW_HEIGHT / 2;

@@ -26,18 +26,13 @@
 	import UIStateStore from '../../stores/uiStateStore';
 	import TranscriptStore from '../../stores/transcriptStore';
 	import UserStore from '../../stores/userStore';
-	// The `use:` form rather than `{@attach}`: this repo's eslint parser cannot
-	// read attachments, and an unparseable file is skipped by the linter
-	// entirely. Same plugin pipeline either way.
+	// `use:` not `{@attach}`: this repo's eslint parser cannot read attachments,
+	// and an unparseable file gets skipped by the linter entirely.
 	import { legacyDraggable } from '@neodrag/svelte/legacy';
 	import { controls, ControlFrom, bounds, BoundsFrom, events, position } from '@neodrag/svelte';
 
 	/**
-	 * The legend sits over whichever part of a view happens to be near it, and
-	 * which part that is changes per visualization, so it is moved rather than
-	 * placed. Neodrag carries the drag so it follows the pointer; it settles
-	 * into the nearest corner on release so it never ends up somewhere that
-	 * covers the middle of the canvas.
+	 * The legend sits over whichever part of a view happens to be near it, and which part that is changes per visualization, so it is moved rather than placed.
 	 */
 	const MARGIN = 12;
 	const POS_KEY = 'te:legend:corner';
@@ -94,9 +89,8 @@
 		} catch {
 			/* ignore */
 		}
-		// After paint: on the first run the card has no measured size yet, so
-		// settling now would leave it at the top-left origin instead of the
-		// corner it belongs in -- including when it is re-shown from the dot.
+		// After paint: before it, the card has no measured size and settling
+		// leaves it stuck at the top-left origin.
 		const raf = requestAnimationFrame(() => settle());
 		return () => cancelAnimationFrame(raf);
 	});

@@ -317,13 +317,7 @@ export class TurnChart {
 		sk.pop();
 	}
 
-	/**
-	 * Faint verticals at the axis ticks, drawn only with lanes separated.
-	 *
-	 * Stacked lanes put simultaneous events far apart vertically with nothing
-	 * to line them up against, so concurrency -- a quarter of an agentic
-	 * session -- is invisible. These give the eye something to carry across.
-	 */
+	/** Faint verticals at the axis ticks, drawn only with lanes separated. */
 	drawTimeGridlines(): void {
 		const isUntimed = this.ctx.transcript.timingMode === 'untimed';
 		if (isUntimed) return;
@@ -344,11 +338,7 @@ export class TurnChart {
 		sk.pop();
 	}
 
-	/**
-	 * Hairlines at round word counts, so a bubble's height reads as a quantity.
-	 * Overlay mode only -- in separate mode each lane is short enough that the
-	 * marks would crowd the rows they annotate.
-	 */
+	/** Hairlines at round word counts, so a bubble's height reads as a quantity. */
 	drawScaleTicks(): void {
 		const ticks = bubbleScaleTicks(this.maxTurnLength, this.bounds.height, true);
 		if (ticks.length === 0) return;
@@ -403,10 +393,7 @@ export class TurnChart {
 		}
 	}
 
-	/**
-	 * Notches a clipped mark top and bottom, so "off the scale" reads as a
-	 * statement rather than as a rendering artifact.
-	 */
+	/** Notches a clipped mark top and bottom, so it reads as off the scale. */
 	drawCapMarks(xCenter: number, yCenter: number, width: number, height: number, color: string): void {
 		const sk = this.ctx.sk;
 		const half = Math.max(2, Math.min(width, 10)) / 2;
@@ -451,9 +438,8 @@ export class TurnChart {
 		const heading = this.useAreaScaling
 			? `<b>${speaker}</b> <span style="font-size: 0.85em; opacity: 0.7">· ${turnArray.length} words</span>`
 			: `<b>${speaker}</b>`;
-		// Most durations in an agentic transcript were never measured. Saying so
-		// on hover keeps the qualification available without encoding it in the
-		// mark, which read as a rendering fault.
+		// Most agentic durations were never measured. Encoding that in the mark
+		// read as a rendering fault, so it lives here.
 		const note =
 			provenance !== undefined && provenance !== 'measured'
 				? `\n<span style="font-size: 0.85em; opacity: 0.7">Duration ${provenance === 'marker' ? 'not recorded' : 'estimated'}</span>`
@@ -592,16 +578,7 @@ export class TurnChart {
 		return { label: 'Model working', color: GAP_COLOR };
 	}
 
-	/**
-	 * One band per stretch of parallel work, not one per pair of speakers.
-	 *
-	 * Pairwise emission is quadratic in how busy a moment is, so five concurrent
-	 * actors drew ten stacked rectangles that all meant the same thing. And on an
-	 * AI transcript the person is excluded: a human turn overlapping a model turn
-	 * is an artefact of when the log stamps a submit, not two parties working at
-	 * once. What is left is agents and tools running in parallel, which is the
-	 * thing this session actually does.
-	 */
+	/** One band per stretch of parallel work, not one per pair of speakers. */
 	private buildOverlapMarkers(turns: TurnRange[], rowY: number): AnnotationMarker[] {
 		const markers: AnnotationMarker[] = [];
 		const isAi = this.ctx.transcript.sourceKind === 'ai';
@@ -626,13 +603,7 @@ export class TurnChart {
 		return markers;
 	}
 
-	/**
-	 * Silence is where NOTHING is active, which is the complement of the merged
-	 * turns rather than the arithmetic between neighbours. The pairwise version
-	 * went negative wherever turns overlapped and skipped the gap entirely, so
-	 * in a session that runs concurrent a quarter of the time it under-reported
-	 * silence and mis-sited what it did report.
-	 */
+	/** Silence is where nothing is active: the complement of the merged turns. */
 	private buildGapMarkers(turns: TurnRange[], rowY: number): AnnotationMarker[] {
 		const markers: AnnotationMarker[] = [];
 		const spans = turns.map((t) => ({ start: t.startTime, end: t.endTime }));

@@ -21,11 +21,7 @@ import { DrawContext } from './draw-context';
 import { flowerRadius, stemFraction, MIN_FLOWER_RADIUS } from './garden-scaling';
 import { truncateMiddle } from './lane-layout';
 
-/**
- * Height reserved below the baseline for speaker labels, and the share of the
- * panel it may take. A dashboard tile is a fraction of the canvas, so a fixed
- * strip would eat a third of a small one.
- */
+/** Height reserved below the baseline for speaker labels, and the share of the panel it may take. */
 const LABEL_STRIP_HEIGHT = 58;
 const LABEL_STRIP_MAX_SHARE = 0.18;
 /** Below this the strip cannot hold a legible label, so labels are dropped. */
@@ -163,16 +159,7 @@ export class SpeakerGarden {
 		}
 	}
 
-	/**
-	 * Names the flower at the baseline. Without this the garden cannot be read
-	 * off a printed figure at all, since identity was only ever available on
-	 * hover.
-	 *
-	 * Always horizontal. Rotating a long label looked like it bought room, but
-	 * the strip is shorter than the column is wide, so the rotated form fit
-	 * FEWER characters than the flat one it replaced -- and cost the reader a
-	 * head tilt for the privilege.
-	 */
+	/** Names the flower at the baseline. */
 	drawSpeakerLabel(speaker: string): void {
 		const sk = this.ctx.sk;
 		const y = this.yPosBottom + LABEL_GAP;

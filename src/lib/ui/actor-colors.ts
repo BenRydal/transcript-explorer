@@ -118,16 +118,7 @@ const DELEGATED_AGENT_PREFIX = 'AGENT:';
 /** Prefix the converter writes for a tool's rows. */
 const TOOL_PREFIX = 'TOOL:';
 
-/**
- * Family a speaker belongs to. The converter's name prefix decides, and only
- * then the role.
- *
- * Both directions need it. A delegated agent's own rows are recorded as
- * `assistant`, so role alone would colour every agent as the primary AI. And
- * `Tool:Agent` -- the tool Claude calls to spawn a sub-agent -- carries the
- * `agent` role on its spawn and result markers, so role alone coloured the
- * delegation tool as though it were one of the agents it creates.
- */
+/** Family a speaker belongs to. */
 function familyOf(speaker: string, role: SpeakerRole | undefined): string {
 	const upper = speaker.toUpperCase();
 	if (upper.startsWith(TOOL_PREFIX)) return 'tool';

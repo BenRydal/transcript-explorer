@@ -188,15 +188,7 @@ export const igsSketch = (p5: any) => {
 		if (lastDrawError) p5.drawErrorBanner();
 	};
 
-	/**
-	 * Runs one frame's drawing so a throw cannot end the animation.
-	 *
-	 * p5's `_draw` calls `redraw()` before requesting the next frame, so an
-	 * exception escaping a view leaves the loop with no pending
-	 * requestAnimationFrame -- the canvas freezes on its last good frame for the
-	 * rest of the session, and only `resizeCanvas` (which redraws once) revives
-	 * it. A view that cannot draw should report itself, not stop the tool.
-	 */
+	/** Runs one frame's drawing so a throw cannot end the animation. */
 	p5.drawGuarded = (body: () => void) => {
 		const depth = p5._styles?.length ?? 0;
 		try {

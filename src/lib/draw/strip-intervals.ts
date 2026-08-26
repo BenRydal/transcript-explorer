@@ -1,18 +1,5 @@
-/**
- * What the strips under the turn chart should report.
- *
- * Both rows were computed pairwise over turns sorted by start time, which is
- * only sound when turns never overlap. A human conversation mostly satisfies
- * that. An agentic session does not -- the bundled multi-agent transcript runs
- * concurrent about a quarter of its length -- and the consequences were wrong
- * in both directions: a gap was measured as `next.start - previous.end`, which
- * goes negative between overlapping turns and silently skips real silence, and
- * an overlap was emitted once per PAIR of speakers, so five concurrent actors
- * drew ten stacked bars.
- *
- * Both are sweeps over intervals rather than comparisons between neighbours.
- */
-
+// Both strip rows are sweeps over intervals. Pairwise comparison between
+// neighbouring turns only holds when turns never overlap.
 export interface Span {
 	start: number;
 	end: number;
@@ -34,13 +21,7 @@ export function mergeSpans(spans: readonly Span[]): Span[] {
 	return merged;
 }
 
-/**
- * Spans where nobody is active, between `from` and `to`.
- *
- * The complement of the merged activity, which is what silence actually means.
- * Anything shorter than `minDuration` is dropped: a sub-second seam between two
- * rows is a rounding artefact of how the converter times them, not a pause.
- */
+/** Spans where nobody is active, between `from` and `to`. */
 export function silentGaps(spans: readonly Span[], from: number, to: number, minDuration = 0): Span[] {
 	if (!(to > from)) return [];
 	const merged = mergeSpans(spans);
@@ -57,13 +38,7 @@ export function silentGaps(spans: readonly Span[], from: number, to: number, min
 	return gaps.filter((g) => g.end - g.start > minDuration && g.end > g.start);
 }
 
-/**
- * Spans where at least `minConcurrent` DISTINCT actors are active at once.
- *
- * One span per stretch rather than one per pair, so the row reads as "this is
- * when work was happening in parallel" instead of as a pile of rectangles
- * whose count is quadratic in how busy the moment was.
- */
+/** Spans where at least `minConcurrent` DISTINCT actors are active at once. */
 export function concurrentSpans(spans: readonly ActorSpan[], minConcurrent = 2, minDuration = 0): (Span & { peak: number })[] {
 	const events: { at: number; delta: number; speaker: string }[] = [];
 	for (const span of spans) {
@@ -93,6 +68,12 @@ export function concurrentSpans(spans: readonly ActorSpan[], minConcurrent = 2, 
 			out.push(open);
 			open = null;
 		}
+	}
+	// A span still open at the last event: every actor ends by then, so this
+	// only guards against unsorted or malformed input.
+	if (open && events.length > 0) {
+		open.end = events[events.length - 1].at;
+		out.push(open);
 	}
 
 	return out.filter((s) => s.end - s.start > minDuration && s.end > s.start);

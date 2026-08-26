@@ -12,11 +12,7 @@ export interface LanePartition {
 	absent: string[];
 }
 
-/**
- * Orders speakers for display. `uptake` ranks by occurrences of the searched
- * token, so lanes carrying nothing sink to the bottom and can be trimmed.
- * Ties fall back to transcript order, which keeps the result stable.
- */
+/** Orders speakers for display. */
 export function orderLanes(speakers: readonly string[], counts: ReadonlyMap<string, number>, order: LaneOrder): string[] {
 	const original = new Map(speakers.map((s, i) => [s, i]));
 	const ordered = [...speakers];
@@ -43,21 +39,17 @@ export function partitionLanes(ordered: readonly string[], counts: ReadonlyMap<s
 	return { present, absent };
 }
 
-/**
- * Shortens a label to fit `maxWidth`, cutting from the middle.
- *
- * Trailing truncation removes the wrong half here: a delegated agent reads as
- * `Agent:general-purpose:a2b12912`, where the prefix carries the actor kind and
- * the suffix is the only thing separating one agent from another.
- */
+/** Shortens a label to fit `maxWidth`, cutting from the middle. */
 export function truncateMiddle(label: string, maxWidth: number, measure: (text: string) => number): string {
-	if (maxWidth <= 0 || measure(label) <= maxWidth) return label;
+	// A non-positive budget is no room at all, so returning the label would
+	// overflow the gutter it was meant to fit.
+	if (maxWidth <= 0) return '';
+	if (measure(label) <= maxWidth) return label;
 
 	const ellipsis = '…';
 	if (measure(ellipsis) > maxWidth) return '';
 
-	// Grow head and tail alternately, keeping the head slightly longer so the
-	// actor-kind prefix survives on a tight gutter.
+	// Head grows first, so the actor-kind prefix survives a tight gutter.
 	let head = 0;
 	let tail = 0;
 	for (;;) {
@@ -88,16 +80,7 @@ export interface Cluster<T extends Clusterable> {
 	speaker: string;
 }
 
-/**
- * Merges marks that land within `minGap` pixels of each other in the same lane.
- *
- * Coincident dots otherwise fuse into a solid bar that reads as one long event
- * rather than as several separate ones. A cluster is drawn once and carries its
- * own count, which is the honest rendering of the same fact.
- *
- * `items` is expected in ascending `x` within a lane; callers pass occurrences
- * in time order, which satisfies that.
- */
+/** Merges marks that land within `minGap` pixels of each other in the same lane. */
 export function clusterByLane<T extends Clusterable>(items: readonly T[], minGap: number): Cluster<T>[] {
 	const byLane = new Map<string, T[]>();
 	for (const item of items) {

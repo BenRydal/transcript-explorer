@@ -1,12 +1,4 @@
-/**
- * How a row's timing was arrived at, as the converter recorded it.
- *
- * `measured` came from the log. `estimated` was inferred from content length.
- * `marker` is a fixed stub for an event the log treats as instantaneous. In
- * the bundled multi-agent session only 4% of rows are measured, so a view that
- * draws duration without saying which is which is asserting far more than it
- * knows.
- */
+/** How a row's timing was arrived at, as the converter recorded it. */
 export type TimingProvenance = 'measured' | 'estimated' | 'marker';
 
 export class DataPoint {

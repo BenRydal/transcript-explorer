@@ -82,12 +82,7 @@ export class Core {
 		}
 		const buffer = await response.arrayBuffer();
 		const lower = fileName.toLowerCase();
-		const type =
-			lower.endsWith('.jsonl') || lower.endsWith('.json')
-				? 'application/json'
-				: lower.endsWith('.txt')
-					? 'text/plain'
-					: 'text/csv';
+		const type = lower.endsWith('.jsonl') || lower.endsWith('.json') ? 'application/json' : lower.endsWith('.txt') ? 'text/plain' : 'text/csv';
 		return new File([buffer], fileName, { type });
 	}
 

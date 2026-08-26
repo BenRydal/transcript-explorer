@@ -47,31 +47,17 @@ export interface VizStoreType {
 	// when true, edges use lag-sequential adjusted residuals (z-scores) instead of raw counts
 	turnNetworkStatisticalMode: boolean;
 	// Turn Chart settings
-	// Collapse per-actor lanes onto participant kind. Nine of the multi-agent
-	// session's 25 lanes cannot render their own content at figure width.
-	// Colour every actor by what KIND of participant it is, without collapsing
-	// the lanes. Independent of grouping: one is about identity, the other
-	// about how many rows there are.
+	// Independent of grouping: identity, not row count.
 	turnChartColorByKind: boolean;
 	turnChartGroupByKind: boolean;
 	// Turn Chart settings
-	// Height is word count and width is duration; where the duration was a
-	// fallback constant the mark degenerates into a needle.
 	turnChartCapAspect: boolean;
 	// Speaker Garden settings
-	// Identity was only ever available on hover, which leaves a printed figure
-	// unreadable.
 	speakerGardenLabels: boolean;
 	// Question Flow settings
-	// Tools never raise questions, so at agentic scale roughly half the lanes
-	// are empty by definition; the count is stated instead of drawn as gaps.
 	questionFlowHideAbsent: boolean;
-	// Shape encodes conversational / elicitation / inter-agent, replacing a `?`
-	// glyph that was redundant in a view where every mark is a question.
 	questionFlowTypeMarks: boolean;
 	// Word Journey settings
-	// A lane that never carries the searched token is padding, not data; at 25
-	// actors those lanes hold a third of the vertical space.
 	wordJourneyHideAbsent: boolean;
 	wordJourneyLaneOrder: WordJourneyLaneOrder;
 	// Speaker Heatmap settings

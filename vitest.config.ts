@@ -2,10 +2,8 @@ import { fileURLToPath } from 'node:url';
 import { defineConfig } from 'vitest/config';
 
 // Deliberately does not load the SvelteKit plugin: these tests exercise the
-// parse/factory and draw layers only, which are plain TypeScript with no DOM
-// dependency, so they run headless and fast. The `$lib` alias is resolved by
-// hand rather than by the plugin, so draw modules that import through it can
-// be exercised against a stub sketch.
+// parse/factory and draw layers only: plain TypeScript, no DOM. The `$lib`
+// alias is resolved here so draw modules can run against a stub sketch.
 export default defineConfig({
 	resolve: {
 		alias: {

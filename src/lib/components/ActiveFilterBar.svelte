@@ -1,11 +1,5 @@
 <script lang="ts">
-	/**
-	 * What is currently shaping the view, and a way to undo each of it.
-	 *
-	 * Filters live a panel away, so a view could be filtered with nothing on
-	 * screen saying so -- a hidden speaker reads as an absent one. This shows
-	 * only what is active, so it costs no space at rest.
-	 */
+	/** What is currently shaping the view, and a way to undo each of it. */
 	import { X } from '@lucide/svelte';
 	import FiltersStore from '../../stores/filtersStore';
 	import UserStore from '../../stores/userStore';
