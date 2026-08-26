@@ -3,6 +3,7 @@
 	import { PANEL_TILES } from '../ui/panel-icons';
 	import TranscriptStore from '../../stores/transcriptStore';
 	import FiltersPanel from './FiltersPanel.svelte';
+	import TimingLensControl from '../components/TimingLensControl.svelte';
 	import { isAutoBinCount, BIN_COUNT_MIN, BIN_COUNT_AUTO } from '../draw/heatmap-scaling';
 	import { canRenderDashboard, dashboardUnavailableReason } from '../draw/dashboard-capacity';
 	import VizStore, {
@@ -388,6 +389,12 @@
 			{/each}
 		</section>
 	{/if}
+
+	<!-- Cross-view controls: these move every time-based view at once, so they
+	     sit apart from the per-view settings above. -->
+	<section class="viz-panel__section viz-panel__section--filters" aria-label="Timing">
+		<TimingLensControl inline />
+	</section>
 
 	<!-- Filters last, and kept a distinct section rather than mixed in with the
 	     view settings above: these change WHICH data is in scope, so they move

@@ -27,6 +27,57 @@
 	import TranscriptStore from '../../stores/transcriptStore';
 	import UserStore from '../../stores/userStore';
 
+	/**
+	 * Which corner the legend sits in. It overlaps whichever part of a view
+	 * happens to be near it, and which part that is changes per visualization,
+	 * so the reader moves it rather than the layout guessing.
+	 */
+	type Corner = 'bottom-left' | 'bottom-right' | 'top-left' | 'top-right';
+	const CORNER_KEY = 'te:legend:corner';
+
+	let corner = $state<Corner>('bottom-left');
+	let dragging = $state(false);
+	let container: HTMLDivElement | null = $state(null);
+
+	$effect(() => {
+		try {
+			const saved = window.localStorage.getItem(CORNER_KEY);
+			if (saved === 'bottom-left' || saved === 'bottom-right' || saved === 'top-left' || saved === 'top-right') corner = saved;
+		} catch {
+			/* private mode or blocked storage: the default corner is fine */
+		}
+	});
+
+	/** Snaps to whichever corner of the canvas the pointer released nearest. */
+	function nearestCorner(clientX: number, clientY: number): Corner {
+		const stage = container?.parentElement?.getBoundingClientRect();
+		if (!stage) return corner;
+		const vertical = clientY - stage.top < stage.height / 2 ? 'top' : 'bottom';
+		const horizontal = clientX - stage.left < stage.width / 2 ? 'left' : 'right';
+		return `${vertical}-${horizontal}` as Corner;
+	}
+
+	function startDrag(event: PointerEvent) {
+		if (event.button !== 0) return;
+		dragging = true;
+		const move = (e: PointerEvent) => {
+			corner = nearestCorner(e.clientX, e.clientY);
+		};
+		const up = (e: PointerEvent) => {
+			corner = nearestCorner(e.clientX, e.clientY);
+			dragging = false;
+			try {
+				window.localStorage.setItem(CORNER_KEY, corner);
+			} catch {
+				/* best effort */
+			}
+			window.removeEventListener('pointermove', move);
+			window.removeEventListener('pointerup', up);
+		};
+		window.addEventListener('pointermove', move);
+		window.addEventListener('pointerup', up);
+	}
+
 	type LegendItem = { label: string } & ({ icon: Component; iconColor?: string } | { speakerColors: true });
 
 	const videoItem = (label: string): LegendItem => ({
@@ -181,10 +232,13 @@
 </script>
 
 {#if legend}
-	<div class="legend-container">
+	<div class="legend-container legend-container--{corner}" class:is-dragging={dragging} bind:this={container}>
 		{#if isVisible}
 			<div class="legend-card" transition:fly={{ y: 8, duration: 150 }}>
 				<div class="legend-header">
+					<button class="legend-grip" title="Drag to another corner" aria-label="Move legend to another corner" onpointerdown={startDrag}>
+						<span></span><span></span><span></span>
+					</button>
 					<span class="legend-title">{legend.title}</span>
 					<button class="legend-close" onclick={() => setLegendVisible(false)} title="Close legend">
 						<X size={16} />
@@ -217,10 +271,60 @@
 <style>
 	.legend-container {
 		position: absolute;
-		bottom: 12px;
-		left: 12px;
 		z-index: 40;
 		pointer-events: none;
+	}
+
+	.legend-container--bottom-left {
+		bottom: 12px;
+		left: 12px;
+	}
+	.legend-container--bottom-right {
+		bottom: 12px;
+		right: 12px;
+	}
+	.legend-container--top-left {
+		top: 12px;
+		left: 12px;
+	}
+	.legend-container--top-right {
+		top: 12px;
+		right: 12px;
+	}
+
+	.legend-container.is-dragging {
+		opacity: 0.75;
+	}
+
+	.legend-grip {
+		display: inline-flex;
+		flex-direction: column;
+		justify-content: center;
+		gap: 2px;
+		width: 14px;
+		padding: 2px 0;
+		margin-right: 2px;
+		border: none;
+		background: transparent;
+		cursor: grab;
+		touch-action: none;
+	}
+
+	.legend-grip:active {
+		cursor: grabbing;
+	}
+
+	.legend-grip span {
+		display: block;
+		height: 1.5px;
+		border-radius: 1px;
+		background: var(--te-fg-muted);
+		opacity: 0.55;
+	}
+
+	.legend-grip:focus-visible {
+		outline: 2px solid var(--te-focus-ring);
+		outline-offset: 1px;
 	}
 
 	.legend-card,

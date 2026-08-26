@@ -155,6 +155,7 @@ export class TurnChart {
 		}
 
 		this.drawTimeline();
+		if (this.ctx.config.separateToggle) this.drawTimeGridlines();
 		if (this.useAreaScaling && !this.ctx.config.separateToggle) this.drawScaleTicks();
 		this.ctx.sk.textSize(this.ctx.sk.toolTipTextSize);
 		for (const key in sortedAnimationWordArray) {
@@ -256,6 +257,33 @@ export class TurnChart {
 			this.ctx.sk.noStroke();
 			this.ctx.sk.text(formatTimeCompact(time), x, y + tickLength + 2);
 		}
+	}
+
+	/**
+	 * Faint verticals at the axis ticks, drawn only with lanes separated.
+	 *
+	 * Stacked lanes put simultaneous events far apart vertically with nothing
+	 * to line them up against, so concurrency -- a quarter of an agentic
+	 * session -- is invisible. These give the eye something to carry across.
+	 */
+	drawTimeGridlines(): void {
+		const isUntimed = this.ctx.transcript.timingMode === 'untimed';
+		if (isUntimed) return;
+
+		const sk = this.ctx.sk;
+		const numTicks = Math.min(8, Math.floor(this.bounds.width / 60));
+		if (numTicks <= 0) return;
+
+		const rule = sk.color(this.ctx.theme.fgMuted);
+		rule.setAlpha(26);
+		sk.push();
+		sk.stroke(rule);
+		sk.strokeWeight(1);
+		for (let i = 0; i <= numTicks; i++) {
+			const x = this.bounds.x + (i / numTicks) * this.bounds.width;
+			sk.line(x, this.bounds.y, x, this.bounds.y + this.bounds.height);
+		}
+		sk.pop();
 	}
 
 	/**

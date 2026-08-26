@@ -10,7 +10,6 @@
 	import FiltersStore from '../../stores/filtersStore';
 	import UserStore from '../../stores/userStore';
 	import CodeStore from '../../stores/codeStore';
-	import AppSettingsStore from '../../stores/appSettingsStore';
 	import P5Store from '../../stores/p5Store';
 
 	interface Chip {
@@ -85,11 +84,6 @@
 				}
 			});
 		}
-
-		// Reports which start time the views are reading; not a filter, so it
-		// carries no clear action.
-		const lens = $AppSettingsStore.timingLens;
-		if (lens && lens !== 'record') out.push({ id: 'lens', label: `${lens} timing` });
 
 		return out;
 	});
