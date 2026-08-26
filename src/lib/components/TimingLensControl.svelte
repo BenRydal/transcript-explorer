@@ -1,17 +1,10 @@
 <script lang="ts">
-	/**
-	 * Which start time the time-based views read, parked on the canvas.
-	 *
-	 * The choice governs every time-based view at once, so it is not a per-
-	 * visualization option. It lived in the Settings panel first, which put it
-	 * behind a panel switch: comparing lenses while filtering meant closing
-	 * Filters, changing the lens, and reopening Filters to see the result. It
-	 * sits on the canvas instead, opposite the legend, so both panels stay
-	 * usable while the reading changes underneath them.
-	 *
-	 * Hidden for human transcripts, which carry no lens columns and have one
-	 * defensible start.
-	 */
+	/** Which start time the time-based views read. */
+	interface Props {
+		/** Renders in a panel rather than as a floating card over the canvas. */
+		inline?: boolean;
+	}
+	let { inline = false }: Props = $props();
 	import AppSettingsStore, { type TimingLens } from '../../stores/appSettingsStore';
 	import TranscriptStore from '../../stores/transcriptStore';
 
@@ -31,8 +24,8 @@
 </script>
 
 {#if isAI}
-	<div class="tl-container">
-		<div class="tl-card">
+	<div class="tl-container" class:tl-container--inline={inline}>
+		<div class="tl-card" class:tl-card--inline={inline}>
 			<div class="tl-label">Timing</div>
 			<div class="tl-seg" role="radiogroup" aria-label="Timing lens">
 				{#each OPTIONS as opt (opt.value)}
@@ -60,6 +53,20 @@
 		right: 12px;
 		z-index: 40;
 		pointer-events: none;
+	}
+
+	.tl-container--inline {
+		position: static;
+		pointer-events: auto;
+	}
+
+	.tl-card--inline {
+		width: 100%;
+		border: none;
+		border-radius: 0;
+		box-shadow: none;
+		background: transparent;
+		padding: 0;
 	}
 
 	.tl-card {

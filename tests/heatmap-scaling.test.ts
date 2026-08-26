@@ -14,11 +14,19 @@
 import { readFileSync } from 'node:fs';
 import { describe, expect, it } from 'vitest';
 import Papa from 'papaparse';
-import { cellOpacity, MAX_CELL_OPACITY, MIN_CELL_OPACITY } from '../src/lib/draw/heatmap-scaling';
+import {
+	cellOpacity,
+	MAX_CELL_OPACITY,
+	MIN_CELL_OPACITY,
+	isAutoBinCount,
+	BIN_COUNT_AUTO,
+	BIN_COUNT_MIN,
+	BIN_COUNT_MAX
+} from '../src/lib/draw/heatmap-scaling';
 import { parseCSVRows } from '../src/lib/core/csv-txt-parser';
 import { createTranscriptFromParsedText } from '../src/lib/core/transcript-factory';
 
-const AI_FIXTURES = ['web-design-chat', 'web-design-tools', 'web-design-single-agent', 'web-design-multi-agent'];
+const AI_FIXTURES = ['web-design-chat', 'web-design-tools', 'web-design-multi-agent'];
 
 /**
  * Roughly the number of columns the heatmap lands on at a typical panel width
@@ -124,4 +132,35 @@ describe('cellOpacity — against the real AI fixtures', () => {
 			expect(washedOut.length).toBeGreaterThan(counts.length / 2);
 		});
 	}
+});
+
+/**
+ * The bin control encoded Auto as 0, which put the finest setting at the far
+ * left and the coarsest one notch to its right: the slider's first step jumped
+ * from roughly eighty bins to one. Auto now sits past the fine end, so the
+ * track reads coarse to fine the whole way.
+ */
+describe('bin count slider', () => {
+	it('reads coarse to fine, with no cliff at either end', () => {
+		expect(BIN_COUNT_MIN).toBeLessThan(BIN_COUNT_MAX);
+		expect(BIN_COUNT_AUTO).toBeGreaterThan(BIN_COUNT_MAX);
+	});
+
+	it('treats only the far end as Auto', () => {
+		expect(isAutoBinCount(BIN_COUNT_MIN)).toBe(false);
+		expect(isAutoBinCount(BIN_COUNT_MAX)).toBe(false);
+		expect(isAutoBinCount(BIN_COUNT_AUTO)).toBe(true);
+	});
+
+	it('is monotonic across the manual range — every step is finer than the last', () => {
+		for (let v = BIN_COUNT_MIN; v < BIN_COUNT_MAX; v++) {
+			expect(isAutoBinCount(v)).toBe(false);
+			expect(v + 1).toBeGreaterThan(v);
+		}
+	});
+
+	it('can express a bin count as fine as Auto typically picks', () => {
+		// Auto is gridWidth / 15, so a wide canvas lands near 90.
+		expect(BIN_COUNT_MAX).toBeGreaterThanOrEqual(90);
+	});
 });

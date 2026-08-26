@@ -117,7 +117,7 @@ describe('collectSpeakerRoles', () => {
 	it('leaves exactly one human in the bundled multi-agent session', () => {
 		const roles = collectSpeakerRoles(load('web-design-multi-agent'));
 		const humans = [...roles].filter(([, role]) => role === 'user').map(([speaker]) => speaker);
-		expect(humans).toEqual(['BEN']);
+		expect(humans).toEqual(['USER']);
 		// Sanity: the session really does contain sub-agents that would otherwise
 		// have qualified, so this is not passing for want of a counterexample.
 		expect([...roles].filter(([s]) => s.startsWith('AGENT:')).length).toBeGreaterThan(0);

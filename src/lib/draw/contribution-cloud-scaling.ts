@@ -30,6 +30,11 @@ const BASE_SCALING: Scaling = {
 };
 
 const MIN_SCALE = 0.15;
+
+// Floor for an AI transcript. At 0.15 the cloud renders around 3px text, which
+// is unreadable and costs a text() call per word for the privilege; a legible
+// floor lays out fewer words and stops before the frame stalls.
+export const AI_MIN_SCALE = 0.45;
 const CHARS_PER_EM = 2;
 const REFERENCE_TEXT_SIZE = 50;
 
@@ -61,11 +66,11 @@ registerVizCacheReset(() => {
  */
 const SCALING_STEPS = 500;
 
-function getCacheKey(bounds: Bounds, wordCount: number, maxCount: number, config: ConfigStoreType): string {
+function getCacheKey(bounds: Bounds, wordCount: number, maxCount: number, config: ConfigStoreType, minScale: number): string {
 	const timeline = get(TimelineStore);
 	const bucket = Math.max(1, Math.floor(wordCount / SCALING_STEPS));
 	const bucketedCount = Math.floor(wordCount / bucket);
-	return `${bounds.x},${bounds.y},${bounds.width},${bounds.height}|${bucketedCount}|${maxCount}|${config.separateToggle}|${config.repeatedWordsToggle}|${config.repeatWordSliderValue}|${config.dashboardToggle}|${config.scaleToVisibleData}|${timeline.leftMarker},${timeline.rightMarker}`;
+	return `${minScale}|${bounds.x},${bounds.y},${bounds.width},${bounds.height}|${bucketedCount}|${maxCount}|${config.separateToggle}|${config.repeatedWordsToggle}|${config.repeatWordSliderValue}|${config.dashboardToggle}|${config.scaleToVisibleData}|${timeline.leftMarker},${timeline.rightMarker}`;
 }
 
 /**
@@ -96,7 +101,14 @@ export function getWordWidth(sk: p5, word: string, textSize: number): number {
  * When fullTranscriptMaxCount is provided and scaleToVisibleData is false,
  * uses that as the max count for consistent scaling across selections.
  */
-export function calculateScaling(sk: p5, words: DataPoint[], bounds: Bounds, config: ConfigStoreType, fullTranscriptMaxCount?: number): Scaling {
+export function calculateScaling(
+	sk: p5,
+	words: DataPoint[],
+	bounds: Bounds,
+	config: ConfigStoreType,
+	fullTranscriptMaxCount?: number,
+	minScale: number = MIN_SCALE
+): Scaling {
 	if (words.length === 0) return { ...BASE_SCALING };
 
 	// Determine max word count for scaling
@@ -109,7 +121,7 @@ export function calculateScaling(sk: p5, words: DataPoint[], bounds: Bounds, con
 		}
 	}
 
-	const cacheKey = getCacheKey(bounds, words.length, maxCount, config);
+	const cacheKey = getCacheKey(bounds, words.length, maxCount, config, minScale);
 	if (scalingCache.key === cacheKey && scalingCache.scaling) {
 		return scalingCache.scaling;
 	}
@@ -117,12 +129,12 @@ export function calculateScaling(sk: p5, words: DataPoint[], bounds: Bounds, con
 	const availableWidth = bounds.width;
 	const availableHeight = bounds.height;
 
-	let scaleFactor = estimateScaleFactor(words, availableWidth, availableHeight, config);
+	let scaleFactor = Math.max(minScale, estimateScaleFactor(words, availableWidth, availableHeight, config));
 	let measuredHeight = measureHeight(sk, words, scaleFactor, availableWidth, maxCount, config);
 
 	// Shrink if needed
-	while (scaleFactor > MIN_SCALE && measuredHeight > availableHeight) {
-		scaleFactor *= 0.9;
+	while (scaleFactor > minScale && measuredHeight > availableHeight) {
+		scaleFactor = Math.max(minScale, scaleFactor * 0.9);
 		measuredHeight = measureHeight(sk, words, scaleFactor, availableWidth, maxCount, config);
 	}
 

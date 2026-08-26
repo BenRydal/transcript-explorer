@@ -42,3 +42,43 @@ export function turnBubbleHeight(turnLength: number, domainMax: number, lane: nu
 	if (!useAreaScaling) return ratio * lane;
 	return Math.max(MIN_BUBBLE_SIZE, Math.pow(ratio, SIZE_EXPONENT) * lane);
 }
+
+/** Widest a bubble may be relative to its height. */
+export const MAX_BUBBLE_ASPECT = 8;
+
+export interface CappedBubble {
+	height: number;
+	/** True when the true height exceeded the cap and was clipped. */
+	capped: boolean;
+}
+
+/** Clips a bubble's height to `maxAspect` times its width. */
+export function capBubbleHeight(height: number, width: number, maxAspect: number = MAX_BUBBLE_ASPECT): CappedBubble {
+	if (!(width > 0) || !(height > 0) || !(maxAspect > 0)) return { height, capped: false };
+	const limit = width * maxAspect;
+	return height > limit ? { height: limit, capped: true } : { height, capped: false };
+}
+
+export interface BubbleTick {
+	/** Word count this tick stands for. */
+	words: number;
+	/** Half-height of a bubble of that many words, in pixels. */
+	halfHeight: number;
+}
+
+/**
+ * Reference marks for bubble height, so a mark's size can be read as a quantity rather than only compared to its neighbours.
+ */
+export function bubbleScaleTicks(domainMax: number, lane: number, useAreaScaling: boolean, maxTicks = 3): BubbleTick[] {
+	if (!(domainMax > 0) || !(lane > 0)) return [];
+
+	const ticks: BubbleTick[] = [];
+	for (let value = 10; value <= domainMax; value *= 10) {
+		const halfHeight = turnBubbleHeight(value, domainMax, lane, useAreaScaling) / 2;
+		// Below a few pixels the label collides with the axis and reads as noise.
+		if (halfHeight >= 6) ticks.push({ words: value, halfHeight });
+	}
+
+	// Keep the largest, which carry the most separation.
+	return ticks.slice(-maxTicks);
+}

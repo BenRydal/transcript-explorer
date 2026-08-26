@@ -16,6 +16,8 @@ import { resetTooltipFrame, finalizeTooltipFrame } from '../../stores/tooltipSto
 import type { Bounds } from './types/bounds';
 import { CANVAS_SPACING } from '../constants/ui';
 import { DrawContext } from './draw-context';
+import { dashboardLayout } from './dashboard-layout';
+import { canRenderDashboard, dashboardUnavailableReason } from './dashboard-capacity';
 import type { VizStoreType } from '../../stores/vizStore';
 
 interface DrawResult {
@@ -68,8 +70,13 @@ export class Draw {
 
 		if (activePanel) {
 			drawResult = this.updatePanel(activePanel[1], this.getFullScreenBounds(), ctx);
-		} else {
+		} else if (canRenderDashboard(ctx.transcript.wordArray?.length ?? 0)) {
 			drawResult = this.drawDashboard(ctx);
+		} else {
+			// Reachable from a persisted selection or a workspace preset even
+			// though the tile is disabled, so the guard lives here too.
+			this.drawDashboardUnavailable(ctx);
+			drawResult = result({});
 		}
 
 		this.applyDrawResult(drawResult, !activePanel);
@@ -215,6 +222,20 @@ export class Draw {
 		return result({ hover: hoveredDataPoint, hoveredSpeaker });
 	}
 
+	drawDashboardUnavailable(ctx: DrawContext): void {
+		const reason = dashboardUnavailableReason(ctx.transcript.wordArray?.length ?? 0);
+		if (!reason) return;
+
+		const sk = this.sk;
+		sk.push();
+		sk.noStroke();
+		sk.fill(ctx.theme.fgMuted);
+		sk.textAlign(sk.CENTER, sk.CENTER);
+		sk.textSize(14);
+		sk.text(reason, sk.width * 0.5, sk.height * 0.5, sk.width * 0.6);
+		sk.pop();
+	}
+
 	drawDashboard(ctx: DrawContext): DrawResult {
 		const panels = ctx.config.dashboardPanels;
 		const boundsArray = this.getDashboardLayout(panels.length);
@@ -296,32 +317,6 @@ export class Draw {
 	 * 4 panels: 2x2 grid
 	 */
 	getDashboardLayout(count: number): Bounds[] {
-		const padding = CANVAS_SPACING / 2;
-		const gap = CANVAS_SPACING;
-		const totalWidth = this.sk.width - padding * 2;
-		const totalHeight = this.sk.height - padding * 2;
-		const halfWidth = (totalWidth - gap) / 2;
-		const halfHeight = (totalHeight - gap) / 2;
-
-		if (count === 2) {
-			return [
-				{ x: padding, y: padding, width: halfWidth, height: totalHeight },
-				{ x: padding + halfWidth + gap, y: padding, width: halfWidth, height: totalHeight }
-			];
-		} else if (count === 4) {
-			return [
-				{ x: padding, y: padding, width: halfWidth, height: halfHeight },
-				{ x: padding + halfWidth + gap, y: padding, width: halfWidth, height: halfHeight },
-				{ x: padding, y: padding + halfHeight + gap, width: halfWidth, height: halfHeight },
-				{ x: padding + halfWidth + gap, y: padding + halfHeight + gap, width: halfWidth, height: halfHeight }
-			];
-		} else {
-			// 3 panels (default): top full-width + 2 bottom
-			return [
-				{ x: padding, y: padding, width: totalWidth, height: halfHeight },
-				{ x: padding, y: padding + halfHeight + gap, width: halfWidth, height: halfHeight },
-				{ x: padding + halfWidth + gap, y: padding + halfHeight + gap, width: halfWidth, height: halfHeight }
-			];
-		}
+		return dashboardLayout(this.sk.width, this.sk.height, count);
 	}
 }

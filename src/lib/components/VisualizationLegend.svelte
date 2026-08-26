@@ -26,6 +26,100 @@
 	import UIStateStore from '../../stores/uiStateStore';
 	import TranscriptStore from '../../stores/transcriptStore';
 	import UserStore from '../../stores/userStore';
+	// `use:` not `{@attach}`: this repo's eslint parser cannot read attachments,
+	// and an unparseable file gets skipped by the linter entirely.
+	import { legacyDraggable } from '@neodrag/svelte/legacy';
+	import { controls, ControlFrom, bounds, BoundsFrom, events, position } from '@neodrag/svelte';
+
+	/**
+	 * The legend sits over whichever part of a view happens to be near it, and which part that is changes per visualization, so it is moved rather than placed.
+	 */
+	const MARGIN = 12;
+	const POS_KEY = 'te:legend:corner';
+
+	let rootEl: HTMLDivElement | null = $state(null);
+	let pos = $state({ x: MARGIN, y: MARGIN });
+	let corner = $state<'top-left' | 'top-right' | 'bottom-left' | 'bottom-right'>('bottom-left');
+
+	/** Offsets of each corner for the current parent and element size. */
+	function cornerOffsets() {
+		const parent = rootEl?.parentElement;
+		if (!parent || !rootEl) return null;
+		const right = Math.max(MARGIN, parent.clientWidth - rootEl.offsetWidth - MARGIN);
+		const bottomY = Math.max(MARGIN, parent.clientHeight - rootEl.offsetHeight - MARGIN);
+		return {
+			'top-left': { x: MARGIN, y: MARGIN },
+			'top-right': { x: right, y: MARGIN },
+			'bottom-left': { x: MARGIN, y: bottomY },
+			'bottom-right': { x: right, y: bottomY }
+		} as const;
+	}
+
+	function settle(next?: typeof corner) {
+		const offsets = cornerOffsets();
+		if (!offsets) return;
+		if (next) corner = next;
+		pos = { ...offsets[corner] };
+	}
+
+	function snapToNearest() {
+		const offsets = cornerOffsets();
+		if (!offsets) return;
+		let best = corner;
+		let bestDist = Infinity;
+		for (const [name, o] of Object.entries(offsets)) {
+			const d = (o.x - pos.x) ** 2 + (o.y - pos.y) ** 2;
+			if (d < bestDist) {
+				bestDist = d;
+				best = name as typeof corner;
+			}
+		}
+		settle(best);
+		try {
+			window.localStorage.setItem(POS_KEY, best);
+		} catch {
+			/* private mode: the default corner is fine */
+		}
+	}
+
+	$effect(() => {
+		try {
+			const saved = window.localStorage.getItem(POS_KEY);
+			if (saved === 'top-left' || saved === 'top-right' || saved === 'bottom-left' || saved === 'bottom-right') corner = saved;
+		} catch {
+			/* ignore */
+		}
+		// After paint: before it, the card has no measured size and settling
+		// leaves it stuck at the top-left origin.
+		const raf = requestAnimationFrame(() => settle());
+		return () => cancelAnimationFrame(raf);
+	});
+
+	// Re-settle when the canvas or the card itself changes size, so a corner
+	// stays a corner.
+	$effect(() => {
+		const card = rootEl;
+		const parent = card?.parentElement;
+		if (!card || !parent) return;
+		const ro = new ResizeObserver(() => settle());
+		ro.observe(parent);
+		ro.observe(card);
+		return () => ro.disconnect();
+	});
+
+	// No Compartment: the action re-runs when this array changes, which is
+	// exactly when `pos` does.
+	const dragPlugins = $derived([
+		position({ current: pos }),
+		controls({ block: ControlFrom.selector('.legend-close') }),
+		bounds(BoundsFrom.parent()),
+		events({
+			onDrag: ({ offset }) => {
+				pos = { x: offset.x, y: offset.y };
+			},
+			onDragEnd: () => snapToNearest()
+		})
+	]);
 
 	type LegendItem = { label: string } & ({ icon: Component; iconColor?: string } | { speakerColors: true });
 
@@ -56,7 +150,11 @@
 					{ icon: Clock, label: `Horizontal position \u2192 ${isUntimed ? 'word count' : 'time'}` },
 					{ icon: ArrowLeftRight, label: `Bubble width \u2192 ${isUntimed ? 'turn length' : 'turn duration'}` },
 					{ icon: ArrowUpDown, label: 'Bubble height \u2192 words in turn' },
+					{ icon: Minus, label: 'Hairline \u2192 words at that height' },
+					{ icon: Square, label: 'Notched edge \u2192 taller than the scale allows' },
 					{ speakerColors: true, label: 'Color \u2192 speaker' },
+					{ icon: Minus, iconColor: '#dc2626', label: 'Top strip \u2192 parallel machine activity' },
+					{ icon: Minus, label: 'Bottom strip \u2192 nobody active' },
 					...v('Click bubble \u2192 play from turn')
 				]
 			},
@@ -165,8 +263,6 @@
 		return null;
 	});
 
-	let isVisible = $derived($UIStateStore.legendVisible);
-
 	let speakerGradient = $derived.by(() => {
 		const colors = $UserStore.filter((u) => u.enabled).map((u) => u.color);
 		if (colors.length <= 1) return colors[0] ?? '';
@@ -179,90 +275,99 @@
 </script>
 
 {#if legend}
-	<div class="legend-container">
-		{#if isVisible}
-			<div class="legend-card" transition:fly={{ y: 8, duration: 150 }}>
-				<div class="legend-header">
-					<span class="legend-title">{legend.title}</span>
-					<button class="legend-close" onclick={() => setLegendVisible(false)} title="Close legend">
-						<X size={16} />
-					</button>
-				</div>
-				<div class="legend-items">
-					{#each legend.items as item}
-						<div class="legend-item">
-							{#if 'speakerColors' in item && speakerGradient}
-								<span class="legend-gradient" style="background: {speakerGradient}"></span>
-							{:else if 'icon' in item}
-								{@const Icon = item.icon}
-								<span class="legend-icon" style={item.iconColor ? `color: ${item.iconColor}` : ''}>
-									<Icon size={14} fill={item.iconColor ? 'currentColor' : 'none'} />
-								</span>
-							{/if}
-							<span class="legend-label">{item.label}</span>
-						</div>
-					{/each}
-				</div>
+	{#if $UIStateStore.legendVisible}
+		<div bind:this={rootEl} class="legend-card" use:legacyDraggable={dragPlugins}>
+			<div class="legend-header">
+				<span class="legend-title">{legend.title}</span>
+				<button class="legend-close" onclick={() => setLegendVisible(false)} title="Close legend" aria-label="Close legend">
+					<X size={13} />
+				</button>
 			</div>
-		{:else}
+			<div class="legend-items">
+				{#each legend.items as item}
+					<div class="legend-item">
+						{#if 'speakerColors' in item}
+							<span class="legend-gradient" style="background: {speakerGradient}"></span>
+						{:else}
+							<span class="legend-icon" style={item.iconColor ? `color: ${item.iconColor}` : ''}>
+								<item.icon size={13} />
+							</span>
+						{/if}
+						<span class="legend-label">{item.label}</span>
+					</div>
+				{/each}
+			</div>
+		</div>
+	{:else}
+		<div class="legend-container">
 			<button class="legend-toggle" onclick={() => setLegendVisible(true)} title="Show legend" transition:fly={{ y: 8, duration: 150 }}>
 				<Info size={18} />
 			</button>
-		{/if}
-	</div>
+		</div>
+	{/if}
 {/if}
 
 <style>
-	.legend-container {
-		position: absolute;
-		bottom: 12px;
-		left: 12px;
-		z-index: 40;
-		pointer-events: none;
-	}
-
-	.legend-card,
-	.legend-toggle {
-		pointer-events: auto;
-		background: rgba(255, 255, 255, 0.92);
-		border: 1px solid #e5e7eb;
-		border-radius: 8px;
-		box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
-	}
-
 	.legend-card {
-		padding: 8px 12px;
-		max-width: 300px;
+		position: absolute;
+		top: 0;
+		left: 0;
+		z-index: 40;
+		width: 260px;
+		max-width: calc(100% - 24px);
+		pointer-events: auto;
+		background: color-mix(in srgb, var(--te-bg) 94%, transparent);
+		border: 1px solid var(--te-border-muted);
+		border-radius: var(--te-radius-lg);
+		box-shadow: 0 2px 8px rgb(0 0 0 / 0.12);
+		padding: 8px 10px;
+		cursor: grab;
+		touch-action: none;
+	}
+
+	.legend-card:active {
+		cursor: grabbing;
+	}
+
+	.legend-close {
+		cursor: pointer;
 	}
 
 	.legend-header {
 		display: flex;
 		align-items: center;
 		justify-content: space-between;
-		margin-bottom: 4px;
+		gap: var(--te-sp-2);
+		margin-bottom: 6px;
 	}
 
 	.legend-title {
-		font-size: 0.9rem;
-		font-weight: 600;
-		color: #374151;
+		font-size: var(--te-font-label);
+		letter-spacing: 0.08em;
+		text-transform: uppercase;
+		color: var(--te-fg-muted);
 	}
 
 	.legend-close {
-		background: none;
-		border: none;
-		cursor: pointer;
+		display: inline-flex;
 		padding: 2px;
-		border-radius: 4px;
-		color: #6b7280;
-		display: flex;
-		align-items: center;
-		justify-content: center;
+		border: none;
+		border-radius: var(--te-radius-sm);
+		background: transparent;
+		color: var(--te-fg-muted);
+		cursor: pointer;
 	}
 
 	.legend-close:hover {
-		background: rgba(0, 0, 0, 0.08);
-		color: #374151;
+		background: var(--te-bg-muted);
+	}
+
+	.legend-container {
+		position: absolute;
+		bottom: 12px;
+		left: 12px;
+		z-index: 40;
+		pointer-events: none;
 	}
 
 	.legend-items {

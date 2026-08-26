@@ -18,10 +18,11 @@ import { normalizeWord, stripPunctuation, stripForDisplay } from '../core/string
 import type { DataPoint } from '../../models/dataPoint';
 import type { User } from '../../models/user';
 import type { Bounds } from './types/bounds';
-import { calculateScaling, getWordWidth, type Scaling } from './contribution-cloud-scaling';
+import { AI_MIN_SCALE, calculateScaling, getWordWidth, type Scaling } from './contribution-cloud-scaling';
 import { DEFAULT_SPEAKER_COLOR } from '../constants/ui';
 import { getWordColor } from './draw-utils';
 import { DrawContext } from './draw-context';
+import { CANVAS_FONT_FAMILY } from '../constants/ui';
 import { registerVizCacheReset } from './viz-cache-registry';
 
 export { clearScalingCache } from './contribution-cloud-scaling';
@@ -94,7 +95,8 @@ export class ContributionCloud {
 
 	draw(words: DataPoint[]): { hoveredWord: DataPoint | null; hasOverflow: boolean; hoveredSpeaker: string | null } {
 		const layoutWords = words.filter((w) => this.isWordVisible(w));
-		const scaling = calculateScaling(this.ctx.sk, layoutWords, this.bounds, this.ctx.config, this.fullTranscriptMaxCount);
+		const minScale = this.ctx.transcript.sourceKind === 'ai' ? AI_MIN_SCALE : undefined;
+		const scaling = calculateScaling(this.ctx.sk, layoutWords, this.bounds, this.ctx.config, this.fullTranscriptMaxCount, minScale);
 		const cacheKey = this.getBufferCacheKey(layoutWords.length);
 
 		// Also re-render if the buffer is owned by a dead p5 instance (workspace
@@ -157,14 +159,18 @@ export class ContributionCloud {
 			buffer.clear();
 		} else {
 			if (existing) disposeBuffer(existing); // free only a buffer we still own
-			buffer = sk.createGraphics(this.bounds.width, this.bounds.height);
+			// A degenerate panel would ask for a zero or negative buffer, which
+			// throws out of the frame and ends p5's animation loop.
+			buffer = sk.createGraphics(Math.max(1, Math.floor(this.bounds.width)), Math.max(1, Math.floor(this.bounds.height)));
 			bufferCache.owner = sk;
 		}
-		buffer.textFont(sk.font);
+		// `sk.font` was never assigned by this sketch, so this handed p5 undefined
+		// and threw -- taking the whole draw loop down with it.
+		buffer.textFont(CANVAS_FONT_FAMILY);
 
-		const positions = this.calculateWordPositions(words, scaling);
+		const { positions, overflow } = this.calculateWordPositions(words, scaling);
 		bufferCache.positions = positions;
-		bufferCache.hasOverflow = positions.length > 0 && positions[positions.length - 1].y > this.bounds.height;
+		bufferCache.hasOverflow = overflow;
 
 		if (this.ctx.config.separateToggle) {
 			this.drawSpeakerBackgrounds(buffer, positions, scaling);
@@ -188,11 +194,13 @@ export class ContributionCloud {
 		bufferCache.buffer = buffer;
 	}
 
-	calculateWordPositions(words: DataPoint[], scaling: Scaling): WordPosition[] {
+	/** Lays words out until the buffer is full. */
+	calculateWordPositions(words: DataPoint[], scaling: Scaling): { positions: WordPosition[]; overflow: boolean } {
 		const positions: WordPosition[] = [];
 		let x = 0;
 		let y = scaling.lineHeight;
 		let prevSpeaker: string | null = null;
+		let overflow = false;
 
 		for (const word of words) {
 			const t = Math.log(word.count) / Math.log(scaling.maxCount);
@@ -207,6 +215,13 @@ export class ContributionCloud {
 			} else if (x + width > this.bounds.width) {
 				x = 0;
 				y += scaling.lineHeight;
+			}
+
+			// The line this word starts is entirely below the buffer, so it and
+			// everything after it would render off the bottom.
+			if (y - scaling.lineHeight > this.bounds.height) {
+				overflow = true;
+				break;
 			}
 
 			if (this.passesSearchFilter(word)) {
@@ -228,7 +243,7 @@ export class ContributionCloud {
 			prevSpeaker = word.speaker;
 		}
 
-		return positions;
+		return { positions, overflow };
 	}
 
 	drawSpeakerBackgrounds(buffer: p5.Graphics, positions: WordPosition[], scaling: Scaling): void {

@@ -94,12 +94,12 @@
 	import RecoveryModal from '$lib/components/RecoveryModal.svelte';
 	import DashboardOverlay from '$lib/components/DashboardOverlay.svelte';
 	import VisualizationLegend from '$lib/components/VisualizationLegend.svelte';
-	import TimingLensControl from '$lib/components/TimingLensControl.svelte';
 	import WelcomeScreen from '$lib/components/WelcomeScreen.svelte';
 	import Toast from '$lib/components/Toast.svelte';
 
 	// Sidebar panels
 	import VizPanel from '$lib/panels/VizPanel.svelte';
+	import ActiveFilterBar from '$lib/components/ActiveFilterBar.svelte';
 	import FiltersPanel from '$lib/panels/FiltersPanel.svelte';
 	import DataPanel from '$lib/panels/DataPanel.svelte';
 	import SettingsPanel from '$lib/panels/SettingsPanel.svelte';
@@ -1330,8 +1330,9 @@
 						onresize={handlePanelResize}
 					>
 						{#snippet first()}
-							<main class="h-full relative" id="main-content" tabindex="-1" aria-label="Transcript visualization workspace">
-								<div class="h-full relative" id="p5-container" data-tour="visualization">
+							<main class="te-canvas-main" id="main-content" tabindex="-1" aria-label="Transcript visualization workspace">
+								<ActiveFilterBar />
+								<div class="relative te-canvas-stage" id="p5-container" data-tour="visualization">
 									<!-- SR-only description so a screen-reader user knows
 							     a canvas-rendered visualization lives here. Using
 							     a hidden caption avoids role="img" on the outer
@@ -1347,7 +1348,6 @@
 									{/if}
 									<CanvasTooltip />
 									<VisualizationLegend />
-									<TimingLensControl />
 									{#if $VizStore.dashboardToggle}
 										<DashboardOverlay />
 									{/if}
@@ -1525,6 +1525,21 @@
 		.te-sidepanel-shell {
 			transition: none;
 		}
+	}
+
+	/* The canvas column: the active-filter strip takes the height it needs and
+	   the p5 stage takes the rest, so the bar never sits over the canvas. */
+	.te-canvas-main {
+		display: flex;
+		flex-direction: column;
+		height: 100%;
+		min-height: 0;
+		position: relative;
+	}
+
+	.te-canvas-stage {
+		flex: 1 1 auto;
+		min-height: 0;
 	}
 
 	/* Timeline region (bottom bar): inset the TimelineScrubber from the

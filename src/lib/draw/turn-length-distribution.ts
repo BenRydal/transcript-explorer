@@ -4,6 +4,7 @@ import type { Bounds } from './types/bounds';
 import { withDimming, formatTurnPreviewLines, getCrossHighlight, getDominantCodeColor } from './draw-utils';
 import { normalizeWord } from '../core/string-utils';
 import { DrawContext } from './draw-context';
+import { isAutoBinCount } from './heatmap-scaling';
 import { registerVizCacheReset } from './viz-cache-registry';
 
 const LEFT_MARGIN = 60;
@@ -264,7 +265,7 @@ export class TurnLengthDistribution {
 		let binSize: number;
 		let numBins: number;
 
-		const targetBins = this.ctx.config.turnLengthBinCount > 0 ? this.ctx.config.turnLengthBinCount : TARGET_BIN_COUNT;
+		const targetBins = isAutoBinCount(this.ctx.config.turnLengthBinCount) ? TARGET_BIN_COUNT : Math.max(1, this.ctx.config.turnLengthBinCount);
 
 		if (range === 0) {
 			binSize = 1;
@@ -308,7 +309,7 @@ export class TurnLengthDistribution {
 	private computeFullTranscriptMaxBinCount(): number {
 		const wordArray = this.ctx.transcript.wordArray;
 		if (wordArray.length === 0) return 0;
-		const targetBins = this.ctx.config.turnLengthBinCount > 0 ? this.ctx.config.turnLengthBinCount : TARGET_BIN_COUNT;
+		const targetBins = isAutoBinCount(this.ctx.config.turnLengthBinCount) ? TARGET_BIN_COUNT : Math.max(1, this.ctx.config.turnLengthBinCount);
 
 		if (fullTranscriptBinCountCache && fullTranscriptBinCountCache.wordArray === wordArray && fullTranscriptBinCountCache.binCount === targetBins) {
 			return fullTranscriptBinCountCache.result;

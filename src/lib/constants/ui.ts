@@ -6,6 +6,9 @@ export const DEFAULT_SPEAKER_COLOR = '#cccccc';
 /** Canvas spacing used for dashboard panel padding/gap. Shared between p5 and DOM overlay. */
 export const CANVAS_SPACING = 25;
 
+/** Canvas text font. */
+export const CANVAS_FONT_FAMILY = 'Plus Jakarta Sans';
+
 /** Default palette for new transcripts: USER_COLORS[i % len]. CVD-safe (Wong minus black). */
 export const USER_COLORS: readonly string[] = WONG_PALETTE_NO_BLACK;
 

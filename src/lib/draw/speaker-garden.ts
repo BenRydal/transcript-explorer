@@ -18,8 +18,15 @@ import { withDimming, getCrossHighlight, getDominantCodeColor } from './draw-uti
 import { CANVAS_SPACING } from '../constants/ui';
 import { drawFlower } from './flower-drawing';
 import { DrawContext } from './draw-context';
+import { flowerRadius, stemFraction, MIN_FLOWER_RADIUS } from './garden-scaling';
+import { truncateMiddle } from './lane-layout';
 
-const MIN_FLOWER_SIZE = 25; // Minimum flower radius so small speakers are still visible
+/** Height reserved below the baseline for speaker labels, and the share of the panel it may take. */
+const LABEL_STRIP_HEIGHT = 58;
+const LABEL_STRIP_MAX_SHARE = 0.18;
+/** Below this the strip cannot hold a legible label, so labels are dropped. */
+const MIN_LABEL_STRIP = 24;
+const LABEL_GAP = 6;
 
 interface SpeakerMetrics {
 	numOfTurns: number;
@@ -40,9 +47,18 @@ export class SpeakerGarden {
 	yPosBottom: number;
 	maxFlowerRadius: number;
 	hoveredSpeaker: string | null;
+	private isAi: boolean;
+	private showLabels: boolean;
+	private labelStrip: number;
+	private labelSize: number;
 
 	constructor(ctx: DrawContext, pos: Bounds) {
 		this.ctx = ctx;
+		this.isAi = ctx.transcript.sourceKind === 'ai';
+		const requestedStrip = Math.min(LABEL_STRIP_HEIGHT, pos.height * LABEL_STRIP_MAX_SHARE);
+		this.showLabels = ctx.config.speakerGardenLabels !== false && requestedStrip >= MIN_LABEL_STRIP;
+		this.labelStrip = this.showLabels ? requestedStrip : 0;
+		this.labelSize = Math.max(8, Math.min(12, pos.height * 0.026));
 		// When scaleToVisibleData is enabled, we'll compute these in draw() from visible data
 		if (this.ctx.config.scaleToVisibleData) {
 			this.largestNumOfWordsByASpeaker = 0;
@@ -57,7 +73,7 @@ export class SpeakerGarden {
 		this.maxCircleArea = Math.PI * this.maxCircleRadius * this.maxCircleRadius;
 		this.xPosCurCircle = pos.x + this.maxCircleRadius;
 		this.yPosTop = pos.y;
-		this.yPosBottom = pos.y + pos.height;
+		this.yPosBottom = pos.y + pos.height - this.labelStrip;
 		this.maxFlowerRadius = this.calculateMaxFlowerRadius();
 		this.hoveredSpeaker = null;
 	}
@@ -124,7 +140,8 @@ export class SpeakerGarden {
 		const { scaledWordArea, numOfTurns, numOfWords } = metrics;
 		const speaker = tempTurnArray[0]?.speaker || '';
 		const top = this.yPosTop + this.maxFlowerRadius;
-		const yPos = this.ctx.sk.map(numOfTurns, 0, this.largestNumOfTurnsByASpeaker, this.yPosBottom, top);
+		const fraction = stemFraction(numOfTurns, this.largestNumOfTurnsByASpeaker, this.isAi);
+		const yPos = this.yPosBottom - fraction * (this.yPosBottom - top);
 
 		drawFlower(this.ctx.sk, {
 			xPos: this.xPosCurCircle,
@@ -134,10 +151,33 @@ export class SpeakerGarden {
 			color
 		});
 
+		if (this.showLabels) this.drawSpeakerLabel(speaker);
+
 		if (this.ctx.sk.overCircle(this.xPosCurCircle, yPos, scaledWordArea)) {
 			this.hoveredSpeaker = speaker;
 			this.drawSpeakerTooltip(speaker, numOfTurns, numOfWords, tempTurnArray, color);
 		}
+	}
+
+	/** Names the flower at the baseline. */
+	drawSpeakerLabel(speaker: string): void {
+		const sk = this.ctx.sk;
+		const y = this.yPosBottom + LABEL_GAP;
+
+		sk.push();
+		sk.noStroke();
+		sk.fill(this.ctx.theme.fg);
+		sk.textSize(this.labelSize);
+		sk.textAlign(sk.CENTER, sk.TOP);
+		// Neighbouring columns are the budget; a little overhang is fine since
+		// gardens are sparse at the baseline.
+		const budget = this.maxCircleRadius * 1.6;
+		sk.text(
+			truncateMiddle(speaker, budget, (t) => sk.textWidth(t)),
+			this.xPosCurCircle,
+			y
+		);
+		sk.pop();
 	}
 
 	drawFlowerGuideLines(): void {
@@ -199,16 +239,14 @@ export class SpeakerGarden {
 	}
 
 	getScaledArea(value: number): number {
-		const normalizedValue = value / this.largestNumOfWordsByASpeaker;
-		const area = normalizedValue * this.maxCircleArea;
-		const radius = Math.sqrt(area / Math.PI);
-		return Math.max(radius, MIN_FLOWER_SIZE);
+		const radiusFromWidth = Math.sqrt(this.maxCircleArea / Math.PI);
+		return flowerRadius(value, this.largestNumOfWordsByASpeaker, radiusFromWidth, this.isAi);
 	}
 
 	calculateMaxFlowerRadius(): number {
 		const radiusFromWidth = Math.sqrt(this.maxCircleArea / Math.PI);
 		const maxHeightForFlower = this.bounds.height * 0.25;
-		return Math.max(Math.min(radiusFromWidth, maxHeightForFlower), MIN_FLOWER_SIZE);
+		return Math.max(Math.min(radiusFromWidth, maxHeightForFlower), MIN_FLOWER_RADIUS);
 	}
 
 	/**

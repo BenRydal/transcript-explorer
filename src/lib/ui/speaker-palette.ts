@@ -52,11 +52,7 @@ export function applySpeakerPalette(choice: SpeakerPaletteChoice): void {
 	// index (see `actor-colors.ts`). Re-mapping them by index here would put
 	// three or four actors back on the same colour, so they keep their
 	// kind-based colours and only codes follow the palette choice.
-	UserStore.update((users) =>
-		users.some((u) => u.role)
-			? users
-			: users.map((u, index) => ({ ...u, color: colors[index % colors.length] }))
-	);
+	UserStore.update((users) => (users.some((u) => u.role) ? users : users.map((u, index) => ({ ...u, color: colors[index % colors.length] }))));
 	CodeStore.update((codes) => codes.map((c, index) => ({ ...c, color: colors[index % colors.length] })));
 
 	get(P5Store)?.fillAllData?.();

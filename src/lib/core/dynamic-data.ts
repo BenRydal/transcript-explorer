@@ -657,9 +657,7 @@ export class DynamicData {
 	getDynamicArrayForTurnNetwork(): NetworkData {
 		const words = this.getProcessedWords(true);
 		// Search term is the one input not already folded into the word list.
-		return derive(words, `turnNetwork:${config.wordToSearch ?? ''}`, () =>
-			this.computeTurnNetwork(words)
-		);
+		return derive(words, `turnNetwork:${config.wordToSearch ?? ''}`, () => this.computeTurnNetwork(words));
 	}
 
 	private computeTurnNetwork(words: DataPoint[]): NetworkData {

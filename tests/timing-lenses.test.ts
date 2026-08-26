@@ -25,7 +25,7 @@ function load(dataset: string): Record<string, string>[] {
 		.map((r) => Object.fromEntries(h.map((k, i) => [k, r[i]])));
 }
 
-const SETS = ['web-design-chat', 'web-design-tools', 'web-design-single-agent', 'web-design-multi-agent'];
+const SETS = ['web-design-chat', 'web-design-tools', 'web-design-multi-agent'];
 
 function gapCount(rows: Record<string, string>[], startKey: string): number {
 	const sp = rows.map((r) => [Number(r[startKey]), Number(r.end)] as const).sort((a, b) => a[0] - b[0]);
@@ -100,7 +100,6 @@ describe('timing lenses', () => {
 		const SOURCE_END: Record<string, number> = {
 			'web-design-chat': 1990.0,
 			'web-design-tools': 2495.5,
-			'web-design-single-agent': 2065.6,
 			'web-design-multi-agent': 2607.3
 		};
 		for (const d of SETS) {
