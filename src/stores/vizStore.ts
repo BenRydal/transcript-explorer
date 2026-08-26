@@ -49,6 +49,10 @@ export interface VizStoreType {
 	// Turn Chart settings
 	// Collapse per-actor lanes onto participant kind. Nine of the multi-agent
 	// session's 25 lanes cannot render their own content at figure width.
+	// Colour every actor by what KIND of participant it is, without collapsing
+	// the lanes. Independent of grouping: one is about identity, the other
+	// about how many rows there are.
+	turnChartColorByKind: boolean;
 	turnChartGroupByKind: boolean;
 	// Outline a mark whose width came from an estimate or a fixed stub rather
 	// than the log. In the multi-agent session that is 96% of rows.
@@ -120,6 +124,7 @@ export const initialViz: VizStoreType = {
 	turnNetworkShortLabels: false,
 	showFpsMonitor: false,
 	turnNetworkStatisticalMode: false,
+	turnChartColorByKind: false,
 	turnChartGroupByKind: false,
 	turnChartShowProvenance: true,
 	turnChartCapAspect: false,

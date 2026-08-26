@@ -112,6 +112,8 @@ export class TurnChart {
 	private groupByKind: boolean;
 	/** Distinguish a measured width from an estimated or stubbed one. */
 	private showProvenance: boolean;
+	/** Colour by participant kind without collapsing the lanes. */
+	private colorByKind: boolean;
 	/** Lane index per group, when grouping. */
 	private groupIndex: Map<ActorGroup, number> = new Map();
 	private groupLabels: string[] = [];
@@ -144,6 +146,7 @@ export class TurnChart {
 		this.capAspect = this.useAreaScaling && this.ctx.config.turnChartCapAspect !== false;
 		this.groupByKind = this.useAreaScaling && this.ctx.config.turnChartGroupByKind === true;
 		this.showProvenance = this.useAreaScaling && this.ctx.config.turnChartShowProvenance !== false;
+		this.colorByKind = this.useAreaScaling && this.ctx.config.turnChartColorByKind === true;
 		if (this.groupByKind) this.buildGroups();
 		// When scaleToVisibleData is enabled, we'll compute this in draw() from visible data
 		this.maxTurnLength = this.ctx.config.scaleToVisibleData ? 0 : this.ctx.transcript.largestTurnLength;
@@ -383,9 +386,10 @@ export class TurnChart {
 		const capped = this.capAspect ? capBubbleHeight(height, width) : { height, capped: false };
 		const drawnHeight = capped.height;
 
-		const color = this.groupByKind
-			? ACTOR_GROUP_COLORS[actorGroupOf(user.name, user.role)]
-			: getWordColor(turnData.codes, user.color, this.ctx.codeColorMap, this.ctx.config.codeColorMode);
+		const color =
+			this.groupByKind || this.colorByKind
+				? ACTOR_GROUP_COLORS[actorGroupOf(user.name, user.role)]
+				: getWordColor(turnData.codes, user.color, this.ctx.codeColorMap, this.ctx.config.codeColorMode);
 		// A width the converter estimated or stubbed is drawn hollow: the mark
 		// still says how much was said, without asserting how long it took.
 		const unmeasured = this.showProvenance && turnData.provenance !== undefined && turnData.provenance !== 'measured';
@@ -443,6 +447,7 @@ export class TurnChart {
 
 	drawText(turnArray: DataPoint[], speakerColor: string): void {
 		const speaker = turnArray[0].speaker;
+		const provenance = turnArray[0].provenance;
 		const truncated = turnArray.length > TOOLTIP_WORD_LIMIT;
 		const shown = truncated ? turnArray.slice(0, TOOLTIP_WORD_LIMIT) : turnArray;
 		const combined =
@@ -453,7 +458,13 @@ export class TurnChart {
 		const heading = this.useAreaScaling
 			? `<b>${speaker}</b> <span style="font-size: 0.85em; opacity: 0.7">· ${turnArray.length} words</span>`
 			: `<b>${speaker}</b>`;
-		showTooltip(this.ctx.sk.mouseX, this.ctx.sk.mouseY, `${heading}\n${combined}`, speakerColor, this.panelBottom);
+		// A hollow mark is asking a question the legend answers, and the legend
+		// may be shut. Say it where the reader already is.
+		const note =
+			this.showProvenance && provenance !== undefined && provenance !== 'measured'
+				? `\n<span style="font-size: 0.85em; opacity: 0.7">Duration ${provenance === 'marker' ? 'not recorded' : 'estimated'} — drawn hollow</span>`
+				: '';
+		showTooltip(this.ctx.sk.mouseX, this.ctx.sk.mouseY, `${heading}\n${combined}${note}`, speakerColor, this.panelBottom);
 	}
 
 	getVerticalLayoutSpacing(height: number): number {

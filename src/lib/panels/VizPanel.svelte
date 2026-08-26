@@ -102,6 +102,12 @@
 			},
 			{
 				type: 'toggle',
+				key: 'turnChartColorByKind',
+				label: 'Colour by Kind',
+				hint: 'One hue per participant kind, keeping every actor its own lane. AI transcripts only.'
+			},
+			{
+				type: 'toggle',
 				key: 'turnChartGroupByKind',
 				label: 'Group Lanes by Kind',
 				hint: 'Collapse actors onto person, primary AI, agents and tools. AI transcripts only.'
