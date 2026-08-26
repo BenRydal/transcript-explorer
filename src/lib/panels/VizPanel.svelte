@@ -3,6 +3,7 @@
 	import { PANEL_TILES } from '../ui/panel-icons';
 	import TranscriptStore from '../../stores/transcriptStore';
 	import FiltersPanel from './FiltersPanel.svelte';
+	import { isAutoBinCount, BIN_COUNT_MIN, BIN_COUNT_AUTO } from '../draw/heatmap-scaling';
 	import { canRenderDashboard, dashboardUnavailableReason } from '../draw/dashboard-capacity';
 	import VizStore, {
 		type VizStoreType,
@@ -72,7 +73,7 @@
 	};
 	type PanelOption = PanelToggle | PanelSlider | PanelSelect | { type: 'speakerSort' };
 
-	const formatBinCount = (v: number) => (v === 0 ? 'Auto' : String(v));
+	const formatBinCount = (v: number) => (isAutoBinCount(v) ? 'Auto' : String(v));
 
 	const panelOptionsMap: Record<string, PanelOption[]> = {
 		speakerGarden: [
@@ -167,8 +168,12 @@
 				]
 			} as PanelSelect<'wordJourneyLaneOrder'>
 		],
-		speakerHeatmap: [{ type: 'slider', key: 'heatmapBinCount', label: 'Bin Count', min: 0, max: 60, formatValue: formatBinCount }],
-		turnLength: [{ type: 'slider', key: 'turnLengthBinCount', label: 'Bin Count', min: 0, max: 60, formatValue: formatBinCount }],
+		speakerHeatmap: [
+			{ type: 'slider', key: 'heatmapBinCount', label: 'Bin Count', min: BIN_COUNT_MIN, max: BIN_COUNT_AUTO, formatValue: formatBinCount }
+		],
+		turnLength: [
+			{ type: 'slider', key: 'turnLengthBinCount', label: 'Bin Count', min: BIN_COUNT_MIN, max: BIN_COUNT_AUTO, formatValue: formatBinCount }
+		],
 		speakerFingerprint: [
 			{
 				type: 'select',

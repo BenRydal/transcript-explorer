@@ -1,5 +1,6 @@
 import { writable, derived } from 'svelte/store';
 import FiltersStore from './filtersStore';
+import { BIN_COUNT_AUTO } from '../lib/draw/heatmap-scaling';
 
 export type SpeakerSortOrder = 'default' | 'words' | 'turns' | 'alpha';
 export type FingerprintOverlayMode = 'auto' | 'overlay' | 'small-multiples';
@@ -112,14 +113,14 @@ export const initialViz: VizStoreType = {
 	turnNetworkShortLabels: false,
 	showFpsMonitor: false,
 	turnNetworkStatisticalMode: false,
-	turnChartCapAspect: true,
+	turnChartCapAspect: false,
 	speakerGardenLabels: true,
 	questionFlowHideAbsent: true,
 	questionFlowTypeMarks: true,
 	wordJourneyHideAbsent: true,
 	wordJourneyLaneOrder: 'uptake',
-	heatmapBinCount: 0,
-	turnLengthBinCount: 0,
+	heatmapBinCount: BIN_COUNT_AUTO,
+	turnLengthBinCount: BIN_COUNT_AUTO,
 	fingerprintOverlayMode: 'auto',
 	fingerprintChartMode: 'radar',
 	contributionCloudWeighting: 'frequency',

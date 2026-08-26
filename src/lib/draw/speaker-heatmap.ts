@@ -7,7 +7,7 @@ import { withDimming, formatTurnPreviewLines, getCrossHighlight, getDominantCode
 import { normalizeWord } from '../core/string-utils';
 import { DrawContext } from './draw-context';
 import { registerVizCacheReset } from './viz-cache-registry';
-import { cellOpacity, EMPTY_CELL_OPACITY } from './heatmap-scaling';
+import { cellOpacity, EMPTY_CELL_OPACITY, isAutoBinCount } from './heatmap-scaling';
 
 const LEFT_MARGIN = 100;
 const BOTTOM_MARGIN = 30;
@@ -58,7 +58,9 @@ export class SpeakerHeatmap {
 	draw(words: DataPoint[]): { hoveredCell: DataPoint | null; hoveredSpeaker: string | null } {
 		const speakers = this.ctx.users.filter((u) => u.enabled).map((u) => u.name);
 		const grid = this.getGridBounds();
-		const numBins = this.ctx.config.heatmapBinCount > 0 ? this.ctx.config.heatmapBinCount : Math.max(1, Math.floor(grid.width / TARGET_CELL_WIDTH));
+		const numBins = isAutoBinCount(this.ctx.config.heatmapBinCount)
+			? Math.max(1, Math.floor(grid.width / TARGET_CELL_WIDTH))
+			: Math.max(1, this.ctx.config.heatmapBinCount);
 
 		if (speakers.length === 0) return { hoveredCell: null, hoveredSpeaker: null };
 
