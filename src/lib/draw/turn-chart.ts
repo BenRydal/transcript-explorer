@@ -10,6 +10,7 @@ import { CANVAS_SPACING } from '../constants/ui';
 import { drawPlayhead, getWordColor } from './draw-utils';
 import { DrawContext } from './draw-context';
 import { MIN_BUBBLE_SIZE, turnBubbleHeight, capBubbleHeight, bubbleScaleTicks } from './turn-chart-scaling';
+import { actorGroupOf, groupsPresent, groupSizes, ACTOR_GROUP_LABELS, ACTOR_GROUP_COLORS, type ActorGroup } from './actor-groups';
 
 /**
  * Duration at a precision the value can carry.
@@ -107,6 +108,11 @@ export class TurnChart {
 	private useAreaScaling: boolean;
 	/** Clip runaway proportions; see `capBubbleHeight`. */
 	private capAspect: boolean;
+	/** Lanes stand for participant kinds rather than individual actors. */
+	private groupByKind: boolean;
+	/** Lane index per group, when grouping. */
+	private groupIndex: Map<ActorGroup, number> = new Map();
+	private groupLabels: string[] = [];
 
 	constructor(ctx: DrawContext, pos: Bounds) {
 		this.ctx = ctx;
@@ -134,12 +140,39 @@ export class TurnChart {
 		this.yPosSeparate = this.getYPosTopSeparate();
 		this.useAreaScaling = this.ctx.transcript.sourceKind === 'ai';
 		this.capAspect = this.useAreaScaling && this.ctx.config.turnChartCapAspect !== false;
+		this.groupByKind = this.useAreaScaling && this.ctx.config.turnChartGroupByKind === true;
+		if (this.groupByKind) this.buildGroups();
 		// When scaleToVisibleData is enabled, we'll compute this in draw() from visible data
 		this.maxTurnLength = this.ctx.config.scaleToVisibleData ? 0 : this.ctx.transcript.largestTurnLength;
 	}
 
+	/** Present groups, their lane order, and a label carrying each one's size. */
+	buildGroups(): void {
+		const speakers = this.ctx.users.map((u) => u.name);
+		const roles = new Map(this.ctx.users.map((u) => [u.name, u.role]));
+		const present = groupsPresent(speakers, roles);
+		const sizes = groupSizes(speakers, roles);
+		this.groupIndex = new Map(present.map((g, i) => [g, i]));
+		this.groupLabels = present.map((g) => {
+			const n = sizes.get(g) ?? 0;
+			return n > 1 ? `${ACTOR_GROUP_LABELS[g]} (${n})` : ACTOR_GROUP_LABELS[g];
+		});
+	}
+
+	/** Lane count actually drawn: groups when grouping, else speakers. */
+	private laneCount(): number {
+		return this.groupByKind ? Math.max(1, this.groupIndex.size) : this.ctx.users?.length || 0;
+	}
+
+	/** Lane index for a speaker, honouring the grouping. */
+	private laneIndexFor(speaker: string, speakerIndex: number): number {
+		if (!this.groupByKind) return speakerIndex;
+		const role = this.userMap.get(speaker)?.user.role;
+		return this.groupIndex.get(actorGroupOf(speaker, role)) ?? 0;
+	}
+
 	getYPosTopSeparate(): number {
-		const total = this.ctx.users?.length || 0;
+		const total = this.laneCount();
 		const centerIndex = (total - 1) / 2;
 		return this.yPosHalfHeight - centerIndex * this.verticalLayoutSpacing;
 	}
@@ -156,6 +189,7 @@ export class TurnChart {
 
 		this.drawTimeline();
 		if (this.ctx.config.separateToggle) this.drawTimeGridlines();
+		if (this.groupByKind && this.ctx.config.separateToggle) this.drawGroupLabels();
 		if (this.useAreaScaling && !this.ctx.config.separateToggle) this.drawScaleTicks();
 		this.ctx.sk.textSize(this.ctx.sk.toolTipTextSize);
 		for (const key in sortedAnimationWordArray) {
@@ -259,6 +293,20 @@ export class TurnChart {
 		}
 	}
 
+	/** Names each grouped lane, with how many actors it stands for. */
+	drawGroupLabels(): void {
+		const sk = this.ctx.sk;
+		sk.push();
+		sk.noStroke();
+		sk.textAlign(sk.LEFT, sk.CENTER);
+		sk.textSize(Math.max(9, Math.min(12, this.bounds.height * 0.03)));
+		this.groupLabels.forEach((label, i) => {
+			sk.fill(this.ctx.theme.fgMuted);
+			sk.text(label, this.bounds.x + 4, this.yPosSeparate + this.verticalLayoutSpacing * i);
+		});
+		sk.pop();
+	}
+
 	/**
 	 * Faint verticals at the axis ticks, drawn only with lanes separated.
 	 *
@@ -325,14 +373,16 @@ export class TurnChart {
 		// widening it doesn't shift the bubble off its own time span.
 		const width = this.useAreaScaling ? Math.max(MIN_BUBBLE_SIZE, xEnd - xStart) : xEnd - xStart;
 		const xCenter = (xStart + xEnd) / 2;
-		const [height, yCenter] = this.getCoordinates(turnArray.length, speakerIndex);
+		const [height, yCenter] = this.getCoordinates(turnArray.length, this.laneIndexFor(turnData.speaker, speakerIndex));
 
 		// A turn with far more words than duration draws as a needle whose most
 		// striking dimension came from a fallback constant.
 		const capped = this.capAspect ? capBubbleHeight(height, width) : { height, capped: false };
 		const drawnHeight = capped.height;
 
-		const color = getWordColor(turnData.codes, user.color, this.ctx.codeColorMap, this.ctx.config.codeColorMode);
+		const color = this.groupByKind
+			? ACTOR_GROUP_COLORS[actorGroupOf(user.name, user.role)]
+			: getWordColor(turnData.codes, user.color, this.ctx.codeColorMap, this.ctx.config.codeColorMode);
 		this.setStrokes(this.ctx.sk.color(color));
 		this.ctx.sk.ellipse(xCenter, yCenter, width, drawnHeight);
 		if (capped.capped) this.drawCapMarks(xCenter, yCenter, width, drawnHeight, color);
@@ -393,7 +443,7 @@ export class TurnChart {
 	}
 
 	getVerticalLayoutSpacing(height: number): number {
-		return height / this.ctx.users.length;
+		return height / Math.max(1, this.laneCount());
 	}
 
 	getPixelValueFromTime(timeValue: number): number {

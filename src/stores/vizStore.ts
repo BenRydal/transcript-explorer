@@ -47,6 +47,10 @@ export interface VizStoreType {
 	// when true, edges use lag-sequential adjusted residuals (z-scores) instead of raw counts
 	turnNetworkStatisticalMode: boolean;
 	// Turn Chart settings
+	// Collapse per-actor lanes onto participant kind. Nine of the multi-agent
+	// session's 25 lanes cannot render their own content at figure width.
+	turnChartGroupByKind: boolean;
+	// Turn Chart settings
 	// Height is word count and width is duration; where the duration was a
 	// fallback constant the mark degenerates into a needle.
 	turnChartCapAspect: boolean;
@@ -113,6 +117,7 @@ export const initialViz: VizStoreType = {
 	turnNetworkShortLabels: false,
 	showFpsMonitor: false,
 	turnNetworkStatisticalMode: false,
+	turnChartGroupByKind: false,
 	turnChartCapAspect: false,
 	speakerGardenLabels: true,
 	questionFlowHideAbsent: true,

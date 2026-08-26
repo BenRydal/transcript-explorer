@@ -95,6 +95,12 @@
 			{ type: 'toggle', key: 'silenceOverlapToggle', label: 'Silence Overlap' },
 			{
 				type: 'toggle',
+				key: 'turnChartGroupByKind',
+				label: 'Group Lanes by Kind',
+				hint: 'Collapse actors onto person, primary AI, agents and tools. AI transcripts only.'
+			},
+			{
+				type: 'toggle',
 				key: 'turnChartCapAspect',
 				label: 'Cap Mark Proportions',
 				hint: 'Clip a mark at 8:1 and notch it, so a long turn in a near-zero duration reads as off the scale instead of as a needle.'
