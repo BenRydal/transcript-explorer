@@ -166,7 +166,12 @@ export class SpeakerGarden {
 	/**
 	 * Names the flower at the baseline. Without this the garden cannot be read
 	 * off a printed figure at all, since identity was only ever available on
-	 * hover. Rotated when the column is too narrow to take the label flat.
+	 * hover.
+	 *
+	 * Always horizontal. Rotating a long label looked like it bought room, but
+	 * the strip is shorter than the column is wide, so the rotated form fit
+	 * FEWER characters than the flat one it replaced -- and cost the reader a
+	 * head tilt for the privilege.
 	 */
 	drawSpeakerLabel(speaker: string): void {
 		const sk = this.ctx.sk;
@@ -176,21 +181,15 @@ export class SpeakerGarden {
 		sk.noStroke();
 		sk.fill(this.ctx.theme.fg);
 		sk.textSize(this.labelSize);
-
-		const flat = sk.textWidth(speaker) <= this.maxCircleRadius;
-		if (flat) {
-			sk.textAlign(sk.CENTER, sk.TOP);
-			sk.text(speaker, this.xPosCurCircle, y);
-		} else {
-			sk.translate(this.xPosCurCircle, y);
-			sk.rotate(Math.PI / 2);
-			sk.textAlign(sk.LEFT, sk.CENTER);
-			sk.text(
-				truncateMiddle(speaker, this.labelStrip - LABEL_GAP * 2, (t) => sk.textWidth(t)),
-				0,
-				0
-			);
-		}
+		sk.textAlign(sk.CENTER, sk.TOP);
+		// Neighbouring columns are the budget; a little overhang is fine since
+		// gardens are sparse at the baseline.
+		const budget = this.maxCircleRadius * 1.6;
+		sk.text(
+			truncateMiddle(speaker, budget, (t) => sk.textWidth(t)),
+			this.xPosCurCircle,
+			y
+		);
 		sk.pop();
 	}
 

@@ -3,6 +3,7 @@
 	import { Check, LayoutDashboard, ChevronRight, X } from '@lucide/svelte';
 	import { PANEL_TILES } from '../ui/panel-icons';
 	import TranscriptStore from '../../stores/transcriptStore';
+	import UIStateStore from '../../stores/uiStateStore';
 	import FiltersPanel from './FiltersPanel.svelte';
 	import FiltersStore from '../../stores/filtersStore';
 	import UserStore from '../../stores/userStore';
@@ -220,7 +221,33 @@
 	const dashboardAvailable = $derived(canRenderDashboard(wordCount));
 	const dashboardReason = $derived(dashboardUnavailableReason(wordCount));
 
+	/** Activity-bar width; the flyout opens just past the sidebar it belongs to. */
+	const RAIL_WIDTH = 48;
+
 	let filtersOpen = $state(false);
+
+	/** Closes a flyout on a click outside it or on Escape. */
+	function dismissOnOutside(node: HTMLElement, close: () => void) {
+		const onPointer = (e: PointerEvent) => {
+			const target = e.target as Node | null;
+			if (target && !node.contains(target) && !(target as HTMLElement).closest?.('.viz-panel__flyout-trigger')) close();
+		};
+		const onKey = (e: KeyboardEvent) => {
+			if (e.key === 'Escape') close();
+		};
+		// Deferred so the click that opened it does not immediately close it.
+		const id = setTimeout(() => {
+			document.addEventListener('pointerdown', onPointer, true);
+			document.addEventListener('keydown', onKey);
+		}, 0);
+		return {
+			destroy() {
+				clearTimeout(id);
+				document.removeEventListener('pointerdown', onPointer, true);
+				document.removeEventListener('keydown', onKey);
+			}
+		};
+	}
 
 	// Mirrors the panel's own tally so the closed trigger still reports state.
 	const activeFilterCount = $derived(
@@ -437,7 +464,17 @@
 	</section>
 
 	{#if filtersOpen}
-		<div class="viz-panel__sheet" role="dialog" aria-label="Filters" transition:fly={{ x: 16, duration: 140 }}>
+		<!-- Its own panel alongside this one, not a replacement for it: the view
+		     controls stay visible and in place while filters are chosen. Click
+		     away or press Escape to dismiss. -->
+		<div
+			class="viz-panel__sheet"
+			role="dialog"
+			aria-label="Filters"
+			transition:fly={{ x: -12, duration: 140 }}
+			use:dismissOnOutside={() => (filtersOpen = false)}
+			style:--te-sheet-left={`${RAIL_WIDTH + $UIStateStore.sidebarWidth}px`}
+		>
 			<div class="viz-panel__sheet-head">
 				<span class="viz-panel__section-label">Filters &mdash; all visualizations</span>
 				<button type="button" class="viz-panel__sheet-close" onclick={() => (filtersOpen = false)} aria-label="Close filters">
@@ -575,15 +612,24 @@
 		line-height: 18px;
 	}
 
-	/* Covers the panel rather than pushing it: the sheet is a detour, and the
-	   view controls should be where they were when it closes. */
+	/* Sits alongside the panel rather than over it, so the view controls stay
+	   readable while filters are chosen. Fixed rather than absolute: the
+	   sidebar shell clips its overflow to animate its own width, which would
+	   swallow a flyout positioned inside it. */
 	.viz-panel__sheet {
-		position: absolute;
-		inset: 0;
-		z-index: 5;
+		position: fixed;
+		top: var(--te-sheet-top, 44px);
+		left: var(--te-sheet-left, 328px);
+		bottom: 0;
+		height: auto;
+		width: 288px;
+		max-width: 90vw;
+		z-index: 45;
 		display: flex;
 		flex-direction: column;
 		background: var(--te-bg);
+		border-left: 1px solid var(--te-border);
+		box-shadow: 4px 0 12px rgb(0 0 0 / 0.1);
 	}
 
 	.viz-panel__sheet-head {

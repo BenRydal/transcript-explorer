@@ -1,6 +1,7 @@
 <script lang="ts">
 	import { fly } from 'svelte/transition';
 	import {
+		X,
 		Info,
 		Video,
 		Circle,
@@ -25,7 +26,99 @@
 	import UIStateStore from '../../stores/uiStateStore';
 	import TranscriptStore from '../../stores/transcriptStore';
 	import UserStore from '../../stores/userStore';
-	import { DraggableWindow } from 'svelte-p5-components';
+	// The `use:` form rather than `{@attach}`: this repo's eslint parser cannot
+	// read attachments, and an unparseable file is skipped by the linter
+	// entirely. Same plugin pipeline either way.
+	import { legacyDraggable } from '@neodrag/svelte/legacy';
+	import { controls, ControlFrom, bounds, BoundsFrom, events, position } from '@neodrag/svelte';
+
+	/**
+	 * The legend sits over whichever part of a view happens to be near it, and
+	 * which part that is changes per visualization, so it is moved rather than
+	 * placed. Neodrag carries the drag so it follows the pointer; it settles
+	 * into the nearest corner on release so it never ends up somewhere that
+	 * covers the middle of the canvas.
+	 */
+	const MARGIN = 12;
+	const POS_KEY = 'te:legend:corner';
+
+	let rootEl: HTMLDivElement | null = $state(null);
+	let pos = $state({ x: MARGIN, y: MARGIN });
+	let corner = $state<'top-left' | 'top-right' | 'bottom-left' | 'bottom-right'>('bottom-left');
+
+	/** Offsets of each corner for the current parent and element size. */
+	function cornerOffsets() {
+		const parent = rootEl?.parentElement;
+		if (!parent || !rootEl) return null;
+		const right = Math.max(MARGIN, parent.clientWidth - rootEl.offsetWidth - MARGIN);
+		const bottomY = Math.max(MARGIN, parent.clientHeight - rootEl.offsetHeight - MARGIN);
+		return {
+			'top-left': { x: MARGIN, y: MARGIN },
+			'top-right': { x: right, y: MARGIN },
+			'bottom-left': { x: MARGIN, y: bottomY },
+			'bottom-right': { x: right, y: bottomY }
+		} as const;
+	}
+
+	function settle(next?: typeof corner) {
+		const offsets = cornerOffsets();
+		if (!offsets) return;
+		if (next) corner = next;
+		pos = { ...offsets[corner] };
+	}
+
+	function snapToNearest() {
+		const offsets = cornerOffsets();
+		if (!offsets) return;
+		let best = corner;
+		let bestDist = Infinity;
+		for (const [name, o] of Object.entries(offsets)) {
+			const d = (o.x - pos.x) ** 2 + (o.y - pos.y) ** 2;
+			if (d < bestDist) {
+				bestDist = d;
+				best = name as typeof corner;
+			}
+		}
+		settle(best);
+		try {
+			window.localStorage.setItem(POS_KEY, best);
+		} catch {
+			/* private mode: the default corner is fine */
+		}
+	}
+
+	$effect(() => {
+		try {
+			const saved = window.localStorage.getItem(POS_KEY);
+			if (saved === 'top-left' || saved === 'top-right' || saved === 'bottom-left' || saved === 'bottom-right') corner = saved;
+		} catch {
+			/* ignore */
+		}
+		settle();
+	});
+
+	// Re-settle when the canvas resizes, so a corner stays a corner.
+	$effect(() => {
+		const parent = rootEl?.parentElement;
+		if (!parent) return;
+		const ro = new ResizeObserver(() => settle());
+		ro.observe(parent);
+		return () => ro.disconnect();
+	});
+
+	// No Compartment: the action re-runs when this array changes, which is
+	// exactly when `pos` does.
+	const dragPlugins = $derived([
+		position({ current: pos }),
+		controls({ allow: ControlFrom.selector('.legend-header') }),
+		bounds(BoundsFrom.parent()),
+		events({
+			onDrag: ({ offset }) => {
+				pos = { x: offset.x, y: offset.y };
+			},
+			onDragEnd: () => snapToNearest()
+		})
+	]);
 
 	type LegendItem = { label: string } & ({ icon: Component; iconColor?: string } | { speakerColors: true });
 
@@ -181,18 +274,13 @@
 
 {#if legend}
 	{#if $UIStateStore.legendVisible}
-		<!-- The library window owns the drag (neodrag, constrained to the canvas)
-		     rather than this component hand-rolling it: a hand-rolled snap jumps
-		     between corners instead of following the pointer. -->
-		<DraggableWindow
-			title={legend.title}
-			initialX={12}
-			initialY={12}
-			width={260}
-			height="auto"
-			constrained="parent"
-			onClose={() => setLegendVisible(false)}
-		>
+		<div bind:this={rootEl} class="legend-card" use:legacyDraggable={dragPlugins}>
+			<div class="legend-header">
+				<span class="legend-title">{legend.title}</span>
+				<button class="legend-close" onclick={() => setLegendVisible(false)} title="Close legend" aria-label="Close legend">
+					<X size={13} />
+				</button>
+			</div>
 			<div class="legend-items">
 				{#each legend.items as item}
 					<div class="legend-item">
@@ -207,7 +295,7 @@
 					</div>
 				{/each}
 			</div>
-		</DraggableWindow>
+		</div>
 	{:else}
 		<div class="legend-container">
 			<button class="legend-toggle" onclick={() => setLegendVisible(true)} title="Show legend" transition:fly={{ y: 8, duration: 150 }}>
@@ -218,6 +306,56 @@
 {/if}
 
 <style>
+	.legend-card {
+		position: absolute;
+		top: 0;
+		left: 0;
+		z-index: 40;
+		width: 260px;
+		max-width: calc(100% - 24px);
+		pointer-events: auto;
+		background: color-mix(in srgb, var(--te-bg) 94%, transparent);
+		border: 1px solid var(--te-border-muted);
+		border-radius: var(--te-radius-lg);
+		box-shadow: 0 2px 8px rgb(0 0 0 / 0.12);
+		padding: 8px 10px;
+	}
+
+	.legend-header {
+		display: flex;
+		align-items: center;
+		justify-content: space-between;
+		gap: var(--te-sp-2);
+		margin-bottom: 6px;
+		cursor: grab;
+		touch-action: none;
+	}
+
+	.legend-header:active {
+		cursor: grabbing;
+	}
+
+	.legend-title {
+		font-size: var(--te-font-label);
+		letter-spacing: 0.08em;
+		text-transform: uppercase;
+		color: var(--te-fg-muted);
+	}
+
+	.legend-close {
+		display: inline-flex;
+		padding: 2px;
+		border: none;
+		border-radius: var(--te-radius-sm);
+		background: transparent;
+		color: var(--te-fg-muted);
+		cursor: pointer;
+	}
+
+	.legend-close:hover {
+		background: var(--te-bg-muted);
+	}
+
 	.legend-container {
 		position: absolute;
 		bottom: 12px;
