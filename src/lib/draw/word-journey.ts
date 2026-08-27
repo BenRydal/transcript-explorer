@@ -26,6 +26,11 @@ const HOVER_OUTLINE_WEIGHT = 2;
 const THREAD_WEIGHT = 1;
 const THREAD_ALPHA = 90;
 
+/** Upper case, so the absent row reads as one more name in a gutter of normalized speaker names. */
+function absentRowLabel(hiddenCount: number, word: string): string {
+	return `${hiddenCount} never used "${word}"`.toUpperCase();
+}
+
 interface RenderedOccurrence {
 	occurrence: WordOccurrence;
 	x: number;
@@ -84,7 +89,7 @@ export class WordJourney {
 		const lanes = hideAbsent ? present : ordered;
 		const hiddenCount = hideAbsent ? absent.length : 0;
 
-		const absentLabel = hiddenCount > 0 ? `${hiddenCount} never used "${data.word}"` : null;
+		const absentLabel = hiddenCount > 0 ? absentRowLabel(hiddenCount, data.word) : null;
 		this.layout(lanes, absentLabel);
 		this.drawTitle(data.word, data.occurrences.length, present.length, ordered.length);
 		this.drawSpeakerLanes(lanes, counts);
@@ -299,7 +304,7 @@ export class WordJourney {
 		sk.textStyle(sk.BOLD);
 		sk.textSize(this.labelSize);
 		sk.textAlign(sk.RIGHT, sk.CENTER);
-		const label = `${hiddenCount} never used "${word}"`;
+		const label = absentRowLabel(hiddenCount, word);
 		sk.text(
 			truncateMiddle(label, this.gx - this.bounds.x - 10, (t) => sk.textWidth(t)),
 			this.gx - 10,

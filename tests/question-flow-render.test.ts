@@ -35,6 +35,8 @@ function makeCtx(speakers: { name: string; role?: SpeakerRole }[], sourceKind: s
 		LEFT: 'left',
 		RIGHT: 'right',
 		TOP: 'top',
+		BOLD: 'bold',
+		NORMAL: 'normal',
 		mouseX: -999,
 		mouseY: -999,
 		drawingContext: { globalAlpha: 1 },
@@ -47,6 +49,7 @@ function makeCtx(speakers: { name: string; role?: SpeakerRole }[], sourceKind: s
 		strokeWeight: () => {},
 		textAlign: () => {},
 		textSize: () => {},
+		textStyle: () => {},
 		text: (s: string) => rec.texts.push(String(s)),
 		textWidth: (s: string) => String(s).length * 6,
 		line: () => {},
@@ -163,7 +166,7 @@ describe('QuestionFlow rendering', () => {
 		const { ctx, rec } = makeCtx(aiSpeakers, 'ai');
 		new QuestionFlow(ctx, BOUNDS).draw([pair('Ben', 10, 'Claude')]);
 
-		expect(rec.texts.some((t) => t.includes('3 actors neither asked nor answered'))).toBe(true);
+		expect(rec.texts.some((t) => t.includes('3 NEITHER ASKED NOR ANSWERED'))).toBe(true);
 	});
 
 	it('keeps every lane when hiding is turned off', () => {
@@ -174,8 +177,8 @@ describe('QuestionFlow rendering', () => {
 	});
 
 	it('draws a square for a structured elicitation and a triangle for an inter-agent question', () => {
-		// Arrowheads and the absent-row background are drawn either way, so the
-		// two renders are compared and the constants cancel.
+		// Arrowheads are drawn either way, so the two renders are compared and
+		// the constants cancel.
 		const speakers = [...aiSpeakers, { name: 'Agent:general-purpose:abc', role: 'assistant' as SpeakerRole }];
 		const pairs = [pair('Tool:AskUserQuestion', 10, 'Ben'), pair('Agent:general-purpose:abc', 40, 'Claude')];
 

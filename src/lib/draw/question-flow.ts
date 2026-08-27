@@ -23,6 +23,11 @@ const ARC_CONTROL_OFFSET = 40;
 const HOVER_OUTLINE_WEIGHT = 2;
 const ANSWER_RING_WEIGHT = 2;
 
+/** Upper case, so the absent row reads as one more name in a gutter of normalized speaker names. */
+function absentRowLabel(hiddenCount: number): string {
+	return `${hiddenCount} neither asked nor answered`.toUpperCase();
+}
+
 interface RenderedPair {
 	pair: QuestionAnswerPair;
 	kind: QuestionKind;
@@ -116,7 +121,8 @@ export class QuestionFlow {
 		const kinds = kindsPresent(pairs.map((p) => classifyQuestion(p.questionSpeaker, this.ctx.userMap.get(p.questionSpeaker)?.role, this.isAi)));
 		const showLegend = this.typeMarks && kinds.length > 1;
 
-		this.layout(hiddenCount > 0, showLegend);
+		const absentLabel = hiddenCount > 0 ? absentRowLabel(hiddenCount) : null;
+		this.layout(absentLabel, showLegend);
 		this.drawSpeakerLabels();
 		drawTimeAxis(this.ctx.sk, this.bounds, this, this.timeline, this.ctx.theme);
 
@@ -153,11 +159,11 @@ export class QuestionFlow {
 	}
 
 	/** Sizes the label gutter to the labels actually being drawn, then the grid. */
-	private layout(reserveAbsentRow: boolean, reserveLegend: boolean): void {
+	private layout(absentLabel: string | null, reserveLegend: boolean): void {
 		this.labelSize = Math.max(9, Math.min(11, this.bounds.height * 0.025));
 		this.ctx.sk.textSize(this.labelSize);
 
-		let widest = 0;
+		let widest = absentLabel ? this.ctx.sk.textWidth(absentLabel) : 0;
 		for (const speaker of this.lanes) widest = Math.max(widest, this.ctx.sk.textWidth(speaker));
 
 		const available = this.bounds.width * 0.28;
@@ -166,7 +172,7 @@ export class QuestionFlow {
 		this.gx = this.bounds.x + gutter;
 		this.gy = this.bounds.y + TOP_MARGIN;
 		this.gw = this.bounds.width - gutter - RIGHT_MARGIN;
-		this.gh = this.bounds.height - TOP_MARGIN - BOTTOM_MARGIN - (reserveAbsentRow ? ABSENT_ROW_HEIGHT : 0) - (reserveLegend ? LEGEND_HEIGHT : 0);
+		this.gh = this.bounds.height - TOP_MARGIN - BOTTOM_MARGIN - (absentLabel ? ABSENT_ROW_HEIGHT : 0) - (reserveLegend ? LEGEND_HEIGHT : 0);
 		this.laneHeight = this.gh / Math.max(1, this.lanes.length);
 	}
 
@@ -199,26 +205,27 @@ export class QuestionFlow {
 		}
 	}
 
-	/** Reports the lanes trimmed from the view. */
+	/**
+	 * Reports the lanes trimmed from the view, in the label gutter and bold, so it reads as one more actor in the list rather than as a note laid over the timeline.
+	 */
 	private drawAbsentRow(hiddenCount: number): void {
 		const y = this.gy + this.gh + ABSENT_ROW_HEIGHT / 2;
+		const sk = this.ctx.sk;
 
-		const rule = this.ctx.sk.color(this.ctx.theme.fgMuted);
-		rule.setAlpha(45);
-		this.ctx.sk.stroke(rule);
-		this.ctx.sk.strokeWeight(1);
-		this.ctx.sk.line(this.gx, y, this.gx + this.gw, y);
-
-		this.ctx.sk.noStroke();
-		this.ctx.sk.textSize(this.labelSize);
-		this.ctx.sk.textAlign(this.ctx.sk.LEFT, this.ctx.sk.CENTER);
-
-		const label = `${hiddenCount} actor${hiddenCount !== 1 ? 's' : ''} neither asked nor answered`;
-		const pad = 6;
-		this.ctx.sk.fill(this.ctx.theme.bg);
-		this.ctx.sk.rect(this.gx - pad, y - this.labelSize, this.ctx.sk.textWidth(label) + pad * 2, this.labelSize * 2);
-		this.ctx.sk.fill(this.ctx.theme.fgMuted);
-		this.ctx.sk.text(label, this.gx, y);
+		sk.push();
+		sk.noStroke();
+		sk.fill(this.ctx.theme.fg);
+		sk.textStyle(sk.BOLD);
+		sk.textSize(this.labelSize);
+		sk.textAlign(sk.RIGHT, sk.CENTER);
+		const label = absentRowLabel(hiddenCount);
+		sk.text(
+			truncateMiddle(label, this.gx - this.bounds.x - 10, (t) => sk.textWidth(t)),
+			this.gx - 10,
+			y
+		);
+		sk.textStyle(sk.NORMAL);
+		sk.pop();
 	}
 
 	/** Shape key, drawn only when more than one kind is on screen. */

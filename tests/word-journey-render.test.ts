@@ -139,7 +139,7 @@ describe('WordJourney rendering', () => {
 			occurrences: [occ('Ben', 10, 1, { isFirst: true, isFirstBySpeaker: true })]
 		});
 
-		expect(rec.texts.some((t) => t.includes('4 never used "ethic"'))).toBe(true);
+		expect(rec.texts.some((t) => t.includes('4 NEVER USED "ETHIC"'))).toBe(true);
 	});
 
 	it('reports carriage in the title', () => {

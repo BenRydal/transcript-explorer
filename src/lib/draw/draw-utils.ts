@@ -98,10 +98,12 @@ export function drawTimeAxis(
 		sk.strokeWeight(1);
 		sk.line(x, grid.gy + grid.gh, x, grid.gy + grid.gh + 5);
 
-		// Time label
+		// Time label. The first one hangs off the right of its tick so it stays clear of
+		// whatever the label gutter puts under the grid.
 		sk.noStroke();
 		sk.fill(theme.fgMuted);
-		sk.text(formatTimeCompact(time), x, grid.gy + grid.gh + 8);
+		sk.textAlign(i === 0 ? sk.LEFT : sk.CENTER, sk.TOP);
+		sk.text(formatTimeCompact(time), i === 0 ? x + 2 : x, grid.gy + grid.gh + 8);
 	}
 }
 
