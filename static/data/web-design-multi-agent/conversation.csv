@@ -1,5 +1,5 @@
 te_source_kind,speaker,content,start,end,event_type,role,tool_name,agent_type,agent_id,model,tokens_out,event_id,content_type,start_record,start_work,start_floor,provenance,human_text
-ai,User,"In this conversation, I'd like you to use as many agents sub-agents and tools as possible to help you with the task. Use them to maximize your efficiency and quality",0.0,1.0,message,user,,,,,,6be17000-0bba-473d-b88c-24582b9d7b2c,text,0.9,0.0,0.0,marker,brought
+ai,User,"In this conversation, I'd like you to use as many agents sub-agents and tools as possible to help you with the task. Use them to maximize your efficiency and quality",0.0,1.0,message,user,,,,,,6be17000-0bba-473d-b88c-24582b9d7b2c,text,0.9,0.0,0.0,marker,unknown
 ai,Claude,"I notice your message sets up *how* you'd like me to work (maximize agent/tool usage), but doesn't yet contain the actual task. Let me take a quick look at the working directory so I have context, then I'll confirm what you want done.",1.0,6.336,message,assistant,,,,claude-opus-4-8,491,a07e6027-4101-4e08-b692-ea51fa46c05e,text,6.236,1.0,1.0,estimated,
 ai,Tool:Bash,"[List working directory contents]
 $ ls -la /Users/ben/Desktop/zzz-AI-Transcript-Data/site-agents-multi 2>&1 | head -50; echo ""---README---""; find /Users/ben/Desktop/zzz-AI-Transcript-Data/site-agents-multi -maxdepth 2 -name ""*.md"" 2>/dev/null | head -20",7.695,8.195,tool_call,tool,Bash,,,claude-opus-4-8,,9a0e6183-cb18-4fa1-a73a-86144fd657a0,code,8.095,7.695,6.336,marker,
@@ -6218,57 +6218,6 @@ Three consequences:
 ---
 
 Want me to **implement** the top fixes (logistics panel, discussion rubric, an explicit tech-vs-ethics framing, more concrete objectives)? I can also add the *Make / Judge / Both* tags to each week — that single change would most directly answer your ""is the focus clear?"" concern. I'll wait for the second reviewer's notes and reconcile before touching anything, unless you'd rather I start now.",766.447,962.085,message,assistant,,,,claude-opus-4-8,3491,a3e9e825-0d9c-4640-843d-8ee6682e814c,text,961.985,766.447,945.771,measured,
-ai,User,"<task-notification>
-<task-id>ae7ca78f097ee568b</task-id>
-<tool-use-id>toolu_015gJsLQi5bPxdEXaRj4C8sF</tool-use-id>
-<output-file>/private/tmp/claude-502/-Users-ben-Desktop-zzz-AI-Transcript-Data-site-agents-multi/2a60e598-0106-4042-8827-c0423e3fd698/tasks/ae7ca78f097ee568b.output</output-file>
-<status>completed</status>
-<summary>Agent ""Pedagogy and tech-ethics balance review"" finished</summary>
-<note>A task-notification fires each time this agent stops with no live background children of its own. The user can send it another message and resume it, so the same task-id may notify more than once.</note>
-<result>I read the full syllabus at `/Users/ben/Desktop/zzz-AI-Transcript-Data/site-agents-multi/index.html`. Rigorous review below.
-
-## Verdict on technical ↔ ethical balance
-- **Ethics is the spine; technical is the tail.** Critical/ethical content is assessed in all three assignments; hard technical skills are assessed in only one (A3). The masthead sells ""Computer **Skills**"" and Goal 01 is ""Work and create with data,"" but the delivered identity is *critical digital citizen who can also do some practical work*. Mild name/content mismatch — ""skills"" oversells the hands-on depth.
-- **They are siloed by half, not integrated.** Ethical/critical core = Weeks 4–6 (""Information Literacy,"" ""AI Literacy,"" ""Ethics, Privacy &amp; Power""). Hard technical = Weeks 9–11 (""Working with Data,"" ""Data Storytelling,"" ""Coding""). The two blocks barely touch.
-- **The few genuine bridges are good but under-exploited.** Week 9 assigns *Data Feminism* (""thinking critically about data, bias, and power"") and lists ""misleading numbers""; Week 10 objectives include ""Spot and avoid misleading or deceptive visualizations"" and the chip ""Honest graphics."" These embed ethics inside technical weeks — the best integration in the course.
-- **Glaring missed loop:** Week 6 teaches ""how algorithms can amplify bias or concentrate power,"" but Week 11 ""Coding &amp; Computational Thinking"" (chips: ""Decomposition,"" ""Automation"") never revisits algorithmic accountability. The one week where students touch algorithms directly has zero ethical dimension.
-
-## Constructive alignment (objective → topic → assessment)
-- **Orphan topic — Human-Centered Design (Week 7):** four objectives (design process, user research, prototyping, ""Evaluate whether a technology genuinely serves the people who use it"") map to **none of the 5 goals and no assignment.** A full week with no home.
-- **Unassessed objective — coding:** Week 11 states ""**Write or modify a small program or script to automate a task**,"" but A3's deliverables require a cleaned dataset, two visualizations, a written story, and a limitations note — **no code required.** The course's only programming objective is never assessed. A3's ""Assesses"" line says ""Problem decomposition"" but tests analysis/writing, not scripting.
-- **Reverse gap — untaught skill assessed:** A2 permits ""a personal website / portfolio page,"" but web publishing/building is taught in no week (Week 8 covers LinkedIn/resume/footprint, not site-building).
-- **Thinly assessed goals:** Goal 02 (""Learn effectively… with and without AI"") and Weeks 2–3 (metacognition, digital communication) get no direct assessment beyond weekly discussions.
-- **Well-aligned:** Goal 03/04 → Weeks 4–6 → A1 is tight and coherent. Goal 05 → Week 8 → A2 is clean. Goal 01 → Weeks 9–10 → A3 holds (minus the coding gap).
-
-## Learning progression
-- **Coherent critical arc:** Weeks 4→5→6 (Info Literacy → AI Literacy → Ethics/Privacy/Power) build logically into A1.
-- **Compressed, back-loaded technical stack:** all hard skills land Weeks 9–11, **all after Spring Break**, immediately before a 2-week capstone that depends on them. A1 and A2 are both non-technical, so students get **no graded hands-on data/coding practice until the 25% capstone itself** — high stakes, no scaffold.
-- **Inverted sequence:** computational thinking (Week 11) is the foundational mental model for decomposition, yet it's taught *after* ""Working with Data"" (Week 9) and ""Visualization"" (Week 10) that logically rest on it. Due Apr 19; capstone due Apr 26 — one week to absorb it.
-- **Discontinuous data thread:** Week 9 data work sits a month after the last quantitative content, then break, then Week 10 viz.
-
-## Capstone integration (A3, ""Data Story"")
-- **Partial synthesis, ethics-as-footnote.** A3 does integrate Weeks 9–11 and explicitly pulls ethics in via ""A brief methods-and-limitations note covering sources, assumptions, **ethics, and responsible AI use**"" — genuinely the strongest integrative artifact.
-- **But the first-half critical content (source evaluation, privacy, power, algorithmic bias) is not structurally required** — ethics enters as *one ""brief note,""* not a scored, load-bearing component. At the moment of synthesis, the ""ethical participant"" promise is reduced to a paragraph.
-- Does not require coding (see gap above), and 25% is only marginally above the 20% non-capstone assignments — arguably underweighted for a whole-term integration.
-
-## Core identity — clear, but pulling two directions
-- Explicit and consistent: lede ""Becoming a thoughtful, capable, and ethical participant in a digital and AI-saturated world""; footer ""meeting a digital, AI-saturated world thoughtfully, capably, and on your own terms."" Every assignment ends in a reflection deliverable — the target thinker is **reflective, critical, self-aware.**
-- The tension: the *title* and Goal 01 promise a technical maker; the *structure* produces a critical humanist who is tech-literate. Defensible for an intro/non-major course, but the two identities aren't reconciled on the page.
-
-## Concrete weaknesses
-- Technical hard skills crammed into 3 post-break weeks, first graded only at 25% stakes; no low-stakes data/coding warm-up.
-- Coding objective unassessed; coding week ethically inert.
-- HCD (Week 7) unmoored from goals and assessments; Weeks 2–3 lightly assessed.
-- Ethics front-loaded, technical back-loaded — integration relies on two readings, not on design.
-- Capstone treats ethics as a note, not a requirement.
-- A2 assesses an untaught skill (website building); ""Participation &amp; tool survey"" (15%) is a fuzzy construct.
-
-## Top 3 recommendations
-1. **De-silo ethics and technical by design.** Move ""Coding &amp; Computational Thinking"" earlier (before/with data), and add explicit callbacks so Week 11 revisits Week 6's algorithmic bias/power and Week 10 keeps ""honest graphics"" as a graded criterion. The critical and technical strands should braid, not alternate by half-semester.
-2. **Make A3 a true synthesis and fix the coding gap.** Require in the capstone: (a) a source-provenance/credibility check on the dataset (redeems Week 4 info literacy), (b) an actual script or automation step / documented computational-thinking artifact (redeems Week 11's unassessed objective), and (c) elevate the ethics/limitations note from ""brief"" to a **scored component**. Add a small scaffolded data-or-code mini-assignment before the capstone so hard skills aren't first tested at 25% stakes.
-3. **Close the alignment gaps.** Give Human-Centered Design a home — add a 6th goal (design/problem-solving) or fold HCD into an assignment — and audit every weekly ""You will be able to"" objective to ensure each maps to at least a discussion prompt or assignment criterion (starting with the orphaned coding objective and the untaught website skill in A2).</result>
-<usage><subagent_tokens>41155</subagent_tokens><tool_uses>1</tool_uses><duration_ms>96511</duration_ms></usage>
-</task-notification>",962.085,962.431,message,user,,,,,,723d2fb8-a5f6-403f-a887-08f1205da533,text,962.331,962.085,962.085,marker,brought
 ai,Claude,"The second reviewer came back, and it's the sharper of the two — it caught concrete alignment defects I missed. I verified each against the actual content; they hold. Here's the reconciliation.
 
 ---
@@ -6315,7 +6264,7 @@ These are specific, verifiable alignment failures — not vibes. I checked each 
 
 Worth being clear about scope: fixes **1–3 are curriculum design decisions** — I can *represent* them on the page (resequence weeks, retag, rewrite the capstone brief, add a mini-assignment slot), but whether the actual course changes is the instructor's call. Fixes **4–6 are pure page improvements** I can just make.
 
-How do you want to proceed?",962.431,1009.209,message,assistant,,,,claude-opus-4-8,3353,a79b3e88-1ce8-4f77-8041-ea4b70364470,text,1009.109,962.431,962.431,estimated,
+How do you want to proceed?",962.085,1009.209,message,assistant,,,,claude-opus-4-8,3353,a79b3e88-1ce8-4f77-8041-ea4b70364470,text,1009.109,962.085,962.085,estimated,
 ai,Tool:AskUserQuestion,"[AskUserQuestion] {""questions"": [{""question"": ""Which changes should I make to the site now?"", ""header"": ""Scope"", ""multiSelect"": true, ""options"": [{""label"": ""Page fixes only (4\u20136)"", ""description"": ""Add the logistics/'what you need & time' panel, a discussion rubric + word count, and concrete 'you will make X' objectives. Pure presentation \u2014 no curriculum claims changed.""}, {""label"": ""Show the tech\u2194ethics braid"", ""description"": ""Add a Make/Judge/Both tag to each week and a one-line course thesis, and",1013.955,1014.455,tool_call,tool,AskUserQuestion,,,claude-opus-4-8,,188db8bd-b2cd-4f6c-8f6f-3f2170c2b51a,text,1014.355,1013.955,1009.209,marker,
 ai,Tool:AskUserQuestion,"The user doesn't want to proceed with this tool use. The tool use was rejected (eg. if it was a file edit, the new_string was NOT written to the file). To tell you how to proceed, the user said:
 The user wants to clarify these questions.
@@ -6337,7 +6286,7 @@ A few things that would help me tailor the next step:
 - **On the tech↔ethics imbalance specifically** — do you want me to *surface* it on the page (tags, a thesis line, cross-week callbacks) so a reader sees the intended braid, or actually *rebalance* the curriculum (resequence weeks, rewrite the capstone)? The first is safe; the second is a design decision an instructor would normally own.
 - **Or is your intent narrower** — e.g., you just wanted the critique, or you want to compare how this build stacks up against another version?
 
-Tell me what you're optimizing for and I'll reformulate accordingly.",962.431,1028.622,message,assistant,,,,claude-opus-4-8,360,179f6aa8-4d11-47e0-83d5-6a89bea39869,text,1028.522,962.431,1021.665,measured,
+Tell me what you're optimizing for and I'll reformulate accordingly.",748.959,1028.622,message,assistant,,,,claude-opus-4-8,360,179f6aa8-4d11-47e0-83d5-6a89bea39869,text,1028.522,748.959,1021.665,measured,
 ai,User,Ok let's start by breaking the site into multiple pages rather than one long page? what do you think? talk here first before doing anything,1044.662,1057.162,message,user,,,,,,c18e4733-dcde-4e58-8500-3f3af0bb8126,text,1057.062,1044.662,1028.622,estimated,composed
 ai,Claude,"Good instinct — the single page is long, and the earlier critique (can't find logistics, 11 near-identical cards blur together) is partly a wayfinding problem that structure can fix. But there's one architectural fork we should settle *first*, because it changes everything downstream.
 
@@ -9038,7 +8987,7 @@ Two things worth flagging:
 2. This restructure is the **presentation** fix we scoped. The curriculum issues from the assessment (tech/ethics siloing, orphaned HCD week, uncoded capstone) are still open — say the word if you want to tackle any of those next.
 
 Want me to adjust anything about the tabs (order, labels, default landing view), or move on?",1172.119,1678.008,message,assistant,,,,claude-opus-4-8,693,7ee7c6dd-e527-4a65-b8b3-bbbe59e4ca31,text,1677.908,1172.119,1664.343,measured,
-ai,User,"Out of curiosity, what are other ways of structuring this site beyond the 4 tab layout?",1678.008,1678.039,message,user,,,,,,5565a342-0406-4a30-82ac-bb1e84e61404,text,1677.939,1678.008,1678.008,marker,brought
+ai,User,"Out of curiosity, what are other ways of structuring this site beyond the 4 tab layout?",1678.008,1678.039,message,user,,,,,,5565a342-0406-4a30-82ac-bb1e84e61404,text,1677.939,1678.008,1678.008,marker,unknown
 ai,Claude,"Great question — and the honest framing is that ""tabs"" is just *one* answer to a deeper question: **what mental model should the structure optimize for, and which student question should be one glance away?** Tabs optimize for a *returning* student who already knows what they want (""take me to Assignments""). Other structures optimize for other things. Here's the landscape, grouped by the underlying idea.
 
 ## Same content, different *posture*
@@ -9331,7 +9280,7 @@ aesthetic-considerations.md
 context.md
 index.html",2068.034,2068.534,tool_result,tool,Bash,,,,,ef9da498-4ccd-4c6e-8956-a692188c9cc0,text,2068.434,2068.034,2068.034,marker,
 ai,Claude,Done. `aesthetic-considerations.md` is saved alongside `index.html` and `,2072.429,2075.096,message,assistant,,,,<synthetic>,,412d8f28-0ba1-4422-a69f-eedab9decad4,text,2074.996,2072.429,2068.534,estimated,
-ai,User,What do you think of how the technical and ethical are balanced in this course currently? What could be different or made better or is it strong as is>?,2075.096,2075.115,message,user,,,,,,1d4363c8-a3fd-4d77-8a66-f26932716136,text,2075.015,2075.096,2075.096,marker,brought
+ai,User,What do you think of how the technical and ethical are balanced in this course currently? What could be different or made better or is it strong as is>?,2075.096,2075.115,message,user,,,,,,1d4363c8-a3fd-4d77-8a66-f26932716136,text,2075.015,2075.096,2075.096,marker,unknown
 ai,Claude,"Here's my honest judgment — separating the two things that usually get blurred together: the *balance* (how much of each) and the *integration* (whether they're woven or siloed).
 
 ## The balance itself is fine. The integration is the real problem.
@@ -15290,7 +15239,7 @@ echo done",2313.984,2314.484,tool_call,tool,Bash,,,claude-opus-4-8,,15d3de8b-fb3
 ai,Tool:Bash,done,2322.676,2323.176,tool_result,tool,Bash,,,,,87727f05-3642-41e3-98ea-7b6b68e12301,text,2323.076,2322.676,2314.484,marker,
 ai,Claude,Student review is in. Let me view the new-component screenshots while the other three finish.,2323.176,2327.318,message,assistant,,,,claude-opus-4-8,191,33bfee98-95e4-4fe4-9788-20327e76d345,text,2327.218,2323.176,2323.176,estimated,
 ai,Tool:Read,[Read file: /Users/ben/Desktop/zzz-AI-Transcript-Data/site-agents-multi/.rev-shots/start-full.png],2327.691,2328.191,tool_call,tool,Read,,,claude-opus-4-8,,76c0d9fc-c419-4679-a125-6717aecaa073,text,2328.091,2327.691,2327.318,marker,
-ai,User,"[Image: original 1200x2600, displayed at 923x2000. Multiply coordinates by 1.30 to map to original image.]",2327.666,2327.766,message,user,,,,,,475e39d4-dda5-4421-a39b-828c478072ab,text,2327.666,2327.666,2327.666,marker,brought
+ai,User,"[Image: original 1200x2600, displayed at 923x2000. Multiply coordinates by 1.30 to map to original image.]",2327.666,2327.766,message,user,,,,,,475e39d4-dda5-4421-a39b-828c478072ab,text,2327.666,2327.666,2327.666,marker,unknown
 ai,Agent:general-purpose:ae7ca78f,"Re-read confirmed: course content is byte-for-byte unchanged (same 5 goals, 11 weeks, 3 assignment cards, policies). Only the container changed — 4 tabbed views (Start here / Schedule / Assignments / Policies), slim A1–A3 markers left in the timeline as links to the Assignments view, a ""What you'll need"" logistics panel, and a ""View all / Print"" button that reflows everything into one document.
 
 ## 1. Assignment cards pulled out of the timeline — help or hurt alignment?
@@ -15425,69 +15374,6 @@ The file has **no `<!doctype html>`, no `<html lang>`, no `<meta charset>`, and 
 3. **Null-guard `btn`** so a missing element can't strand the page with all views hidden.
 4. **Fix contrast: darken `--muted` to ≥4.5:1**, and **force the light palette inside `@media print`**.
 5. **Harden hash routing:** only intercept known view ids in `hashchange`; let other fragments scroll natively (keeps URL and view in sync as content grows).",2442.113,2465.511,message,assistant,,general-purpose,a847f819,claude-opus-4-8,12939,80bf61c1-15c0-4f58-82b9-52fff5f81a0c,text,2465.411,2442.113,2442.113,estimated,
-ai,User,"<task-notification>
-<task-id>a847f819ab929b416</task-id>
-<tool-use-id>toolu_01U5PYrHxefHTeKrm3MkKXbc</tool-use-id>
-<output-file>/private/tmp/claude-502/-Users-ben-Desktop-zzz-AI-Transcript-Data-site-agents-multi/2a60e598-0106-4042-8827-c0423e3fd698/tasks/a847f819ab929b416.output</output-file>
-<status>completed</status>
-<summary>Agent ""Front-end code and a11y audit"" finished</summary>
-<note>A task-notification fires each time this agent stops with no live background children of its own. The user can send it another message and resume it, so the same task-id may notify more than once.</note>
-<result>I've read the full file (1401 lines). Here's the audit.
-
-## Document-level (CRITICAL — breaks before anything else)
-
-The file has **no `&lt;!doctype html&gt;`, no `&lt;html lang&gt;`, no `&lt;meta charset&gt;`, and no `&lt;meta name=""viewport""&gt;`.** It starts at line 1 with `&lt;title&gt;`.
-
-- **No viewport meta** → every `@media (max-width…)` breakpoint and `clamp()` in the file is effectively dead on phones; mobile browsers render at ~980px and zoom out. This silently defeats the entire responsive design. Fix: add `&lt;meta name=""viewport"" content=""width=device-width, initial-scale=1""&gt;`.
-- **No doctype** → quirks mode (box-model / margin-collapse surprises). Add `&lt;!doctype html&gt;`.
-- **No `lang`** → screen readers can't pick pronunciation/voice. Add `&lt;html lang=""en""&gt;`.
-- **No charset** → the file is full of non-ASCII (`·`, `–`, `≈`, `→`, `—`, curly quotes, `§`). Served without an HTTP charset header this is mojibake. Add `&lt;meta charset=""utf-8""&gt;`.
-
-## 1. Accessibility
-
-- **Tab pattern — link+aria-current is CORRECT here; do NOT convert to ARIA `tablist`.** These are real anchors with real `href=""#id""` fragments (lines 690–693) that update `location.hash`. That is a legitimate ""navigation that filters what's shown"" pattern. `role=""tablist/tab/tabpanel""` would obligate you to implement roving `tabindex`, arrow-key handling, `aria-selected`, and `aria-controls` — none of which exist — and would *break* the currently-correct link semantics. Keep as-is. (`aria-current=""page""` on the active tab, set in JS at line 1376, is appropriate.)
-- **Hidden views: correct.** `.js .view{display:none}` (line 236) properly removes inactive content from both the a11y tree and tab order. Good.
-- **Focus is lost when switching views (HIGH).** The in-content markers `&lt;a class=""ms-line"" href=""#assignments""&gt;` (lines 958, 1116, 1243) live inside `#schedule`. Clicking one fires `hashchange` → `activate()` sets `#schedule` to `display:none` **while focus is on that link**. Focus falls back to `&lt;body&gt;`; keyboard users lose their place and screen-reader users get no announcement that the panel changed. Fix: in `activate()`, after showing the target view, move focus to it — give each `.view` `tabindex=""-1""` and call `targetView.focus({preventScroll:true})` (only when `doScroll` is true so initial load doesn't steal focus). This simultaneously fixes SR silence on tab activation.
-- **`aria-pressed` on view-all button: present and correct** (line 695, toggled line 1392). Good. Minor: text label also changes (""View all / Print"" ↔ ""Tabbed view""), which is fine.
-- **`:focus-visible` present** (line 123) with a solid 2.5px cobalt outline. Good. No plain `:focus` fallback for legacy engines (minor).
-- **Color contrast — `--muted` fails AA for small text (HIGH).** `--muted` `#6d7386` on `--paper` `#f6f3ec` computes to **4.27:1**, below the 4.5:1 required for the small text it's used on (mono labels at `.66rem`–`.74rem`: `.l-label` small, `.readings .r-src`, `.grade-total`, `footer`, `.break-mark .label`, date-row `small`). Darken to ~`#5b6072` (≈5:1). I verified the amber chips are actually OK: `.tba`/`.due` amber `#8a5807` on `#f4e7c9` = 4.92:1 (light) and 7.4:1 (dark) — passing. So the amber isn't the problem; **`--muted` is.**
-- **Graph-paper background: no a11y concern.** It's a `body::before` pseudo-element with `pointer-events:none` (lines 83–96) — not in the a11y tree, `prefers-reduced-motion` irrelevant (static). Fine. Only nit: text sits directly over the (masked-to-top) grid near the masthead, marginally lowering contrast at the very top.
-- **Reduced motion: well handled.** `@media (prefers-reduced-motion:reduce)` kills transitions + smooth scroll (lines 657–659) and JS mirrors it via `reduce` for `scrollIntoView` (line 1380). Good.
-- **Heading order: correct.** Single `h1` (line 677, in masthead which is *outside* all views so it persists in every tab), `h2` per section head, `h3` for cards/glance/policies. No skips.
-- **Landmarks: good** — `&lt;header&gt;`/`&lt;nav aria-label&gt;`/`&lt;main&gt;`/`&lt;footer&gt;`. Missing a skip link (minor).
-- **`target=""_blank""` + `rel`: safe.** Every external link uses `rel=""noopener""`. Fine (could add `noreferrer`; could signal ""opens in new tab"" for SR users — minor).
-
-## 2. JS robustness
-
-- **Unknown/empty hash: handled** — `ids.indexOf(id)===-1 → ids[0]` (line 1373). Good.
-- **`btn` is not null-guarded (HIGH).** Line 1390 `btn.addEventListener(...)` throws if `.viewall-btn` is ever removed/renamed. Because `root.classList.add('js')` already ran (line 1361) hiding all `.view`s, a throw here leaves the page **stuck with every view hidden and no recovery**. Guard it (`if (btn){…}`), same as `nav` is guarded on line 1379.
-- **In-content anchors to non-view ids will misroute (MEDIUM, future-proofing).** `activate()` treats any hash not matching a `.view` id as `start`. Today every in-content link points to `#assignments` (a view id) so it works, but add a `href=""#week-5""` and clicking it snaps the user to the Start view while the URL still says `#week-5` — URL and displayed view desync, and no tab shows `aria-current`. Fix: in `hashchange`, only intercept when the hash is a known view id; otherwise let the browser scroll natively.
-- **`scrollIntoView` argument: correct.** `nav.scrollIntoView(reduce ? true : {behavior:'smooth',block:'start'})` (line 1380) — `true` and the options object are both valid forms. Fine. (Scrolling a `position:sticky` element targets its in-flow position, which is the intended below-masthead spot — acceptable.)
-- **`showall` + `hashchange`: intentional and OK.** In showall the handler early-returns (line 1386) so clicking a tab lets the browser natively jump to the now-`display:block` section. Note the active tab's `aria-current` is not updated in showall (acceptable, since all sections are shown). Leaving showall re-runs `activate(currentHash())` (line 1394). Consistent.
-- **Back/forward: fine** — `hashchange` covers it. `showall` isn't in history, but since showall shows everything, back/forward through hashes is harmless.
-
-## 3. CSS / structure
-
-- **Print does not force the light palette (MEDIUM).** `@media print` (lines 662–666) hides tabs/bg and shows all views, but if the user's OS is in dark mode the `prefers-color-scheme:dark` vars still apply → **prints white text on dark boxes**, wasting ink and unreadable on paper. Fix: inside `@media print`, redeclare `:root{ --paper:#fff; --ink:#1a1d29; … }` (the light values). Also consider printing link URLs via `a[href^=""http""]::after{content:"" ("" attr(href) "")""}`.
-- **Sticky-nav offset is a fixed 84px (MEDIUM, brittle).** `scroll-margin-top:84px` (lines 235, 245) assumes a single-row nav. On narrow screens the `.tabs` flex row wraps (tab-links + `viewall-btn`, lines 186–197) to two lines, making the stuck nav taller than 84px; native anchor jumps in showall then tuck the target heading *under* the nav.
-- **showall inter-view spacing double-stacks (LOW).** `.js.showall main &gt; .view + .view` adds `margin-top:30px; padding-top:18px` (lines 239–241) and each view's first `section` also carries `margin-top:36px` (line 242). Padding blocks margin-collapse, so you get 18+36=54px — larger than intended but not broken.
-- **Specificity: clean.** Week-1's cobalt ""Survey due"" override (line 811) uses inline styles that correctly beat the `.due` amber rule; `.card h3` / `.ms-card h3` / `.policy h3` / `.glance h3` are all separately scoped. No collisions found.
-- **z-index/stacking: fine.** `body::before` 0 &lt; `.wrap` 1 &lt; `.tabs` 5; nodes at 1. No overlap.
-- **No-JS fallback: works** (all views visible), but the `viewall-btn` is a dead control without JS (no `no-js` class to hide it) — minor.
-- **`color-mix`, `backdrop-filter`, `text-wrap:balance` (LOW):** modern-only; on old engines the `aria-current` border-color and blur degrade silently to acceptable states.
-
-## 4. What breaks first as content grows / Top 5 fixes
-
-**Breaks first:** (a) any deep-link/in-content anchor to a non-view id (misroutes to Start); (b) a 5th+ tab or a phone → nav wraps, the fixed 84px scroll offset is wrong; (c) a renamed/removed `.viewall-btn` → unguarded throw hides everything; (d) `--muted` small text anywhere important (already failing).
-
-**Top 5 highest-leverage fixes, ranked:**
-1. **Add the missing `&lt;!doctype&gt;`, `&lt;html lang=""en""&gt;`, `&lt;meta charset&gt;`, and especially `&lt;meta name=""viewport""&gt;`.** One line each; the viewport tag alone restores all mobile responsiveness that's currently dead.
-2. **Focus management in `activate()`** (give `.view` `tabindex=""-1""`, focus it on `doScroll`): fixes the focus-loss from in-content `#assignments` links and makes tab switches announce to screen readers.
-3. **Null-guard `btn`** so a missing element can't strand the page with all views hidden.
-4. **Fix contrast: darken `--muted` to ≥4.5:1**, and **force the light palette inside `@media print`**.
-5. **Harden hash routing:** only intercept known view ids in `hashchange`; let other fragments scroll natively (keeps URL and view in sync as content grows).</result>
-<usage><subagent_tokens>43192</subagent_tokens><tool_uses>2</tool_uses><duration_ms>197294</duration_ms></usage>
-</task-notification>",2465.511,2465.534,message,user,,,,,,553a87f9-fd0e-4778-923f-32cef1827a4a,text,2465.434,2465.511,2465.511,marker,brought
 ai,Claude,"All four reviewers are back, plus my own verified checks. Here's the consolidated full review.
 
 ---
@@ -15554,8 +15440,8 @@ The reviewer's blunt line: **the restructure is cosmetic with respect to pedagog
 
 **Items 1–2 are pure defects — no judgment calls, low risk, high impact.** I'd fix those immediately if you're willing; #1 alone repairs mobile. **3–4** are the natural follow-on cleanup. **5–6** need your decisions (real logistics data; whether to change the actual course).
 
-Want me to go ahead and apply **1–2 now** (the critical technical + accessibility fixes), and stop there for your review before touching structure/content? Or bundle 1–4 in one pass?",2465.534,2543.094,message,assistant,,,,claude-opus-4-8,4714,d515e3ca-5348-494d-98ac-64376922f3c1,text,2542.994,2465.534,2465.534,measured,
-ai,User,Write all these suggestions to a file called future-suggestions.md,2543.094,2543.319,message,user,,,,,,f61ede8f-dd76-4d9b-809e-efba7d1cbc6d,text,2543.219,2543.094,2543.094,marker,brought
+Want me to go ahead and apply **1–2 now** (the critical technical + accessibility fixes), and stop there for your review before touching structure/content? Or bundle 1–4 in one pass?",2327.766,2543.094,message,assistant,,,,claude-opus-4-8,4714,d515e3ca-5348-494d-98ac-64376922f3c1,text,2542.994,2327.766,2465.511,measured,
+ai,User,Write all these suggestions to a file called future-suggestions.md,2543.094,2543.319,message,user,,,,,,f61ede8f-dd76-4d9b-809e-efba7d1cbc6d,text,2543.219,2543.094,2543.094,marker,unknown
 ai,Tool:Write,"[Write file: /Users/ben/Desktop/zzz-AI-Transcript-Data/site-agents-multi/future-suggestions.md]
 # Future Suggestions — LT 2010 Course Site
 

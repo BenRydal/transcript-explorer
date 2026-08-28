@@ -1,5 +1,5 @@
 te_source_kind,speaker,content,start,end,event_type,role,tool_name,agent_type,agent_id,model,tokens_out,event_id,content_type,start_record,start_work,start_floor,provenance,human_text
-ai,User,"do not use any tools, agents, sub-agents or anything in this chat. Only work by chatting direclty to me. Understand",0.0,1.0,message,user,,,,,,15737f4c-0450-43fb-8d74-38bdd0aa5ded,text,0.9,0.0,0.0,marker,brought
+ai,User,"do not use any tools, agents, sub-agents or anything in this chat. Only work by chatting direclty to me. Understand",0.0,1.0,message,user,,,,,,15737f4c-0450-43fb-8d74-38bdd0aa5ded,text,0.9,0.0,0.0,marker,unknown
 ai,Claude,"Understood. I won't use any tools, agents, or sub-agents in this chat. I'll work with you purely through conversation here.
 
 What would you like to talk through?",1.0,2.709,message,assistant,,,,claude-opus-4-8,85,1f752a9e-e54c-4e68-b043-553708d967bd,text,2.609,1.0,1.0,measured,
@@ -4148,7 +4148,7 @@ ai,Claude,"Building it now — pixel icons, per-chapter emblems, square nodes on
 - **Hooks added:** empty `st-read` readings slots (auto-hidden until filled), `href=""#""` placeholder links on every station title and card, and a new **Grades** section with placeholder weights.
 
 A couple of notes: the pixel icons/emblems are the fiddliest bit to get pixel-perfect without a live render — if any glyph looks off-balance to you, tell me which and I'll nudge cells. And the two cap positions (`.rail-cap.start`/`.end` `top`/`bottom: 6px`) may want a 2–4px tweak once you see it in your browser. Take a look and tell me how it lands.",1552.324,1950.905,message,assistant,,,,claude-opus-4-8,34235,c44fcc11-0200-490a-b4e7-5909a4f301d6,text,1950.805,1552.324,1552.324,measured,
-ai,User,Do you see a better approach to the paragraph describing the course? what would be a better description for undergraduate students/from their perspective? The blend of technical and ethical learning in the course is crucial.,1950.905,1950.984,message,user,,,,,,440e9250-20fe-484e-8034-f2b6fd5a1c33,text,1950.884,1950.905,1950.905,marker,brought
+ai,User,Do you see a better approach to the paragraph describing the course? what would be a better description for undergraduate students/from their perspective? The blend of technical and ethical learning in the course is crucial.,1950.905,1950.984,message,user,,,,,,440e9250-20fe-484e-8034-f2b6fd5a1c33,text,1950.884,1950.905,1950.905,marker,unknown
 ai,Claude,"Yes — the current opening has a classic syllabus problem: it's written from the *institution's* point of view, not the student's. It opens on a truism (""Computing… now shape how we learn, work…""), then tells students what they'll ""become"" in the abstract. It also buries the technical/ethical blend — the single most compelling thing about the course — inside the adjective ""ethical."" I'd flip all three.
 
 **The better approach, in principle:**

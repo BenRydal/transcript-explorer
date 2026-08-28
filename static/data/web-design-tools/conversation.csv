@@ -1,5 +1,5 @@
 te_source_kind,speaker,content,start,end,event_type,role,tool_name,agent_type,agent_id,model,tokens_out,event_id,content_type,start_record,start_work,start_floor,provenance,human_text
-ai,User,Do not use any agents or sub agents in this conversation. You can only use tools and you can use whatever tools you like to help with the task.,0.0,1.0,message,user,,,,,,1aa1dadd-d25f-4153-905a-3e204f126ab1,text,0.9,0.0,0.0,marker,brought
+ai,User,Do not use any agents or sub agents in this conversation. You can only use tools and you can use whatever tools you like to help with the task.,0.0,1.0,message,user,,,,,,1aa1dadd-d25f-4153-905a-3e204f126ab1,text,0.9,0.0,0.0,marker,unknown
 ai,Claude,"I'm ready to help. What would you like to work on in `site-tools`?
 
 I can see this is your `/Users/ben/Desktop/site-tools` directory (not currently a git repo). Just let me know the task — for example:

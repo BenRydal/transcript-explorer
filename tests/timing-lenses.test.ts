@@ -78,19 +78,37 @@ describe('timing lenses', () => {
 		}
 	});
 
-	it('classifies human turns as composed or brought, and only human turns', () => {
+	it('classifies human turns as composed, brought or unknown, and only human turns', () => {
 		for (const d of SETS) {
 			for (const r of load(d)) {
 				if (r.human_text) {
-					expect(['composed', 'brought']).toContain(r.human_text);
+					expect(['composed', 'brought', 'unknown']).toContain(r.human_text);
 					expect(r.role).toBe('user');
 				}
 			}
 		}
-		// The multi-agent session is where bringing text dominates.
-		const multi = load('web-design-multi-agent').filter((r) => r.human_text);
-		expect(multi.filter((r) => r.human_text === 'brought').length)
-			.toBeGreaterThan(multi.filter((r) => r.human_text === 'composed').length);
+
+		const count = (d: string, label: string) => load(d).filter((r) => r.human_text === label).length;
+
+		// Bringing text is commonest in the chat session, and rare elsewhere.
+		// This assertion used to run the other way, on two artefacts. A finished
+		// background agent reports through the human's channel, so its write-up
+		// was recorded as a human turn — at 1,058 and 1,339 words those could
+		// only ever classify as brought, though nobody typed them. And a turn
+		// whose preceding gap is unmeasurable was convicted of the same, since
+		// words over a gap of nothing implies infinite speed. Between them the
+		// multi-agent session looked like the one full of pasting. It has one
+		// real instance; the chat session, where a syllabus and an HTML file
+		// were genuinely pasted in, has three.
+		expect(count('web-design-chat', 'brought')).toBeGreaterThan(count('web-design-multi-agent', 'brought'));
+		expect(count('web-design-multi-agent', 'brought')).toBeGreaterThan(count('web-design-tools', 'brought'));
+
+		// Unmeasurable gaps concentrate where events land on top of each other,
+		// which is the agentic session. Reporting them as their own value is
+		// what keeps them out of the count above.
+		const unknownShare = (d: string) => count(d, 'unknown') / load(d).filter((r) => r.human_text).length;
+		expect(unknownShare('web-design-multi-agent')).toBeGreaterThan(unknownShare('web-design-chat'));
+		expect(unknownShare('web-design-multi-agent')).toBeGreaterThan(unknownShare('web-design-tools'));
 	});
 
 	it('never extends a session past its last recorded event', () => {

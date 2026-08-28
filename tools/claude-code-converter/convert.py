@@ -16,8 +16,15 @@ The session JSONL files live at:
   ~/.claude/projects/<project-slug>/<session-id>.jsonl
 """
 
+# `X | None` annotations are 3.10+ syntax and this module is full of them, so
+# on 3.9 — still the system Python on current macOS — importing it failed at
+# the first such signature. Deferring annotations costs nothing on newer
+# interpreters and makes the converter runnable wherever it is checked out.
+from __future__ import annotations
+
 import argparse
 import csv
+import html
 import json
 import os
 import re
@@ -53,6 +60,60 @@ def ms_to_seconds_relative(ms: float, session_start_ms: float) -> float:
 # session, so they are reduced to a bare filename.
 _HOME_PATH = re.compile(r"(?:/tmp/[\w.-]+/|/home/[\w.-]+/|/Users/[\w.-]+/)[\w./-]*?([\w.-]+\.\w+)")
 _HOME_DIR = re.compile(r"(?:/tmp/[\w.-]+/|/home/[\w.-]+/|/Users/[\w.-]+/)[\w./-]*")
+
+
+# A background agent has no channel of its own to report on. When one finishes,
+# the harness delivers its write-up through the same channel the person types
+# into, so the completion arrives as a user message: role `user`, speaker
+# `User`, stamped at the moment the agent stopped. Two of the fourteen human
+# turns in the multi-agent session are these, and they carry 2,397 of its 2,667
+# apparent human words — the person wrote 255. Left alone they make delegated
+# work look like typing, and at a rate no typing could reach.
+#
+# The wrapper is unambiguous, and it names the agent twice over: `task-id`
+# matches the sub-agent transcript the work was recorded in, `tool-use-id`
+# matches the spawn that started it. Either one re-attributes the row.
+_TASK_NOTIFICATION_OPEN = "<task-notification>"
+
+
+def _tagged(tag: str, text: str) -> str:
+    """Contents of the first `<tag>...</tag>` in `text`, or empty."""
+    match = re.search(rf"<{tag}>(.*?)</{tag}>", text, re.DOTALL)
+    return match.group(1).strip() if match else ""
+
+
+def parse_task_notification(text: str) -> dict | None:
+    """Fields of a `<task-notification>` block, or None if `text` is not one.
+
+    `result` is the agent's own write-up with the wrapper removed. The wrapper
+    is roughly 80 words of routing metadata — ids, a status, a note about
+    resumption, token counts — which belongs in the columns that exist for it
+    rather than in the agent's word count.
+    """
+    if not text or not text.lstrip().startswith(_TASK_NOTIFICATION_OPEN):
+        return None
+
+    summary = _tagged("summary", text)
+    result = _tagged("result", text)
+    if not result:
+        # A failed or empty agent still reported something. Keep the summary so
+        # the row is not dropped for having no body.
+        result = summary or text.strip()
+
+    def _int(tag: str) -> int | None:
+        raw = _tagged(tag, text)
+        return int(raw) if raw.isdigit() else None
+
+    return {
+        "task_id": _tagged("task-id", text),
+        "tool_use_id": _tagged("tool-use-id", text),
+        "status": _tagged("status", text),
+        "summary": summary,
+        "result": result,
+        "subagent_tokens": _int("subagent_tokens"),
+        "tool_uses": _int("tool_uses"),
+        "duration_ms": _int("duration_ms"),
+    }
 
 
 def sanitize_content(text: str) -> str:
@@ -161,6 +222,14 @@ class SessionParser:
         self.user_name = user_name
         self.include_subagents = include_subagents
         self.subagent_files = 0
+        # Short agent id -> agent type, for every sub-agent transcript loaded.
+        # A task notification names its agent by id alone; this is what turns
+        # that id back into the speaker the agent's own rows already use.
+        self.agent_types: dict[str, str] = {}
+        # Task notifications seen: those dropped as a redelivery of the agent's
+        # own message, and those kept because nothing else recorded them.
+        self.notifications_deduped = 0
+        self.notifications_kept = 0
         self.entries: list[dict] = []
         self.events: list[dict] = []
         self.session_id: str = ""
@@ -216,6 +285,7 @@ class SessionParser:
                         agent_type = rec["attributionAgent"]
                     loaded.append(rec)
             label = f"Agent:{agent_type}:{agent_id[:8]}"
+            self.agent_types[agent_id[:8]] = agent_type
             for rec in loaded:
                 rec["_agent_label"] = label
             self.entries.extend(loaded)
@@ -225,6 +295,48 @@ class SessionParser:
     def _spk(entry: dict, default: str) -> str:
         """Sub-agent label if the entry came from a sub-agent file, else default."""
         return entry.get("_agent_label") or default
+
+    def _already_recorded(self, speaker: str, content: str) -> bool:
+        """Whether `speaker` already has an event holding exactly `content`.
+
+        A sub-agent's closing report is written to its own transcript and again
+        into the notification, so with sub-agent files loaded both copies are
+        present. Ordering makes this a backward look: entries are merged into
+        one chronological stream, and the agent finishes before the harness can
+        announce that it finished.
+        """
+        if not content:
+            return False
+        needle = content.strip()
+        return any(
+            e["speaker"] == speaker and e["content"].strip() == needle
+            for e in self.events
+        )
+
+    def _resolve_notified_agent(
+        self, notification: dict, active_agents: dict[str, dict]
+    ) -> tuple[str, str]:
+        """Agent type and id a task notification should be attributed to.
+
+        The `task-id` is preferred: it keys the sub-agent transcript, so the
+        result joins the rows the agent produced and inherits their speaker
+        name — which is what `actor-colors.ts` colours by, and so what makes
+        the report render in the same shade as the work it reports on.
+
+        Failing that, the `tool-use-id` finds the spawn, which is how a session
+        recorded without sub-agent files is still attributed. Only when neither
+        resolves is the type left unknown, and even then the `Agent:` prefix
+        keeps the row out of the person's lane.
+        """
+        short_id = notification["task_id"][:8]
+        if short_id and short_id in self.agent_types:
+            return self.agent_types[short_id], short_id
+
+        spawn = active_agents.get(notification["tool_use_id"])
+        if spawn:
+            return spawn["agent_type"], spawn["agent_id"]
+
+        return "unknown", short_id or "unknown"
 
     def _extract_session_metadata(self):
         """Pull session-level info from first meaningful entry."""
@@ -322,7 +434,58 @@ class SessionParser:
                 # Plain text user message
                 if isinstance(content, str):
                     cleaned = sanitize_content(content)
-                    if cleaned:
+                    notification = parse_task_notification(cleaned)
+                    if notification:
+                        # A finished background agent reporting in. Attribute it
+                        # to the agent that did the work, not to the person it
+                        # was delivered to.
+                        agent_type, agent_id = self._resolve_notified_agent(
+                            notification, active_agents
+                        )
+                        speaker = f"Agent:{agent_type}:{agent_id}"
+                        # The wrapper escapes the body for transport, so `<div>`
+                        # arrives as `&lt;div&gt;`. Undo it before comparing or
+                        # emitting, or an agent that wrote about HTML is
+                        # recorded saying something it did not write.
+                        body = sanitize_content(html.unescape(notification["result"]))
+                        if self._already_recorded(speaker, body):
+                            # The agent's own transcript already holds this
+                            # report as a message of its own; the notification
+                            # is the same text delivered a second time, through
+                            # the person's channel. Keeping it would double the
+                            # agent's word count and invent a contribution it
+                            # never made twice.
+                            self.notifications_deduped += 1
+                            continue
+                        self.notifications_kept += 1
+                        self.events.append(self._make_event(
+                            event_id=uuid,
+                            parent_event_id=parent_uuid,
+                            timestamp_iso=timestamp_iso,
+                            timestamp_ms=timestamp_ms,
+                            speaker=speaker,
+                            role="agent",
+                            event_type="agent_result",
+                            content=body,
+                            content_type=(
+                                "text" if notification["status"] == "completed" else "error"
+                            ),
+                            tool_name="Agent",
+                            tool_use_id=notification["tool_use_id"] or None,
+                            agent_type=agent_type,
+                            agent_id=agent_id,
+                            agent_description=notification["summary"],
+                            invoked_by="Claude",
+                            duration_ms=notification["duration_ms"],
+                            metadata={
+                                "task_id": notification["task_id"],
+                                "status": notification["status"],
+                                "subagent_tokens": notification["subagent_tokens"],
+                                "tool_uses": notification["tool_uses"],
+                                "delivered_as": "user_message",
+                            },
+                        ))
+                    elif cleaned:
                         self.events.append(self._make_event(
                             event_id=uuid,
                             parent_event_id=parent_uuid,
@@ -640,7 +803,7 @@ TRANSCRIPT_COLUMNS = [
     "start_work",       # who was busy: measured span, or an estimate
     "start_floor",      # whose turn it was: from the previous conclusion
     "provenance",       # measured | estimated | marker
-    "human_text",       # composed | brought, on human messages only
+    "human_text",       # composed | brought | unknown, on human messages only
 ]
 
 # Codes CSV columns
@@ -659,6 +822,13 @@ HUMAN_MARKER_S = 1.0
 # Narrowest a row may be. Below this the row is treated as zero-width
 # downstream and re-expanded from a word count.
 MIN_ROW_WIDTH_S = 0.1
+
+# Shortest silence before a human turn that a typing rate may be computed from.
+# The rate is words over the preceding gap, so a gap of nothing implies a speed
+# of infinity and would convict every turn of having been pasted — a nine-word
+# instruction as readily as a thousand-word transcript. The first turn of a
+# session has nothing before it at all and so always lands here.
+MIN_TYPING_WINDOW_S = 0.5
 
 
 # Shortest span accepted as a delegated agent actually running. Below this an
@@ -900,10 +1070,20 @@ def events_to_transcript_csv(
             # elsewhere. Estimating every human turn from a typing rate is
             # impossible for 71% of turns in the multi-agent session, and this
             # is why. The distinction is worth recording in its own right.
+            #
+            # Only when the rate can be computed, though. Treating an
+            # unmeasurable gap as infinite speed collapsed two questions into
+            # one answer, and `brought` came to mean both "this was pasted" and
+            # "no idea": of the twelve such labels across the bundled sessions
+            # only four were detections, and `web-design-tools` had none at all
+            # behind its single one. An unknown is reported as an unknown.
             words = len(event["content"].split())
             window = start - prev_any_end
-            implied = (words / (window / 60.0)) if window > 0.5 else float("inf")
-            human_text = "composed" if implied <= HUMAN_WPM_CEILING else "brought"
+            if window > MIN_TYPING_WINDOW_S:
+                implied = words / (window / 60.0)
+                human_text = "composed" if implied <= HUMAN_WPM_CEILING else "brought"
+            else:
+                human_text = "unknown"
             # The submit timestamp is when composing finished, so a human turn
             # reaches back exactly as an AI turn does.
             end = start
@@ -1243,6 +1423,11 @@ def main():
     session_parser = SessionParser(jsonl_path, user_name=args.user_name)
     events = session_parser.parse()
     print(f"  Extracted {len(events)} canonical events")
+    # Reported rather than silent: these rows would otherwise be counted as
+    # human turns, and the counts are the evidence that they were not.
+    if session_parser.notifications_deduped or session_parser.notifications_kept:
+        print(f"  Task notifications: {session_parser.notifications_deduped} dropped as "
+              f"redelivery, {session_parser.notifications_kept} kept as agent results")
 
     _emit_outputs(events, args, session_parser.session_id,
                   project_path=session_parser.project_path)
