@@ -1,3 +1,6 @@
+/** How a row's timing was arrived at, as the converter recorded it. */
+export type TimingProvenance = 'measured' | 'estimated' | 'marker';
+
 export class DataPoint {
 	speaker: string;
 	turnNumber: number;
@@ -6,8 +9,10 @@ export class DataPoint {
 	word: string;
 	count: number;
 	codes: string[];
+	/** Undefined for producers that do not declare it, which is every human transcript. */
+	provenance?: TimingProvenance;
 
-	constructor(speaker: string, turnNumber: number, word: string, startTime: number, endTime: number) {
+	constructor(speaker: string, turnNumber: number, word: string, startTime: number, endTime: number, provenance?: TimingProvenance) {
 		this.speaker = speaker;
 		this.turnNumber = turnNumber;
 		this.startTime = startTime;
@@ -15,6 +20,7 @@ export class DataPoint {
 		this.word = word;
 		this.count = 1;
 		this.codes = [];
+		this.provenance = provenance;
 	}
 
 	/**
@@ -27,7 +33,8 @@ export class DataPoint {
 			overrides?.turnNumber ?? this.turnNumber,
 			overrides?.word ?? this.word,
 			overrides?.startTime ?? this.startTime,
-			overrides?.endTime ?? this.endTime
+			overrides?.endTime ?? this.endTime,
+			this.provenance
 		);
 		dp.count = this.count;
 		dp.codes = [...this.codes];

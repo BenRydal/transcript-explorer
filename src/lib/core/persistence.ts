@@ -174,9 +174,7 @@ export function loadState(): PersistedState | null {
 		if (!parsed.transcript || !Array.isArray(parsed.transcript.wordArray)) return null;
 		if (!Array.isArray(parsed.users)) return null;
 		if (parsed.version !== undefined && parsed.version > STATE_VERSION) {
-			console.warn(
-				`Saved session is version ${parsed.version}, newer than this build supports (${STATE_VERSION}). Ignoring it.`
-			);
+			console.warn(`Saved session is version ${parsed.version}, newer than this build supports (${STATE_VERSION}). Ignoring it.`);
 			return null;
 		}
 		return parsed;

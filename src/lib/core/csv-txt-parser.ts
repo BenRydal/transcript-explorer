@@ -8,8 +8,10 @@ import { estimateDuration } from './timing-utils';
 import { detectSourceKind, collectSpeakerRoles } from './source-kind';
 import { normalizeSpeakerName, splitIntoWords } from './string-utils';
 import { hasSpeakerNameAndContent, HEADERS_TRANSCRIPT_WITH_TIME } from './core-utils';
+import type { TimingLens } from '../../stores/appSettingsStore';
 import type { ParseResult, ParsedTurn, DetectedFormat } from './text-parser';
 import type { TimingMode } from '../../models/transcript';
+import type { TimingProvenance } from '../../models/dataPoint';
 
 // ============ TXT Parser ============
 
@@ -86,7 +88,27 @@ function getRowStartTime(row: Record<string, unknown>): number | null {
  * Parses CSV rows with speaker/content columns and optional start/end times.
  * Handles timing inference when end times are missing.
  */
-export function parseCSVRows(rows: Record<string, unknown>[], speechRateWordsPerSecond: number = 3): ParseResult {
+/**
+ * Column each lens reads its start from. A producer that emits none of these
+ * falls back to `start`, which is what every human transcript does.
+ */
+const PROVENANCE_VALUES = new Set(['measured', 'estimated', 'marker']);
+
+/** The converter's timing provenance for a row, when it declared one. */
+function readProvenance(row: Record<string, unknown>): TimingProvenance | undefined {
+	const raw = row['provenance'];
+	if (typeof raw !== 'string') return undefined;
+	const value = raw.trim().toLowerCase();
+	return PROVENANCE_VALUES.has(value) ? (value as TimingProvenance) : undefined;
+}
+
+const LENS_START_COLUMN: Record<TimingLens, string> = {
+	record: 'start_record',
+	work: 'start_work',
+	floor: 'start_floor'
+};
+
+export function parseCSVRows(rows: Record<string, unknown>[], speechRateWordsPerSecond: number = 3, timingLens: TimingLens = 'work'): ParseResult {
 	// Read out-of-band from the raw rows rather than through the column mapper:
 	// adding these to the expected-column set would let the fuzzy matcher claim
 	// a human CSV's column before it reaches speaker/content/start/end.
@@ -103,6 +125,12 @@ export function parseCSVRows(rows: Record<string, unknown>[], speechRateWordsPer
 
 	const headers = HEADERS_TRANSCRIPT_WITH_TIME;
 
+	// Read the requested lens where the producer emitted it. The fallback is
+	// not a degraded mode: a transcript without lens columns has exactly one
+	// defensible start, and `start` is it.
+	const lensColumn = LENS_START_COLUMN[timingLens];
+	const startColumn = rows.length > 0 && lensColumn in rows[0] ? lensColumn : headers[2];
+
 	for (let i = 0; i < rows.length; i++) {
 		const row = rows[i];
 		if (!hasSpeakerNameAndContent(row)) continue;
@@ -114,7 +142,7 @@ export function parseCSVRows(rows: Record<string, unknown>[], speechRateWordsPer
 
 		state.speakerSet.add(speaker);
 
-		const curStartTime = toSeconds(row[headers[2]] as string | number | null);
+		const curStartTime = toSeconds(row[startColumn] as string | number | null);
 		const curEndTime = toSeconds(row[headers[3]] as string | number | null);
 		const hasStartTime = curStartTime !== null;
 		const hasEndTime = curEndTime !== null;
@@ -160,7 +188,10 @@ export function parseCSVRows(rows: Record<string, unknown>[], speechRateWordsPer
 			speaker,
 			content: contentStr,
 			startTime,
-			endTime
+			endTime,
+			// Off the raw row, like the lens columns: the fuzzy matcher must not
+			// claim this from a human CSV.
+			provenance: readProvenance(row)
 		});
 	}
 

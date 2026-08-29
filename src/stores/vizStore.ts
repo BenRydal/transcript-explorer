@@ -1,10 +1,12 @@
 import { writable, derived } from 'svelte/store';
 import FiltersStore from './filtersStore';
+import { BIN_COUNT_AUTO } from '../lib/draw/heatmap-scaling';
 
 export type SpeakerSortOrder = 'default' | 'words' | 'turns' | 'alpha';
 export type FingerprintOverlayMode = 'auto' | 'overlay' | 'small-multiples';
 export type FingerprintChartMode = 'radar' | 'parallel';
 export type ContributionCloudWeighting = 'frequency' | 'tfidf';
+export type WordJourneyLaneOrder = 'uptake' | 'default' | 'alpha';
 
 export interface VizStoreType {
 	speakerGardenToggle: boolean;
@@ -44,6 +46,20 @@ export interface VizStoreType {
 	showFpsMonitor: boolean;
 	// when true, edges use lag-sequential adjusted residuals (z-scores) instead of raw counts
 	turnNetworkStatisticalMode: boolean;
+	// Turn Chart settings
+	// Independent of grouping: identity, not row count.
+	turnChartColorByKind: boolean;
+	turnChartGroupByKind: boolean;
+	// Turn Chart settings
+	turnChartCapAspect: boolean;
+	// Speaker Garden settings
+	speakerGardenLabels: boolean;
+	// Question Flow settings
+	questionFlowHideAbsent: boolean;
+	questionFlowTypeMarks: boolean;
+	// Word Journey settings
+	wordJourneyHideAbsent: boolean;
+	wordJourneyLaneOrder: WordJourneyLaneOrder;
 	// Speaker Heatmap settings
 	heatmapBinCount: number;
 	// Turn Length settings
@@ -91,8 +107,16 @@ export const initialViz: VizStoreType = {
 	turnNetworkShortLabels: false,
 	showFpsMonitor: false,
 	turnNetworkStatisticalMode: false,
-	heatmapBinCount: 0,
-	turnLengthBinCount: 0,
+	turnChartColorByKind: false,
+	turnChartGroupByKind: false,
+	turnChartCapAspect: false,
+	speakerGardenLabels: false,
+	questionFlowHideAbsent: true,
+	questionFlowTypeMarks: false,
+	wordJourneyHideAbsent: true,
+	wordJourneyLaneOrder: 'default',
+	heatmapBinCount: BIN_COUNT_AUTO,
+	turnLengthBinCount: BIN_COUNT_AUTO,
 	fingerprintOverlayMode: 'auto',
 	fingerprintChartMode: 'radar',
 	contributionCloudWeighting: 'frequency',

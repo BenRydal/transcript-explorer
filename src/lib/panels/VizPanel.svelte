@@ -1,6 +1,10 @@
 <script lang="ts">
 	import { Check, LayoutDashboard } from '@lucide/svelte';
 	import { PANEL_TILES } from '../ui/panel-icons';
+	import TranscriptStore from '../../stores/transcriptStore';
+	import TimingLensControl from '../components/TimingLensControl.svelte';
+	import { isAutoBinCount, BIN_COUNT_MIN, BIN_COUNT_AUTO } from '../draw/heatmap-scaling';
+	import { canRenderDashboard, dashboardUnavailableReason } from '../draw/dashboard-capacity';
 	import VizStore, {
 		type VizStoreType,
 		type SpeakerSortOrder,
@@ -69,13 +73,39 @@
 	};
 	type PanelOption = PanelToggle | PanelSlider | PanelSelect | { type: 'speakerSort' };
 
-	const formatBinCount = (v: number) => (v === 0 ? 'Auto' : String(v));
+	const formatBinCount = (v: number) => (isAutoBinCount(v) ? 'Auto' : String(v));
 
 	const panelOptionsMap: Record<string, PanelOption[]> = {
-		speakerGarden: [{ type: 'speakerSort' }],
+		speakerGarden: [
+			{ type: 'speakerSort' },
+			{
+				type: 'toggle',
+				key: 'speakerGardenLabels',
+				label: 'Speaker Labels',
+				hint: 'Name each flower at the baseline. Rotated when columns are narrow.'
+			}
+		],
 		turnChart: [
 			{ type: 'toggle', key: 'separateToggle', label: 'Group by Speaker' },
-			{ type: 'toggle', key: 'silenceOverlapToggle', label: 'Silence Overlap' }
+			{ type: 'toggle', key: 'silenceOverlapToggle', label: 'Silence Overlap' },
+			{
+				type: 'toggle',
+				key: 'turnChartColorByKind',
+				label: 'Colour by Kind',
+				hint: 'One hue per participant kind, keeping every actor its own lane. AI transcripts only.'
+			},
+			{
+				type: 'toggle',
+				key: 'turnChartGroupByKind',
+				label: 'Group Lanes by Kind',
+				hint: 'Collapse actors onto person, primary AI, agents and tools. AI transcripts only.'
+			},
+			{
+				type: 'toggle',
+				key: 'turnChartCapAspect',
+				label: 'Cap Mark Proportions',
+				hint: 'Clip a mark at 8:1 and notch it, so a long turn in a near-zero duration reads as off the scale instead of as a needle.'
+			}
 		],
 		contributionCloud: [
 			{
@@ -118,8 +148,44 @@
 				hint: 'Trim node labels to five characters. Full name still shows on hover.'
 			}
 		],
-		speakerHeatmap: [{ type: 'slider', key: 'heatmapBinCount', label: 'Bin Count', min: 0, max: 60, formatValue: formatBinCount }],
-		turnLength: [{ type: 'slider', key: 'turnLengthBinCount', label: 'Bin Count', min: 0, max: 60, formatValue: formatBinCount }],
+		questionFlow: [
+			{
+				type: 'toggle',
+				key: 'questionFlowHideAbsent',
+				label: 'Hide Actors Without Questions',
+				hint: 'Actors that neither ask nor answer are collapsed to a single count.'
+			},
+			{
+				type: 'toggle',
+				key: 'questionFlowTypeMarks',
+				label: 'Encode Question Type',
+				hint: 'Circle, square, triangle for conversational, structured elicitation, inter-agent. Answers draw as rings. AI transcripts only.'
+			}
+		],
+		wordJourney: [
+			{
+				type: 'toggle',
+				key: 'wordJourneyHideAbsent',
+				label: 'Hide Actors Without the Word',
+				hint: 'Lanes that never carry the searched word are collapsed to a single count.'
+			},
+			{
+				type: 'select',
+				key: 'wordJourneyLaneOrder',
+				label: 'Lane Order',
+				options: [
+					{ value: 'uptake', label: 'Uptake (most occurrences first)' },
+					{ value: 'default', label: 'Transcript order' },
+					{ value: 'alpha', label: 'Alphabetical' }
+				]
+			} as PanelSelect<'wordJourneyLaneOrder'>
+		],
+		speakerHeatmap: [
+			{ type: 'slider', key: 'heatmapBinCount', label: 'Bin Count', min: BIN_COUNT_MIN, max: BIN_COUNT_AUTO, formatValue: formatBinCount }
+		],
+		turnLength: [
+			{ type: 'slider', key: 'turnLengthBinCount', label: 'Bin Count', min: BIN_COUNT_MIN, max: BIN_COUNT_AUTO, formatValue: formatBinCount }
+		],
 		speakerFingerprint: [
 			{
 				type: 'select',
@@ -142,6 +208,12 @@
 			} as PanelSelect<'fingerprintOverlayMode'>
 		]
 	};
+
+	// The dashboard draws several views at once; past a point that is more work
+	// per frame than the browser will absorb.
+	const wordCount = $derived($TranscriptStore.wordArray?.length ?? 0);
+	const dashboardAvailable = $derived(canRenderDashboard(wordCount));
+	const dashboardReason = $derived(dashboardUnavailableReason(wordCount));
 
 	let activePanelKey = $derived(techniqueToggleOptions.find((t) => $VizStore[t])?.replace('Toggle', '') ?? '');
 	let activeVisualizationName = $derived(activePanelKey ? (PANEL_LABELS[activePanelKey] ?? 'Dashboard') : 'None');
@@ -168,11 +240,13 @@
 		return `${option.label}: ${option.formatValue ? option.formatValue(value) : value}`;
 	}
 
-	function toggleSelection(selection: string, toggleOptions: readonly (keyof VizStoreType)[]) {
+	// A single choice, not independent toggles: inverting let every one end up
+	// false, and the canvas falls back to the dashboard when nothing is set.
+	function selectVisualization(selection: string, toggleOptions: readonly (keyof VizStoreType)[]) {
 		VizStore.update((store) => {
 			const updates: Record<string, boolean> = {};
 			toggleOptions.forEach((key) => {
-				updates[key] = key === selection ? !store[key] : false;
+				updates[key] = key === selection;
 			});
 			return { ...store, ...updates };
 		});
@@ -207,9 +281,9 @@
 					<button
 						type="button"
 						class="viz-panel__tile {isActive ? 'viz-panel__tile--active' : ''}"
-						aria-pressed={isActive}
+						aria-current={isActive ? 'true' : undefined}
 						title={tile?.label ?? panelKey}
-						onclick={() => toggleSelection(toggle, techniqueToggleOptions)}
+						onclick={() => selectVisualization(toggle, techniqueToggleOptions)}
 					>
 						{#if tile}
 							<tile.icon size={18} strokeWidth={isActive ? 2.2 : 1.5} aria-hidden="true" />
@@ -223,16 +297,27 @@
 		<hr class="viz-panel__hr" />
 
 		<div class="viz-panel__grid">
+			<!-- aria-disabled rather than disabled: a disabled button suppresses
+			     pointer events, so its tooltip never fires, and it leaves the tab
+			     order, so a keyboard user gets no explanation at all. -->
 			<button
 				type="button"
-				class="viz-panel__tile {$VizStore.dashboardToggle ? 'viz-panel__tile--active' : ''}"
-				aria-pressed={$VizStore.dashboardToggle}
-				onclick={() => toggleSelection('dashboardToggle', techniqueToggleOptions)}
+				class="viz-panel__tile {$VizStore.dashboardToggle ? 'viz-panel__tile--active' : ''} {dashboardAvailable
+					? ''
+					: 'viz-panel__tile--unavailable'}"
+				aria-current={$VizStore.dashboardToggle ? 'true' : undefined}
+				aria-disabled={!dashboardAvailable}
+				aria-describedby={dashboardAvailable ? undefined : 'viz-dashboard-reason'}
+				title={dashboardReason ?? 'Dashboard'}
+				onclick={() => dashboardAvailable && selectVisualization('dashboardToggle', techniqueToggleOptions)}
 			>
 				<LayoutDashboard size={18} strokeWidth={$VizStore.dashboardToggle ? 2.2 : 1.5} aria-hidden="true" />
 				<span>Dashboard</span>
 			</button>
 		</div>
+		{#if dashboardReason}
+			<p id="viz-dashboard-reason" class="viz-panel__note">{dashboardReason}</p>
+		{/if}
 	</section>
 
 	{#if hasActiveSettings}
@@ -313,10 +398,19 @@
 			{/each}
 		</section>
 	{/if}
+
+	<!-- Cross-view controls: these move every time-based view at once, so they
+	     sit apart from the per-view settings above. -->
+	<section class="viz-panel__section viz-panel__section--filters" aria-label="Timing">
+		<TimingLensControl inline />
+	</section>
 </div>
 
 <style>
 	.viz-panel {
+		/* Anchors the filters sheet, which covers the panel rather than pushing it. */
+		position: relative;
+		min-height: 100%;
 		display: flex;
 		flex-direction: column;
 		padding: var(--te-sp-3);
@@ -380,8 +474,23 @@
 		}
 	}
 
-	.viz-panel__tile:hover {
+	.viz-panel__tile:hover:not(.viz-panel__tile--unavailable) {
 		background: var(--te-bg-muted);
+	}
+
+	.viz-panel__tile--unavailable {
+		opacity: 0.45;
+		cursor: not-allowed;
+	}
+
+	.viz-panel__note {
+		margin: var(--te-sp-2) 0 0;
+		padding: var(--te-sp-2);
+		border-radius: var(--te-radius-sm);
+		background: var(--te-bg-muted);
+		color: var(--te-fg-muted);
+		font-size: var(--te-font-small);
+		line-height: 1.45;
 	}
 
 	.viz-panel__tile:focus-visible {

@@ -35,9 +35,7 @@ export function stripPunctuation(word: string): string {
  * meaning nothing as vocabulary.
  */
 export function stripForDisplay(word: string): string {
-	return word
-		.replace(/^[<>#*`~_\-=+|/\\[\]{}()"'“”‘’,?.!:;]+/, '')
-		.replace(/[<>#*`~_\-=+|/\\[\]{}()"'“”‘’,?.!:;]+$/, '');
+	return word.replace(/^[<>#*`~_\-=+|/\\[\]{}()"'“”‘’,?.!:;]+/, '').replace(/[<>#*`~_\-=+|/\\[\]{}()"'“”‘’,?.!:;]+$/, '');
 }
 
 /**

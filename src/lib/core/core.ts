@@ -52,7 +52,6 @@ const examples: Record<string, { files: string[]; videoId: string }> = {
 	'trip-multi-agent': { files: ['conversation.csv'], videoId: '' },
 	'web-design-chat': { files: ['conversation.csv'], videoId: '' },
 	'web-design-tools': { files: ['conversation.csv'], videoId: '' },
-	'web-design-single-agent': { files: ['conversation.csv'], videoId: '' },
 	'web-design-multi-agent': { files: ['conversation.csv'], videoId: '' }
 };
 
@@ -83,12 +82,7 @@ export class Core {
 		}
 		const buffer = await response.arrayBuffer();
 		const lower = fileName.toLowerCase();
-		const type =
-			lower.endsWith('.jsonl') || lower.endsWith('.json')
-				? 'application/json'
-				: lower.endsWith('.txt')
-					? 'text/plain'
-					: 'text/csv';
+		const type = lower.endsWith('.jsonl') || lower.endsWith('.json') ? 'application/json' : lower.endsWith('.txt') ? 'text/plain' : 'text/csv';
 		return new File([buffer], fileName, { type });
 	}
 

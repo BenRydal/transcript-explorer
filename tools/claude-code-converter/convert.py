@@ -632,10 +632,108 @@ TRANSCRIPT_COLUMNS = [
     "tokens_out",       # Extended: output token count
     "event_id",         # Extended: UUID for cross-referencing
     "content_type",     # Extended: text, code, thinking, error
+    # Timing lenses. `end` never varies: a contribution ends when the log says
+    # it concluded. Only the start is contested, and these are the three
+    # answers. `start` above stays the work lens so existing readers, which
+    # take start and end by column position, are unaffected.
+    "start_record",     # what was logged: equals end, a tick
+    "start_work",       # who was busy: measured span, or an estimate
+    "start_floor",      # whose turn it was: from the previous conclusion
+    "provenance",       # measured | estimated | marker
+    "human_text",       # composed | brought, on human messages only
 ]
 
 # Codes CSV columns
 CODES_COLUMNS = ["start", "end", "code"]
+
+
+# Fastest a person is taken to type. Above it the text was brought rather than
+# composed. Set generously: a strong typist sustains about 80wpm, so 120 clears
+# real typing while still catching a paste, which typically implies thousands.
+HUMAN_WPM_CEILING = 120
+
+# Width given to a human turn whose text was brought rather than composed.
+# There is no composition to measure, so this is a visible marker, not a claim.
+HUMAN_MARKER_S = 1.0
+
+# Narrowest a row may be. Below this the row is treated as zero-width
+# downstream and re-expanded from a word count.
+MIN_ROW_WIDTH_S = 0.1
+
+
+# Shortest span accepted as a delegated agent actually running. Below this an
+# `agent_result` is a launch acknowledgement, not a completion.
+MIN_AGENT_SPAN_S = 1.0
+
+
+def _collect_real_durations(events: list[dict]) -> dict[str, float]:
+    """Map event_id -> measured duration in seconds.
+
+    `turn_duration` events are the only records in a Claude session log that
+    carry a *measured* `duration_ms`. Each one points at the event it timed via
+    `parent_event_id`. They were previously filtered out with session noise,
+    which discarded the only real timing in the file.
+    """
+    durations: dict[str, float] = {}
+    for e in events:
+        if e.get("event_type") != "turn_duration":
+            continue
+        parent = e.get("parent_event_id")
+        ms = e.get("duration_ms")
+        if parent and ms:
+            durations[parent] = ms / 1000.0
+    return durations
+
+
+def _collect_agent_spans(events: list[dict]) -> dict[str, float]:
+    """Map agent_id -> the session-elapsed time its result came back.
+
+    A delegated agent's real span is spawn -> result. Both ends are recorded,
+    so the span is recoverable even though neither event carries a duration.
+    This is where genuine concurrency lives: agents launched before an earlier
+    one returned overlap in wall-clock time.
+    """
+    spans: dict[str, float] = {}
+    for e in events:
+        if e.get("event_type") == "agent_result" and e.get("agent_id"):
+            spans[e["agent_id"]] = e["session_elapsed_s"]
+    return spans
+
+
+def _floor_start(floor_mark: float, end: float) -> float:
+    """Where a contribution begins under the floor lens.
+
+    The floor is single-threaded: a contribution holds it from the moment the
+    previous one released it, so the session tiles and participation shares sum
+    to it. Keeping a row's own start where that start preceded the mark left
+    the lens half-tiled and half-overlapping, which is neither readable nor
+    countable.
+
+    Concurrency is flattened here by design. Two agents running at once cannot
+    both hold a single floor, and the work lens is where that overlap is read.
+    """
+    return max(min(floor_mark, end - MIN_ROW_WIDTH_S), 0.0)
+
+
+def _reach_back_floor(end: float) -> tuple[float, float]:
+    """Span for a contribution whose reach-back was fully consumed.
+
+    Two failures to avoid. A zero-width row is re-expanded downstream from a
+    word count, which would reinstate an estimate the converter deliberately
+    did not make. And pushing `end` forward cascades: the inflated end becomes
+    the next row's floor, and a session that ran 2,607s reports 3,616s once
+    enough rows have shifted.
+
+    So `end` stays pinned to the timestamp and the row keeps a sliver of width
+    by reaching back into its predecessor. The resulting overlap is a
+    millisecond artefact of two contributions abutting, which is a far smaller
+    lie than a session a thousand seconds too long. The one exception is a
+    session that opens on a submit, where there is nothing behind it to reach
+    into: that row alone falls forward, and being first it cannot cascade.
+    """
+    if end <= MIN_ROW_WIDTH_S:
+        return 0.0, max(end, HUMAN_MARKER_S)
+    return max(end - MIN_ROW_WIDTH_S, 0.0), end
 
 
 def events_to_transcript_csv(
@@ -646,12 +744,20 @@ def events_to_transcript_csv(
     """Convert canonical events to TE-compatible CSV rows.
 
     Timing strategy:
-    - Each event starts at its timestamp
-    - End time = start of next event by the SAME speaker or next event overall,
-      whichever is sooner, UNLESS the gap exceeds idle_threshold_s
-    - Gaps longer than idle_threshold_s are split: the event gets a short end
-      time (based on a content-length heuristic) and, when emit_idle is set, an
-      "Idle" row is inserted to fill the remainder.
+    - Each event starts at its timestamp.
+    - End time is the first of these that is available:
+        1. spawn -> result, for a delegated agent;
+        2. a measured `duration_ms` recorded against this event;
+        3. a duration estimated from the event's type and content length.
+    - Rows are never stretched to meet the next row. A row's width is how long
+      that contribution actually took, so a quiet stretch stays visibly quiet
+      and work that genuinely ran at the same time genuinely overlaps.
+
+    Ending each row at the next row's start (the previous strategy) made every
+    row abut its neighbour. Two things followed: nothing could overlap, so
+    parallel agent work was unrepresentable; and a tool result absorbed the
+    model's thinking time, so "tools vs. model" read wrong. Both are timing the
+    log already carried.
 
     Idle rows are off by default. They are an inferred quantity rather than an
     observed one, and as a separate speaker they add a participant to every
@@ -660,8 +766,22 @@ def events_to_transcript_csv(
     events retain their real timestamps and the silence is derivable from them.
     """
     rows = []
+    # End of the most recent human message. A measured turn begins when the
+    # person submits, so that is what the reach-back is clamped to.
+    last_human_end = 0.0
+    # Running maximum end across everything emitted so far. The floor lens
+    # starts each contribution where the last one concluded, so the session
+    # tiles with no unaccounted time.
+    floor_mark = 0.0
+    # End of the last thing to conclude, whoever produced it. Used to size the
+    # window a human turn had available, which is what makes a paste detectable.
+    prev_any_end = 0.0
 
-    # Filter to meaningful events (skip session_start/end system noise)
+    real_durations = _collect_real_durations(events)
+    agent_spans = _collect_agent_spans(events)
+
+    # Filter to meaningful events (skip session_start/end system noise).
+    # `turn_duration` is consumed above for its timing, not emitted as a row.
     meaningful = [
         e for e in events
         if e["event_type"] not in ("session_start", "session_end", "turn_duration")
@@ -671,53 +791,162 @@ def events_to_transcript_csv(
     for i, event in enumerate(meaningful):
         start = event["session_elapsed_s"]
 
-        # Determine natural end time from next event
+        # Distance to the next event overall, used only to size an idle row.
         if i + 1 < len(meaningful):
             next_start = meaningful[i + 1]["session_elapsed_s"]
         else:
             next_start = start + 1.0
-
         gap = next_start - start
 
-        # Estimate a reasonable duration for this event based on its type
-        if event["event_type"] in ("tool_call", "tool_result"):
-            # Tool calls/results are near-instant from the log perspective
-            estimated_duration = min(gap, 2.0)
-        elif event["event_type"] in ("agent_spawn",):
-            # Agent spawn is logged at invocation, result comes later
-            estimated_duration = min(gap, 1.0)
-        elif event["event_type"] == "message" and event["role"] == "assistant":
-            # Estimate speaking time from content length (~3 words/sec for reading)
-            word_count = len(event["content"].split())
-            estimated_duration = min(gap, max(word_count / 3.0, 2.0))
-        elif event["event_type"] == "message" and event["role"] == "user":
-            # User message: the timestamp is when they hit Enter
-            # Content was composed before this moment
-            word_count = len(event["content"].split())
-            estimated_duration = min(gap, max(word_count / 5.0, 1.0))
+
+        # 1. A delegated agent runs from spawn until its result returns.
+        #
+        # An asynchronously launched agent returns a few milliseconds later
+        # with "Async agent launched successfully" — a launch acknowledgement
+        # rather than a completion. Its real work is recorded against the
+        # agent's own speaker rows, so treat a sub-second span as a launch and
+        # let the spawn render as the marker it is.
+        measured = None
+        if event["event_type"] == "agent_spawn" and event.get("agent_id"):
+            result_at = agent_spans.get(event["agent_id"])
+            if result_at is not None and result_at - start >= MIN_AGENT_SPAN_S:
+                measured = result_at - start
+
+        # 2. Otherwise, a duration measured against this event. A
+        # `turn_duration` measures *backwards*: an assistant message is stamped
+        # when it finished, and the duration reaches back to the moment the
+        # person submitted. Verified against the chat session, where every
+        # implied start lands on the preceding human message to within 0.1s.
+        # That span is measured model-working time, so the row covers it
+        # instead of starting at the completion and running forward over
+        # whatever came next.
+        turn_measured = real_durations.get(event["event_id"])
+        if measured is None and turn_measured is not None:
+            # The turn cannot have begun before the person submitted, so the
+            # reach-back stops at the end of the last human message. Clamping
+            # to the previous row instead would destroy the measurement in an
+            # agentic session, where many rows sit inside a single turn: one
+            # 436.8s turn was cut to 28s because the row before it was a tool
+            # call from within the same turn.
+            turn_start = max(start - turn_measured, 0.0, last_human_end)
+            if turn_start >= start:
+                turn_start = max(start - turn_measured, 0.0)
+            rows.append(_make_csv_row(
+                event, turn_start, start,
+                start_floor=_floor_start(floor_mark, start),
+                provenance="measured",
+            ))
+            floor_mark = max(floor_mark, start)
+            prev_any_end = max(prev_any_end, start)
+            continue
+
+        reaches_back = False
+        is_human_message = (
+            event["event_type"] == "message"
+            and event["role"] == "user"
+            and not str(event.get("speaker") or "").startswith(("Agent:", "Tool:"))
+        )
+
+        if measured is not None:
+            # A measured duration is used as recorded. Only measured spans may
+            # overlap: concurrency the log actually witnessed is a finding,
+            # whereas concurrency produced by an estimate is an artefact.
+            duration = measured
+            provenance = "measured"
         else:
-            estimated_duration = min(gap, 5.0)
+            provenance = "estimated" if event["event_type"] == "message" else "marker"
 
-        # If the gap is large, use estimated duration and insert idle
-        if gap > idle_threshold_s:
-            # Cap estimated duration so there's always a meaningful idle gap
-            capped_duration = min(estimated_duration, gap * 0.5, 60.0)
-            end = start + capped_duration
-            rows.append(_make_csv_row(event, start, end))
+            # 3. Otherwise, estimate from event type and content length, capped
+            # at this speaker's own next contribution.
+            #
+            # These are widths in *time*. How much was said is encoded by bar
+            # height (see turn-chart-scaling.ts), so a long prompt does not
+            # need a long bar. Estimates are not stretched to meet the next
+            # event: that is what flattened the timeline in the first place.
+            if event["event_type"] in ("tool_call", "tool_result"):
+                # Near-instant from the log's perspective. The seconds that
+                # follow a tool result belong to the model composing its next
+                # move, not to the tool.
+                duration = 0.5
+            elif event["event_type"] in ("agent_spawn",):
+                duration = 1.0
+            elif event["event_type"] == "message" and event["role"] == "user":
+                # The timestamp is when they hit Enter, so this is a point
+                # event. Composition happened before it and is not measured;
+                # the preceding gap is what carries it.
+                duration = 2.0
+            elif event["event_type"] == "message" and event["role"] == "assistant":
+                # Reached when no turn_duration covers this message. The
+                # message is still stamped when it finished, so it reaches
+                # back like a measured turn does; running it forward would
+                # place the model's work after it had already finished and
+                # leave the time it was actually generating as a gap.
+                word_count = len(event["content"].split())
+                duration = max(word_count / 3.0, 2.0)
+                reaches_back = True
+            else:
+                duration = 2.0
 
-            if not emit_idle:
-                continue
+        human_text = ""
+        if reaches_back and not is_human_message:
+            # Same reasoning as a human submit: the stamp is the conclusion.
+            end = start
+            start = max(end - duration, prev_any_end)
+            if start >= end:
+                start, end = _reach_back_floor(end)
+        elif is_human_message:
+            # A person cannot type faster than HUMAN_WPM_CEILING. Above it the
+            # text was brought rather than composed: pasted, or prepared
+            # elsewhere. Estimating every human turn from a typing rate is
+            # impossible for 71% of turns in the multi-agent session, and this
+            # is why. The distinction is worth recording in its own right.
+            words = len(event["content"].split())
+            window = start - prev_any_end
+            implied = (words / (window / 60.0)) if window > 0.5 else float("inf")
+            human_text = "composed" if implied <= HUMAN_WPM_CEILING else "brought"
+            # The submit timestamp is when composing finished, so a human turn
+            # reaches back exactly as an AI turn does.
+            end = start
+            if human_text == "composed":
+                start = max(end - (words / (HUMAN_WPM_CEILING / 60.0)), prev_any_end)
+                provenance = "estimated"
+            else:
+                start = max(end - HUMAN_MARKER_S, prev_any_end)
+                provenance = "marker"
+            if start >= end:
+                start, end = _reach_back_floor(end)
+        else:
+            end = start + duration
+            if end <= start:
+                end = start + 0.1
 
-            # Insert idle gap
-            idle_start = end
-            idle_end = next_start
-            idle_duration = idle_end - idle_start
+        rows.append(_make_csv_row(
+            event, start, end,
+            start_floor=min(floor_mark, start) if floor_mark else start,
+            provenance=provenance,
+            human_text=human_text,
+        ))
+        floor_mark = max(floor_mark, end)
+        prev_any_end = max(prev_any_end, end)
+        # A delegated agent is also recorded as `user` on the row holding the
+        # brief it was handed, so role alone would treat a delegation as a
+        # human submit. The speaker prefix separates them.
+        if (
+            event["event_type"] == "message"
+            and event["role"] == "user"
+            and not str(event.get("speaker") or "").startswith(("Agent:", "Tool:"))
+        ):
+            last_human_end = max(last_human_end, end)
+
+        # An idle row fills a long quiet stretch that this row does not cover.
+        if emit_idle and gap > idle_threshold_s and end < next_start:
+            idle_duration = next_start - end
             rows.append({
                 SOURCE_KIND_COLUMN: SOURCE_KIND_VALUE,
                 "speaker": "Idle",
                 "content": f"[Gap: {idle_duration:.0f}s — user reading/thinking/away]",
-                "start": round(idle_start, 3),
-                "end": round(idle_end, 3),
+                "start": round(end, 3),
+                "end": round(next_start, 3),
                 "event_type": "idle",
                 "role": "system",
                 "tool_name": "",
@@ -728,21 +957,46 @@ def events_to_transcript_csv(
                 "event_id": f"idle_{i}",
                 "content_type": "text",
             })
-        else:
-            # Normal case: event spans until next event
-            end = next_start
-            if end <= start:
-                end = start + 0.1
-            rows.append(_make_csv_row(event, start, end))
 
     return rows
 
 
-def _make_csv_row(event: dict, start: float, end: float) -> dict:
+def _agent_identity(event: dict) -> tuple[str, str]:
+    """Agent type and id for a row, falling back to the speaker name.
+
+    Only the spawn and result markers carry `agent_type`/`agent_id` directly.
+    The rows a delegated agent actually produces carry neither, so its own work
+    could not be attributed back to it: 86 rows in the multi-agent session name
+    an agent as speaker while leaving both identity columns empty. The speaker
+    is written as `Agent:<type>:<id>`, so the identity is recoverable from it.
+    """
+    agent_type = event.get("agent_type") or ""
+    agent_id = event.get("agent_id") or ""
+    if agent_type and agent_id:
+        return agent_type, agent_id
+
+    speaker = str(event.get("speaker") or "")
+    if speaker.startswith("Agent:"):
+        parts = speaker.split(":")
+        if len(parts) >= 3:
+            return agent_type or parts[1], agent_id or parts[2]
+    return agent_type, agent_id
+
+
+def _make_csv_row(
+    event: dict,
+    start: float,
+    end: float,
+    start_floor: float | None = None,
+    provenance: str = "",
+    human_text: str = "",
+) -> dict:
     """Build a single CSV row from a canonical event."""
     tokens_out = ""
     if event.get("token_usage") and event["token_usage"].get("output"):
         tokens_out = event["token_usage"]["output"]
+
+    agent_type, agent_id = _agent_identity(event)
 
     return {
         SOURCE_KIND_COLUMN: SOURCE_KIND_VALUE,
@@ -753,11 +1007,20 @@ def _make_csv_row(event: dict, start: float, end: float) -> dict:
         "event_type": event["event_type"],
         "role": event["role"],
         "tool_name": event.get("tool_name") or "",
-        "agent_type": event.get("agent_type") or "",
-        "agent_id": event.get("agent_id") or "",
+        "agent_type": agent_type,
+        "agent_id": agent_id,
         "model": event.get("model") or "",
         "tokens_out": tokens_out,
         "event_id": event["event_id"],
+        # An instant, carried at the narrowest width a row may have. A row
+        # whose start equals its end reads as zero-width downstream and is
+        # re-expanded from its word count, which would draw a tool result
+        # holding a 3,000-word file as a 1,000-second contribution.
+        "start_record": round(max(end - MIN_ROW_WIDTH_S, 0.0), 3),
+        "start_work": round(start, 3),
+        "start_floor": round(start_floor if start_floor is not None else start, 3),
+        "provenance": provenance,
+        "human_text": human_text,
         "content_type": event.get("content_type", "text"),
     }
 
@@ -828,6 +1091,68 @@ def write_events_jsonl(events: list[dict], output_path: str):
 # Main
 # ---------------------------------------------------------------------------
 
+def _emit_outputs(
+    events: list[dict],
+    args: Any,
+    session_id: str | None,
+    project_path: str | None = None,
+    write_events: bool = True,
+) -> None:
+    """Write the CSV, codes and events outputs, then print a summary.
+
+    Shared by both input paths so that rebuilding from a canonical events file
+    produces byte-identical output to converting the original session log.
+    """
+    if not args.include_thinking:
+        events_for_csv = [e for e in events if e["event_type"] != "thinking"]
+    else:
+        events_for_csv = events
+
+    if not args.include_system:
+        # `turn_duration` is system-role but it is timing metadata, not a system
+        # message: it carries the only measured duration in the file and is
+        # consumed rather than emitted as a row. Dropping it here would silently
+        # revert every turn to an estimated width.
+        events_for_csv = [
+            e for e in events_for_csv
+            if e["role"] != "system" or e["event_type"] == "turn_duration"
+        ]
+
+    os.makedirs(args.output_dir, exist_ok=True)
+    sid = session_id[:8] if session_id else "unknown"
+
+    transcript_rows = events_to_transcript_csv(events_for_csv, emit_idle=args.emit_idle)
+    transcript_path = os.path.join(args.output_dir, f"transcript-{sid}.csv")
+    write_csv(transcript_rows, TRANSCRIPT_COLUMNS, transcript_path)
+
+    if not args.no_codes:
+        codes_rows = events_to_codes_csv(transcript_rows)
+        codes_path = os.path.join(args.output_dir, f"codes-{sid}.csv")
+        write_csv(codes_rows, CODES_COLUMNS, codes_path)
+
+    if write_events and not args.no_events:
+        events_path = os.path.join(args.output_dir, f"events-{sid}.jsonl")
+        write_events_jsonl(events, events_path)
+
+    print(f"\nSession: {session_id}")
+    if project_path:
+        print(f"Project: {project_path}")
+
+    role_counts: dict[str, int] = {}
+    for r in transcript_rows:
+        role_counts[r["role"]] = role_counts.get(r["role"], 0) + 1
+    print(f"Events by role: {role_counts}")
+
+    speakers = sorted(set(r["speaker"] for r in transcript_rows))
+    print(f"Speakers ({len(speakers)}): {', '.join(speakers)}")
+
+    if transcript_rows:
+        # Rows are ordered by start and may now overlap, so the last row is not
+        # necessarily the one that ends latest.
+        duration = max(r["end"] for r in transcript_rows)
+        print(f"Duration: {duration:.1f}s ({duration/60:.1f}min)")
+
+
 def main():
     parser = argparse.ArgumentParser(
         description="Convert Claude Code session JSONL to Transcript Explorer CSV",
@@ -840,6 +1165,14 @@ def main():
     input_group.add_argument("jsonl_file", nargs="?", help="Path to session JSONL file")
     input_group.add_argument("--session-id", "-s", help="Session UUID to find and convert")
     input_group.add_argument("--list-sessions", "-l", action="store_true", help="List available sessions")
+    input_group.add_argument(
+        "--from-events",
+        metavar="EVENTS_JSONL",
+        help="Rebuild the CSVs from a canonical events JSONL this tool wrote "
+             "earlier, instead of from a raw session log. Lets bundled sample "
+             "data be regenerated after a timing or formatting change without "
+             "needing the original session, which may no longer exist.",
+    )
 
     # Options
     parser.add_argument("--output-dir", "-o", default=".", help="Output directory (default: current)")
@@ -873,6 +1206,19 @@ def main():
             print(f"{s['session_id']:<40} {s['start'][:19]:<22} {s['entries']:>8}  {s['project']}")
         return
 
+    # --- Rebuild from canonical events ---
+    if args.from_events:
+        if not os.path.exists(args.from_events):
+            print(f"Error: File not found: {args.from_events}", file=sys.stderr)
+            sys.exit(1)
+        print(f"Rebuilding from events: {args.from_events}")
+        with open(args.from_events, encoding="utf-8") as f:
+            events = [json.loads(line) for line in f if line.strip()]
+        print(f"  Loaded {len(events)} canonical events")
+        session_id = next((e.get("session_id") for e in events if e.get("session_id")), None)
+        _emit_outputs(events, args, session_id, write_events=False)
+        return
+
     # --- Resolve input file ---
     jsonl_path = None
     if args.jsonl_file:
@@ -898,55 +1244,8 @@ def main():
     events = session_parser.parse()
     print(f"  Extracted {len(events)} canonical events")
 
-    # --- Filter ---
-    if not args.include_thinking:
-        events_for_csv = [e for e in events if e["event_type"] != "thinking"]
-    else:
-        events_for_csv = events
-
-    if not args.include_system:
-        events_for_csv = [e for e in events_for_csv if e["role"] != "system"]
-
-    # --- Output ---
-    os.makedirs(args.output_dir, exist_ok=True)
-
-    # Derive output filenames from session ID
-    sid = session_parser.session_id[:8] if session_parser.session_id else "unknown"
-
-    # Transcript CSV
-    transcript_rows = events_to_transcript_csv(events_for_csv, emit_idle=args.emit_idle)
-    transcript_path = os.path.join(args.output_dir, f"transcript-{sid}.csv")
-    write_csv(transcript_rows, TRANSCRIPT_COLUMNS, transcript_path)
-
-    # Codes CSV
-    if not args.no_codes:
-        codes_rows = events_to_codes_csv(transcript_rows)
-        codes_path = os.path.join(args.output_dir, f"codes-{sid}.csv")
-        write_csv(codes_rows, CODES_COLUMNS, codes_path)
-
-    # Canonical events JSONL
-    if not args.no_events:
-        events_path = os.path.join(args.output_dir, f"events-{sid}.jsonl")
-        write_events_jsonl(events, events_path)
-
-    # --- Summary ---
-    print(f"\nSession: {session_parser.session_id}")
-    print(f"Project: {session_parser.project_path}")
-
-    # Count by role
-    role_counts = {}
-    for r in transcript_rows:
-        role = r["role"]
-        role_counts[role] = role_counts.get(role, 0) + 1
-    print(f"Events by role: {role_counts}")
-
-    # Count unique speakers
-    speakers = sorted(set(r["speaker"] for r in transcript_rows))
-    print(f"Speakers ({len(speakers)}): {', '.join(speakers)}")
-
-    if transcript_rows:
-        duration = transcript_rows[-1]["end"]
-        print(f"Duration: {duration:.1f}s ({duration/60:.1f}min)")
+    _emit_outputs(events, args, session_parser.session_id,
+                  project_path=session_parser.project_path)
 
 
 if __name__ == "__main__":

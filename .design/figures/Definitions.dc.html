@@ -1,0 +1,98 @@
+<!doctype html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600&display=swap">
+  <style>
+    body { margin:0; background:#fff; color:#1a1a1a; font-family:'IBM Plex Sans','Helvetica Neue',Helvetica,sans-serif; }
+    a { color:#0072B2; } a:hover { color:#005b8f; }
+    .ttl { font-size:15px; font-weight:600; }
+    .cap { font-size:11.5px; color:#555; line-height:1.55; }
+    table { border-collapse:collapse; width:100%; }
+    th, td { text-align:left; padding:13px 12px; font-size:12px; line-height:1.45; vertical-align:middle; border-bottom:1px solid #ececec; }
+    th { font-size:9.5px; font-weight:600; color:#666; text-transform:uppercase; letter-spacing:.07em; border-bottom:1px solid #bbb; padding-bottom:7px; }
+    td.lens { font-weight:600; font-size:12.5px; width:64px; }
+    .strip { position:relative; height:18px; width:150px; background:#fafafa; border:1px solid #ececec; border-radius:2px; }
+    .b { position:absolute; top:4px; height:10px; border-radius:1px; }
+    .t { position:absolute; top:2px; width:2px; height:14px; }
+  </style>
+</helmet>
+<div style="padding:30px 32px; display:flex; flex-direction:column; gap:16px;">
+
+  <div style="display:flex; flex-direction:column; gap:5px;">
+    <div class="ttl">Table X. Three ways to read the same transcript</div>
+    <div class="cap" style="max-width:96ch;">A contribution ends when the log says it concluded: a person's when they submit, the primary AI's when its turn is stamped complete, an agent's or a tool's when its result returns. That does not vary. When a contribution <em>begins</em> has three defensible answers, and each supports different questions.</div>
+  </div>
+
+  <table>
+    <tr>
+      <th style="width:64px;">Lens</th>
+      <th style="width:160px;">Shape</th>
+      <th style="width:20%;">A contribution starts</th>
+      <th style="width:19%;">A gap means</th>
+      <th style="width:21%;">Use it to see</th>
+      <th>Cannot show</th>
+    </tr>
+
+    <tr>
+      <td class="lens">Record</td>
+      <td>
+        <div class="strip">
+          <div class="t" style="left:3%; background:#E69F00;"></div>
+          <div class="t" style="left:14%; background:#0072B2;"></div>
+          <div class="t" style="left:56%; background:#CC79A7;"></div>
+          <div class="t" style="left:95%; background:#0072B2;"></div>
+        </div>
+      </td>
+      <td>the moment it ended</td>
+      <td>almost everything is a gap</td>
+      <td>exactly what was logged</td>
+      <td>how long anything took</td>
+    </tr>
+
+    <tr>
+      <td class="lens">Work</td>
+      <td>
+        <div class="strip">
+          <div class="b" style="left:0%; width:4%; background:#E69F00;"></div>
+          <div class="b" style="left:4%; width:10%; background:#0072B2;"></div>
+          <div class="b" style="left:55%; width:3%; background:#CC79A7;"></div>
+          <div class="b" style="left:58%; width:38%; background:#0072B2;"></div>
+        </div>
+      </td>
+      <td>when its author began</td>
+      <td>nobody was working</td>
+      <td>effort, idle time, concurrency</td>
+      <td>each participant's share</td>
+    </tr>
+
+    <tr style="border-bottom:none;">
+      <td class="lens">Floor</td>
+      <td>
+        <div class="strip">
+          <div class="b" style="left:0%; width:4%; background:#E69F00;"></div>
+          <div class="b" style="left:4%; width:10%; background:#0072B2;"></div>
+          <div class="b" style="left:14%; width:41%; background:#E69F00;"></div>
+          <div class="b" style="left:55%; width:3%; background:#CC79A7;"></div>
+          <div class="b" style="left:58%; width:38%; background:#0072B2;"></div>
+        </div>
+      </td>
+      <td>when the previous one ended</td>
+      <td>there are none</td>
+      <td>who held the session, and how much</td>
+      <td>idle time, and effort</td>
+    </tr>
+  </table>
+
+  <div class="cap" style="border-top:1px solid #ececec; padding-top:11px;">
+    Work is the default and what most analyses want. Record is the check to fall back on when a reading looks surprising and you need to know what was logged rather than derived. Floor is the reading closest to conversation analysis and the only one under which participation shares are meaningful, since it is the only one where the session sums to itself. Under Work, every row also carries whether its width was measured, estimated from length, or a placeholder for an act whose duration was never recorded, so a guess is never passed off as a measurement.
+  </div>
+</div>
+</x-dc>
+</body>
+</html>

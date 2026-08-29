@@ -1,0 +1,88 @@
+<!doctype html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+  <style>
+    body { margin:0; font-family: system-ui, -apple-system, 'Segoe UI', sans-serif; background:#0f1419; color:#f3f4f6; }
+    a { color:#60a5fa; } a:hover { color:#93c5fd; }
+    .lbl { font-size:10px; letter-spacing:.08em; text-transform:uppercase; color:#6b7280; }
+    td, th { text-align:left; vertical-align:top; padding:10px 12px; font-size:12px; line-height:1.4; border-bottom:1px solid #1f2937; }
+    th { color:#9ca3af; font-weight:600; font-size:10px; letter-spacing:.08em; text-transform:uppercase; }
+    .dot { width:8px; height:8px; border-radius:999px; display:inline-block; margin-right:7px; vertical-align:middle; }
+    code { font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size:11px; color:#9ca3af; }
+  </style>
+</helmet>
+<div style="padding:32px 36px; display:flex; flex-direction:column; gap:20px;">
+  <div style="display:flex; flex-direction:column; gap:6px;">
+    <div class="lbl">Transcript Explorer &middot; timing specification</div>
+    <div style="font-size:22px; font-weight:700; letter-spacing:-.01em;">What counts as a start and an end</div>
+    <div style="font-size:13px; color:#9ca3af; max-width:74ch; line-height:1.5;">Every contribution ends when the log says it concluded. Only the <strong style="color:#f3f4f6;">start</strong> is contested, and the three answers below are not competing guesses at one truth. Each measures a different mechanism, so each is correct for a different question.</div>
+  </div>
+
+  <table style="border-collapse:collapse; width:100%;">
+    <tr>
+      <th style="width:132px;">Participant</th>
+      <th style="width:150px;">End (all lenses)</th>
+      <th><span style="color:#60a5fa;">Record</span> &mdash; what was logged</th>
+      <th><span style="color:#60a5fa;">Work</span> &mdash; who was busy</th>
+      <th><span style="color:#60a5fa;">Floor</span> &mdash; whose turn it was</th>
+    </tr>
+    <tr>
+      <td><span class="dot" style="background:#e69f00;"></span>Person</td>
+      <td>Submit moment</td>
+      <td>Same as end. A tick.</td>
+      <td>Composition window, where one exists. Otherwise a tick.</td>
+      <td>From the previous participant's end.</td>
+    </tr>
+    <tr>
+      <td><span class="dot" style="background:#0072b2;"></span>Primary AI</td>
+      <td>Turn completion stamp</td>
+      <td>Same as end. A tick.</td>
+      <td>Reaches back by the recorded <code>turn_duration</code>.</td>
+      <td>From the person's submit.</td>
+    </tr>
+    <tr>
+      <td><span class="dot" style="background:#009e73;"></span>Delegated agent</td>
+      <td>Result returned</td>
+      <td>Two ticks: spawn, result.</td>
+      <td>Spawn to result, where the delegation blocked.</td>
+      <td>From spawn.</td>
+    </tr>
+    <tr>
+      <td><span class="dot" style="background:#cc79a7;"></span>Tool</td>
+      <td>Result returned</td>
+      <td>Two ticks: call, result.</td>
+      <td>Call to result.</td>
+      <td>From the caller's preceding act.</td>
+    </tr>
+    <tr style="border-bottom:none;">
+      <td colspan="2" style="color:#9ca3af;">What a gap means</td>
+      <td>Almost everything is a gap.</td>
+      <td>Nobody was working. Genuine idle.</td>
+      <td>Nothing. There are no gaps.</td>
+    </tr>
+  </table>
+
+  <div style="display:grid; grid-template-columns:repeat(3, minmax(0,1fr)); gap:14px; margin-top:2px;">
+    <div style="background:#131820; border:1px solid #1f2937; border-radius:8px; padding:14px 16px; display:flex; flex-direction:column; gap:6px;">
+      <div style="font-size:12px; font-weight:700;">Record</div>
+      <div style="font-size:11px; color:#9ca3af; line-height:1.5;">Claims nothing the log did not state. The conservative baseline, and the one to fall back to when a reviewer asks what is observation and what is inference.</div>
+    </div>
+    <div style="background:#131820; border:1px solid #1f2937; border-radius:8px; padding:14px 16px; display:flex; flex-direction:column; gap:6px;">
+      <div style="font-size:12px; font-weight:700;">Work</div>
+      <div style="font-size:11px; color:#9ca3af; line-height:1.5;">Answers &ldquo;who was busy, and for how long.&rdquo; Mixes measurement with inference, so it needs the provenance shading to stay honest.</div>
+    </div>
+    <div style="background:#131820; border:1px solid #1f2937; border-radius:8px; padding:14px 16px; display:flex; flex-direction:column; gap:6px;">
+      <div style="font-size:12px; font-weight:700;">Floor</div>
+      <div style="font-size:11px; color:#9ca3af; line-height:1.5;">Answers &ldquo;whose turn was it.&rdquo; The closest to a conversation-analytic reading, and the only lens where the session is fully accounted for.</div>
+    </div>
+  </div>
+</div>
+</x-dc>
+</body>
+</html>

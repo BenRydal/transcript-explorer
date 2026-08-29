@@ -9,11 +9,36 @@ import type { Bounds } from './types/bounds';
 import { CANVAS_SPACING } from '../constants/ui';
 import { drawPlayhead, getWordColor } from './draw-utils';
 import { DrawContext } from './draw-context';
-import { MIN_BUBBLE_SIZE, turnBubbleHeight } from './turn-chart-scaling';
+import { MIN_BUBBLE_SIZE, turnBubbleHeight, capBubbleHeight, bubbleScaleTicks } from './turn-chart-scaling';
+import { silentGaps, concurrentSpans, type ActorSpan } from './strip-intervals';
+import { actorGroupOf, groupsPresent, groupSizes, ACTOR_GROUP_LABELS, ACTOR_GROUP_COLORS, type ActorGroup } from './actor-groups';
 
+/**
+ * Duration at a precision the value can carry.
+ *
+ * Rounding everything to whole seconds made a tool call and a marker
+ * indistinguishable: both read as 0s or 1s, when the calls themselves run in
+ * milliseconds. Below a second the unit is milliseconds, below ten it keeps one
+ * decimal, and above a minute it splits so a long agent span stays readable.
+ */
 function formatDuration(seconds: number): string {
-	return `${Math.round(seconds)}s`;
+	if (seconds < 1) return `${Math.round(seconds * 1000)}ms`;
+	if (seconds < 10) return `${seconds.toFixed(1)}s`;
+	if (seconds < 60) return `${Math.round(seconds)}s`;
+	const m = Math.floor(seconds / 60);
+	const r = Math.round(seconds % 60);
+	return r === 0 ? `${m}m` : `${m}m ${r}s`;
 }
+
+/**
+ * Words of a turn shown in the tooltip before it is cut.
+ *
+ * A single AI turn runs to several thousand words, and the tooltip was built
+ * from all of them on every frame the cursor rested on a bubble. The cap is a
+ * rendering bound, not a change to the data: word counts, colouring and every
+ * other view still read the whole turn.
+ */
+const TOOLTIP_WORD_LIMIT = 100;
 
 // Vertical padding so bubbles don't touch the top/bottom edges
 const VERTICAL_PADDING = 12;
@@ -30,6 +55,8 @@ const USER_GAP_COLOR = '#c08b5c';
 const MARKER_HEIGHT = 8;
 const ROW_GAP = 2;
 const MIN_MARKER_WIDTH = 2;
+// Below this a "gap" is a rounding seam between two rows, not a pause.
+const MIN_GAP_SECONDS = 0.75;
 const LEGEND_DOT_RADIUS = 5;
 const LEGEND_DOT_LEFT_OFFSET = 8;
 const LEGEND_DOT_SPACING = 8;
@@ -82,6 +109,17 @@ export class TurnChart {
 	private maxTurnLength: number;
 	/** AI transcripts size by area; see turn-chart-scaling. */
 	private useAreaScaling: boolean;
+	/** Clip runaway proportions; see `capBubbleHeight`. */
+	private capAspect: boolean;
+	/** Lanes stand for participant kinds rather than individual actors. */
+	private groupByKind: boolean;
+	/** Colour by participant kind without collapsing the lanes. */
+	private colorByKind: boolean;
+	/** Lanes are drawn separately, either by request or because we are grouping. */
+	private separated = false;
+	/** Lane index per group, when grouping. */
+	private groupIndex: Map<ActorGroup, number> = new Map();
+	private groupLabels: string[] = [];
 
 	constructor(ctx: DrawContext, pos: Bounds) {
 		this.ctx = ctx;
@@ -108,12 +146,43 @@ export class TurnChart {
 		this.userSelectedTurn = { turn: '', color: '', xCenter: 0, yCenter: 0, width: 0, height: 0 };
 		this.yPosSeparate = this.getYPosTopSeparate();
 		this.useAreaScaling = this.ctx.transcript.sourceKind === 'ai';
+		this.capAspect = this.useAreaScaling && this.ctx.config.turnChartCapAspect !== false;
+		this.groupByKind = this.useAreaScaling && this.ctx.config.turnChartGroupByKind === true;
+		// Grouping IS a statement about lanes, so it draws lanes.
+		this.separated = this.groupByKind || this.ctx.config.separateToggle === true;
+		this.colorByKind = this.useAreaScaling && this.ctx.config.turnChartColorByKind === true;
+		if (this.groupByKind) this.buildGroups();
 		// When scaleToVisibleData is enabled, we'll compute this in draw() from visible data
 		this.maxTurnLength = this.ctx.config.scaleToVisibleData ? 0 : this.ctx.transcript.largestTurnLength;
 	}
 
+	/** Present groups, their lane order, and a label carrying each one's size. */
+	buildGroups(): void {
+		const speakers = this.ctx.users.map((u) => u.name);
+		const roles = new Map(this.ctx.users.map((u) => [u.name, u.role]));
+		const present = groupsPresent(speakers, roles);
+		const sizes = groupSizes(speakers, roles);
+		this.groupIndex = new Map(present.map((g, i) => [g, i]));
+		this.groupLabels = present.map((g) => {
+			const n = sizes.get(g) ?? 0;
+			return n > 1 ? `${ACTOR_GROUP_LABELS[g]} (${n})` : ACTOR_GROUP_LABELS[g];
+		});
+	}
+
+	/** Lane count actually drawn: groups when grouping, else speakers. */
+	private laneCount(): number {
+		return this.groupByKind ? Math.max(1, this.groupIndex.size) : this.ctx.users?.length || 0;
+	}
+
+	/** Lane index for a speaker, honouring the grouping. */
+	private laneIndexFor(speaker: string, speakerIndex: number): number {
+		if (!this.groupByKind) return speakerIndex;
+		const role = this.userMap.get(speaker)?.user.role;
+		return this.groupIndex.get(actorGroupOf(speaker, role)) ?? 0;
+	}
+
 	getYPosTopSeparate(): number {
-		const total = this.ctx.users?.length || 0;
+		const total = this.laneCount();
 		const centerIndex = (total - 1) / 2;
 		return this.yPosHalfHeight - centerIndex * this.verticalLayoutSpacing;
 	}
@@ -129,6 +198,9 @@ export class TurnChart {
 		}
 
 		this.drawTimeline();
+		if (this.separated) this.drawTimeGridlines();
+		if (this.groupByKind) this.drawGroupLabels();
+		if (this.useAreaScaling && !this.separated) this.drawScaleTicks();
 		this.ctx.sk.textSize(this.ctx.sk.toolTipTextSize);
 		for (const key in sortedAnimationWordArray) {
 			const turnArray = sortedAnimationWordArray[key];
@@ -231,6 +303,66 @@ export class TurnChart {
 		}
 	}
 
+	/** Names each grouped lane, with how many actors it stands for. */
+	drawGroupLabels(): void {
+		const sk = this.ctx.sk;
+		sk.push();
+		sk.noStroke();
+		sk.textAlign(sk.LEFT, sk.CENTER);
+		sk.textSize(Math.max(9, Math.min(12, this.bounds.height * 0.03)));
+		this.groupLabels.forEach((label, i) => {
+			sk.fill(this.ctx.theme.fgMuted);
+			sk.text(label, this.bounds.x + 4, this.yPosSeparate + this.verticalLayoutSpacing * i);
+		});
+		sk.pop();
+	}
+
+	/** Faint verticals at the axis ticks, drawn only with lanes separated. */
+	drawTimeGridlines(): void {
+		const isUntimed = this.ctx.transcript.timingMode === 'untimed';
+		if (isUntimed) return;
+
+		const sk = this.ctx.sk;
+		const numTicks = Math.min(8, Math.floor(this.bounds.width / 60));
+		if (numTicks <= 0) return;
+
+		const rule = sk.color(this.ctx.theme.fgMuted);
+		rule.setAlpha(26);
+		sk.push();
+		sk.stroke(rule);
+		sk.strokeWeight(1);
+		for (let i = 0; i <= numTicks; i++) {
+			const x = this.bounds.x + (i / numTicks) * this.bounds.width;
+			sk.line(x, this.bounds.y, x, this.bounds.y + this.bounds.height);
+		}
+		sk.pop();
+	}
+
+	/** Hairlines at round word counts, so a bubble's height reads as a quantity. */
+	drawScaleTicks(): void {
+		const ticks = bubbleScaleTicks(this.maxTurnLength, this.bounds.height, true);
+		if (ticks.length === 0) return;
+
+		const sk = this.ctx.sk;
+		const x = this.bounds.x;
+		sk.push();
+		sk.textAlign(sk.LEFT, sk.BOTTOM);
+		sk.textSize(9);
+		for (const tick of ticks) {
+			const y = this.yPosHalfHeight - tick.halfHeight;
+			const rule = sk.color(this.ctx.theme.fgMuted);
+			rule.setAlpha(38);
+			sk.stroke(rule);
+			sk.strokeWeight(1);
+			sk.line(x, y, x + this.bounds.width, y);
+
+			sk.noStroke();
+			sk.fill(this.ctx.theme.fgMuted);
+			sk.text(tick.words >= 1000 ? `${tick.words / 1000}k` : String(tick.words), x + 3, y - 1);
+		}
+		sk.pop();
+	}
+
 	/** Draws turn bubbles */
 	drawBubs(turnArray: DataPoint[], user: User, speakerIndex: number): void {
 		const turnData = turnArray[0];
@@ -241,21 +373,43 @@ export class TurnChart {
 		// widening it doesn't shift the bubble off its own time span.
 		const width = this.useAreaScaling ? Math.max(MIN_BUBBLE_SIZE, xEnd - xStart) : xEnd - xStart;
 		const xCenter = (xStart + xEnd) / 2;
-		const [height, yCenter] = this.getCoordinates(turnArray.length, speakerIndex);
+		const [height, yCenter] = this.getCoordinates(turnArray.length, this.laneIndexFor(turnData.speaker, speakerIndex));
 
-		const color = getWordColor(turnData.codes, user.color, this.ctx.codeColorMap, this.ctx.config.codeColorMode);
+		// A turn with far more words than duration draws as a needle whose most
+		// striking dimension came from a fallback constant.
+		const capped = this.capAspect ? capBubbleHeight(height, width) : { height, capped: false };
+		const drawnHeight = capped.height;
+
+		const color =
+			this.groupByKind || this.colorByKind
+				? ACTOR_GROUP_COLORS[actorGroupOf(user.name, user.role)]
+				: getWordColor(turnData.codes, user.color, this.ctx.codeColorMap, this.ctx.config.codeColorMode);
 		this.setStrokes(this.ctx.sk.color(color));
-		this.ctx.sk.ellipse(xCenter, yCenter, width, height);
+		this.ctx.sk.ellipse(xCenter, yCenter, width, drawnHeight);
+		if (capped.capped) this.drawCapMarks(xCenter, yCenter, width, drawnHeight, color);
 
-		if (this.ctx.sk.overRect(xCenter - width / 2, yCenter - height / 2, width, height)) {
-			this.userSelectedTurn = { turn: turnArray, color, xCenter, yCenter, width, height };
+		if (this.ctx.sk.overRect(xCenter - width / 2, yCenter - drawnHeight / 2, width, drawnHeight)) {
+			this.userSelectedTurn = { turn: turnArray, color, xCenter, yCenter, width, height: drawnHeight };
 		}
+	}
+
+	/** Notches a clipped mark top and bottom, so it reads as off the scale. */
+	drawCapMarks(xCenter: number, yCenter: number, width: number, height: number, color: string): void {
+		const sk = this.ctx.sk;
+		const half = Math.max(2, Math.min(width, 10)) / 2;
+		sk.push();
+		sk.stroke(color);
+		sk.strokeWeight(1.5);
+		sk.noFill();
+		sk.line(xCenter - half, yCenter - height / 2, xCenter + half, yCenter - height / 2);
+		sk.line(xCenter - half, yCenter + height / 2, xCenter + half, yCenter + height / 2);
+		sk.pop();
 	}
 
 	/** Determines the coordinates for turn bubbles */
 	getCoordinates(turnLength: number, speakerIndex: number): [number, number] {
 		let lane: number, yCenter: number;
-		if (this.ctx.config.separateToggle) {
+		if (this.separated) {
 			lane = this.verticalLayoutSpacing;
 			yCenter = this.yPosSeparate + this.verticalLayoutSpacing * speakerIndex;
 		} else {
@@ -273,17 +427,28 @@ export class TurnChart {
 
 	drawText(turnArray: DataPoint[], speakerColor: string): void {
 		const speaker = turnArray[0].speaker;
-		const combined = turnArray.map((e) => e.word).join(' ');
+		const provenance = turnArray[0].provenance;
+		const truncated = turnArray.length > TOOLTIP_WORD_LIMIT;
+		const shown = truncated ? turnArray.slice(0, TOOLTIP_WORD_LIMIT) : turnArray;
+		const combined =
+			shown.map((e) => e.word).join(' ') +
+			(truncated ? ` <span style="opacity: 0.6">... ${turnArray.length - TOOLTIP_WORD_LIMIT} more words</span>` : '');
 		// Under area scaling the bubble is no longer a direct readout of turn
 		// length, so the exact count belongs in the tooltip.
 		const heading = this.useAreaScaling
 			? `<b>${speaker}</b> <span style="font-size: 0.85em; opacity: 0.7">· ${turnArray.length} words</span>`
 			: `<b>${speaker}</b>`;
-		showTooltip(this.ctx.sk.mouseX, this.ctx.sk.mouseY, `${heading}\n${combined}`, speakerColor, this.panelBottom);
+		// Most agentic durations were never measured. Encoding that in the mark
+		// read as a rendering fault, so it lives here.
+		const note =
+			provenance !== undefined && provenance !== 'measured'
+				? `\n<span style="font-size: 0.85em; opacity: 0.7">Duration ${provenance === 'marker' ? 'not recorded' : 'estimated'}</span>`
+				: '';
+		showTooltip(this.ctx.sk.mouseX, this.ctx.sk.mouseY, `${heading}\n${combined}${note}`, speakerColor, this.panelBottom);
 	}
 
 	getVerticalLayoutSpacing(height: number): number {
-		return height / this.ctx.users.length;
+		return height / Math.max(1, this.laneCount());
 	}
 
 	getPixelValueFromTime(timeValue: number): number {
@@ -413,48 +578,54 @@ export class TurnChart {
 		return { label: 'Model working', color: GAP_COLOR };
 	}
 
+	/** One band per stretch of parallel work, not one per pair of speakers. */
 	private buildOverlapMarkers(turns: TurnRange[], rowY: number): AnnotationMarker[] {
 		const markers: AnnotationMarker[] = [];
-		for (let i = 0; i < turns.length; i++) {
-			for (let j = i + 1; j < turns.length; j++) {
-				if (turns[j].startTime >= turns[i].endTime) break;
-				if (turns[j].speaker === turns[i].speaker) continue;
-				const start = Math.max(turns[i].startTime, turns[j].startTime);
-				const end = Math.min(turns[i].endTime, turns[j].endTime);
-				if (end <= start) continue;
-				const x = this.getPixelValueFromTime(start);
-				const xEnd = this.getPixelValueFromTime(end);
-				const duration = end - start;
-				markers.push({
-					x,
-					w: Math.max(MIN_MARKER_WIDTH, xEnd - x),
-					y: rowY,
-					h: MARKER_HEIGHT,
-					color: this.ctx.theme.danger,
-					firstDataPoint: turns[j].firstDataPoint,
-					tooltipContent: `<b>${this.overlapLabel} · ${formatDuration(duration)}</b>\n<span style="font-size: 0.85em; opacity: 0.7"><span style="color: ${this.userMap.get(turns[i].speaker)?.user.color ?? '#fff'}">${turns[i].speaker}</span> & <span style="color: ${this.userMap.get(turns[j].speaker)?.user.color ?? '#fff'}">${turns[j].speaker}</span>\n${formatTimeCompact(start)} - ${formatTimeCompact(end)}</span>`
-				});
-			}
+		const isAi = this.ctx.transcript.sourceKind === 'ai';
+		const spans: ActorSpan[] = turns
+			.filter((t) => !isAi || !this.isHumanSpeaker(t.speaker))
+			.map((t) => ({ speaker: t.speaker, start: t.startTime, end: t.endTime }));
+
+		for (const span of concurrentSpans(spans, 2, MIN_GAP_SECONDS)) {
+			const x = this.getPixelValueFromTime(span.start);
+			const xEnd = this.getPixelValueFromTime(span.end);
+			const duration = span.end - span.start;
+			markers.push({
+				x,
+				w: Math.max(MIN_MARKER_WIDTH, xEnd - x),
+				y: rowY,
+				h: MARKER_HEIGHT,
+				color: this.ctx.theme.danger,
+				firstDataPoint: turns[0].firstDataPoint,
+				tooltipContent: `<b>${this.overlapLabel} · ${formatDuration(duration)}</b>\n<span style="font-size: 0.85em; opacity: 0.7">${span.peak} at once\n${formatTimeCompact(span.start)} - ${formatTimeCompact(span.end)}</span>`
+			});
 		}
 		return markers;
 	}
 
+	/** Silence is where nothing is active: the complement of the merged turns. */
 	private buildGapMarkers(turns: TurnRange[], rowY: number): AnnotationMarker[] {
 		const markers: AnnotationMarker[] = [];
-		for (let i = 0; i < turns.length - 1; i++) {
-			const gapDuration = turns[i + 1].startTime - turns[i].endTime;
-			if (gapDuration <= 0) continue;
-			const x = this.getPixelValueFromTime(turns[i].endTime);
-			const xEnd = this.getPixelValueFromTime(turns[i + 1].startTime);
-			const { label, color } = this.gapAttribution(turns[i + 1].speaker);
+		const spans = turns.map((t) => ({ start: t.startTime, end: t.endTime }));
+		const from = this.ctx.timeline.leftMarker;
+		const to = this.ctx.timeline.rightMarker;
+
+		for (const gap of silentGaps(spans, from, to, MIN_GAP_SECONDS)) {
+			const gapDuration = gap.end - gap.start;
+			// Whoever speaks next owns the pause; they are the party preparing.
+			const next = turns.find((t) => t.startTime >= gap.end);
+			const previous = [...turns].reverse().find((t) => t.endTime <= gap.start);
+			const x = this.getPixelValueFromTime(gap.start);
+			const xEnd = this.getPixelValueFromTime(gap.end);
+			const { label, color } = this.gapAttribution(next?.speaker ?? '');
 			markers.push({
 				x,
 				w: Math.max(MIN_MARKER_WIDTH, xEnd - x),
 				y: rowY,
 				h: MARKER_HEIGHT,
 				color,
-				firstDataPoint: turns[i].firstDataPoint,
-				tooltipContent: `<b>${label} · ${formatDuration(gapDuration)}</b>\n<span style="font-size: 0.85em; opacity: 0.7"><span style="color: ${this.userMap.get(turns[i].speaker)?.user.color ?? '#fff'}">${turns[i].speaker}</span> → <span style="color: ${this.userMap.get(turns[i + 1].speaker)?.user.color ?? '#fff'}">${turns[i + 1].speaker}</span>\n${formatTimeCompact(turns[i].endTime)} - ${formatTimeCompact(turns[i + 1].startTime)}</span>`
+				firstDataPoint: (previous ?? next ?? turns[0]).firstDataPoint,
+				tooltipContent: `<b>${label} · ${formatDuration(gapDuration)}</b>\n<span style="font-size: 0.85em; opacity: 0.7">nobody active\n${formatTimeCompact(gap.start)} - ${formatTimeCompact(gap.end)}</span>`
 			});
 		}
 		return markers;

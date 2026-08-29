@@ -11,15 +11,7 @@ const ROLE_COLUMN = 'role';
 const EVENT_TYPE_COLUMN = 'event_type';
 
 const KNOWN_ROLES = new Set(['user', 'assistant', 'tool', 'agent', 'system']);
-const KNOWN_EVENT_TYPES = new Set([
-	'message',
-	'tool_call',
-	'tool_result',
-	'agent_spawn',
-	'agent_result',
-	'thinking',
-	'idle'
-]);
+const KNOWN_EVENT_TYPES = new Set(['message', 'tool_call', 'tool_result', 'agent_spawn', 'agent_result', 'thinking', 'idle']);
 
 /** Share of rows that must carry recognised values before we infer AI. */
 const AGREEMENT_THRESHOLD = 0.9;
@@ -44,7 +36,9 @@ const AGREEMENT_THRESHOLD = 0.9;
 export function detectSourceKind(rows: Record<string, unknown>[]): SourceKind {
 	if (!rows.length) return 'human';
 
-	const declared = String(rows[0][SOURCE_KIND_COLUMN] ?? '').trim().toLowerCase();
+	const declared = String(rows[0][SOURCE_KIND_COLUMN] ?? '')
+		.trim()
+		.toLowerCase();
 	if (declared === 'ai') return 'ai';
 	if (declared === 'human') return 'human';
 
@@ -54,8 +48,22 @@ export function detectSourceKind(rows: Record<string, unknown>[]): SourceKind {
 	let roleHits = 0;
 	let eventHits = 0;
 	for (const row of rows) {
-		if (KNOWN_ROLES.has(String(row[ROLE_COLUMN] ?? '').trim().toLowerCase())) roleHits++;
-		if (KNOWN_EVENT_TYPES.has(String(row[EVENT_TYPE_COLUMN] ?? '').trim().toLowerCase())) eventHits++;
+		if (
+			KNOWN_ROLES.has(
+				String(row[ROLE_COLUMN] ?? '')
+					.trim()
+					.toLowerCase()
+			)
+		)
+			roleHits++;
+		if (
+			KNOWN_EVENT_TYPES.has(
+				String(row[EVENT_TYPE_COLUMN] ?? '')
+					.trim()
+					.toLowerCase()
+			)
+		)
+			eventHits++;
 	}
 
 	const enough = rows.length * AGREEMENT_THRESHOLD;
@@ -81,13 +89,15 @@ const ROLE_PRECEDENCE: SpeakerRole[] = ['agent', 'assistant', 'tool', 'system', 
  * invoke this for human transcripts. Callers may treat `user` as identifying
  * the human participant, which holds because of the precedence above.
  */
-export function collectSpeakerRoles(
-	rows: Record<string, unknown>[]
-): Map<string, SpeakerRole> {
+export function collectSpeakerRoles(rows: Record<string, unknown>[]): Map<string, SpeakerRole> {
 	const roles = new Map<string, SpeakerRole>();
 	for (const row of rows) {
-		const speaker = String(row['speaker'] ?? '').trim().toUpperCase();
-		const role = String(row[ROLE_COLUMN] ?? '').trim().toLowerCase();
+		const speaker = String(row['speaker'] ?? '')
+			.trim()
+			.toUpperCase();
+		const role = String(row[ROLE_COLUMN] ?? '')
+			.trim()
+			.toLowerCase();
 		if (!speaker || !KNOWN_ROLES.has(role)) continue;
 		const current = roles.get(speaker);
 		if (current === undefined || ROLE_PRECEDENCE.indexOf(role as SpeakerRole) < ROLE_PRECEDENCE.indexOf(current)) {

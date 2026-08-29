@@ -99,6 +99,7 @@
 
 	// Sidebar panels
 	import VizPanel from '$lib/panels/VizPanel.svelte';
+	import ActiveFilterBar from '$lib/components/ActiveFilterBar.svelte';
 	import FiltersPanel from '$lib/panels/FiltersPanel.svelte';
 	import DataPanel from '$lib/panels/DataPanel.svelte';
 	import SettingsPanel from '$lib/panels/SettingsPanel.svelte';
@@ -119,7 +120,8 @@
 		}
 		const mapping = buildFinalMapping(preview.columnMatches, preview.columnOverrides);
 		const remapped = remapData(preview.rawData, mapping);
-		const parseResult = parseCSVRows(remapped, get(AppSettingsStore).speechRateWordsPerSecond);
+		const settings = get(AppSettingsStore);
+		const parseResult = parseCSVRows(remapped, settings.speechRateWordsPerSecond, settings.timingLens);
 		if (parseResult.turns.length === 0) {
 			return { ...preview, ...emptyStats, error: 'No valid turns found after mapping columns.' };
 		}
@@ -215,6 +217,24 @@
 	// null on close, which would blank the panel body mid-exit  -  so we retain
 	// the last non-null tab and render the body/title off that during the
 	// closing transition. It updates only when a real tab is active.
+	// Rows of the loaded AI transcript, retained so that changing the timing
+	// lens can re-derive turn times without re-reading the file. Word times are
+	// copied from their turn at parse time, so a lens change is a re-parse
+	// rather than a redraw. Null for human transcripts and before any load.
+	let lastParsedRows: Record<string, unknown>[] | null = null;
+	let appliedLens = $state(get(AppSettingsStore).timingLens);
+
+	$effect(() => {
+		const lens = $AppSettingsStore.timingLens;
+		if (!lastParsedRows || lens === appliedLens) return;
+		appliedLens = lens;
+		const settings = get(AppSettingsStore);
+		const parsed = parseCSVRows(lastParsedRows, settings.speechRateWordsPerSecond, lens);
+		if (parsed.turns.length > 0) {
+			applyTranscriptResult(createTranscriptFromParsedText(parsed, parsed.detectedTimingMode));
+		}
+	});
+
 	let lastSidebarTab = $state($UIStateStore.activeSidebarTab);
 	$effect(() => {
 		if ($UIStateStore.activeSidebarTab !== null) {
@@ -921,8 +941,12 @@
 				if (!isValid) {
 					throw new Error('Invalid CSV format. Required columns: "speaker" and "content".');
 				}
-				const speechRate = get(AppSettingsStore).speechRateWordsPerSecond;
-				const parseResult = parseCSVRows(results.data, speechRate);
+				const settings = get(AppSettingsStore);
+				const parseResult = parseCSVRows(results.data, settings.speechRateWordsPerSecond, settings.timingLens);
+				// Kept so a timing-lens change can re-derive turn times without
+				// re-reading the file: the lens picks a different start column,
+				// and word times are copied from the turn at parse time.
+				lastParsedRows = results.data as Record<string, unknown>[];
 				if (parseResult.turns.length === 0) {
 					throw new Error('No valid turns found in CSV. Check that rows have speaker and content values.');
 				}
@@ -1306,8 +1330,9 @@
 						onresize={handlePanelResize}
 					>
 						{#snippet first()}
-							<main class="h-full relative" id="main-content" tabindex="-1" aria-label="Transcript visualization workspace">
-								<div class="h-full relative" id="p5-container" data-tour="visualization">
+							<main class="te-canvas-main" id="main-content" tabindex="-1" aria-label="Transcript visualization workspace">
+								<ActiveFilterBar />
+								<div class="relative te-canvas-stage" id="p5-container" data-tour="visualization">
 									<!-- SR-only description so a screen-reader user knows
 							     a canvas-rendered visualization lives here. Using
 							     a hidden caption avoids role="img" on the outer
@@ -1500,6 +1525,21 @@
 		.te-sidepanel-shell {
 			transition: none;
 		}
+	}
+
+	/* The canvas column: the active-filter strip takes the height it needs and
+	   the p5 stage takes the rest, so the bar never sits over the canvas. */
+	.te-canvas-main {
+		display: flex;
+		flex-direction: column;
+		height: 100%;
+		min-height: 0;
+		position: relative;
+	}
+
+	.te-canvas-stage {
+		flex: 1 1 auto;
+		min-height: 0;
 	}
 
 	/* Timeline region (bottom bar): inset the TimelineScrubber from the

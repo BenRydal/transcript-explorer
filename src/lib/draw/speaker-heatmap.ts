@@ -7,13 +7,12 @@ import { withDimming, formatTurnPreviewLines, getCrossHighlight, getDominantCode
 import { normalizeWord } from '../core/string-utils';
 import { DrawContext } from './draw-context';
 import { registerVizCacheReset } from './viz-cache-registry';
+import { cellOpacity, EMPTY_CELL_OPACITY, isAutoBinCount } from './heatmap-scaling';
 
 const LEFT_MARGIN = 100;
 const BOTTOM_MARGIN = 30;
 const MAX_MARGIN_RATIO = 0.3;
 const CELL_PADDING = 1;
-const MIN_OPACITY = 10;
-const MAX_OPACITY = 230;
 const HOVER_OUTLINE_WEIGHT = 2;
 const TIME_LABEL_COUNT = 6;
 const TARGET_CELL_WIDTH = 15;
@@ -47,16 +46,21 @@ interface HoveredCell {
 export class SpeakerHeatmap {
 	private ctx: DrawContext;
 	private bounds: Bounds;
+	/** AI transcripts shade by a log map; see heatmap-scaling. */
+	private useLogScaling: boolean;
 
 	constructor(ctx: DrawContext, bounds: Bounds) {
 		this.ctx = ctx;
 		this.bounds = bounds;
+		this.useLogScaling = this.ctx.transcript.sourceKind === 'ai';
 	}
 
 	draw(words: DataPoint[]): { hoveredCell: DataPoint | null; hoveredSpeaker: string | null } {
 		const speakers = this.ctx.users.filter((u) => u.enabled).map((u) => u.name);
 		const grid = this.getGridBounds();
-		const numBins = this.ctx.config.heatmapBinCount > 0 ? this.ctx.config.heatmapBinCount : Math.max(1, Math.floor(grid.width / TARGET_CELL_WIDTH));
+		const numBins = isAutoBinCount(this.ctx.config.heatmapBinCount)
+			? Math.max(1, Math.floor(grid.width / TARGET_CELL_WIDTH))
+			: Math.max(1, this.ctx.config.heatmapBinCount);
 
 		if (speakers.length === 0) return { hoveredCell: null, hoveredSpeaker: null };
 
@@ -114,6 +118,13 @@ export class SpeakerHeatmap {
 	private drawCells(binnedData: BinnedData, speakers: string[], grid: Bounds, cellWidth: number, cellHeight: number, searchTerm: string): void {
 		const crossHighlight = getCrossHighlight(this.ctx.sk, this.bounds, this.ctx.config.dashboardToggle, this.ctx.hover);
 
+		// Empty-cell "no data" tile  -  a muted canvas tone, not white (white
+		// blows out on dark theme), held below the quietest populated cell so
+		// having data always reads as stronger than having none. Built once:
+		// this loop runs to a couple of thousand cells a frame.
+		const emptyCellColor = this.ctx.sk.color(this.ctx.theme.borderMuted);
+		emptyCellColor.setAlpha(EMPTY_CELL_OPACITY);
+
 		this.ctx.sk.noStroke();
 		for (let col = 0; col < binnedData.bins.length; col++) {
 			const bin = binnedData.bins[col];
@@ -138,7 +149,10 @@ export class SpeakerHeatmap {
 							this.ctx.codeColorMap,
 							this.ctx.config.codeColorMode
 						);
-						let alpha = this.ctx.sk.map(cellWords.length, 0, binnedData.maxCellCount, MIN_OPACITY, MAX_OPACITY);
+						let alpha = cellOpacity(cellWords.length, binnedData.maxCellCount, this.useLogScaling);
+						// Drops a non-matching cell below even the empty tile, which
+						// is the point  -  under search, only matches should read as
+						// present.
 						if (searchTerm && !this.cellMatchesSearch(cellWords, searchTerm)) {
 							alpha *= 0.2;
 						}
@@ -146,9 +160,7 @@ export class SpeakerHeatmap {
 						c.setAlpha(alpha);
 						this.ctx.sk.fill(c);
 					} else {
-						// Empty-cell "no data" tile  -  muted canvas tone, not
-						// white (white blows out on dark theme).
-						this.ctx.sk.fill(this.ctx.theme.borderMuted);
+						this.ctx.sk.fill(emptyCellColor);
 					}
 					this.ctx.sk.rect(x, y, cw, ch);
 				});

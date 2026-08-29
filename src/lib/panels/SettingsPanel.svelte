@@ -13,6 +13,14 @@
 
 	const SPEAKER_PALETTE_ENTRIES = Object.entries(SPEAKER_PALETTES) as [SpeakerPaletteChoice, (typeof SPEAKER_PALETTES)[SpeakerPaletteChoice]][];
 
+	// One line each, phrased as what a bar and a gap then mean. The words
+	// record, work and floor do not have to carry the meaning on their own.
+	const TIMING_LENS_HINT: Record<TimingLens, string> = {
+		record: 'Every contribution is an instant, exactly as logged. Nothing is inferred.',
+		work: 'Bars are time spent working, measured where the log measured it. A gap means nobody was working.',
+		floor: 'Each contribution runs from the last one, so the session has no gaps. Bars show whose turn it was.'
+	};
+
 	function setVizField<K extends keyof VizStoreType>(key: K, value: VizStoreType[K]) {
 		VizStore.update((store) => ({ ...store, [key]: value }));
 	}

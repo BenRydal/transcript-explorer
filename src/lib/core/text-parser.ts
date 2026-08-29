@@ -16,10 +16,13 @@ import { normalizeSpeakerName } from './string-utils';
 import type { SourceKind } from '../../models/transcript';
 import type { SpeakerRole } from '../../models/user';
 import type { TimingMode } from '../../models/transcript';
+import type { TimingProvenance } from '../../models/dataPoint';
 
 // ============ Types ============
 
 export interface ParsedTurn {
+	/** How the converter arrived at this row's timing, when it says. */
+	provenance?: TimingProvenance;
 	speaker: string;
 	content: string;
 	startTime: number | null;

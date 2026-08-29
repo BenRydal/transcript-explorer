@@ -1,0 +1,74 @@
+<!doctype html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+  <style>
+    body { margin:0; font-family: system-ui, -apple-system, 'Segoe UI', sans-serif; background:#0f1419; color:#f3f4f6; }
+    a { color:#60a5fa; } a:hover { color:#93c5fd; }
+    .lbl { font-size:10px; letter-spacing:.08em; text-transform:uppercase; color:#6b7280; }
+    .row { position:relative; height:34px; border-bottom:1px solid #1f2937; }
+    .bar { position:absolute; top:8px; height:18px; border-radius:3px; }
+    .tick { position:absolute; top:5px; width:3px; height:24px; border-radius:2px; }
+    .name { position:absolute; left:0; top:10px; font-size:11px; color:#9ca3af; width:74px; }
+    .track { position:absolute; left:84px; right:0; top:0; bottom:0; }
+    .caption { font-size:11px; color:#9ca3af; line-height:1.5; }
+  </style>
+</helmet>
+<div style="padding:30px 34px; display:flex; flex-direction:column; gap:18px;">
+  <div style="display:flex; flex-direction:column; gap:5px;">
+    <div class="lbl">The same 43 seconds, read three ways</div>
+    <div style="font-size:20px; font-weight:700; letter-spacing:-.01em;">One exchange, three lenses</div>
+    <div class="caption" style="max-width:78ch;">Real rows from <code style="font-family:ui-monospace,Menlo,monospace; font-size:10px;">web-design-chat</code>. The person submits at 21.3s; the model's turn is stamped complete at 42.6s having taken a recorded 21.2s. Nothing below is invented &mdash; the lenses differ only in which mechanism they choose to draw.</div>
+  </div>
+
+  <div style="display:flex; flex-direction:column; gap:16px;">
+
+    <div>
+      <div style="font-size:12px; font-weight:700; margin-bottom:4px;">Record <span style="font-weight:400; color:#6b7280;">&mdash; only what was logged</span></div>
+      <div class="row"><div class="name">Person</div><div class="track">
+        <div class="tick" style="left:4%; background:#e69f00;"></div>
+        <div class="tick" style="left:49%; background:#e69f00;"></div>
+      </div></div>
+      <div class="row"><div class="name">Primary AI</div><div class="track">
+        <div class="tick" style="left:6%; background:#0072b2;"></div>
+        <div class="tick" style="left:98%; background:#0072b2;"></div>
+      </div></div>
+      <div class="caption" style="margin-top:6px;">Four ticks. Honest and nearly unreadable &mdash; you can see order but not effort.</div>
+    </div>
+
+    <div>
+      <div style="font-size:12px; font-weight:700; margin-bottom:4px;">Work <span style="font-weight:400; color:#6b7280;">&mdash; who was busy</span></div>
+      <div class="row"><div class="name">Person</div><div class="track">
+        <div class="bar" style="left:0%; width:4%; background:#e69f00;"></div>
+        <div class="bar" style="left:49%; width:1.5%; background:#e69f00; opacity:.45; border:1px dashed #e69f00;"></div>
+      </div></div>
+      <div class="row"><div class="name">Primary AI</div><div class="track">
+        <div class="bar" style="left:4%; width:2%; background:#0072b2;"></div>
+        <div class="bar" style="left:50.5%; width:47.5%; background:#0072b2;"></div>
+      </div></div>
+      <div class="caption" style="margin-top:6px;">Solid is measured, dashed is estimated. The 21-second stretch after the submit is the model working, and the log measured it. The gap from 2.7s to 21.3s is real idle: the person reading.</div>
+    </div>
+
+    <div>
+      <div style="font-size:12px; font-weight:700; margin-bottom:4px;">Floor <span style="font-weight:400; color:#6b7280;">&mdash; whose turn it was</span></div>
+      <div class="row"><div class="name">Person</div><div class="track">
+        <div class="bar" style="left:0%; width:4%; background:#e69f00;"></div>
+        <div class="bar" style="left:6%; width:43%; background:#e69f00;"></div>
+      </div></div>
+      <div class="row"><div class="name">Primary AI</div><div class="track">
+        <div class="bar" style="left:4%; width:2%; background:#0072b2;"></div>
+        <div class="bar" style="left:49%; width:49%; background:#0072b2;"></div>
+      </div></div>
+      <div class="caption" style="margin-top:6px;">No gaps. Every second belongs to someone, and the ratio between the two rows is the division of labour. This is the reading closest to conversation analysis.</div>
+    </div>
+
+  </div>
+</div>
+</x-dc>
+</body>
+</html>
