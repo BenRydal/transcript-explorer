@@ -62,6 +62,8 @@ Each conversion produces three files:
 | `model` | AI model used | `claude-opus-4-6` |
 | `tokens_out` | Output tokens | `139` |
 | `event_id` | UUID for cross-referencing | UUID string |
+| `tool_use_id` | Joins a call to the result that answers it | `toolu_01H8S2oG1n` |
+| `parent_event_id` | The event this one answers or follows | UUID string |
 | `content_type` | Content format | `text`, `code`, `thinking`, `error` |
 
 ### Codes CSV Schema
