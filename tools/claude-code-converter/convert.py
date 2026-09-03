@@ -76,6 +76,14 @@ _HOME_DIR = re.compile(r"(?:/tmp/[\w.-]+/|/home/[\w.-]+/|/Users/[\w.-]+/)[\w./-]
 _TASK_NOTIFICATION_OPEN = "<task-notification>"
 
 
+def _has_tool_result(content) -> bool:
+    """True if a message body carries a tool_result block."""
+    return isinstance(content, list) and any(
+        isinstance(block, dict) and block.get("type") == "tool_result"
+        for block in content
+    )
+
+
 def _tagged(tag: str, text: str) -> str:
     """Contents of the first `<tag>...</tag>` in `text`, or empty."""
     match = re.search(rf"<{tag}>(.*?)</{tag}>", text, re.DOTALL)
@@ -230,6 +238,9 @@ class SessionParser:
         # own message, and those kept because nothing else recorded them.
         self.notifications_deduped = 0
         self.notifications_kept = 0
+        # Harness-injected `user` entries dropped: image attachment notes, skill
+        # preambles, install declines. See the isMeta skip in _walk_entries.
+        self.meta_skipped = 0
         self.entries: list[dict] = []
         self.events: list[dict] = []
         self.session_id: str = ""
@@ -430,6 +441,24 @@ class SessionParser:
             if entry_type == "user":
                 message = entry.get("message", {})
                 content = message.get("content", "")
+
+                # The harness speaks through the person's channel: an image
+                # attachment note for a screenshot Claude itself read, a skill's
+                # base directory, a declined install. `isMeta` is how Claude
+                # Code marks those, and it is the only thing separating them
+                # from a typed prompt — without this they land in the transcript
+                # as human turns nobody took.
+                #
+                # Only in the main session, though. A sub-agent file marks the
+                # coordinator's mid-flight instructions isMeta too, and those
+                # are real: Claude wrote them and the agent acted on them. They
+                # arrive on the agent's own channel, not the person's, which is
+                # what isSidechain distinguishes. Tool results are never isMeta,
+                # but check for one anyway rather than trust that.
+                if (entry.get("isMeta") and not entry.get("isSidechain")
+                        and not _has_tool_result(content)):
+                    self.meta_skipped += 1
+                    continue
 
                 # Plain text user message
                 if isinstance(content, str):
@@ -1434,6 +1463,9 @@ def main():
     if session_parser.notifications_deduped or session_parser.notifications_kept:
         print(f"  Task notifications: {session_parser.notifications_deduped} dropped as "
               f"redelivery, {session_parser.notifications_kept} kept as agent results")
+    if session_parser.meta_skipped:
+        print(f"  Harness-injected user entries: {session_parser.meta_skipped} skipped "
+              f"(isMeta — image notes, skill preambles)")
 
     _emit_outputs(events, args, session_parser.session_id,
                   project_path=session_parser.project_path)
