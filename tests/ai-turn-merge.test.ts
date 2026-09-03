@@ -1,6 +1,6 @@
 /**
- * No bundled CSV carries `tool_use_id`, so these exercise the order fallback,
- * which is the path that runs on every existing session.
+ * The web-design sessions carry `tool_use_id`; the cs and trip ones predate it.
+ * Both pairing paths therefore run across AI_SESSIONS.
  */
 
 import { readFileSync } from 'node:fs';
