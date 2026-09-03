@@ -43,8 +43,16 @@ export function actorGroupOf(speaker: string, role: SpeakerRole | undefined): Ac
 /**
  * Groups present in a set of speakers, in display order. Empty groups are
  * dropped so a chat transcript does not draw two empty lanes.
+ *
+ * `keepEmpty` overrides that for figure capture. Lane height is the drawing
+ * area divided by the lane count, so dropping empty groups gives a chat
+ * transcript 2 lanes against a multi-agent transcript's 4 and makes the same
+ * turn length draw twice as tall in the quieter session. Keeping all four
+ * fixes the divisor, and the empty lanes are themselves the finding: this
+ * session had no agents and no tools.
  */
-export function groupsPresent(speakers: readonly string[], roles: ReadonlyMap<string, SpeakerRole | undefined>): ActorGroup[] {
+export function groupsPresent(speakers: readonly string[], roles: ReadonlyMap<string, SpeakerRole | undefined>, keepEmpty = false): ActorGroup[] {
+	if (keepEmpty) return [...ACTOR_GROUP_ORDER];
 	const seen = new Set<ActorGroup>();
 	for (const speaker of speakers) seen.add(actorGroupOf(speaker, roles.get(speaker)));
 	return ACTOR_GROUP_ORDER.filter((g) => seen.has(g));

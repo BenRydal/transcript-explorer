@@ -12,6 +12,7 @@ import { DrawContext } from './draw-context';
 import { MIN_BUBBLE_SIZE, turnBubbleHeight, capBubbleHeight, bubbleScaleTicks } from './turn-chart-scaling';
 import { silentGaps, concurrentSpans, type ActorSpan } from './strip-intervals';
 import { actorGroupOf, groupsPresent, groupSizes, ACTOR_GROUP_LABELS, ACTOR_GROUP_COLORS, type ActorGroup } from './actor-groups';
+import { isScaleLockEnabled } from '../core/scale-lock';
 
 /**
  * Duration at a precision the value can carry.
@@ -160,11 +161,13 @@ export class TurnChart {
 	buildGroups(): void {
 		const speakers = this.ctx.users.map((u) => u.name);
 		const roles = new Map(this.ctx.users.map((u) => [u.name, u.role]));
-		const present = groupsPresent(speakers, roles);
+		const present = groupsPresent(speakers, roles, isScaleLockEnabled());
 		const sizes = groupSizes(speakers, roles);
 		this.groupIndex = new Map(present.map((g, i) => [g, i]));
 		this.groupLabels = present.map((g) => {
 			const n = sizes.get(g) ?? 0;
+			// A locked lane with no speakers says so, rather than reading as one.
+			if (n === 0) return `${ACTOR_GROUP_LABELS[g]} (0)`;
 			return n > 1 ? `${ACTOR_GROUP_LABELS[g]} (${n})` : ACTOR_GROUP_LABELS[g];
 		});
 	}

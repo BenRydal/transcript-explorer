@@ -8,6 +8,7 @@ import P5Store from '../../stores/p5Store';
 import { clearState } from './persistence';
 import { getMaxTime, applyTimingModeToWordArray } from './timing-utils';
 import { resetVizCaches } from '../draw/viz-cache-registry';
+import { applyScaleLock } from './scale-lock';
 import type { TranscriptCreationResult } from './transcript-factory';
 
 /**
@@ -38,6 +39,10 @@ export function applyTranscriptResult({ transcript, users }: TranscriptCreationR
 	const maxTime = getMaxTime(transcript.wordArray);
 	transcript.totalTimeInSeconds = maxTime;
 
+	// Last write to the maxima wins, so this sits after the duration is settled
+	// and before the store read that the draw layer scales against.
+	const lockedEnd = applyScaleLock(transcript);
+
 	// Free draw-layer caches (GPU buffer + memos keyed on the old wordArray)
 	// before the store writes so the next frame starts clean.
 	resetVizCaches();
@@ -45,7 +50,7 @@ export function applyTranscriptResult({ transcript, users }: TranscriptCreationR
 	UserStore.set(users);
 	TranscriptStore.set(transcript);
 
-	const timelineEnd = timelineEndOverride ?? maxTime;
+	const timelineEnd = lockedEnd ?? timelineEndOverride ?? maxTime;
 	TimelineStore.update((timeline) => ({
 		...timeline,
 		startTime: 0,

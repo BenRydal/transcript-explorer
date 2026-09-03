@@ -1,0 +1,76 @@
+/**
+ * Pins every visualization's data domain to one fixed set of maxima, so figures
+ * captured from different transcripts can be read against each other.
+ *
+ * Each viz normally scales to its own transcript: bubble height runs to that
+ * file's longest turn, bloom radius to its wordiest speaker, cloud text size to
+ * its most repeated word. That is the right default — it spends the full pixel
+ * range on the data in front of you — but it makes two screenshots
+ * incomparable. A 3,476-word turn fills the lane in `web-design-chat` and
+ * reaches half height in `web-design-multi-agent`, and nothing on either image
+ * says so.
+ *
+ * The lock is opt-in via `?lockScales`, not a change to
+ * `calculateTranscriptStats`, because the per-file domain is what the app should
+ * do when nobody is assembling a figure. It is a capture aid, not a setting.
+ */
+
+import type { Transcript } from '../../models/transcript';
+
+/**
+ * The pinned domain: the largest value each driver takes across the three
+ * `web-design-*` sessions, which `web-design-multi-agent` holds in every case.
+ *
+ * Taking the maximum rather than a round number is what keeps the lock lossless
+ * — every scale in the app runs to its domain max without clipping, so the
+ * busiest dataset still renders exactly as it does unlocked, and the quieter two
+ * shrink to their true share of it.
+ *
+ * These are data, not thresholds. Re-measure them when the example CSVs change:
+ * a locked domain smaller than a transcript's real spread silently clamps the
+ * top of that transcript's scale.
+ */
+export const LOCKED_SCALES = {
+	/** Turn chart bubble height, question flow. */
+	largestTurnLength: 6465,
+	/** Speaker garden bloom radius. */
+	largestNumOfWordsByASpeaker: 52478,
+	/** Speaker garden stem height. */
+	largestNumOfTurnsByASpeaker: 59,
+	/** Word rain and contribution cloud text size. */
+	maxCountOfMostRepeatedWord: 2319,
+	/** Timeline span, and the heatmap's bin range. */
+	totalTimeInSeconds: 2607
+} as const;
+
+/** Whether this page load asked for the locked domain. */
+export function isScaleLockEnabled(): boolean {
+	if (typeof window === 'undefined') return false;
+	return new URLSearchParams(window.location.search).has('lockScales');
+}
+
+/**
+ * Overwrites a transcript's scaling maxima with the pinned domain, and reports
+ * the timeline end that goes with them.
+ *
+ * `totalTimeInSeconds` is part of the lock rather than only the timeline window,
+ * since the heatmap bins against the transcript's own duration
+ * (`speaker-heatmap.ts:338`) and would otherwise keep a per-file x-axis while
+ * every other view moved to the shared one. The cost is that the data panel
+ * reports the locked span instead of the real one for the duration of the
+ * capture.
+ *
+ * Returns `undefined` when the lock is off, so the caller's existing
+ * `timelineEndOverride` is left alone.
+ */
+export function applyScaleLock(transcript: Transcript): number | undefined {
+	if (!isScaleLockEnabled()) return undefined;
+
+	transcript.largestTurnLength = LOCKED_SCALES.largestTurnLength;
+	transcript.largestNumOfWordsByASpeaker = LOCKED_SCALES.largestNumOfWordsByASpeaker;
+	transcript.largestNumOfTurnsByASpeaker = LOCKED_SCALES.largestNumOfTurnsByASpeaker;
+	transcript.maxCountOfMostRepeatedWord = LOCKED_SCALES.maxCountOfMostRepeatedWord;
+	transcript.totalTimeInSeconds = LOCKED_SCALES.totalTimeInSeconds;
+
+	return LOCKED_SCALES.totalTimeInSeconds;
+}
