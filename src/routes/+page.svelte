@@ -121,7 +121,7 @@
 		const mapping = buildFinalMapping(preview.columnMatches, preview.columnOverrides);
 		const remapped = remapData(preview.rawData, mapping);
 		const settings = get(AppSettingsStore);
-		const parseResult = parseCSVRows(remapped, settings.speechRateWordsPerSecond, settings.timingLens);
+		const parseResult = parseCSVRows(remapped, settings.speechRateWordsPerSecond, settings.timingLens, settings.aiTurnGrouping);
 		if (parseResult.turns.length === 0) {
 			return { ...preview, ...emptyStats, error: 'No valid turns found after mapping columns.' };
 		}
@@ -223,13 +223,16 @@
 	// rather than a redraw. Null for human transcripts and before any load.
 	let lastParsedRows: Record<string, unknown>[] | null = null;
 	let appliedLens = $state(get(AppSettingsStore).timingLens);
+	let appliedGrouping = $state(get(AppSettingsStore).aiTurnGrouping);
 
 	$effect(() => {
 		const lens = $AppSettingsStore.timingLens;
-		if (!lastParsedRows || lens === appliedLens) return;
+		const grouping = $AppSettingsStore.aiTurnGrouping;
+		if (!lastParsedRows || (lens === appliedLens && grouping === appliedGrouping)) return;
 		appliedLens = lens;
+		appliedGrouping = grouping;
 		const settings = get(AppSettingsStore);
-		const parsed = parseCSVRows(lastParsedRows, settings.speechRateWordsPerSecond, lens);
+		const parsed = parseCSVRows(lastParsedRows, settings.speechRateWordsPerSecond, lens, grouping);
 		if (parsed.turns.length > 0) {
 			applyTranscriptResult(createTranscriptFromParsedText(parsed, parsed.detectedTimingMode));
 		}
@@ -942,7 +945,7 @@
 					throw new Error('Invalid CSV format. Required columns: "speaker" and "content".');
 				}
 				const settings = get(AppSettingsStore);
-				const parseResult = parseCSVRows(results.data, settings.speechRateWordsPerSecond, settings.timingLens);
+				const parseResult = parseCSVRows(results.data, settings.speechRateWordsPerSecond, settings.timingLens, settings.aiTurnGrouping);
 				// Kept so a timing-lens change can re-derive turn times without
 				// re-reading the file: the lens picks a different start column,
 				// and word times are copied from the turn at parse time.
