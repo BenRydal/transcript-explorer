@@ -8,6 +8,7 @@ import { estimateDuration } from './timing-utils';
 import { detectSourceKind, collectSpeakerRoles } from './source-kind';
 import { normalizeSpeakerName, splitIntoWords } from './string-utils';
 import { hasSpeakerNameAndContent, HEADERS_TRANSCRIPT_WITH_TIME } from './core-utils';
+import { groupAiTurns, type AiTurnEntry, type AiTurnGrouping } from './ai-turn-merge';
 import type { TimingLens } from '../../stores/appSettingsStore';
 import type { ParseResult, ParsedTurn, DetectedFormat } from './text-parser';
 import type { TimingMode } from '../../models/transcript';
@@ -108,12 +109,24 @@ const LENS_START_COLUMN: Record<TimingLens, string> = {
 	floor: 'start_floor'
 };
 
-export function parseCSVRows(rows: Record<string, unknown>[], speechRateWordsPerSecond: number = 3, timingLens: TimingLens = 'work'): ParseResult {
+/** Reads a string column off the raw row, out of band like the lens columns. */
+function readColumn(row: Record<string, unknown>, column: string): string {
+	const raw = row[column];
+	return typeof raw === 'string' || typeof raw === 'number' ? String(raw).trim() : '';
+}
+
+export function parseCSVRows(
+	rows: Record<string, unknown>[],
+	speechRateWordsPerSecond: number = 3,
+	timingLens: TimingLens = 'work',
+	aiTurnGrouping: AiTurnGrouping = 'none'
+): ParseResult {
 	// Read out-of-band from the raw rows rather than through the column mapper:
 	// adding these to the expected-column set would let the fuzzy matcher claim
 	// a human CSV's column before it reaches speaker/content/start/end.
 	const sourceKind = detectSourceKind(rows);
 	const speakerRoles = sourceKind === 'ai' ? collectSpeakerRoles(rows) : undefined;
+	const aiEntries: AiTurnEntry[] = [];
 	const state: CSVParseState = {
 		turns: [],
 		speakerSet: new Set(),
@@ -184,7 +197,7 @@ export function parseCSVRows(rows: Record<string, unknown>[], speechRateWordsPer
 			state.lastValidEndTime = endTime;
 		}
 
-		state.turns.push({
+		const turn: ParsedTurn = {
 			speaker,
 			content: contentStr,
 			startTime,
@@ -192,7 +205,23 @@ export function parseCSVRows(rows: Record<string, unknown>[], speechRateWordsPer
 			// Off the raw row, like the lens columns: the fuzzy matcher must not
 			// claim this from a human CSV.
 			provenance: readProvenance(row)
-		});
+		};
+		state.turns.push(turn);
+		if (sourceKind === 'ai') {
+			aiEntries.push({
+				turn,
+				eventType: readColumn(row, 'event_type').toLowerCase(),
+				toolName: readColumn(row, 'tool_name'),
+				toolUseId: readColumn(row, 'tool_use_id')
+			});
+		}
+	}
+
+	// Regrouping drops rows and can rename a speaker, so the speaker set is
+	// rebuilt from the result rather than accumulated during the row loop.
+	if (sourceKind === 'ai' && aiTurnGrouping !== 'none') {
+		state.turns = groupAiTurns(aiEntries, aiTurnGrouping);
+		state.speakerSet = new Set(state.turns.map((t) => t.speaker));
 	}
 
 	// Determine timing mode based on row counts
