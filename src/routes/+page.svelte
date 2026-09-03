@@ -234,7 +234,7 @@
 		const settings = get(AppSettingsStore);
 		const parsed = parseCSVRows(lastParsedRows, settings.speechRateWordsPerSecond, lens, grouping);
 		if (parsed.turns.length > 0) {
-			applyTranscriptResult(createTranscriptFromParsedText(parsed, parsed.detectedTimingMode));
+			applyTranscriptResult(createTranscriptFromParsedText(parsed, parsed.detectedTimingMode), undefined, true);
 		}
 	});
 
