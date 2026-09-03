@@ -42,7 +42,7 @@ export const initialAppSettings: AppSettingsStoreType = {
 	snippetDurationSeconds: 2,
 	animationRate: 3,
 	timingLens: 'work',
-	aiTurnGrouping: 'tool-uses'
+	aiTurnGrouping: 'none'
 };
 
 const AppSettingsStore = writable<AppSettingsStoreType>(initialAppSettings);
