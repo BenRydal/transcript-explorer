@@ -1,4 +1,5 @@
 import { get } from 'svelte/store';
+import { nextTimelineView } from '../timeline/timeline-view';
 import UserStore from '../../stores/userStore';
 import TranscriptStore from '../../stores/transcriptStore';
 import TimelineStore from '../../stores/timelineStore';
@@ -29,8 +30,10 @@ export function triggerCanvasResize() {
  * Apply a newly created transcript to all stores.
  * Handles timing mode application, timeline reset, and canvas refresh.
  * @param timelineEndOverride - Use when timeline should extend beyond transcript data (e.g., video duration)
+ * @param keepView - Re-deriving the same session (a lens or grouping change) rather
+ * than loading a new one, so the zoom window and playhead survive.
  */
-export function applyTranscriptResult({ transcript, users }: TranscriptCreationResult, timelineEndOverride?: number) {
+export function applyTranscriptResult({ transcript, users }: TranscriptCreationResult, timelineEndOverride?: number, keepView = false) {
 	transcript.wordArray = applyTimingModeToWordArray(transcript.wordArray, transcript.timingMode);
 	const maxTime = getMaxTime(transcript.wordArray);
 	transcript.totalTimeInSeconds = maxTime;
@@ -45,12 +48,10 @@ export function applyTranscriptResult({ transcript, users }: TranscriptCreationR
 	const timelineEnd = timelineEndOverride ?? maxTime;
 	TimelineStore.update((timeline) => ({
 		...timeline,
-		currTime: 0,
 		startTime: 0,
 		endTime: timelineEnd,
-		leftMarker: 0,
-		rightMarker: timelineEnd,
-		isAnimating: false
+		isAnimating: false,
+		...nextTimelineView(timeline, timelineEnd, keepView)
 	}));
 
 	requestAnimationFrame(() => {

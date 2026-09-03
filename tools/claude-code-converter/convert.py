@@ -794,6 +794,10 @@ TRANSCRIPT_COLUMNS = [
     "model",            # Extended: claude-opus-4-6, etc.
     "tokens_out",       # Extended: output token count
     "event_id",         # Extended: UUID for cross-referencing
+    # Pairing keys. A tool use is one action recorded as two rows, and a
+    # consumer cannot rejoin them without the id the provider issued.
+    "tool_use_id",      # Extended: joins a call to its result
+    "parent_event_id",  # Extended: the event this one answers or follows
     "content_type",     # Extended: text, code, thinking, error
     # Timing lenses. `end` never varies: a contribution ends when the log says
     # it concluded. Only the start is contested, and these are the three
@@ -1192,6 +1196,8 @@ def _make_csv_row(
         "model": event.get("model") or "",
         "tokens_out": tokens_out,
         "event_id": event["event_id"],
+        "tool_use_id": event.get("tool_use_id") or "",
+        "parent_event_id": event.get("parent_event_id") or "",
         # An instant, carried at the narrowest width a row may have. A row
         # whose start equals its end reads as zero-width downstream and is
         # re-expanded from its word count, which would draw a tool result

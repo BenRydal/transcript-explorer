@@ -23,6 +23,8 @@ import type { TimingProvenance } from '../../models/dataPoint';
 export interface ParsedTurn {
 	/** How the converter arrived at this row's timing, when it says. */
 	provenance?: TimingProvenance;
+	/** Who invoked a merged tool use, where that is not the speaker. AI only. */
+	caller?: string;
 	speaker: string;
 	content: string;
 	startTime: number | null;

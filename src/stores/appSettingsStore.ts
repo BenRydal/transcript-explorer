@@ -1,4 +1,7 @@
 import { writable } from 'svelte/store';
+import type { AiTurnGrouping } from '../lib/core/ai-turn-merge';
+
+export type { AiTurnGrouping };
 
 /**
  * Which start time a time-based view reads.
@@ -29,6 +32,8 @@ export interface AppSettingsStoreType {
 	animationRate: number;
 	// Which start time the time-based views read. See TimingLens.
 	timingLens: TimingLens;
+	// How many rows one AI action occupies. See AiTurnGrouping.
+	aiTurnGrouping: AiTurnGrouping;
 }
 
 export const initialAppSettings: AppSettingsStoreType = {
@@ -36,7 +41,8 @@ export const initialAppSettings: AppSettingsStoreType = {
 	speechRateWordsPerSecond: 3,
 	snippetDurationSeconds: 2,
 	animationRate: 3,
-	timingLens: 'work'
+	timingLens: 'work',
+	aiTurnGrouping: 'none'
 };
 
 const AppSettingsStore = writable<AppSettingsStoreType>(initialAppSettings);
