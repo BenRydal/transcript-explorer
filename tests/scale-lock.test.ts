@@ -14,7 +14,7 @@ import { afterEach, describe, expect, it } from 'vitest';
 import Papa from 'papaparse';
 import { parseCSVRows } from '../src/lib/core/csv-txt-parser';
 import { createTranscriptFromParsedText } from '../src/lib/core/transcript-factory';
-import { LOCKED_SCALES, applyScaleLock, isScaleLockEnabled } from '../src/lib/core/scale-lock';
+import { LOCKED_SCALES, LOCKED_ACTOR_COUNT, applyScaleLock, isScaleLockEnabled, lockedActorCount } from '../src/lib/core/scale-lock';
 import { groupsPresent, ACTOR_GROUP_ORDER } from '../src/lib/draw/actor-groups';
 import { Transcript } from '../src/models/transcript';
 
@@ -29,7 +29,7 @@ function load(id: string) {
 		dynamicTyping: true,
 		transformHeader: (h: string) => h.trim().toLowerCase()
 	}).data as Record<string, unknown>[];
-	return createTranscriptFromParsedText(parseCSVRows(rows)).transcript;
+	return createTranscriptFromParsedText(parseCSVRows(rows));
 }
 
 /** Stands in for a `?lockScales` page load. */
@@ -47,7 +47,7 @@ afterEach(() => {
 });
 
 describe('the locked domain covers the sessions it was measured from', () => {
-	const transcripts = LOCKED_EXAMPLES.map(load);
+	const transcripts = LOCKED_EXAMPLES.map((id) => load(id).transcript);
 
 	// Every driver except duration; `totalTimeInSeconds` is re-derived from the
 	// word array on apply, so it is checked against the real spans separately.
@@ -62,6 +62,10 @@ describe('the locked domain covers the sessions it was measured from', () => {
 	it('spans at least the longest session', () => {
 		expect(LOCKED_SCALES.totalTimeInSeconds).toBeGreaterThanOrEqual(Math.max(...transcripts.map((t) => Math.round(t.totalTimeInSeconds))));
 	});
+
+	it('counts the largest cast, so no garden is squeezed below its own column', () => {
+		expect(LOCKED_ACTOR_COUNT).toBe(Math.max(...LOCKED_EXAMPLES.map((id) => load(id).users.length)));
+	});
 });
 
 describe('the lock is off unless asked for', () => {
@@ -74,12 +78,16 @@ describe('the lock is off unless asked for', () => {
 	});
 
 	it('leaves a transcript untouched and reports no timeline override', () => {
-		const transcript = load('web-design-chat');
+		const { transcript } = load('web-design-chat');
 		const before = transcript.largestTurnLength;
 		withSearch('', () => {
 			expect(applyScaleLock(transcript)).toBeUndefined();
 			expect(transcript.largestTurnLength).toBe(before);
 		});
+	});
+
+	it('leaves the cast size to the transcript', () => {
+		withSearch('', () => expect(lockedActorCount()).toBeUndefined());
 	});
 });
 
@@ -102,11 +110,15 @@ describe('the lock replaces every driver when asked for', () => {
 	it('applies to every session identically, which is the point', () => {
 		withSearch('?lockScales', () => {
 			for (const id of LOCKED_EXAMPLES) {
-				const transcript = load(id);
+				const { transcript } = load(id);
 				applyScaleLock(transcript);
 				expect(transcript).toMatchObject(LOCKED_SCALES);
 			}
 		});
+	});
+
+	it('reports the pinned cast size', () => {
+		withSearch('?lockScales', () => expect(lockedActorCount()).toBe(LOCKED_ACTOR_COUNT));
 	});
 });
 

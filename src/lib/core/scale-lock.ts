@@ -43,10 +43,55 @@ export const LOCKED_SCALES = {
 	totalTimeInSeconds: 2607
 } as const;
 
+/**
+ * Actors in the most crowded of the three sessions.
+ *
+ * Pinning the domain is only half of a shared scale. The speaker garden spends
+ * its bloom range inside one speaker's column, and a column is
+ * `panelWidth / (actors + 1)` — so the pixels-per-word move with the size of the
+ * cast even when the domain is fixed. `web-design-chat` seats two actors against
+ * `web-design-multi-agent`'s 25, which drew Claude's 16k words at roughly nine
+ * times the scale `Tool:Read`'s 52k got: the wordiest speaker in the corpus came
+ * out the smallest bloom in the set. Fixing the divisor gives all three gardens
+ * one ruler.
+ *
+ * This sits outside `LOCKED_SCALES` because that object is exactly the set of
+ * fields `applyScaleLock` writes onto a transcript, and the size of the cast is
+ * not one of them. Like the values above it is a measurement: re-take it when
+ * the example CSVs change.
+ */
+export const LOCKED_ACTOR_COUNT = 25;
+
+/**
+ * Enlarges every locked bloom together.
+ *
+ * A 25-actor column is 54px on a 1400px panel, and petals reach about half a
+ * radius, so pinning the divisor leaves the whole set drawing at a size that is
+ * honest but hard to see. This multiplies the bloom scale — floor and ceiling
+ * alike, in every session — so the figures grow without any of them moving
+ * relative to the others.
+ *
+ * What it spends is horizontal room. At 1.0 the largest bloom is already about
+ * as wide as the gap between stems, so anything above that overlaps its
+ * neighbours in the crowded session; the quieter two have room to spare either
+ * way. Blooms sit at the height their turn count puts them, so the overlap reads
+ * as a dense bed rather than a collision. Raise it for a bigger figure, lower it
+ * toward 1 to pull the multi-agent garden apart.
+ */
+export const LOCKED_BLOOM_GAIN = 2;
+
 /** Whether this page load asked for the locked domain. */
 export function isScaleLockEnabled(): boolean {
 	if (typeof window === 'undefined') return false;
 	return new URLSearchParams(window.location.search).has('lockScales');
+}
+
+/**
+ * The cast size layouts should scale against, or `undefined` when the lock is
+ * off and they should use the transcript's own.
+ */
+export function lockedActorCount(): number | undefined {
+	return isScaleLockEnabled() ? LOCKED_ACTOR_COUNT : undefined;
 }
 
 /**

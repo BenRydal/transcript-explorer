@@ -6,8 +6,9 @@
  * loop, which would freeze the canvas on whatever it last rendered.
  */
 
-import { describe, expect, it } from 'vitest';
+import { afterEach, describe, expect, it } from 'vitest';
 import { SpeakerGarden } from '../src/lib/draw/speaker-garden';
+import { LOCKED_BLOOM_GAIN } from '../src/lib/core/scale-lock';
 import type { DrawContext } from '../src/lib/draw/draw-context';
 import type { DataPoint } from '../src/models/dataPoint';
 
@@ -225,5 +226,69 @@ describe('SpeakerGarden rendering', () => {
 		// The baseline is the panel floor, and must stay below the top of the axis.
 		expect(g.yPosBottom).toBe(bounds.y + 600);
 		expect(g.yPosBottom).toBeGreaterThan(g.yPosTop);
+	});
+});
+
+/**
+ * Bloom size is spent inside a column, and a column narrows as the cast grows.
+ * Pinning the domain alone therefore leaves two locked gardens on different
+ * rulers, which is what these guard.
+ */
+describe('SpeakerGarden under the capture scale lock', () => {
+	const CAST_OF_25 = Array.from({ length: 25 }, (_, i) => `Actor${i}`);
+	const PANEL = { width: 1200, height: 600 };
+	/** Same word count in both sessions, well inside the stub's 5000-word domain. */
+	const WORDS = 2500;
+
+	function withLock(run: () => void) {
+		(globalThis as { window?: unknown }).window = { location: { search: '?lockScales' } };
+		try {
+			run();
+		} finally {
+			delete (globalThis as { window?: unknown }).window;
+		}
+	}
+
+	const gardenFor = (cast: string[]) => {
+		const { ctx, bounds } = makeCtx(cast, PANEL);
+		return new SpeakerGarden(ctx, bounds);
+	};
+
+	afterEach(() => {
+		delete (globalThis as { window?: unknown }).window;
+	});
+
+	it('draws a word count the same size whatever the cast size', () => {
+		withLock(() => {
+			expect(gardenFor(['User', 'Claude']).getScaledArea(WORDS)).toBeCloseTo(gardenFor(CAST_OF_25).getScaledArea(WORDS));
+		});
+	});
+
+	it('sizes the crowded session it was measured from by the gain alone', () => {
+		// Its own column is the locked one, so the gain is the only thing moving.
+		const unlocked = gardenFor(CAST_OF_25);
+		withLock(() => {
+			expect(gardenFor(CAST_OF_25).bloomColumnRadius).toBeCloseTo(unlocked.bloomColumnRadius * LOCKED_BLOOM_GAIN);
+		});
+	});
+
+	it('separates a loud speaker from a quiet one more, not less', () => {
+		// The floor is capped in absolute pixels, so lifting the ceiling widens the
+		// band the scale runs across instead of sliding it. Bigger blooms and more
+		// contrast between them come from the same change.
+		const spread = (g: SpeakerGarden) => g.getScaledArea(4000) / g.getScaledArea(500);
+		const unlocked = spread(gardenFor(CAST_OF_25));
+		withLock(() => expect(spread(gardenFor(CAST_OF_25))).toBeGreaterThan(unlocked));
+	});
+
+	it('spends the whole panel on the cast at hand when the lock is off', () => {
+		// The bug the lock exists to prevent: two speakers drawing a word many
+		// times larger than twenty-five do. Correct unlocked, unreadable in a set.
+		expect(gardenFor(['User', 'Claude']).getScaledArea(WORDS)).toBeGreaterThan(3 * gardenFor(CAST_OF_25).getScaledArea(WORDS));
+	});
+
+	it('still spreads stems across the panel, so a small cast does not huddle', () => {
+		const spread = gardenFor(['User', 'Claude']).maxCircleRadius;
+		withLock(() => expect(gardenFor(['User', 'Claude']).maxCircleRadius).toBe(spread));
 	});
 });

@@ -20,6 +20,7 @@ import { drawFlower } from './flower-drawing';
 import { DrawContext } from './draw-context';
 import { flowerRadius, stemFraction, MIN_FLOWER_RADIUS } from './garden-scaling';
 import { truncateMiddle } from './lane-layout';
+import { lockedActorCount, LOCKED_BLOOM_GAIN } from '../core/scale-lock';
 
 const LABEL_GAP = 6;
 /** Names run up the stem, rooted at the baseline and reading toward the bloom. */
@@ -56,7 +57,7 @@ export class SpeakerGarden {
 	localArrayOfFirstWords: DataPoint[];
 	bounds: Bounds;
 	maxCircleRadius: number;
-	maxCircleArea: number;
+	bloomColumnRadius: number;
 	xPosCurCircle: number;
 	yPosTop: number;
 	yPosBottom: number;
@@ -85,7 +86,7 @@ export class SpeakerGarden {
 		this.localArrayOfFirstWords = [];
 		this.bounds = pos;
 		this.maxCircleRadius = this.getMaxCircleRadius(pos.width);
-		this.maxCircleArea = Math.PI * this.maxCircleRadius * this.maxCircleRadius;
+		this.bloomColumnRadius = this.getBloomColumnRadius(pos.width);
 		this.xPosCurCircle = pos.x + this.maxCircleRadius;
 		this.yPosTop = pos.y;
 		this.yPosBottom = pos.y + pos.height;
@@ -255,19 +256,40 @@ export class SpeakerGarden {
 		showTooltip(this.ctx.sk.mouseX, this.ctx.sk.mouseY, tooltipContent, speakerColor, this.bounds.y + this.bounds.height);
 	}
 
+	/** Spacing between stems: one column per speaker, so a garden fills its panel. */
 	getMaxCircleRadius(pixelWidth: number): number {
 		return pixelWidth / (this.ctx.users.length + 1);
 	}
 
+	/**
+	 * The column the bloom scale is spent inside, which is what sets
+	 * pixels-per-word.
+	 *
+	 * Normally that is the speaker's own column, so each garden uses its whole
+	 * panel. Under the capture lock it is the column a `LOCKED_ACTOR_COUNT`
+	 * session would get, since otherwise a two-speaker garden draws a word many
+	 * times larger than a crowded one does and the figures cannot be read against
+	 * each other -- the lock's whole purpose. Spacing still follows the real cast,
+	 * so a small cast stands further apart rather than huddling at the left edge.
+	 *
+	 * `LOCKED_BLOOM_GAIN` then enlarges that pinned column, since a 25-actor
+	 * column is small enough to be hard to read. It multiplies every locked
+	 * session equally, so it costs horizontal room in the crowded one rather than
+	 * comparability.
+	 */
+	getBloomColumnRadius(pixelWidth: number): number {
+		const locked = lockedActorCount();
+		if (locked === undefined) return pixelWidth / (this.ctx.users.length + 1);
+		return (pixelWidth / (locked + 1)) * LOCKED_BLOOM_GAIN;
+	}
+
 	getScaledArea(value: number): number {
-		const radiusFromWidth = Math.sqrt(this.maxCircleArea / Math.PI);
-		return flowerRadius(value, this.largestNumOfWordsByASpeaker, radiusFromWidth, this.isAi);
+		return flowerRadius(value, this.largestNumOfWordsByASpeaker, this.bloomColumnRadius, this.isAi);
 	}
 
 	calculateMaxFlowerRadius(): number {
-		const radiusFromWidth = Math.sqrt(this.maxCircleArea / Math.PI);
 		const maxHeightForFlower = this.bounds.height * 0.25;
-		return Math.max(Math.min(radiusFromWidth, maxHeightForFlower), MIN_FLOWER_RADIUS);
+		return Math.max(Math.min(this.bloomColumnRadius, maxHeightForFlower), MIN_FLOWER_RADIUS);
 	}
 
 	/**
