@@ -1,4 +1,4 @@
-import { GraduationCap, Landmark, Mic, Bot, MessageSquare, Wrench, Network } from '@lucide/svelte';
+import { MessageSquare, Wrench, Network } from '@lucide/svelte';
 import type { Component } from 'svelte';
 
 /**
@@ -11,6 +11,12 @@ import type { Component } from 'svelte';
  * The actual load pipeline (fetch → parse → hydrate stores) lives in
  * `handleLoadExample` on `+page.svelte`; this module only owns the
  * static menu data so the two UI sites don't drift out of step.
+ *
+ * Only the Claude web-design sessions are listed here. The other datasets
+ * (classroom examples, cs/cooking/trip/claude-code sessions) still ship in
+ * `static/data` and stay loadable by id via `Core.getExample` — they are
+ * just not offered from the sidebar or navbar. The welcome screen keeps
+ * its own inlined catalog and is unaffected by this list.
  */
 export interface ExampleOption {
 	value: string;
@@ -19,27 +25,6 @@ export interface ExampleOption {
 }
 
 export const EXAMPLES: readonly ExampleOption[] = [
-	{ value: 'example-1', label: 'Kindergarten Activity', icon: GraduationCap },
-	{ value: 'example-3', label: '3rd Grade Discussion Odd/Even Numbers', icon: GraduationCap },
-	{ value: 'example-4', label: '8th Grade Science Lesson', icon: GraduationCap },
-	{ value: 'example-2', label: 'Family Gallery Visit', icon: Landmark },
-	{ value: 'example-5', label: 'Biden-Trump 2020 Debate', icon: Mic },
-	{ value: 'claude-chat', label: 'Claude Code — Chat Only', icon: MessageSquare },
-	{ value: 'claude-tools', label: 'Claude Code — With Tools', icon: Wrench },
-	{ value: 'claude-agent', label: 'Claude Code — Single Agent', icon: Bot },
-	{ value: 'claude-multi-agent', label: 'Claude Code — Multi-Agent', icon: Network },
-	{ value: 'cs-chat', label: 'CS Course — Chat Only', icon: MessageSquare },
-	{ value: 'cs-tools', label: 'CS Course — With Tools', icon: Wrench },
-	{ value: 'cs-agent', label: 'CS Course — Single Agent', icon: Bot },
-	{ value: 'cs-multi-agent', label: 'CS Course — Multi-Agent', icon: Network },
-	{ value: 'cooking-chat', label: 'Cooking — Chat Only', icon: MessageSquare },
-	{ value: 'cooking-tools', label: 'Cooking — With Tools', icon: Wrench },
-	{ value: 'cooking-agent', label: 'Cooking — Single Agent', icon: Bot },
-	{ value: 'cooking-multi-agent', label: 'Cooking — Multi-Agent', icon: Network },
-	{ value: 'trip-chat', label: 'Trip Planning — Chat Only', icon: MessageSquare },
-	{ value: 'trip-tools', label: 'Trip Planning — With Tools', icon: Wrench },
-	{ value: 'trip-agent', label: 'Trip Planning — Single Agent', icon: Bot },
-	{ value: 'trip-multi-agent', label: 'Trip Planning — Multi-Agent', icon: Network },
 	{ value: 'web-design-chat', label: 'Claude-Web-Design-Chat', icon: MessageSquare },
 	{ value: 'web-design-tools', label: 'Claude-Web-Design-Tools', icon: Wrench },
 	{ value: 'web-design-multi-agent', label: 'Claude-Web-Design-Multi-Agent', icon: Network }
