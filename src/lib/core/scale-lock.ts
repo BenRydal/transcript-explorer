@@ -78,7 +78,7 @@ export const LOCKED_ACTOR_COUNT = 25;
  * as a dense bed rather than a collision. Raise it for a bigger figure, lower it
  * toward 1 to pull the multi-agent garden apart.
  */
-export const LOCKED_BLOOM_GAIN = 2;
+export const LOCKED_BLOOM_GAIN = 2.5;
 
 /** Whether this page load asked for the locked domain. */
 export function isScaleLockEnabled(): boolean {
