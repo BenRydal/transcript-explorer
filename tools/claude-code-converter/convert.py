@@ -38,6 +38,12 @@ from typing import Any
 # ---------------------------------------------------------------------------
 SCHEMA_VERSION = "1.0.0"
 
+# Speaker for the spawn/result markers of the delegation tool itself, used when
+# sub-agent files give the agent its own `Agent:` identity. The `Tool:` prefix
+# is load-bearing downstream: the explorer groups and colours it by that prefix
+# rather than by the `agent` role these two events carry.
+DELEGATION_TOOL_SPEAKER = "Tool:CreateAgent"
+
 # ---------------------------------------------------------------------------
 # Helpers
 # ---------------------------------------------------------------------------
@@ -558,7 +564,7 @@ class SessionParser:
                                 # This is an agent result
                                 # See spawn site above.
                                 speaker = (
-                                    "Tool:Agent" if self.subagent_files
+                                    DELEGATION_TOOL_SPEAKER if self.subagent_files
                                     else f"Agent:{agent_info['agent_type']}:{agent_info.get('agent_id', tool_use_id[:8])}"
                                 )
                                 self.events.append(self._make_event(
@@ -678,7 +684,7 @@ class SessionParser:
                             # has an Agent: identity; label the spawn as a tool
                             # call so it does not get a second one.
                             speaker = (
-                                "Tool:Agent" if self.subagent_files
+                                DELEGATION_TOOL_SPEAKER if self.subagent_files
                                 else f"Agent:{agent_type}:{agent_id_str}"
                             )
                             self.events.append(self._make_event(
