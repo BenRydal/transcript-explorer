@@ -1,10 +1,9 @@
 /**
- * Exercises SpeakerGarden.draw against a recording stub. The garden reserves a
- * label strip out of its own height and positions blooms against what is left,
- * so a short panel -- a dashboard tile, a small window -- can drive the
- * baseline above the top of the axis. These check it survives that rather than
- * throwing inside the p5 draw loop, which would freeze the canvas on whatever
- * it last rendered.
+ * Exercises SpeakerGarden.draw against a recording stub. Names ride up the
+ * stems, so a short panel -- a dashboard tile, a small window -- leaves stems
+ * with no room to letter and can drive the baseline against the top of the
+ * axis. These check it survives that rather than throwing inside the p5 draw
+ * loop, which would freeze the canvas on whatever it last rendered.
  */
 
 import { describe, expect, it } from 'vitest';
@@ -162,8 +161,8 @@ describe('SpeakerGarden rendering', () => {
 		expect(rec.pushes).toBe(rec.pops);
 	});
 
-	it('survives a panel shorter than the label strip it reserves', () => {
-		// A dashboard tile is a fraction of the canvas; 40px is below the 58px strip.
+	it('survives a panel too short to letter a stem', () => {
+		// A dashboard tile is a fraction of the canvas; 40px leaves no stem to name.
 		const { ctx, bounds } = makeCtx(speakers, { width: 400, height: 40 });
 		expect(() => new SpeakerGarden(ctx, bounds).draw(data())).not.toThrow();
 	});
@@ -197,37 +196,34 @@ describe('SpeakerGarden rendering', () => {
 		expect(() => new SpeakerGarden(ctx, bounds).draw(data())).not.toThrow();
 	});
 
-	it('drops labels rather than eating a small dashboard tile', () => {
-		// A 3-panel dashboard tile is roughly this tall; a fixed 58px strip
-		// would take a third of it.
+	it('drops a name the stem is too short to carry', () => {
+		// A 3-panel dashboard tile is roughly this tall, which leaves Ben's ten
+		// turns a stem with no room for his name rather than an overflowing one.
 		const { ctx, rec, bounds } = makeCtx(speakers, { width: 1200, height: 130 });
 		new SpeakerGarden(ctx, bounds).draw(data());
 
 		expect(rec.texts).not.toContain('Ben');
 	});
 
-	it('scales the strip to the panel rather than using a fixed height', () => {
+	it('gives the garden the whole panel, reserving no strip below the baseline', () => {
 		const full = makeCtx(speakers, { width: 1200, height: 600 });
 		const fullGarden = new SpeakerGarden(full.ctx, full.bounds);
 
 		const tile = makeCtx(speakers, { width: 1200, height: 260 });
 		const tileGarden = new SpeakerGarden(tile.ctx, tile.bounds);
 
-		const fullStrip = full.bounds.y + 600 - fullGarden.yPosBottom;
-		const tileStrip = tile.bounds.y + 260 - tileGarden.yPosBottom;
-		expect(tileStrip).toBeGreaterThan(0);
-		expect(tileStrip).toBeLessThan(fullStrip);
-		// The strip never takes more than its share of the panel.
-		expect(tileStrip / 260).toBeLessThanOrEqual(0.18 + 1e-9);
+		// Labels live on the stems, so nothing is held back for them at either size.
+		expect(full.bounds.y + 600 - fullGarden.yPosBottom).toBe(0);
+		expect(tile.bounds.y + 260 - tileGarden.yPosBottom).toBe(0);
 	});
 
-	it('keeps every bloom inside the plotting area, above the label strip', () => {
+	it('keeps every bloom inside the plotting area', () => {
 		const { ctx, bounds } = makeCtx(speakers, { width: 1200, height: 600 });
 		const g = new SpeakerGarden(ctx, bounds);
 		g.draw(data());
 
-		// The baseline must leave room for the strip and stay below the top.
-		expect(g.yPosBottom).toBeLessThan(bounds.y + 600);
+		// The baseline is the panel floor, and must stay below the top of the axis.
+		expect(g.yPosBottom).toBe(bounds.y + 600);
 		expect(g.yPosBottom).toBeGreaterThan(g.yPosTop);
 	});
 });

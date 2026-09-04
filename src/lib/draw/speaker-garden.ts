@@ -21,12 +21,27 @@ import { DrawContext } from './draw-context';
 import { flowerRadius, stemFraction, MIN_FLOWER_RADIUS } from './garden-scaling';
 import { truncateMiddle } from './lane-layout';
 
-/** Height reserved below the baseline for speaker labels, and the share of the panel it may take. */
-const LABEL_STRIP_HEIGHT = 58;
-const LABEL_STRIP_MAX_SHARE = 0.18;
-/** Below this the strip cannot hold a legible label, so labels are dropped. */
-const MIN_LABEL_STRIP = 24;
 const LABEL_GAP = 6;
+/** Names run up the stem, rooted at the baseline and reading toward the bloom. */
+const LABEL_ANGLE = -Math.PI / 2;
+/**
+ * How far right of the stem the name sits, as a share of text size. The text band is
+ * centred on this, so it stands off the stalk by roughly half again its own height.
+ */
+const LABEL_STEM_OFFSET = 1.25;
+/** Petal reach as a share of the flower's scaled area, from flower-drawing's petal geometry. */
+const BLOOM_RADIUS_RATIO = 0.62;
+
+/**
+ * Drops the spawn id from a delegated agent's name: `Agent:general-purpose:a2b12912`
+ * becomes `Agent:general-purpose`. The id distinguishes one agent from another but
+ * costs more label width than the rest of the name, so it is noise at this size.
+ * Tool names carry no id, so they pass through untouched.
+ */
+function labelName(speaker: string): string {
+	const parts = speaker.split(':');
+	return parts.length > 2 ? parts.slice(0, 2).join(':') : speaker;
+}
 
 interface SpeakerMetrics {
 	numOfTurns: number;
@@ -49,15 +64,15 @@ export class SpeakerGarden {
 	hoveredSpeaker: string | null;
 	private isAi: boolean;
 	private showLabels: boolean;
-	private labelStrip: number;
 	private labelSize: number;
 
 	constructor(ctx: DrawContext, pos: Bounds) {
 		this.ctx = ctx;
 		this.isAi = ctx.transcript.sourceKind === 'ai';
-		const requestedStrip = Math.min(LABEL_STRIP_HEIGHT, pos.height * LABEL_STRIP_MAX_SHARE);
-		this.showLabels = ctx.config.speakerGardenLabels !== false && requestedStrip >= MIN_LABEL_STRIP;
-		this.labelStrip = this.showLabels ? requestedStrip : 0;
+		// Names ride the stems now, so the garden keeps its full height. A panel too
+		// short to letter is handled where the label is drawn: the stem is the budget,
+		// and a stem with no room for a name yields none.
+		this.showLabels = ctx.config.speakerGardenLabels !== false;
 		this.labelSize = Math.max(8, Math.min(12, pos.height * 0.026));
 		// When scaleToVisibleData is enabled, we'll compute these in draw() from visible data
 		if (this.ctx.config.scaleToVisibleData) {
@@ -73,7 +88,7 @@ export class SpeakerGarden {
 		this.maxCircleArea = Math.PI * this.maxCircleRadius * this.maxCircleRadius;
 		this.xPosCurCircle = pos.x + this.maxCircleRadius;
 		this.yPosTop = pos.y;
-		this.yPosBottom = pos.y + pos.height - this.labelStrip;
+		this.yPosBottom = pos.y + pos.height;
 		this.maxFlowerRadius = this.calculateMaxFlowerRadius();
 		this.hoveredSpeaker = null;
 	}
@@ -151,7 +166,7 @@ export class SpeakerGarden {
 			color
 		});
 
-		if (this.showLabels) this.drawSpeakerLabel(speaker);
+		if (this.showLabels) this.drawSpeakerLabel(speaker, yPos, scaledWordArea * BLOOM_RADIUS_RATIO);
 
 		if (this.ctx.sk.overCircle(this.xPosCurCircle, yPos, scaledWordArea)) {
 			this.hoveredSpeaker = speaker;
@@ -159,24 +174,30 @@ export class SpeakerGarden {
 		}
 	}
 
-	/** Names the flower at the baseline. */
-	drawSpeakerLabel(speaker: string): void {
+	/** Runs the name up the stem, rooted at the baseline and reading toward the bloom. */
+	drawSpeakerLabel(speaker: string, yPos: number, bloomRadius: number): void {
 		const sk = this.ctx.sk;
-		const y = this.yPosBottom + LABEL_GAP;
 
 		sk.push();
 		sk.noStroke();
 		sk.fill(this.ctx.theme.fg);
 		sk.textSize(this.labelSize);
-		sk.textAlign(sk.CENTER, sk.TOP);
-		// Neighbouring columns are the budget; a little overhang is fine since
-		// gardens are sparse at the baseline.
-		const budget = this.maxCircleRadius * 1.6;
-		sk.text(
-			truncateMiddle(speaker, budget, (t) => sk.textWidth(t)),
-			this.xPosCurCircle,
-			y
-		);
+		sk.textAlign(sk.LEFT, sk.CENTER);
+
+		// The stem is the budget, not the column: a name climbs from just above the
+		// ground line to just below the petals. Stems run far longer than columns are
+		// wide, so most names now fit whole -- but a speaker with few turns has a short
+		// stem, and that one still has to give.
+		const root = this.yPosBottom - LABEL_GAP;
+		const budget = root - (yPos + bloomRadius + LABEL_GAP);
+		const label = truncateMiddle(labelName(speaker), budget, (t) => sk.textWidth(t));
+
+		// Rotating -90 degrees turns the text's own x-axis into screen-up, so a
+		// LEFT-aligned draw grows from the root toward the flower. The stem's bezier
+		// starts at xPos, so standing the name off to the right clears the stroke.
+		sk.translate(this.xPosCurCircle + this.labelSize * LABEL_STEM_OFFSET, root);
+		sk.rotate(LABEL_ANGLE);
+		sk.text(label, 0, 0);
 		sk.pop();
 	}
 
