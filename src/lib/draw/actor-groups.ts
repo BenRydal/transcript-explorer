@@ -30,7 +30,7 @@ const AGENT_PREFIX = 'AGENT:';
 /** Which group a speaker belongs to. */
 export function actorGroupOf(speaker: string, role: SpeakerRole | undefined): ActorGroup {
 	const upper = speaker.toUpperCase();
-	// Name before role: an agent's rows say `assistant`, and Tool:Agent's
+	// Name before role: an agent's rows say `assistant`, and Tool:CreateAgent's
 	// markers say `agent`, so role alone gets both backwards.
 	if (upper.startsWith(TOOL_PREFIX)) return 'tools';
 	if (upper.startsWith(AGENT_PREFIX)) return 'agents';

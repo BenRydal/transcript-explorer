@@ -61,7 +61,7 @@ ai,Claude,"This is clearly set up as a build task: the folder is `site-agents-mu
 I'll proceed on that reading and, per your request, parallelize aggressively: load the design skill myself while spinning up sub-agents to generate rich course content, real 2026 readings, and assignment specs concurrently.",17.755,34.171,message,assistant,,,,claude-opus-4-8,3266,08b0ef29-4c94-43e2-a5a3-1d08126202f3,,bbb8b62b-cefa-46d8-a076-7f5caf5d2c28,text,34.071,17.755,17.755,estimated,
 ai,Tool:Skill,"[Skill] {""skill"": ""artifact-design""}",34.172,34.672,tool_call,tool,Skill,,,claude-opus-4-8,,8bdae894-2e12-47fd-90dc-7bd12f98986e,toolu_01N634crWUp7gRZ4m9XfEuj8,08b0ef29-4c94-43e2-a5a3-1d08126202f3,text,34.572,34.172,34.171,marker,
 ai,Tool:Skill,Launching skill: artifact-design,34.197,34.697,tool_result,tool,Skill,,,,,54b35026-cd80-47cd-a4ad-edd669ecd8c0,toolu_01N634crWUp7gRZ4m9XfEuj8,8bdae894-2e12-47fd-90dc-7bd12f98986e,text,34.597,34.197,34.197,marker,
-ai,Tool:Agent,"[Agent spawned: general-purpose] Write weekly topic content
+ai,Tool:CreateAgent,"[Agent spawned: general-purpose] Write weekly topic content
 
 Prompt: You are writing content for a university course website. The course is:
 
@@ -113,7 +113,7 @@ For EACH of the 11 weekly topics, write:
 - A one-line ""why this matters"" real-world connection
 
 Keep the tone warm, clear, and motivating — appropriate for an intro-level course with students of mixed backgrounds. Return the content as clean structured data (JSON with an array of 11 objects, keys: number, title, dueDate, hook, objectives[], keyConcepts[], whyItMatters). Return ONLY the JSON.",42.897,44.897,message,user,,general-purpose,a2b12912,,,0504c378-ad13-4a8b-9875-235029d1bd6e,,,text,44.797,42.897,42.897,estimated,
-ai,Tool:Agent,"Async agent launched successfully. (This tool result is internal metadata — never quote or paste any part of it, including the agentId below, into a user-facing reply.)
+ai,Tool:CreateAgent,"Async agent launched successfully. (This tool result is internal metadata — never quote or paste any part of it, including the agentId below, into a user-facing reply.)
 agentId: a2b1291271b4e3a1f (internal ID - do not mention to user. Use SendMessage with to: 'a2b1291271b4e3a1f', summary: '<5-10 word recap>' to continue this agent.)
 The agent is working in the background. You will be notified automatically when it completes.
 Do not duplicate this agent's work — avoid working with the same files or topics it is using.
@@ -123,7 +123,7 @@ ai,Agent:general-purpose:a2b12912,This is a straightforward content-writing task
 ai,Agent:general-purpose:a2b12912,"[Create scratchpad directory]
 $ mkdir -p ""/private/tmp/claude-502/-Users-ben-Desktop-zzz-AI-Transcript-Data-site-agents-multi/ca34e99b-c389-424d-8464-480d8b0a844a/scratchpad""",47.586,48.086,tool_call,tool,Bash,general-purpose,a2b12912,claude-opus-4-8,,0d611c25-cf38-42bb-9d9d-b695d3fc96cb,toolu_01DtZ75F1a36CuBJFbrvB4P4,d75f302e-9c69-466d-bc61-c4e794d0504f,code,47.986,47.586,45.68,marker,
 ai,Tool:Bash,(Bash completed with no output),50.02,50.52,tool_result,tool,Bash,,,,,1d2d0751-6006-40f3-963d-3196e881fb1a,toolu_01DtZ75F1a36CuBJFbrvB4P4,0d611c25-cf38-42bb-9d9d-b695d3fc96cb,text,50.42,50.02,48.086,marker,
-ai,Tool:Agent,"[Agent spawned: general-purpose] Design assignments and discussions
+ai,Tool:CreateAgent,"[Agent spawned: general-purpose] Design assignments and discussions
 
 Prompt: You are designing the assignment and discussion structure for a university course website.
 
@@ -177,7 +177,7 @@ Also write:
 Assignment 1 should relate to information literacy (evaluating sources/info). Assignment 2 should relate to building a professional digital presence (e.g., portfolio/LinkedIn/personal site). Assignment 3 (final, capstone) should relate to working with data + data storytelling/visualization + computational thinking.
 
 Return as clean JSON with keys: assignments[] (title, description, deliverables[], skillsAssessed, weight), discussions (description, grading), toolSurvey (description), gradingBreakdown (object of category->percent). Return ONLY the JSON.",51.93,53.93,message,user,,general-purpose,a41585c9,,,1954f30f-368d-4d40-9dde-db8f54595e9b,,,text,53.83,51.93,51.93,estimated,
-ai,Tool:Agent,"Async agent launched successfully. (This tool result is internal metadata — never quote or paste any part of it, including the agentId below, into a user-facing reply.)
+ai,Tool:CreateAgent,"Async agent launched successfully. (This tool result is internal metadata — never quote or paste any part of it, including the agentId below, into a user-facing reply.)
 agentId: a41585c9f5698f1da (internal ID - do not mention to user. Use SendMessage with to: 'a41585c9f5698f1da', summary: '<5-10 word recap>' to continue this agent.)
 The agent is working in the background. You will be notified automatically when it completes.
 Do not duplicate this agent's work — avoid working with the same files or topics it is using.
@@ -187,7 +187,7 @@ ai,Agent:general-purpose:a41585c9,The task is to produce JSON. No codebase explo
 ai,Agent:general-purpose:a41585c9,"[Placeholder]
 $ echo ""no-op""",54.645,55.145,tool_call,tool,Bash,general-purpose,a41585c9,claude-opus-4-8,,8bb4d06e-be42-413c-9d94-fb6e7a5324b8,toolu_01PNxEcU1YTzfrxgJpGQdwEr,2c3decbd-a65e-44e2-a8a7-ebd6219bb596,code,55.045,54.645,54.176,marker,
 ai,Tool:Bash,no-op,54.676,55.176,tool_result,tool,Bash,,,,,14f494f2-26be-490e-b9fd-640c233f7d29,toolu_01PNxEcU1YTzfrxgJpGQdwEr,8bb4d06e-be42-413c-9d94-fb6e7a5324b8,text,55.076,54.676,54.676,marker,
-ai,Tool:Agent,"[Agent spawned: general-purpose] Research 2026 course readings
+ai,Tool:CreateAgent,"[Agent spawned: general-purpose] Research 2026 course readings
 
 Prompt: Research and recommend real, high-quality, publicly accessible readings/resources for an intro university course as of 2026. The course is **LT 2010 — Computer Skills for the Information Age**, covering digital/AI-age learning, AI literacy, tech ethics & privacy, information literacy, human-centered design, professional digital identity, working with data, and data visualization.
 
@@ -225,7 +225,7 @@ Topics:
 11. Coding & Computational Thinking
 
 Return as clean JSON: array of 11 objects with keys: topic, readings[] (each with title, author/source, url, oneLineWhy). Only include sources you are reasonably confident are real. Return ONLY the JSON.",59.805,61.805,message,user,,general-purpose,a2efbb9f,,,f3aed726-22f7-4e3a-b5ed-ad7a890e3bc6,,,text,61.705,59.805,59.805,estimated,
-ai,Tool:Agent,"Async agent launched successfully. (This tool result is internal metadata — never quote or paste any part of it, including the agentId below, into a user-facing reply.)
+ai,Tool:CreateAgent,"Async agent launched successfully. (This tool result is internal metadata — never quote or paste any part of it, including the agentId below, into a user-facing reply.)
 agentId: a2efbb9ff789ef770 (internal ID - do not mention to user. Use SendMessage with to: 'a2efbb9ff789ef770', summary: '<5-10 word recap>' to continue this agent.)
 The agent is working in the background. You will be notified automatically when it completes.
 Do not duplicate this agent's work — avoid working with the same files or topics it is using.
@@ -2016,7 +2016,7 @@ ai,Tool:TaskUpdate,Updated task #3 status,449.03,449.53,tool_result,tool,TaskUpd
 ai,Tool:Artifact,"[Artifact] {""file_path"": ""/Users/ben/Desktop/zzz-AI-Transcript-Data/site-agents-multi/index.html"", ""favicon"": ""\ud83e\udded"", ""description"": ""LT 2010 \u2014 Computer Skills for the Information Age: an information-designed course syllabus with a week-by-week semester timeline, assignments, and readings."", ""label"": ""initial-build""}",453.011,453.511,tool_call,tool,Artifact,,,claude-opus-4-8,,2c9d402c-9446-4e4d-a974-2aae96b1f19e,toolu_0194jCkdwQGURmXH6D2rgPEp,fced597d-c2d2-4a2b-8617-b278cdbc50e2,text,453.411,453.011,449.53,marker,
 ai,Tool:Artifact,Published /Users/ben/Desktop/zzz-AI-Transcript-Data/site-agents-multi/index.html at https://claude.ai/code/artifact/0dbb7d0c-6b9b-4238-98c9-8b1b5bc40d9d,453.537,454.037,tool_result,tool,Artifact,,,,,90c61eb4-3506-42f1-b365-71363d666974,toolu_0194jCkdwQGURmXH6D2rgPEp,2c9d402c-9446-4e4d-a974-2aae96b1f19e,text,453.937,453.537,453.511,marker,
 ai,Claude,"Published. Since you asked me to lean on agents for quality, let me run an independent design-review pass on the live artifact — fetch it and flag any rendering or polish issues — while I do my own final check.",455.5,468.833,message,assistant,,,,claude-opus-4-8,1352,f27353d6-6c05-46ed-b794-4d999402710f,,3109f926-06d3-4e2e-81f1-6daa13caae68,text,468.733,455.5,454.037,estimated,
-ai,Tool:Agent,"[Agent spawned: general-purpose] Review published course artifact
+ai,Tool:CreateAgent,"[Agent spawned: general-purpose] Review published course artifact
 
 Prompt: Use WebFetch to load this published HTML artifact and review it as a critical design reviewer: https://claude.ai/code/artifact/0dbb7d0c-6b9b-4238-98c9-8b1b5bc40d9d
 
@@ -3269,7 +3269,7 @@ ai,Agent:general-purpose:ae2dce5c,"WebFetch rendered the page fully (I retrieved
 1. **Fix ""Fall / Spring Break"" → ""Spring Break.""** One-word correctness fix; it's a visible factual contradiction with the Jan–Apr term. (Highest value / lowest effort.)
 2. **Resolve the Discussions-vs-Participation overlap.** Either merge them or add a one-line definition of each, and mention discussions in the §01 overview so the 35% engagement weight isn't a surprise.
 3. **Add the missing policy/logistics block** — instructor/contact + meeting info, and especially an AI-use/academic-integrity policy and accessibility statement. Its absence is conspicuous in a course centered on AI literacy and ethics. (Secondary design fix: bump the sub-10px mono labels and verify the amber due-badge contrast.)",556.188,556.288,message,assistant,,general-purpose,ae2dce5c,claude-opus-4-8,3886,853e29cb-7cde-4641-ba1d-c007f521af13,,cf6f16b0-65e3-454c-978d-5cedd3ea8872,text,556.188,556.188,556.188,estimated,
-ai,Tool:Agent,"WebFetch rendered the page fully (I retrieved and read the complete HTML, all 11 weeks + 3 assignment cards + grading + footer). Findings below.
+ai,Tool:CreateAgent,"WebFetch rendered the page fully (I retrieved and read the complete HTML, all 11 weeks + 3 assignment cards + grading + footer). Findings below.
 
 ## 1. Completeness & coherence — solid
 - **11 weeks** all present (nodes 01–11), weekly cadence Jan 17 → Mar 14, then break, then Apr 4 / Apr 19.
@@ -3456,7 +3456,7 @@ Per your ask, I fanned out aggressively:
 One judgment call worth flagging: I couldn't invent an instructor name/contact/meeting time, so the ""Getting help"" policy points those to the course portal rather than fabricating them — tell me the real details and I'll drop them in.",28.736,688.959,message,assistant,,,,claude-opus-4-8,839,e61e04e0-ba8a-4e00-9585-668e5f43cfb4,,3ea97977-7321-4e59-beb4-f8f9c6905c7a,text,688.859,28.736,676.204,measured,
 ai,User,Ok step back and assess this site now? What is working and what is not working? How does this site read from the perspective of an undergraduate student? Is the focus on technical and ethical approaches clear? What are the overall strengths and weaknesses?,726.959,748.959,message,user,,,,,,06cd9826-b61a-4a87-93de-6443a7f24bfe,,c1657d11-2f5e-4ec6-949c-eafbfab54e09,text,748.859,726.959,688.959,estimated,composed
 ai,Claude,"Good moment to step back. Rather than grade my own homework, let me get two independent reads on the live site — one role-playing a skeptical first-year undergraduate landing on it cold, and one from an instructional-design lens focused specifically on the technical-vs-ethical balance you asked about. I'll synthesize those with my own honest assessment.",748.959,761.211,message,assistant,,,,claude-opus-4-8,1836,8e4e781b-4258-42dc-8ae3-b921189d8ac4,,3f586133-4ed0-40a9-9e74-c1ead22bfe28,text,761.111,748.959,748.959,estimated,
-ai,Tool:Agent,"[Agent spawned: general-purpose] Undergraduate first-impression review
+ai,Tool:CreateAgent,"[Agent spawned: general-purpose] Undergraduate first-impression review
 
 Prompt: Use WebFetch to load this course website: https://claude.ai/code/artifact/0dbb7d0c-6b9b-4238-98c9-8b1b5bc40d9d
 
@@ -3487,7 +3487,7 @@ Be concrete and quote specific text where possible. Terse bullets.",771.008,773.
 ai,Agent:general-purpose:a4049ded,I'll load the course website first.,773.084,773.184,message,assistant,,general-purpose,a4049ded,claude-opus-4-8,89,c4360693-93a1-4be4-a7b1-bd53853b21ba,,f82f966c-aefe-45bc-a0f9-2e4f40fb7ea5,text,773.084,773.084,773.084,estimated,
 ai,Agent:general-purpose:a4049ded,"[ToolSearch] {""query"": ""select:WebFetch"", ""max_results"": 1}",773.273,773.773,tool_call,tool,ToolSearch,general-purpose,a4049ded,claude-opus-4-8,,b3a5b730-ebe8-4065-a58b-1b7499bc8a08,toolu_01MAFupMrDPvt8Ccc16GqHfF,c4360693-93a1-4be4-a7b1-bd53853b21ba,text,773.673,773.273,773.273,marker,
 ai,Agent:general-purpose:a4049ded,"[WebFetch] {""url"": ""https://claude.ai/code/artifact/0dbb7d0c-6b9b-4238-98c9-8b1b5bc40d9d"", ""prompt"": ""Extract the FULL text content of this course syllabus website verbatim. Include every section heading, all body text, course description, learning objectives, schedule/weekly topics, grading breakdown, policies, assignment descriptions, software/tools mentioned, and any navigation labels. Preserve exact wording and any specific phrases so I can quote them. Reproduce as much literal text as possible.""}",779.37,779.87,tool_call,tool,WebFetch,general-purpose,a4049ded,claude-opus-4-8,,dee52993-e0b2-4985-ac3e-257060d06fc6,toolu_01SSG53GbKmCAR1shD3XMFXV,a5dbfd7c-a4de-4624-abed-de348a1fcb0c,text,779.77,779.37,779.37,marker,
-ai,Tool:Agent,"[Agent spawned: general-purpose] Pedagogy and tech-ethics balance review
+ai,Tool:CreateAgent,"[Agent spawned: general-purpose] Pedagogy and tech-ethics balance review
 
 Prompt: Use WebFetch to load this course syllabus website: https://claude.ai/code/artifact/0dbb7d0c-6b9b-4238-98c9-8b1b5bc40d9d
 
@@ -4749,7 +4749,7 @@ Any one of these unblocks a rigorous critique:
 3. Send the source file if the syllabus exists as a local `.html`/`.md`/`.pdf` — I can read it from disk.
 
 Once I can see the actual objectives, topic list, and assignment briefs, I'll deliver the terse, critical, quote-backed assessment you asked for: technical-vs-ethical balance and integration, constructive alignment (objective → topic → assessment, with gap-flagging), the progression into the Assignment 3 capstone, the course's core ""what kind of thinker"" identity, concrete weaknesses, and the top 3 recommendations.",815.813,815.913,message,assistant,,general-purpose,ae7ca78f,claude-opus-4-8,799,81138818-f277-4d7b-9969-08b4c2fb16e5,,2668ef1a-9bb5-4757-bda4-40c73386cd61,text,815.813,815.813,815.813,estimated,
-ai,Tool:Agent,"I was unable to access the syllabus content, and I won't fabricate a review of a document I can't read. Here's what happened and what's needed.
+ai,Tool:CreateAgent,"I was unable to access the syllabus content, and I won't fabricate a review of a document I can't read. Here's what happened and what's needed.
 
 ## Access problem
 - The canonical artifact URL `https://claude.ai/code/artifact/0dbb7d0c-...` returns: **""artifact not found — it may have been deleted, or it has not been shared with you.""**
@@ -4810,7 +4810,7 @@ ai,Agent:general-purpose:a4049ded,"Note: the artifact URL returned ""artifact no
 1. **Add a ""What you need & how much time"" box up top:** meeting time/location (or ""fully online""), instructor name + how to reach them, expected hours/week, required software/accounts, and whether any of it costs money. Right now the most basic logistics are missing.
 2. **Tell me the workload of a ""discussion"" and whether readings are required** — give a word count/example and a 3-line grading rubric, since discussions are 20% and happen every single week. ""Post and a reply"" is too vague to plan around.
 3. **Turn down the abstraction.** Replace repetitive ""You will be able to describe how digital tools are reshaping..."" bullets with concrete deliverables (""build a resume,"" ""make a chart,"" ""clean a spreadsheet""), and either define or drop the jargon chips (metacognition, decomposition). For a no-prereq class, show me the *doing*, not the mission statement.",837.666,837.766,message,assistant,,general-purpose,a4049ded,claude-opus-4-8,2243,f3f063bb-e311-4501-9eba-43cdc7f7b9b3,,bcc151fb-dfaa-4ad1-97d6-b3d07261b894,text,837.666,837.666,837.666,estimated,
-ai,Tool:Agent,"Note: the artifact URL returned ""artifact not found,"" but the full syllabus exists locally at `/Users/ben/Desktop/zzz-AI-Transcript-Data/site-agents-multi/index.html`, so I reviewed that (LT 2010, ""Computer Skills for the Information Age""). Here's the unfiltered first-year-student reaction.
+ai,Tool:CreateAgent,"Note: the artifact URL returned ""artifact not found,"" but the full syllabus exists locally at `/Users/ben/Desktop/zzz-AI-Transcript-Data/site-agents-multi/index.html`, so I reviewed that (LT 2010, ""Computer Skills for the Information Age""). Here's the unfiltered first-year-student reaction.
 
 ---
 
@@ -13700,7 +13700,7 @@ ai,Tool:Read,"1176	                <div>
 1399	  })();
 1400	</script>
 1401",2263.324,2263.824,tool_result,tool,Read,,,,,96c66ea9-840b-4bfa-9841-21c36d5c99c7,toolu_01REfMiToTn1FkobXd8eL59g,a03e6973-5829-456b-95da-566b85bc32f0,text,2263.724,2263.324,2263.324,marker,
-ai,Tool:Agent,"[Agent spawned: general-purpose] Front-end code and a11y audit
+ai,Tool:CreateAgent,"[Agent spawned: general-purpose] Front-end code and a11y audit
 
 Prompt: You are a senior front-end engineer doing a code-quality and accessibility audit of a single self-contained HTML file (inline CSS + a small vanilla-JS script). Read it:
 
@@ -13728,7 +13728,7 @@ Audit rigorously and report CONCRETE issues with file locations/quotes and fixes
 4. **General robustness / future-proofing**: what would break first if content grew, and the top 5 highest-leverage fixes ranked.
 
 Be specific and terse. Do not rewrite the whole file; point to the problems and the fix for each.",2268.22,2270.22,message,user,,general-purpose,a847f819,,,9f17a987-b5b8-4650-beb8-028d850b0a9d,,,text,2270.12,2268.22,2268.22,estimated,
-ai,Tool:Agent,"Async agent launched successfully. (This tool result is internal metadata — never quote or paste any part of it, including the agentId below, into a user-facing reply.)
+ai,Tool:CreateAgent,"Async agent launched successfully. (This tool result is internal metadata — never quote or paste any part of it, including the agentId below, into a user-facing reply.)
 agentId: a847f819ab929b416 (internal ID - do not mention to user. Use SendMessage with to: 'a847f819ab929b416', summary: '<5-10 word recap>' to continue this agent.)
 The agent is working in the background. You will be notified automatically when it completes.
 Do not duplicate this agent's work — avoid working with the same files or topics it is using.
