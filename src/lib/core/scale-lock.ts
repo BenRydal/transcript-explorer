@@ -18,7 +18,7 @@
 import type { Transcript } from '../../models/transcript';
 
 /**
- * The pinned domain: the largest value each driver takes across the three
+ * The pinned domain: the largest value each driver takes across the four
  * `web-design-*` sessions, which `web-design-multi-agent` holds in every case.
  *
  * Taking the maximum rather than a round number is what keeps the lock lossless
@@ -44,7 +44,7 @@ export const LOCKED_SCALES = {
 } as const;
 
 /**
- * Actors in the most crowded of the three sessions.
+ * Actors in the most crowded of the four sessions.
  *
  * Pinning the domain is only half of a shared scale. The speaker garden spends
  * its bloom range inside one speaker's column, and a column is
