@@ -3,19 +3,7 @@
  * Works with both YouTube IFrame API players and HTML5 video elements
  */
 
-// YouTube player type (from IFrame API)
-interface YTPlayer {
-	playVideo(): void;
-	pauseVideo(): void;
-	seekTo(seconds: number, allowSeekAhead?: boolean): void;
-	getCurrentTime(): number;
-	getDuration(): number;
-	mute(): void;
-	unMute(): void;
-	isMuted(): boolean;
-	destroy(): void;
-	getIframe(): HTMLIFrameElement | null;
-}
+type YTPlayer = YT.Player;
 
 // Union type for supported player types
 export type VideoPlayer = YTPlayer | HTMLVideoElement;
@@ -43,7 +31,7 @@ export function loadYouTubeApi(): Promise<void> {
 		youtubeApiLoading = true;
 
 		// Check if API is already available (script might be in HTML)
-		if (typeof window !== 'undefined' && (window as any).YT && (window as any).YT.Player) {
+		if (typeof YT !== 'undefined' && YT.Player) {
 			youtubeApiLoaded = true;
 			youtubeApiCallbacks.forEach((cb) => cb());
 			youtubeApiCallbacks.length = 0;
@@ -51,7 +39,7 @@ export function loadYouTubeApi(): Promise<void> {
 		}
 
 		// Set up callback before loading script
-		(window as any).onYouTubeIframeAPIReady = () => {
+		window.onYouTubeIframeAPIReady = () => {
 			youtubeApiLoaded = true;
 			youtubeApiCallbacks.forEach((cb) => cb());
 			youtubeApiCallbacks.length = 0;
@@ -72,10 +60,9 @@ export function createYouTubePlayer(
 	containerId: string,
 	videoId: string,
 	onReady: (player: YTPlayer, duration: number) => void,
-	onError?: (error: any) => void
+	onError?: (error: YT.PlayerError) => void
 ): void {
 	loadYouTubeApi().then(() => {
-		const YT = (window as any).YT;
 		new YT.Player(containerId, {
 			videoId,
 			playerVars: {
@@ -86,12 +73,12 @@ export function createYouTubePlayer(
 				rel: 0
 			},
 			events: {
-				onReady: (event: any) => {
-					const player = event.target as YTPlayer;
+				onReady: (event: YT.PlayerEvent) => {
+					const player = event.target;
 					const duration = player.getDuration();
 					onReady(player, duration);
 				},
-				onError: (event: any) => {
+				onError: (event: YT.OnErrorEvent) => {
 					console.error('YouTube player error:', event.data);
 					onError?.(event.data);
 				}
@@ -122,7 +109,9 @@ export function playVideo(player: VideoPlayer): void {
 	withPlayer(
 		player,
 		(p) => p.playVideo(),
-		(p) => p.play(),
+		(p) => {
+			p.play();
+		},
 		undefined
 	);
 }
@@ -190,7 +179,7 @@ export function unmuteVideo(player: VideoPlayer): void {
 export function setPlaybackRate(player: VideoPlayer, rate: number): void {
 	withPlayer(
 		player,
-		(p) => (p as any).setPlaybackRate?.(rate),
+		(p) => p.setPlaybackRate(rate),
 		(p) => {
 			p.playbackRate = rate;
 		},
