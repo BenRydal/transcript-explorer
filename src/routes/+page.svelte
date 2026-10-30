@@ -1,17 +1,8 @@
 <script lang="ts">
 	import type p5 from 'p5';
+	import type { IgsSketch } from '$lib/p5/igs-sketch-instance';
 	import type { SketchFn } from 'svelte-p5';
-	import {
-		ActivityBar,
-		CanvasFrame,
-		ContextMenu,
-		Sketch,
-		SidePanel,
-		SplitPane,
-		TimelineScrubber,
-		type ActivityBarItem,
-		type ContextMenuItem
-	} from 'svelte-p5-components';
+	import { ActivityBar, CanvasFrame, ContextMenu, Sketch, SidePanel, SplitPane, TimelineScrubber, type ContextMenuItem } from 'svelte-p5-components';
 	import { LayoutDashboard, Filter, Upload, Settings as SettingsIcon, CircleHelp } from '@lucide/svelte';
 	import { formatTimeAuto } from '$lib/core/time-utils';
 	import { browser } from '$app/environment';
@@ -103,7 +94,6 @@
 	import SettingsPanel from '$lib/panels/SettingsPanel.svelte';
 
 	import type { TranscriptionResult } from '$lib/core/transcription-service';
-	import type { TimingMode } from '../models/transcript';
 	import { splitIntoWords } from '$lib/core/string-utils';
 
 	let csvPreview = $state<CSVPreview | null>(null);
@@ -128,7 +118,7 @@
 			speakerCount: parseResult.speakers.length,
 			turnCount: parseResult.turns.length,
 			wordCount: parseResult.turns.reduce((sum, t) => sum + splitIntoWords(t.content).length, 0),
-			timingMode: parseResult.detectedTimingMode,
+			timingMode: parseResult.detectedTimingMode ?? null,
 			error: null
 		};
 	}
@@ -398,7 +388,7 @@
 	let pendingVideoFile: File | null = $state(null);
 	let pendingVideoDuration: number = $state(0);
 	// Core references
-	let p5Instance: p5 | null = $state(null);
+	let p5Instance: IgsSketch | null = $state(null);
 	let core: Core;
 	let tourOverlay: TourOverlay;
 

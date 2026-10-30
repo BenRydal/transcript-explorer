@@ -1,13 +1,7 @@
 <script lang="ts">
 	import { Check, LayoutDashboard } from '@lucide/svelte';
 	import { PANEL_TILES } from '../ui/panel-icons';
-	import VizStore, {
-		type VizStoreType,
-		type SpeakerSortOrder,
-		type FingerprintOverlayMode,
-		type FingerprintChartMode,
-		type ContributionCloudWeighting
-	} from '../../stores/vizStore';
+	import VizStore, { type VizStoreType, type SpeakerSortOrder } from '../../stores/vizStore';
 
 	const techniqueToggleOptions = [
 		'speakerGardenToggle',

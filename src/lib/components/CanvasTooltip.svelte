@@ -2,6 +2,7 @@
 	import { tick } from 'svelte';
 	import TooltipStore from '../../stores/tooltipStore';
 	import { getP5ContainerRect, clamp } from '../core/layout-utils';
+	import { parseTooltipMarkup, type TooltipNode } from '../core/tooltip-markup';
 
 	const EDGE_PADDING = 20;
 	const MAX_PREVIEW_WORDS = 100;
@@ -18,7 +19,7 @@
 	// Gap in px between the mouse pointer and the nearest edge of the tooltip.
 	const POINTER_GAP = 20;
 
-	let displayContent = $derived(formatContent($TooltipStore.content));
+	let displayContent = $derived(parseTooltipMarkup(formatContent($TooltipStore.content)));
 
 	// Get the p5 container for positioning relative to it
 	let containerRect: DOMRect | null = $state(null);
@@ -104,10 +105,18 @@
 	let containerStyle = $derived(`left: ${left}px; top: ${top}px; max-width: ${maxWidth}px; visibility: ${measured ? 'visible' : 'hidden'};`);
 </script>
 
+{#snippet nodes(list: TooltipNode[])}
+	{#each list as node}
+		{#if node.kind === 'text'}{node.text}{:else if node.kind === 'b'}<b style={node.style}>{@render nodes(node.children)}</b>{:else}<span
+				style={node.style}>{@render nodes(node.children)}</span
+			>{/if}
+	{/each}
+{/snippet}
+
 {#if $TooltipStore.visible}
 	<div class="canvas-tooltip" style={containerStyle} bind:this={tooltipEl}>
 		<div class="tooltip-content" style="border-color: {$TooltipStore.speakerColor}; max-height: {maxHeight ? `${maxHeight}px` : 'none'}">
-			<p style="color: {$TooltipStore.speakerColor}">{@html displayContent}</p>
+			<p style="color: {$TooltipStore.speakerColor}">{@render nodes(displayContent)}</p>
 		</div>
 		<div
 			class="tooltip-arrow"

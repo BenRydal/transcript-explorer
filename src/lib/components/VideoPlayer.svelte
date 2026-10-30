@@ -2,7 +2,7 @@
 	import { onMount, onDestroy } from 'svelte';
 	import { derived } from 'svelte/store';
 	import { browser } from '$app/environment';
-	import VideoStore, { setLoaded, setAspectRatio } from '../../stores/videoStore';
+	import VideoStore, { setLoaded, setAspectRatio, type VideoSource } from '../../stores/videoStore';
 	import { createYouTubePlayer, type VideoPlayer, destroyPlayer } from '../video/video-service';
 
 	interface Props {
@@ -21,7 +21,7 @@
 
 	// Create a derived store that only changes when source changes
 	// This prevents re-running initialization when other store properties change
-	let lastSource = { type: null as 'youtube' | 'file' | null, videoId: undefined as string | undefined, fileUrl: undefined as string | undefined };
+	let lastSource: VideoSource = { type: null };
 	const sourceStore = derived(VideoStore, ($store) => {
 		const newSource = $store.source;
 		// Only return a new object if source actually changed
