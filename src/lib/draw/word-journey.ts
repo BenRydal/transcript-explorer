@@ -93,7 +93,7 @@ export class WordJourney {
 		this.layout(lanes, absentLabel);
 		this.drawTitle(data.word, data.occurrences.length, present.length, ordered.length);
 		this.drawSpeakerLanes(lanes, counts);
-		drawTimeAxis(this.ctx.sk, this.bounds, this, this.timeline, this.ctx.theme);
+		drawTimeAxis(this.ctx.sk, this.bounds, { gx: this.gx, gy: this.gy, gw: this.gw, gh: this.gh }, this.timeline, this.ctx.theme);
 
 		const clusters = this.buildClusters(data.occurrences, lanes);
 		const hovered = this.findHoveredCluster(clusters);

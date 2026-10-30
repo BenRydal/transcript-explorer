@@ -130,7 +130,7 @@
 			speakerCount: parseResult.speakers.length,
 			turnCount: parseResult.turns.length,
 			wordCount: parseResult.turns.reduce((sum, t) => sum + splitIntoWords(t.content).length, 0),
-			timingMode: parseResult.detectedTimingMode,
+			timingMode: parseResult.detectedTimingMode ?? null,
 			error: null
 		};
 	}

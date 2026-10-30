@@ -38,8 +38,9 @@
 	);
 
 	function handleWordSearch(event: Event) {
-		if (!(event.target instanceof HTMLInputElement)) return;
-		FiltersStore.update((filters) => ({ ...filters, wordToSearch: event.target.value.trim() }));
+		const target = event.target;
+		if (!(target instanceof HTMLInputElement)) return;
+		FiltersStore.update((filters) => ({ ...filters, wordToSearch: target.value.trim() }));
 	}
 
 	function clearWordSearch() {

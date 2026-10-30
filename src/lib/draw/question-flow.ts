@@ -124,7 +124,7 @@ export class QuestionFlow {
 		const absentLabel = hiddenCount > 0 ? absentRowLabel(hiddenCount) : null;
 		this.layout(absentLabel, showLegend);
 		this.drawSpeakerLabels();
-		drawTimeAxis(this.ctx.sk, this.bounds, this, this.timeline, this.ctx.theme);
+		drawTimeAxis(this.ctx.sk, this.bounds, { gx: this.gx, gy: this.gy, gw: this.gw, gh: this.gh }, this.timeline, this.ctx.theme);
 
 		// Render all pairs
 		const rendered = this.renderPairs(pairs, wordCounts, maxWords);
@@ -316,7 +316,8 @@ export class QuestionFlow {
 
 		// Draw arcs first (behind nodes)
 		for (const rp of rendered) {
-			if (rp.ax === null || rp.ay === null) continue;
+			const { ax, ay } = rp;
+			if (ax === null || ay === null) continue;
 
 			const isHovered = hoveredPair === rp;
 			const shouldDim =
@@ -332,11 +333,11 @@ export class QuestionFlow {
 				this.ctx.sk.strokeWeight(isHovered ? 2 : 1);
 
 				// Draw curved arc between question and answer
-				const controlY = Math.min(rp.qy, rp.ay) - ARC_CONTROL_OFFSET;
-				this.ctx.sk.bezier(rp.qx, rp.qy, rp.qx, controlY, rp.ax, controlY, rp.ax, rp.ay);
+				const controlY = Math.min(rp.qy, ay) - ARC_CONTROL_OFFSET;
+				this.ctx.sk.bezier(rp.qx, rp.qy, rp.qx, controlY, ax, controlY, ax, ay);
 
 				// Draw arrowhead along the curve near the answer node
-				this.drawArrowhead(rp.qx, rp.qy, rp.ax, rp.ay, controlY, color);
+				this.drawArrowhead(rp.qx, rp.qy, ax, ay, controlY, color);
 			});
 		}
 
