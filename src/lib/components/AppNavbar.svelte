@@ -179,17 +179,12 @@
 			     a visible "idle" indicator would be noise). -->
 			{#if autosave !== 'idle'}
 				{#if autosave === 'error'}
-					<button
-						type="button"
-						class="te-autosave te-autosave--error"
-						role="status"
-						aria-live="polite"
-						title="Autosave failed. Click to retry."
-						onclick={retryAutosave}
-					>
-						<TriangleAlert size={12} aria-hidden="true" />
-						<span>{autosaveLabel(autosave)}</span>
-					</button>
+					<span class="contents" role="status" aria-live="polite">
+						<button type="button" class="te-autosave te-autosave--error" title="Autosave failed. Click to retry." onclick={retryAutosave}>
+							<TriangleAlert size={12} aria-hidden="true" />
+							<span>{autosaveLabel(autosave)}</span>
+						</button>
+					</span>
 				{:else}
 					<span class="te-autosave te-autosave--{autosave}" role="status" aria-live="polite">
 						{#if autosave === 'saving'}

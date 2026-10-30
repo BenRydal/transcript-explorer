@@ -93,7 +93,7 @@ function runDetectionTests() {
 	for (const file of codeFiles) {
 		testFile(file);
 		const results = parseCSV(path.join(dir, file));
-		assert(testCodeFile(results as any), `${file}: should be detected as code file`);
+		assert(testCodeFile(results), `${file}: should be detected as code file`);
 	}
 
 	// Should NOT be detected as code files
@@ -102,7 +102,7 @@ function runDetectionTests() {
 	for (const file of nonCodeFiles) {
 		testFile(file);
 		const results = parseCSV(path.join(dir, file));
-		assert(!testCodeFile(results as any), `${file}: should NOT be detected as code file`);
+		assert(!testCodeFile(results), `${file}: should NOT be detected as code file`);
 	}
 }
 
@@ -169,7 +169,7 @@ function runTurnBasedTests() {
 
 	testFile('turn-based-good.csv');
 	let results = parseCSV(path.join(__dirname, 'turn-based-good.csv'));
-	let parsed = parseCodeFile(results as any, 'turn-based-good.csv');
+	let parsed = parseCodeFile(results, 'turn-based-good.csv');
 	assert(parsed.type === 'turn', 'should parse as turn type');
 	if (parsed.type === 'turn') {
 		assert(parsed.entries.length === 8, `should have 8 code entries (got ${parsed.entries.length})`);
@@ -182,7 +182,7 @@ function runTurnBasedTests() {
 
 	testFile('turn-based-single-code.csv');
 	results = parseCSV(path.join(__dirname, 'turn-based-single-code.csv'));
-	parsed = parseCodeFile(results as any, 'turn-based-single-code.csv');
+	parsed = parseCodeFile(results, 'turn-based-single-code.csv');
 	assert(parsed.type === 'turn', 'should parse as turn type');
 	if (parsed.type === 'turn') {
 		assert(parsed.entries.length === 1, `should have 1 entry (got ${parsed.entries.length})`);
@@ -192,7 +192,7 @@ function runTurnBasedTests() {
 
 	testFile('turn-based-empty-codes.csv');
 	results = parseCSV(path.join(__dirname, 'turn-based-empty-codes.csv'));
-	parsed = parseCodeFile(results as any, 'turn-based-empty-codes.csv');
+	parsed = parseCodeFile(results, 'turn-based-empty-codes.csv');
 	assert(parsed.type === 'turn', 'should parse as turn type');
 	if (parsed.type === 'turn') {
 		assert(parsed.entries.length === 3, `should have 3 entries, skipping empty codes (got ${parsed.entries.length})`);
@@ -201,7 +201,7 @@ function runTurnBasedTests() {
 
 	testFile('turn-based-duplicate-turns.csv');
 	results = parseCSV(path.join(__dirname, 'turn-based-duplicate-turns.csv'));
-	parsed = parseCodeFile(results as any, 'turn-based-duplicate-turns.csv');
+	parsed = parseCodeFile(results, 'turn-based-duplicate-turns.csv');
 	assert(parsed.type === 'turn', 'should parse as turn type');
 	if (parsed.type === 'turn') {
 		const question = parsed.entries.find((e) => e.code === 'question');
@@ -212,7 +212,7 @@ function runTurnBasedTests() {
 
 	testFile('turn-based-invalid-turn-numbers.csv');
 	results = parseCSV(path.join(__dirname, 'turn-based-invalid-turn-numbers.csv'));
-	parsed = parseCodeFile(results as any, 'turn-based-invalid-turn-numbers.csv');
+	parsed = parseCodeFile(results, 'turn-based-invalid-turn-numbers.csv');
 	assert(parsed.type === 'turn', 'should parse as turn type');
 	if (parsed.type === 'turn') {
 		// Valid rows: turn 1 (question), turn 3 (clarification), turn 999 (off-topic)
@@ -228,7 +228,7 @@ function runTurnBasedTests() {
 
 	testFile('turn-based-all-rows-invalid.csv');
 	results = parseCSV(path.join(__dirname, 'turn-based-all-rows-invalid.csv'));
-	parsed = parseCodeFile(results as any, 'turn-based-all-rows-invalid.csv');
+	parsed = parseCodeFile(results, 'turn-based-all-rows-invalid.csv');
 	assert(parsed.type === 'turn', 'should parse as turn type');
 	if (parsed.type === 'turn') {
 		assert(parsed.entries.length === 0, `should have 0 entries when all rows invalid (got ${parsed.entries.length})`);
@@ -236,7 +236,7 @@ function runTurnBasedTests() {
 
 	testFile('turn-based-multiple-codes-per-turn.csv');
 	results = parseCSV(path.join(__dirname, 'turn-based-multiple-codes-per-turn.csv'));
-	parsed = parseCodeFile(results as any, 'turn-based-multiple-codes-per-turn.csv');
+	parsed = parseCodeFile(results, 'turn-based-multiple-codes-per-turn.csv');
 	assert(parsed.type === 'turn', 'should parse as turn type');
 	if (parsed.type === 'turn') {
 		const polite = parsed.entries.find((e) => e.code === 'polite');
@@ -249,7 +249,7 @@ function runTurnBasedTests() {
 
 	testFile('turn-based-whitespace-codes.csv');
 	results = parseCSV(path.join(__dirname, 'turn-based-whitespace-codes.csv'));
-	parsed = parseCodeFile(results as any, 'turn-based-whitespace-codes.csv');
+	parsed = parseCodeFile(results, 'turn-based-whitespace-codes.csv');
 	assert(parsed.type === 'turn', 'should parse as turn type');
 	if (parsed.type === 'turn') {
 		const codeNames = parsed.entries.map((e) => e.code);
@@ -261,7 +261,7 @@ function runTurnBasedTests() {
 
 	testFile('turn-based-special-characters.csv');
 	results = parseCSV(path.join(__dirname, 'turn-based-special-characters.csv'));
-	parsed = parseCodeFile(results as any, 'turn-based-special-characters.csv');
+	parsed = parseCodeFile(results, 'turn-based-special-characters.csv');
 	assert(parsed.type === 'turn', 'should parse as turn type');
 	if (parsed.type === 'turn') {
 		const codeNames = parsed.entries.map((e) => e.code);
@@ -274,7 +274,7 @@ function runTurnBasedTests() {
 
 	testFile('turn-based-high-turn-numbers.csv');
 	results = parseCSV(path.join(__dirname, 'turn-based-high-turn-numbers.csv'));
-	parsed = parseCodeFile(results as any, 'turn-based-high-turn-numbers.csv');
+	parsed = parseCodeFile(results, 'turn-based-high-turn-numbers.csv');
 	assert(parsed.type === 'turn', 'should parse as turn type');
 	if (parsed.type === 'turn') {
 		assert(parsed.entries.length === 5, `should have 5 entries (got ${parsed.entries.length})`);
@@ -284,7 +284,7 @@ function runTurnBasedTests() {
 
 	testFile('turn-based-many-codes.csv');
 	results = parseCSV(path.join(__dirname, 'turn-based-many-codes.csv'));
-	parsed = parseCodeFile(results as any, 'turn-based-many-codes.csv');
+	parsed = parseCodeFile(results, 'turn-based-many-codes.csv');
 	assert(parsed.type === 'turn', 'should parse as turn type');
 	if (parsed.type === 'turn') {
 		assert(parsed.entries.length === 17, `should have 17 entries (got ${parsed.entries.length})`);
@@ -300,7 +300,7 @@ function runTurnRangeTests() {
 
 	testFile('turn-range-good.csv');
 	let results = parseCSV(path.join(__dirname, 'turn-range-good.csv'));
-	let parsed = parseCodeFile(results as any, 'turn-range-good.csv');
+	let parsed = parseCodeFile(results, 'turn-range-good.csv');
 	assert(parsed.type === 'turn', 'should parse as turn type');
 	if (parsed.type === 'turn') {
 		assert(parsed.entries.length === 5, `should have 5 entries (got ${parsed.entries.length})`);
@@ -313,7 +313,7 @@ function runTurnRangeTests() {
 
 	testFile('turn-range-inverted.csv');
 	results = parseCSV(path.join(__dirname, 'turn-range-inverted.csv'));
-	parsed = parseCodeFile(results as any, 'turn-range-inverted.csv');
+	parsed = parseCodeFile(results, 'turn-range-inverted.csv');
 	assert(parsed.type === 'turn', 'should parse as turn type');
 	if (parsed.type === 'turn') {
 		// Inverted ranges (end < start) should be skipped
@@ -331,7 +331,7 @@ function runTurnRangeTests() {
 
 	testFile('turn-range-overlapping.csv');
 	results = parseCSV(path.join(__dirname, 'turn-range-overlapping.csv'));
-	parsed = parseCodeFile(results as any, 'turn-range-overlapping.csv');
+	parsed = parseCodeFile(results, 'turn-range-overlapping.csv');
 	assert(parsed.type === 'turn', 'should parse as turn type');
 	if (parsed.type === 'turn') {
 		assert(parsed.entries.length === 4, `should have 4 entries (got ${parsed.entries.length})`);
@@ -342,7 +342,7 @@ function runTurnRangeTests() {
 
 	testFile('turn-range-huge-range.csv');
 	results = parseCSV(path.join(__dirname, 'turn-range-huge-range.csv'));
-	parsed = parseCodeFile(results as any, 'turn-range-huge-range.csv');
+	parsed = parseCodeFile(results, 'turn-range-huge-range.csv');
 	assert(parsed.type === 'turn', 'should parse as turn type');
 	if (parsed.type === 'turn') {
 		// The 50000-turn range should be skipped (safety limit)
@@ -358,7 +358,7 @@ function runTurnRangeTests() {
 
 	testFile('turn-range-invalid-values.csv');
 	results = parseCSV(path.join(__dirname, 'turn-range-invalid-values.csv'));
-	parsed = parseCodeFile(results as any, 'turn-range-invalid-values.csv');
+	parsed = parseCodeFile(results, 'turn-range-invalid-values.csv');
 	assert(parsed.type === 'turn', 'should parse as turn type');
 	if (parsed.type === 'turn') {
 		// Only "valid" (1-3) should survive
@@ -368,7 +368,7 @@ function runTurnRangeTests() {
 
 	testFile('turn-range-single-turn-ranges.csv');
 	results = parseCSV(path.join(__dirname, 'turn-range-single-turn-ranges.csv'));
-	parsed = parseCodeFile(results as any, 'turn-range-single-turn-ranges.csv');
+	parsed = parseCodeFile(results, 'turn-range-single-turn-ranges.csv');
 	assert(parsed.type === 'turn', 'should parse as turn type');
 	if (parsed.type === 'turn') {
 		assert(parsed.entries.length === 5, `should have 5 entries (got ${parsed.entries.length})`);
@@ -386,7 +386,7 @@ function runTimeBasedTests() {
 
 	testFile('time-based-good-seconds.csv');
 	let results = parseCSV(path.join(__dirname, 'time-based-good-seconds.csv'));
-	let parsed = parseCodeFile(results as any, 'time-based-good-seconds.csv');
+	let parsed = parseCodeFile(results, 'time-based-good-seconds.csv');
 	assert(parsed.type === 'time', 'should parse as time type');
 	if (parsed.type === 'time') {
 		assert(parsed.entries.length === 6, `should have 6 entries (got ${parsed.entries.length})`);
@@ -399,7 +399,7 @@ function runTimeBasedTests() {
 
 	testFile('time-based-good-hhmmss.csv');
 	results = parseCSV(path.join(__dirname, 'time-based-good-hhmmss.csv'));
-	parsed = parseCodeFile(results as any, 'time-based-good-hhmmss.csv');
+	parsed = parseCodeFile(results, 'time-based-good-hhmmss.csv');
 	assert(parsed.type === 'time', 'should parse as time type');
 	if (parsed.type === 'time') {
 		assert(parsed.entries.length === 5, `should have 5 entries (got ${parsed.entries.length})`);
@@ -411,7 +411,7 @@ function runTimeBasedTests() {
 
 	testFile('time-based-good-mmss.csv');
 	results = parseCSV(path.join(__dirname, 'time-based-good-mmss.csv'));
-	parsed = parseCodeFile(results as any, 'time-based-good-mmss.csv');
+	parsed = parseCodeFile(results, 'time-based-good-mmss.csv');
 	assert(parsed.type === 'time', 'should parse as time type');
 	if (parsed.type === 'time') {
 		assert(parsed.entries.length === 5, `should have 5 entries (got ${parsed.entries.length})`);
@@ -422,7 +422,7 @@ function runTimeBasedTests() {
 
 	testFile('time-based-mixed-formats.csv');
 	results = parseCSV(path.join(__dirname, 'time-based-mixed-formats.csv'));
-	parsed = parseCodeFile(results as any, 'time-based-mixed-formats.csv');
+	parsed = parseCodeFile(results, 'time-based-mixed-formats.csv');
 	assert(parsed.type === 'time', 'should parse as time type');
 	if (parsed.type === 'time') {
 		assert(parsed.entries.length === 4, `should have 4 entries (got ${parsed.entries.length})`);
@@ -438,7 +438,7 @@ function runTimeBasedTests() {
 
 	testFile('time-based-invalid-times.csv');
 	results = parseCSV(path.join(__dirname, 'time-based-invalid-times.csv'));
-	parsed = parseCodeFile(results as any, 'time-based-invalid-times.csv');
+	parsed = parseCodeFile(results, 'time-based-invalid-times.csv');
 	assert(parsed.type === 'time', 'should parse as time type');
 	if (parsed.type === 'time') {
 		// Only rows with valid start AND end should survive
@@ -454,7 +454,7 @@ function runTimeBasedTests() {
 
 	testFile('time-based-overlapping.csv');
 	results = parseCSV(path.join(__dirname, 'time-based-overlapping.csv'));
-	parsed = parseCodeFile(results as any, 'time-based-overlapping.csv');
+	parsed = parseCodeFile(results, 'time-based-overlapping.csv');
 	assert(parsed.type === 'time', 'should parse as time type');
 	if (parsed.type === 'time') {
 		assert(parsed.entries.length === 4, `should have 4 entries (got ${parsed.entries.length})`);
@@ -464,7 +464,7 @@ function runTimeBasedTests() {
 
 	testFile('time-based-zero-duration.csv');
 	results = parseCSV(path.join(__dirname, 'time-based-zero-duration.csv'));
-	parsed = parseCodeFile(results as any, 'time-based-zero-duration.csv');
+	parsed = parseCodeFile(results, 'time-based-zero-duration.csv');
 	assert(parsed.type === 'time', 'should parse as time type');
 	if (parsed.type === 'time') {
 		assert(parsed.entries.length === 5, `should have 5 entries including zero-duration (got ${parsed.entries.length})`);
@@ -474,7 +474,7 @@ function runTimeBasedTests() {
 
 	testFile('time-based-gaps-between-codes.csv');
 	results = parseCSV(path.join(__dirname, 'time-based-gaps-between-codes.csv'));
-	parsed = parseCodeFile(results as any, 'time-based-gaps-between-codes.csv');
+	parsed = parseCodeFile(results, 'time-based-gaps-between-codes.csv');
 	assert(parsed.type === 'time', 'should parse as time type');
 	if (parsed.type === 'time') {
 		assert(parsed.entries.length === 4, `should have 4 entries (got ${parsed.entries.length})`);
@@ -484,7 +484,7 @@ function runTimeBasedTests() {
 
 	testFile('time-based-no-code-column.csv');
 	results = parseCSV(path.join(__dirname, 'time-based-no-code-column.csv'));
-	parsed = parseCodeFile(results as any, 'time-based-no-code-column.csv');
+	parsed = parseCodeFile(results, 'time-based-no-code-column.csv');
 	assert(parsed.type === 'time', 'should parse as time type');
 	if (parsed.type === 'time') {
 		assert(parsed.entries.length === 4, `should have 4 entries (got ${parsed.entries.length})`);
@@ -502,14 +502,15 @@ function runErrorTests() {
 
 	testFile('incomplete-code-columns.csv (should throw on parse)');
 	const results = parseCSV(path.join(__dirname, 'incomplete-code-columns.csv'));
-	assert(testCodeFile(results as any), 'should detect as code file');
+	assert(testCodeFile(results), 'should detect as code file');
 	let threw = false;
 	try {
-		parseCodeFile(results as any, 'incomplete-code-columns.csv');
-	} catch (e: any) {
+		parseCodeFile(results, 'incomplete-code-columns.csv');
+	} catch (e) {
 		threw = true;
-		assert(e.message.includes('Unrecognized'), `error should mention unrecognized format (got '${e.message}')`);
-		console.log(`  Correctly threw: ${e.message}`);
+		const message = e instanceof Error ? e.message : String(e);
+		assert(message.includes('Unrecognized'), `error should mention unrecognized format (got '${message}')`);
+		console.log(`  Correctly threw: ${message}`);
 	}
 	assert(threw, 'parseCodeFile should throw for incomplete code columns');
 }
@@ -521,7 +522,7 @@ function runNegativeTimeTest() {
 
 	testFile('time-based-invalid-times.csv (negative start)');
 	const results = parseCSV(path.join(__dirname, 'time-based-invalid-times.csv'));
-	const parsed = parseCodeFile(results as any, 'time-based-invalid-times.csv');
+	const parsed = parseCodeFile(results, 'time-based-invalid-times.csv');
 	if (parsed.type === 'time') {
 		// The row with -5 start: toSeconds returns the number, so it depends on toSeconds behavior
 		const negativeEntry = parsed.entries.find((e) => e.code === 'negative_start');

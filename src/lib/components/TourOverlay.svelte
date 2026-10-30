@@ -2,7 +2,7 @@
 	import { trapFocus } from '$lib/a11y/focus-trap';
 
 	interface Props {
-		isOpen: boolean;
+		isOpen?: boolean;
 	}
 
 	let { isOpen = $bindable(false) }: Props = $props();
@@ -118,8 +118,6 @@
 		     keyboard users should Escape instead. Not focusable so it
 		     doesn't pollute the tab order; aria-hidden so screen readers
 		     ignore it. -->
-		<!-- svelte-ignore a11y_click_events_have_key_events -->
-		<!-- svelte-ignore a11y_no_static_element_interactions -->
 		<div class="absolute inset-0 bg-black/50 pointer-events-auto cursor-default" aria-hidden="true" onclick={end}></div>
 
 		{#if rect}

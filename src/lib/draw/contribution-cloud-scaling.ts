@@ -34,7 +34,7 @@ const CHARS_PER_EM = 2;
 const REFERENCE_TEXT_SIZE = 50;
 
 // Module-level caches
-let scalingCache: ScalingCache = { key: null, scaling: null };
+const scalingCache: ScalingCache = { key: null, scaling: null };
 const wordWidthCache = new Map<string, number>();
 
 // Reset on transcript change so the map doesn't accumulate entries from

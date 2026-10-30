@@ -2,17 +2,7 @@
 	import type p5 from 'p5';
 	import type { IgsSketch } from '$lib/p5/igs-sketch-instance';
 	import type { SketchFn } from 'svelte-p5';
-	import {
-		ActivityBar,
-		CanvasFrame,
-		ContextMenu,
-		Sketch,
-		SidePanel,
-		SplitPane,
-		TimelineScrubber,
-		type ActivityBarItem,
-		type ContextMenuItem
-	} from 'svelte-p5-components';
+	import { ActivityBar, CanvasFrame, ContextMenu, Sketch, SidePanel, SplitPane, TimelineScrubber, type ContextMenuItem } from 'svelte-p5-components';
 	import { LayoutDashboard, Filter, Upload, Settings as SettingsIcon, CircleHelp } from '@lucide/svelte';
 	import { formatTimeAuto } from '$lib/core/time-utils';
 	import { browser } from '$app/environment';
@@ -104,7 +94,6 @@
 	import SettingsPanel from '$lib/panels/SettingsPanel.svelte';
 
 	import type { TranscriptionResult } from '$lib/core/transcription-service';
-	import type { TimingMode } from '../models/transcript';
 	import { splitIntoWords } from '$lib/core/string-utils';
 
 	let csvPreview = $state<CSVPreview | null>(null);

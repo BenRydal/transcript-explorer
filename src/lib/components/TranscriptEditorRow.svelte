@@ -1,6 +1,6 @@
 <script lang="ts">
 	import { onMount } from 'svelte';
-	import type { Turn } from '$lib/core/turn-utils';
+	import type { Turn, TurnEdit } from '$lib/core/turn-utils';
 	import { getTurnContent } from '$lib/core/turn-utils';
 	import { toSeconds, formatTimeAuto } from '$lib/core/time-utils';
 	import { toTitleCase, normalizeSpeakerName } from '$lib/core/string-utils';
@@ -17,7 +17,7 @@
 		isSelected?: boolean;
 		isSpeakerHighlighted?: boolean;
 		timingMode?: TimingMode;
-		onedit?: (data: { turnNumber: number; field: string; value: any }) => void;
+		onedit?: (data: TurnEdit) => void;
 		onselect?: (data: { turn: Turn }) => void;
 		ondelete?: (data: { turnNumber: number }) => void;
 		onaddAfter?: (data: { turnNumber: number; speaker: string }) => void;
