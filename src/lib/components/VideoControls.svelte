@@ -14,7 +14,7 @@
 
 	let { player = null, isFullscreen = false, showAdvancedControls = false, ontoggleFullscreen }: Props = $props();
 
-	let animationFrameId: number;
+	let animationFrameId = 0;
 	let isScrubbing = $state(false);
 	let scrubTime = $state(0);
 
@@ -29,14 +29,21 @@
 	let duration = $derived($VideoStore.duration);
 	let progressPercent = $derived(duration > 0 ? (currentTime / duration) * 100 : 0);
 
-	// Update current time from player
+	// Update current time from player. The YouTube iframe API emits no
+	// timeupdate, so playback position has to be polled.
 	function updateTime() {
 		if (player && isPlaying && !isScrubbing) {
 			const time = getCurrentTime(player);
 			setCurrentTime(time);
 		}
-		animationFrameId = requestAnimationFrame(updateTime);
+		animationFrameId = isPlaying ? requestAnimationFrame(updateTime) : 0;
 	}
+
+	$effect(() => {
+		if (isPlaying && !animationFrameId) {
+			animationFrameId = requestAnimationFrame(updateTime);
+		}
+	});
 
 	function handlePlayPause(e: MouseEvent) {
 		e.stopPropagation();
@@ -114,7 +121,6 @@
 
 	onMount(() => {
 		if (browser) {
-			animationFrameId = requestAnimationFrame(updateTime);
 			// Add global mouse listeners for scrubbing
 			window.addEventListener('mousemove', handleScrubMove);
 			window.addEventListener('mouseup', handleScrubEnd);
@@ -124,6 +130,7 @@
 	onDestroy(() => {
 		if (animationFrameId) {
 			cancelAnimationFrame(animationFrameId);
+			animationFrameId = 0;
 		}
 		if (browser) {
 			window.removeEventListener('mousemove', handleScrubMove);
