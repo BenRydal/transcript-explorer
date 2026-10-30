@@ -191,7 +191,7 @@ export class SpeakerGarden {
 		const statsLine = `${numOfWords} total words (${wordPercent}%)\n${numOfTurns} turns (${turnPercent}%)`;
 		const tooltipContent = `<b>First word of each turn:</b>\n${firstWordsLine}\n\n${statsLine}`;
 
-		showTooltip(this.ctx.sk.mouseX, this.ctx.sk.mouseY, tooltipContent, speakerColor, this.bounds.y + this.bounds.height);
+		showTooltip(this.ctx.sk.mouseX, this.ctx.sk.mouseY, tooltipContent, speakerColor.toString(), this.bounds.y + this.bounds.height);
 	}
 
 	getMaxCircleRadius(pixelWidth: number): number {

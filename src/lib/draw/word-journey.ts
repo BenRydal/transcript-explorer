@@ -63,7 +63,7 @@ export class WordJourney {
 		this.drawSpeakerLanes();
 
 		// Draw timeline axis
-		drawTimeAxis(this.ctx.sk, this.bounds, this, this.timeline, this.ctx.theme);
+		drawTimeAxis(this.ctx.sk, this.bounds, { gx: this.gx, gy: this.gy, gw: this.gw, gh: this.gh }, this.timeline, this.ctx.theme);
 
 		// Render occurrences
 		const rendered = this.renderOccurrences(data.occurrences);
