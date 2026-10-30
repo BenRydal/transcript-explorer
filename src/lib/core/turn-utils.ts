@@ -9,6 +9,11 @@ export interface Turn {
 	wordCount: number;
 }
 
+export type TurnEdit =
+	| { turnNumber: number; field: 'content'; value: string }
+	| { turnNumber: number; field: 'speaker'; value: string }
+	| { turnNumber: number; field: 'time'; value: { startTime: number; endTime: number } };
+
 /**
  * Aggregates a flat wordArray into an array of Turn objects.
  * Each turn contains all words spoken in that turn by a speaker.

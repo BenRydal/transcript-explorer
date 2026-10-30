@@ -87,7 +87,7 @@ function hslToHex(h: number, s: number, l: number): string {
  */
 function shadeFor(base: string, position: number, size: number): string {
 	if (size <= 1) return base.toLowerCase();
-	const [h, s, l] = hexToHsl(base);
+	const [h, s] = hexToHsl(base);
 	// Spread evenly across the whole band: first member darkest, last lightest.
 	const t = position / (size - 1); // 0..1
 	const lightness = MIN_LIGHTNESS + t * (MAX_LIGHTNESS - MIN_LIGHTNESS);

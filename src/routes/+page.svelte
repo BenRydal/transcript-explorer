@@ -11,7 +11,6 @@
 		SidePanel,
 		SplitPane,
 		TimelineScrubber,
-		type ActivityBarItem,
 		type ContextMenuItem
 	} from 'svelte-p5-components';
 	import { LayoutDashboard, Filter, Upload, Settings as SettingsIcon, CircleHelp } from '@lucide/svelte';
@@ -106,7 +105,6 @@
 	import SettingsPanel from '$lib/panels/SettingsPanel.svelte';
 
 	import type { TranscriptionResult } from '$lib/core/transcription-service';
-	import type { TimingMode } from '../models/transcript';
 	import { splitIntoWords } from '$lib/core/string-utils';
 
 	let csvPreview = $state<CSVPreview | null>(null);

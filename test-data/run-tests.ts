@@ -59,7 +59,7 @@ function parseCSVFile(filePath: string): {
 		transformHeader: (h: string) => h.trim().toLowerCase()
 	});
 
-	const valid = testTranscript(papaResult as any);
+	const valid = testTranscript(papaResult);
 	if (!valid) {
 		return { valid: false, parseResult: null, papaResult };
 	}
@@ -79,7 +79,7 @@ function runCSVTests() {
 	for (const file of files) {
 		testFile(file);
 		const filePath = path.join(csvDir, file);
-		const { valid, parseResult, papaResult } = parseCSVFile(filePath);
+		const { valid, parseResult } = parseCSVFile(filePath);
 
 		if (file === '14-bad-missing-columns.csv') {
 			assert(!valid, `${file}: should reject - missing required columns`);
@@ -103,9 +103,9 @@ function runCSVTests() {
 		if (!parseResult) continue;
 
 		// Create transcript to test full pipeline
-		let transcript, users;
+		let transcript: ReturnType<typeof createTranscriptFromParsedText>['transcript'];
 		try {
-			({ transcript, users } = createTranscriptFromParsedText(parseResult, parseResult.detectedTimingMode));
+			({ transcript } = createTranscriptFromParsedText(parseResult, parseResult.detectedTimingMode));
 			assert(true, `${file}: createTranscriptFromParsedText succeeded`);
 		} catch (e) {
 			assert(false, `${file}: createTranscriptFromParsedText threw: ${e}`);
@@ -215,8 +215,7 @@ function runCSVTests() {
 				assert(parseResult.turns.length > 0, `${file}: should have some valid turns`);
 				console.log(`  Valid turns: ${parseResult.turns.length}`);
 				// Check whitespace is trimmed in speaker names
-				const speakers = parseResult.speakers;
-				for (const s of speakers) {
+				for (const s of parseResult.speakers) {
 					assert(s === s.trim(), `${file}: speaker '${s}' should be trimmed`);
 				}
 				break;
@@ -337,7 +336,7 @@ function runSubtitleTests() {
 
 		// Create transcript via subtitle factory
 		try {
-			const { transcript, users } = createTranscriptFromSubtitle(parseResult, '#6a3d9a');
+			const { transcript } = createTranscriptFromSubtitle(parseResult, '#6a3d9a');
 			assert(transcript.totalNumOfWords > 0, `${file}: transcript should have words`);
 			assert(transcript.timingMode === 'startEnd', `${file}: should be startEnd timing`);
 			console.log(`  Transcript: ${transcript.totalNumOfWords} words, ${transcript.totalConversationTurns} turns`);

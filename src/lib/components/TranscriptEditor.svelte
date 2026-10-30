@@ -11,7 +11,7 @@
 	import TranscribeModeStore from '../../stores/transcribeModeStore';
 	import { getTurnsFromWordArray, getTurnContent } from '$lib/core/turn-utils';
 	import { applyTimingModeToWordArray, updateTimelineFromData, getMaxTime } from '$lib/core/timing-utils';
-	import type { Turn } from '$lib/core/turn-utils';
+	import type { Turn, TurnEdit } from '$lib/core/turn-utils';
 	import { DataPoint } from '../../models/dataPoint';
 	import { normalizeWord, splitIntoWordTokens } from '$lib/core/string-utils';
 	import { getUserColors, DEFAULT_SPEAKER_COLOR } from '$lib/constants/ui';
@@ -111,12 +111,12 @@
 	}
 
 	// Handle edit events from row component
-	function handleTurnEdit(data: { turnNumber: number; field: string; value: any }) {
-		const { turnNumber, field, value } = data;
+	function handleTurnEdit(data: TurnEdit) {
+		const { turnNumber, field } = data;
 
 		// Handle speaker name change - need to update UserStore and recalculate all speaker orders
 		// Note: speaker name is already normalized by TranscriptEditorRow before dispatch
-		const newSpeakerName: string | null = field === 'speaker' ? value : null;
+		const newSpeakerName: string | null = data.field === 'speaker' ? data.value : null;
 
 		// Save state for undo
 		HistoryStore.pushState(get(TranscriptStore).wordArray);
@@ -124,9 +124,9 @@
 		TranscriptStore.update((transcript) => {
 			let updatedWordArray: DataPoint[];
 
-			if (field === 'content') {
+			if (data.field === 'content') {
 				// Handle content edit - rebuild words for this turn
-				const tokens = splitIntoWordTokens(value);
+				const tokens = splitIntoWordTokens(data.value);
 
 				// Find the first DataPoint of this turn to get metadata
 				const turnDataPoints = transcript.wordArray.filter((dp) => dp.turnNumber === turnNumber);
@@ -141,7 +141,7 @@
 				const wordsBefore = transcript.wordArray.filter((dp) => dp.turnNumber < turnNumber);
 				const wordsAfter = transcript.wordArray.filter((dp) => dp.turnNumber > turnNumber);
 				updatedWordArray = [...wordsBefore, ...newDataPoints, ...wordsAfter];
-			} else if (field === 'speaker') {
+			} else if (data.field === 'speaker') {
 				// Handle speaker edit - update speaker name
 				updatedWordArray = transcript.wordArray.map((dp) => {
 					if (dp.turnNumber !== turnNumber) return dp;
@@ -154,8 +154,8 @@
 					if (dp.turnNumber !== turnNumber) return dp;
 
 					return dp.copyWith({
-						startTime: field === 'time' ? value.startTime : dp.startTime,
-						endTime: field === 'time' ? value.endTime : dp.endTime
+						startTime: data.field === 'time' ? data.value.startTime : dp.startTime,
+						endTime: data.field === 'time' ? data.value.endTime : dp.endTime
 					});
 				});
 			}
@@ -180,7 +180,7 @@
 
 				// Renumber turns and rebuild word array
 				updatedWordArray = [];
-				sortedTurns.forEach(([_oldTurnNumber, words], newTurnIndex) => {
+				sortedTurns.forEach(([, words], newTurnIndex) => {
 					words.forEach((dp) => {
 						updatedWordArray.push(dp.copyWith({ turnNumber: newTurnIndex }));
 					});

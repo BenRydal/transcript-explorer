@@ -6,13 +6,7 @@
 	import TurnGroupingControl from '../components/TurnGroupingControl.svelte';
 	import { isAutoBinCount, BIN_COUNT_MIN, BIN_COUNT_AUTO } from '../draw/heatmap-scaling';
 	import { canRenderDashboard, dashboardUnavailableReason } from '../draw/dashboard-capacity';
-	import VizStore, {
-		type VizStoreType,
-		type SpeakerSortOrder,
-		type FingerprintOverlayMode,
-		type FingerprintChartMode,
-		type ContributionCloudWeighting
-	} from '../../stores/vizStore';
+	import VizStore, { type VizStoreType, type SpeakerSortOrder } from '../../stores/vizStore';
 
 	const techniqueToggleOptions = [
 		'speakerGardenToggle',
