@@ -1,4 +1,4 @@
-import type p5 from 'p5';
+import type { IgsSketch } from '../p5/igs-sketch-instance';
 
 import UserStore from '../../stores/userStore';
 import TranscriptStore from '../../stores/transcriptStore.js';
@@ -56,9 +56,9 @@ const examples: Record<string, { files: string[]; videoId: string }> = {
 };
 
 export class Core {
-	sketch: p5;
+	sketch: IgsSketch;
 
-	constructor(sketch: p5) {
+	constructor(sketch: IgsSketch) {
 		this.sketch = sketch;
 	}
 

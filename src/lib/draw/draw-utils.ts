@@ -1,4 +1,5 @@
 import type p5 from 'p5';
+import type { IgsSketch } from '../p5/igs-sketch-instance';
 import type { DataPoint } from '../../models/dataPoint';
 import type { User } from '../../models/user';
 import type { CodeEntry } from '../../stores/codeStore';
@@ -49,7 +50,7 @@ const NO_HIGHLIGHT: CrossHighlight = { active: false, speaker: null, turn: null,
  * Computes cross-highlight state for dashboard mode.
  * Returns inactive state if not in dashboard mode or mouse is inside the panel.
  */
-export function getCrossHighlight(sk: p5, bounds: Bounds, dashboardToggle: boolean, hover: HoverState): CrossHighlight {
+export function getCrossHighlight(sk: IgsSketch, bounds: Bounds, dashboardToggle: boolean, hover: HoverState): CrossHighlight {
 	if (!dashboardToggle) return NO_HIGHLIGHT;
 
 	const hl = hover.dashboardHighlightSpeaker;

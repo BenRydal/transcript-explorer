@@ -1,5 +1,5 @@
 import { get } from 'svelte/store';
-import type p5 from 'p5';
+import type { IgsSketch } from '../p5/igs-sketch-instance';
 import { DataPoint } from '../../models/dataPoint';
 import { TurnChart } from './turn-chart';
 import { ContributionCloud } from './contribution-cloud';
@@ -54,9 +54,9 @@ const TOGGLE_TO_PANEL: [keyof VizStoreType, string][] = [
 ];
 
 export class Draw {
-	sk: p5;
+	sk: IgsSketch;
 
-	constructor(sketch: p5) {
+	constructor(sketch: IgsSketch) {
 		this.sk = sketch;
 	}
 

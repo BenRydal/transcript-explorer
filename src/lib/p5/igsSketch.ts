@@ -1,11 +1,13 @@
+import type p5 from 'p5';
+import type { IgsSketch } from './igs-sketch-instance';
 import P5Store from '../../stores/p5Store';
 import TranscriptStore from '../../stores/transcriptStore.js';
 import UserStore from '../../stores/userStore';
 import TimelineStore from '../../stores/timelineStore';
-import VizStore from '../../stores/vizStore';
-import AppSettingsStore from '../../stores/appSettingsStore';
+import VizStore, { initialViz, type VizStoreType } from '../../stores/vizStore';
+import AppSettingsStore, { initialAppSettings, type AppSettingsStoreType } from '../../stores/appSettingsStore';
 import HoverStore, { type HoverState } from '../../stores/hoverStore';
-import EditorStore from '../../stores/editorStore';
+import EditorStore, { type EditorState } from '../../stores/editorStore';
 import VideoStore from '../../stores/videoStore';
 import type { VideoState } from '../../stores/videoStore';
 import UIStateStore, { type ContextMenuPayload } from '../../stores/uiStateStore';
@@ -16,9 +18,16 @@ import { getP5ContainerRect } from '../core/layout-utils';
 import { CANVAS_FONT_FAMILY } from '../constants/ui';
 import { getDrawTheme, refreshDrawTheme } from '../draw/draw-theme';
 import { hitTest, disableFES } from 'svelte-p5';
+import type { Timeline } from '../../models/timeline';
+import type { Transcript } from '../../models/transcript';
+import type { User } from '../../models/user';
+import type { DataPoint } from '../../models/dataPoint';
 
-let users: any[] = [];
-let timeline, transcript, currConfig, editorState;
+let users: User[] = [];
+let timeline: Timeline;
+let transcript: Transcript;
+let currConfig: VizStoreType & AppSettingsStoreType = { ...initialViz, ...initialAppSettings };
+let editorState: EditorState;
 let hoverState: HoverState;
 let videoState: VideoState;
 let canHover = true;
@@ -69,7 +78,8 @@ EditorStore.subscribe((data) => {
 // is pure overhead once the code is known-good.
 disableFES();
 
-export const igsSketch = (p5: any) => {
+export const igsSketch = (instance: p5) => {
+	const p5 = instance as IgsSketch;
 	P5Store.set(p5);
 
 	// Deliberately no loadFont: the family is registered via @font-face in
@@ -435,7 +445,7 @@ export const igsSketch = (p5: any) => {
 	 * Determines whether to draw an item in the dashboard view based on cross-highlight state.
 	 * Returns false to dim items that don't match the highlighted turn/speaker.
 	 */
-	p5.shouldDraw = (item: any) => {
+	p5.shouldDraw = (item: Pick<DataPoint, 'turnNumber' | 'speaker'>) => {
 		const turns = hoverState.dashboardHighlightAllTurns;
 		if (turns) return turns.includes(item.turnNumber);
 		const turn = hoverState.dashboardHighlightTurn;
@@ -460,7 +470,7 @@ export const igsSketch = (p5: any) => {
 		return canHover && hitTest.circle(p5.mouseX, p5.mouseY, x, y, diameter);
 	};
 
-	p5.arrayIsLoaded = (data: any) => {
-		return Array.isArray(data) && data.length;
+	p5.arrayIsLoaded = (data: unknown) => {
+		return Array.isArray(data) && data.length > 0;
 	};
 };
