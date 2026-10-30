@@ -10,18 +10,37 @@ import { resolve } from 'node:path';
 function load(dataset: string): Record<string, string>[] {
 	const text = readFileSync(resolve(__dirname, `../static/data/${dataset}/conversation.csv`), 'utf8');
 	const out: string[][] = [];
-	let f = '', row: string[] = [], q = false;
+	let f = '',
+		row: string[] = [],
+		q = false;
 	for (let i = 0; i < text.length; i++) {
 		const c = text[i];
-		if (q) { if (c === '"') { if (text[i + 1] === '"') { f += '"'; i++; } else q = false; } else f += c; }
-		else if (c === '"') q = true;
-		else if (c === ',') { row.push(f); f = ''; }
-		else if (c === '\n') { row.push(f); out.push(row); row = []; f = ''; }
-		else if (c !== '\r') f += c;
+		if (q) {
+			if (c === '"') {
+				if (text[i + 1] === '"') {
+					f += '"';
+					i++;
+				} else q = false;
+			} else f += c;
+		} else if (c === '"') q = true;
+		else if (c === ',') {
+			row.push(f);
+			f = '';
+		} else if (c === '\n') {
+			row.push(f);
+			out.push(row);
+			row = [];
+			f = '';
+		} else if (c !== '\r') f += c;
 	}
-	if (f || row.length) { row.push(f); out.push(row); }
+	if (f || row.length) {
+		row.push(f);
+		out.push(row);
+	}
 	const h = out[0];
-	return out.slice(1).filter((r) => r.length === h.length && r[h.indexOf('start')] !== '')
+	return out
+		.slice(1)
+		.filter((r) => r.length === h.length && r[h.indexOf('start')] !== '')
 		.map((r) => Object.fromEntries(h.map((k, i) => [k, r[i]])));
 }
 
@@ -29,8 +48,12 @@ const SETS = ['web-design-chat', 'web-design-tools', 'web-design-multi-agent'];
 
 function gapCount(rows: Record<string, string>[], startKey: string): number {
 	const sp = rows.map((r) => [Number(r[startKey]), Number(r.end)] as const).sort((a, b) => a[0] - b[0]);
-	let gaps = 0, mark = 0;
-	for (const [s, e] of sp) { if (s > mark + 1e-6) gaps++; mark = Math.max(mark, e); }
+	let gaps = 0,
+		mark = 0;
+	for (const [s, e] of sp) {
+		if (s > mark + 1e-6) gaps++;
+		mark = Math.max(mark, e);
+	}
 	return gaps;
 }
 
@@ -130,10 +153,14 @@ describe('timing lenses', () => {
 		for (const d of SETS) {
 			const rows = load(d);
 			const spans = rows.map((r) => [Number(r.start_floor), Number(r.end)] as const).sort((a, b) => a[0] - b[0]);
-			let covered = 0, mark = 0;
+			let covered = 0,
+				mark = 0;
 			for (const [s, e] of spans) {
 				const from = Math.max(s, mark);
-				if (e > from) { covered += e - from; mark = e; }
+				if (e > from) {
+					covered += e - from;
+					mark = e;
+				}
 			}
 			const maxEnd = Math.max(...rows.map((r) => Number(r.end)));
 			expect(covered / maxEnd).toBeGreaterThan(0.99);

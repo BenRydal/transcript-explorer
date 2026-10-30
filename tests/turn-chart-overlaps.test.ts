@@ -7,19 +7,38 @@ import { createTranscriptFromParsedText } from '../src/lib/core/transcript-facto
 function loadRows(dataset: string): Record<string, unknown>[] {
 	const text = readFileSync(resolve(__dirname, `../static/data/${dataset}/conversation.csv`), 'utf8');
 	const out: string[][] = [];
-	let f = '', row: string[] = [], q = false;
+	let f = '',
+		row: string[] = [],
+		q = false;
 	for (let i = 0; i < text.length; i++) {
 		const c = text[i];
-		if (q) { if (c === '"') { if (text[i+1] === '"') { f += '"'; i++; } else q = false; } else f += c; }
-		else if (c === '"') q = true;
-		else if (c === ',') { row.push(f); f = ''; }
-		else if (c === '\n') { row.push(f); out.push(row); row = []; f = ''; }
-		else if (c !== '\r') f += c;
+		if (q) {
+			if (c === '"') {
+				if (text[i + 1] === '"') {
+					f += '"';
+					i++;
+				} else q = false;
+			} else f += c;
+		} else if (c === '"') q = true;
+		else if (c === ',') {
+			row.push(f);
+			f = '';
+		} else if (c === '\n') {
+			row.push(f);
+			out.push(row);
+			row = [];
+			f = '';
+		} else if (c !== '\r') f += c;
 	}
-	if (f || row.length) { row.push(f); out.push(row); }
+	if (f || row.length) {
+		row.push(f);
+		out.push(row);
+	}
 	const header = out[0];
-	return out.slice(1).filter(r => r.length === header.length)
-		.map(r => Object.fromEntries(header.map((h, i) => [h, r[i]])));
+	return out
+		.slice(1)
+		.filter((r) => r.length === header.length)
+		.map((r) => Object.fromEntries(header.map((h, i) => [h, r[i]])));
 }
 
 /** Mirrors turn-chart.ts getTurnRanges: per-turn span from first/last word. */
@@ -30,7 +49,10 @@ function turnRanges(dataset: string) {
 	for (const w of transcript.wordArray) {
 		const cur = byTurn.get(w.turnNumber);
 		if (!cur) byTurn.set(w.turnNumber, { speaker: w.speaker, start: w.startTime, end: w.endTime });
-		else { cur.start = Math.min(cur.start, w.startTime); cur.end = Math.max(cur.end, w.endTime); }
+		else {
+			cur.start = Math.min(cur.start, w.startTime);
+			cur.end = Math.max(cur.end, w.endTime);
+		}
 	}
 	return { sourceKind: transcript.sourceKind, ranges: [...byTurn.values()].sort((a, b) => a.start - b.start) };
 }

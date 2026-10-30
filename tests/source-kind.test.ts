@@ -23,8 +23,7 @@ function parseCsv(text: string): Record<string, unknown>[] {
 	}).data as Record<string, unknown>[];
 }
 
-const load = (id: string) =>
-	parseCsv(readFileSync(`static/data/${id}/conversation.csv`, 'utf8'));
+const load = (id: string) => parseCsv(readFileSync(`static/data/${id}/conversation.csv`, 'utf8'));
 
 describe('detectSourceKind', () => {
 	const human = ['example-1', 'example-2', 'example-3', 'example-4', 'example-5'];
@@ -47,16 +46,12 @@ describe('detectSourceKind', () => {
 	});
 
 	it('does not treat a human speaker named Agent as an AI transcript', () => {
-		const rows = parseCsv(
-			'speaker,content,start,end\nAgent,how can I help,0,4\nCustomer,my order is late,4,9\n'
-		);
+		const rows = parseCsv('speaker,content,start,end\nAgent,how can I help,0,4\nCustomer,my order is late,4,9\n');
 		expect(detectSourceKind(rows)).toBe('human');
 	});
 
 	it('does not treat a research role column as an AI transcript', () => {
-		const rows = parseCsv(
-			'speaker,content,start,end,role\nMs Diaz,turn to page four,0,3,teacher\nJamal,got it,3,5,student\n'
-		);
+		const rows = parseCsv('speaker,content,start,end,role\nMs Diaz,turn to page four,0,3,teacher\nJamal,got it,3,5,student\n');
 		expect(detectSourceKind(rows)).toBe('human');
 	});
 
@@ -66,9 +61,7 @@ describe('detectSourceKind', () => {
 	});
 
 	it('requires both role and event_type when no marker is present', () => {
-		const rows = parseCsv(
-			'speaker,content,start,end,event_type\nClaude,hello,0,2,message\nEdwin,hi,2,4,message\n'
-		);
+		const rows = parseCsv('speaker,content,start,end,event_type\nClaude,hello,0,2,message\nEdwin,hi,2,4,message\n');
 		expect(detectSourceKind(rows)).toBe('human');
 	});
 
@@ -78,9 +71,7 @@ describe('detectSourceKind', () => {
 	});
 
 	it('lets a producer explicitly declare human and override inference', () => {
-		const rows = parseCsv(
-			'te_source_kind,speaker,content,start,end,role,event_type\nhuman,Claude,hi,0,2,assistant,message\n'
-		);
+		const rows = parseCsv('te_source_kind,speaker,content,start,end,role,event_type\nhuman,Claude,hi,0,2,assistant,message\n');
 		expect(detectSourceKind(rows)).toBe('human');
 	});
 });

@@ -52,10 +52,13 @@ describe('assignActorColors', () => {
 	});
 
 	it('leaves a family of one on its base hue rather than shading it', () => {
-		const colors = assignActorColors(['BEN', 'CLAUDE'], new Map<string, SpeakerRole>([
-			['BEN', 'user'],
-			['CLAUDE', 'assistant']
-		]));
+		const colors = assignActorColors(
+			['BEN', 'CLAUDE'],
+			new Map<string, SpeakerRole>([
+				['BEN', 'user'],
+				['CLAUDE', 'assistant']
+			])
+		);
 		expect(colors.get('BEN')).toBe('#e69f00');
 		expect(colors.get('CLAUDE')).toBe('#0072b2');
 	});

@@ -51,24 +51,16 @@ describe('human example transcripts are unchanged', () => {
 				expect(transcript.totalNumOfWords).toBe(expected.totalNumOfWords);
 				expect(transcript.totalConversationTurns).toBe(expected.totalConversationTurns);
 				expect(transcript.wordArray.length).toBe(expected.wordArrayLength);
-				expect(Number(transcript.totalTimeInSeconds.toFixed(3))).toBe(
-					expected.totalTimeInSeconds
-				);
+				expect(Number(transcript.totalTimeInSeconds.toFixed(3))).toBe(expected.totalTimeInSeconds);
 			});
 
 			// These five drive node radii, bar heights and cell opacity in every
 			// visualization. If any moves, the rendered output has moved with it.
 			it('produces the same scaling maxima', () => {
 				expect(transcript.largestTurnLength).toBe(expected.largestTurnLength);
-				expect(transcript.largestNumOfWordsByASpeaker).toBe(
-					expected.largestNumOfWordsByASpeaker
-				);
-				expect(transcript.largestNumOfTurnsByASpeaker).toBe(
-					expected.largestNumOfTurnsByASpeaker
-				);
-				expect(transcript.maxCountOfMostRepeatedWord).toBe(
-					expected.maxCountOfMostRepeatedWord
-				);
+				expect(transcript.largestNumOfWordsByASpeaker).toBe(expected.largestNumOfWordsByASpeaker);
+				expect(transcript.largestNumOfTurnsByASpeaker).toBe(expected.largestNumOfTurnsByASpeaker);
+				expect(transcript.maxCountOfMostRepeatedWord).toBe(expected.maxCountOfMostRepeatedWord);
 				expect(transcript.mostFrequentWord).toBe(expected.mostFrequentWord);
 			});
 

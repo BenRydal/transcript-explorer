@@ -23,14 +23,26 @@ function readSpans(dataset: string): { start: number; end: number; type: string 
 		const c = text[i];
 		if (quoted) {
 			if (c === '"') {
-				if (text[i + 1] === '"') { field += '"'; i++; } else quoted = false;
+				if (text[i + 1] === '"') {
+					field += '"';
+					i++;
+				} else quoted = false;
 			} else field += c;
 		} else if (c === '"') quoted = true;
-		else if (c === ',') { row.push(field); field = ''; }
-		else if (c === '\n') { row.push(field); rows.push(row); row = []; field = ''; }
-		else if (c !== '\r') field += c;
+		else if (c === ',') {
+			row.push(field);
+			field = '';
+		} else if (c === '\n') {
+			row.push(field);
+			rows.push(row);
+			row = [];
+			field = '';
+		} else if (c !== '\r') field += c;
 	}
-	if (field || row.length) { row.push(field); rows.push(row); }
+	if (field || row.length) {
+		row.push(field);
+		rows.push(row);
+	}
 
 	const header = rows[0];
 	const iStart = header.indexOf('start');
@@ -87,11 +99,9 @@ describe('converted AI transcript timing', () => {
 		expect(inner!.end).toBeLessThan(outer!.end);
 	});
 
-	it('does not let tool rows absorb the model\'s thinking time', () => {
+	it("does not let tool rows absorb the model's thinking time", () => {
 		const spans = readSpans('web-design-multi-agent');
-		const toolSeconds = spans
-			.filter((s) => s.type === 'tool_call' || s.type === 'tool_result')
-			.reduce((sum, s) => sum + (s.end - s.start), 0);
+		const toolSeconds = spans.filter((s) => s.type === 'tool_call' || s.type === 'tool_result').reduce((sum, s) => sum + (s.end - s.start), 0);
 		// Was ~635s when tool rows ran until the next event.
 		expect(toolSeconds).toBeLessThan(200);
 	});

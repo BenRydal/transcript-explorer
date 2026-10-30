@@ -42,9 +42,7 @@ describe('question detection', () => {
 	});
 
 	it('rejects a scholar link with several parameters', () => {
-		expect(
-			isQuestion('https://scholar.google.com/scholar_lookup?title=x&author=y&doi=z')
-		).toBe(false);
+		expect(isQuestion('https://scholar.google.com/scholar_lookup?title=x&author=y&doi=z')).toBe(false);
 	});
 
 	it('rejects a bare domain with a query string', () => {
@@ -56,8 +54,6 @@ describe('question detection', () => {
 	});
 
 	it('still finds a real question alongside a link', () => {
-		expect(isQuestion('I read https://example.com/?q=1 but is that the primary source?')).toBe(
-			true
-		);
+		expect(isQuestion('I read https://example.com/?q=1 but is that the primary source?')).toBe(true);
 	});
 });

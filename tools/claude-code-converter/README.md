@@ -5,6 +5,7 @@ Converts Claude Code session logs (JSONL) into CSV files that can be loaded dire
 ## How It Works
 
 Claude Code already logs every interaction to JSONL files at:
+
 ```
 ~/.claude/projects/<project-slug>/<session-id>.jsonl
 ```
@@ -33,64 +34,64 @@ python3 convert.py --session-id <uuid> -u Edwin -o ./output --include-thinking
 
 Each conversion produces three files:
 
-| File | Purpose | Format |
-|------|---------|--------|
-| `transcript-<id>.csv` | TE-compatible transcript | CSV with `speaker,content,start,end` + extended columns |
-| `codes-<id>.csv` | Activity type overlay | CSV with `start,end,code` for TE code visualization |
-| `events-<id>.jsonl` | Full canonical events | JSONL with complete metadata (for archival/reprocessing) |
+| File                  | Purpose                  | Format                                                   |
+| --------------------- | ------------------------ | -------------------------------------------------------- |
+| `transcript-<id>.csv` | TE-compatible transcript | CSV with `speaker,content,start,end` + extended columns  |
+| `codes-<id>.csv`      | Activity type overlay    | CSV with `start,end,code` for TE code visualization      |
+| `events-<id>.jsonl`   | Full canonical events    | JSONL with complete metadata (for archival/reprocessing) |
 
 ### Transcript CSV Schema
 
 **TE-required columns** (first 4):
 
-| Column | Description | Example |
-|--------|-------------|---------|
-| `speaker` | Who is speaking | `Edwin`, `Claude`, `Tool:Bash`, `Agent:Explore:toolu_01H8` |
-| `content` | Full text content | Message text, tool command, tool output |
-| `start` | Start time (seconds, session-relative) | `0.0` |
-| `end` | End time (seconds) | `7.264` |
+| Column    | Description                            | Example                                                    |
+| --------- | -------------------------------------- | ---------------------------------------------------------- |
+| `speaker` | Who is speaking                        | `Edwin`, `Claude`, `Tool:Bash`, `Agent:Explore:toolu_01H8` |
+| `content` | Full text content                      | Message text, tool command, tool output                    |
+| `start`   | Start time (seconds, session-relative) | `0.0`                                                      |
+| `end`     | End time (seconds)                     | `7.264`                                                    |
 
 **Extended columns** (TE preserves but ignores these):
 
-| Column | Description | Values |
-|--------|-------------|--------|
-| `event_type` | What happened | `message`, `tool_call`, `tool_result`, `agent_spawn`, `agent_result`, `idle`, `thinking` |
-| `role` | Speaker category | `user`, `assistant`, `tool`, `agent`, `system` |
-| `tool_name` | Tool invoked | `Bash`, `Read`, `Write`, `Edit`, `Grep`, `Glob`, `Agent` |
-| `agent_type` | Agent specialization | `Explore`, `general-purpose`, etc. |
-| `agent_id` | Agent instance ID | `toolu_01H8S2oG1n` |
-| `model` | AI model used | `claude-opus-4-6` |
-| `tokens_out` | Output tokens | `139` |
-| `event_id` | UUID for cross-referencing | UUID string |
-| `tool_use_id` | Joins a call to the result that answers it | `toolu_01H8S2oG1n` |
-| `parent_event_id` | The event this one answers or follows | UUID string |
-| `content_type` | Content format | `text`, `code`, `thinking`, `error` |
+| Column            | Description                                | Values                                                                                   |
+| ----------------- | ------------------------------------------ | ---------------------------------------------------------------------------------------- |
+| `event_type`      | What happened                              | `message`, `tool_call`, `tool_result`, `agent_spawn`, `agent_result`, `idle`, `thinking` |
+| `role`            | Speaker category                           | `user`, `assistant`, `tool`, `agent`, `system`                                           |
+| `tool_name`       | Tool invoked                               | `Bash`, `Read`, `Write`, `Edit`, `Grep`, `Glob`, `Agent`                                 |
+| `agent_type`      | Agent specialization                       | `Explore`, `general-purpose`, etc.                                                       |
+| `agent_id`        | Agent instance ID                          | `toolu_01H8S2oG1n`                                                                       |
+| `model`           | AI model used                              | `claude-opus-4-6`                                                                        |
+| `tokens_out`      | Output tokens                              | `139`                                                                                    |
+| `event_id`        | UUID for cross-referencing                 | UUID string                                                                              |
+| `tool_use_id`     | Joins a call to the result that answers it | `toolu_01H8S2oG1n`                                                                       |
+| `parent_event_id` | The event this one answers or follows      | UUID string                                                                              |
+| `content_type`    | Content format                             | `text`, `code`, `thinking`, `error`                                                      |
 
 ### Codes CSV Schema
 
-| Column | Description | Example Values |
-|--------|-------------|----------------|
-| `start` | Start time (seconds) | `0.0` |
-| `end` | End time (seconds) | `7.264` |
-| `code` | Activity type | `user_message`, `assistant_message`, `tool_bash`, `tool_read_result`, `agent_explore`, `idle` |
+| Column  | Description          | Example Values                                                                                |
+| ------- | -------------------- | --------------------------------------------------------------------------------------------- |
+| `start` | Start time (seconds) | `0.0`                                                                                         |
+| `end`   | End time (seconds)   | `7.264`                                                                                       |
+| `code`  | Activity type        | `user_message`, `assistant_message`, `tool_bash`, `tool_read_result`, `agent_explore`, `idle` |
 
 ### Speaker Types
 
 The converter creates distinct speakers for each participant:
 
-| Speaker Pattern | What It Represents |
-|----------------|--------------------|
-| `Edwin` (or custom `--user-name`) | The human user |
-| `Claude` | The AI assistant |
-| `Tool:Bash` | Bash command execution |
-| `Tool:Read` | File read operation |
-| `Tool:Write` | File write operation |
-| `Tool:Edit` | File edit operation |
-| `Tool:Grep` | Code search |
-| `Tool:Glob` | File pattern search |
-| `Agent:Explore:<id>` | Explore subagent instance |
-| `Agent:general-purpose:<id>` | General-purpose subagent |
-| `Idle` | Gap between active events (user thinking/reading/away) |
+| Speaker Pattern                   | What It Represents                                     |
+| --------------------------------- | ------------------------------------------------------ |
+| `Edwin` (or custom `--user-name`) | The human user                                         |
+| `Claude`                          | The AI assistant                                       |
+| `Tool:Bash`                       | Bash command execution                                 |
+| `Tool:Read`                       | File read operation                                    |
+| `Tool:Write`                      | File write operation                                   |
+| `Tool:Edit`                       | File edit operation                                    |
+| `Tool:Grep`                       | Code search                                            |
+| `Tool:Glob`                       | File pattern search                                    |
+| `Agent:Explore:<id>`              | Explore subagent instance                              |
+| `Agent:general-purpose:<id>`      | General-purpose subagent                               |
+| `Idle`                            | Gap between active events (user thinking/reading/away) |
 
 ## Timing Model
 
@@ -106,27 +107,27 @@ The converter handles timing as follows:
 
 ### Already in the JSONL (no configuration needed)
 
-| Data | Source |
-|------|--------|
-| User message text + timestamp | `type: "user"` entries |
-| Assistant text + timestamp | `type: "assistant"` entries with `text` blocks |
-| AI thinking content | `type: "assistant"` entries with `thinking` blocks (opt-in via `--include-thinking`) |
-| Tool calls (name, params) | `type: "assistant"` entries with `tool_use` blocks |
-| Tool results (output, errors) | `type: "user"` entries with `tool_result` blocks |
-| Agent spawning (type, prompt) | `tool_use` with `name: "Agent"` |
-| Agent results | `tool_result` matching agent `tool_use_id` |
-| Token usage (input/output/cache) | `message.usage` on assistant entries |
-| Model identifier | `message.model` on assistant entries |
-| Session ID, project path, git branch | Metadata on every entry |
-| Turn duration | `type: "system"`, `subtype: "turn_duration"` |
+| Data                                 | Source                                                                               |
+| ------------------------------------ | ------------------------------------------------------------------------------------ |
+| User message text + timestamp        | `type: "user"` entries                                                               |
+| Assistant text + timestamp           | `type: "assistant"` entries with `text` blocks                                       |
+| AI thinking content                  | `type: "assistant"` entries with `thinking` blocks (opt-in via `--include-thinking`) |
+| Tool calls (name, params)            | `type: "assistant"` entries with `tool_use` blocks                                   |
+| Tool results (output, errors)        | `type: "user"` entries with `tool_result` blocks                                     |
+| Agent spawning (type, prompt)        | `tool_use` with `name: "Agent"`                                                      |
+| Agent results                        | `tool_result` matching agent `tool_use_id`                                           |
+| Token usage (input/output/cache)     | `message.usage` on assistant entries                                                 |
+| Model identifier                     | `message.model` on assistant entries                                                 |
+| Session ID, project path, git branch | Metadata on every entry                                                              |
+| Turn duration                        | `type: "system"`, `subtype: "turn_duration"`                                         |
 
 ### Not captured (limitations)
 
-| Data | Why | Workaround |
-|------|-----|-----------|
-| User typing start time | Claude Code logs when Enter is pressed, not when typing begins | `UserPromptSubmit` hook could add this |
-| Subagent internal tool calls | Agent progress entries are streamed but not fully structured | Parse `agent_progress` data (future enhancement) |
-| File contents read by tools | Tool results contain the output but very large reads may be truncated | Use `events.jsonl` for full content |
+| Data                         | Why                                                                   | Workaround                                       |
+| ---------------------------- | --------------------------------------------------------------------- | ------------------------------------------------ |
+| User typing start time       | Claude Code logs when Enter is pressed, not when typing begins        | `UserPromptSubmit` hook could add this           |
+| Subagent internal tool calls | Agent progress entries are streamed but not fully structured          | Parse `agent_progress` data (future enhancement) |
+| File contents read by tools  | Tool results contain the output but very large reads may be truncated | Use `events.jsonl` for full content              |
 
 ## Loading in Transcript Explorer
 
