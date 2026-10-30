@@ -1,5 +1,6 @@
 <script lang="ts">
 	import type p5 from 'p5';
+	import type { IgsSketch } from '$lib/p5/igs-sketch-instance';
 	import type { SketchFn } from 'svelte-p5';
 	import {
 		ActivityBar,
@@ -398,7 +399,7 @@
 	let pendingVideoFile: File | null = $state(null);
 	let pendingVideoDuration: number = $state(0);
 	// Core references
-	let p5Instance: p5 | null = $state(null);
+	let p5Instance: IgsSketch | null = $state(null);
 	let core: Core;
 	let tourOverlay: TourOverlay;
 

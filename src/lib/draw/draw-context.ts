@@ -1,4 +1,4 @@
-import type p5 from 'p5';
+import type { IgsSketch } from '../p5/igs-sketch-instance';
 import { get } from 'svelte/store';
 import UserStore from '../../stores/userStore';
 import VizStore from '../../stores/vizStore';
@@ -17,7 +17,7 @@ import { createUserMap, buildCodeColorMap } from './draw-utils';
 import { getDrawTheme, type DrawTheme } from './draw-theme';
 
 export class DrawContext {
-	sk: p5;
+	sk: IgsSketch;
 	users: User[];
 	userMap: Map<string, User>;
 	config: ConfigStoreType;
@@ -27,7 +27,7 @@ export class DrawContext {
 	timeline: Timeline;
 	theme: DrawTheme;
 
-	constructor(sk: p5) {
+	constructor(sk: IgsSketch) {
 		this.sk = sk;
 		this.users = get(UserStore);
 		this.userMap = createUserMap(this.users);
